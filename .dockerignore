@@ -1,0 +1,6 @@
+data
+docker
+nginx
+node_modules
+.env.*
+.turbo

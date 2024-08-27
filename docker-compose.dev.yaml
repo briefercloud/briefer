@@ -1,0 +1,57 @@
+services:
+  postgres:
+    container_name: briefer_postgres_dev
+    image: postgres
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: 'briefer'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'password'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d briefer || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  jupyter_server:
+    container_name: briefer_jupyter_server_dev
+    labels:
+      'cloud.briefer.jupyter-container': 'true'
+    build:
+      context: 'apps/api'
+      dockerfile: 'jupyter.Dockerfile'
+    command:
+      - 'sh'
+      - '-c'
+      - 'jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6'
+    ports:
+      - '8888:8888'
+    environment:
+      JUPYTER_TOKEN: '6e71736b45ba55329421c16b2042b22616740d634d03bb78'
+    volumes:
+      - ./jupyterfiles:/home/jupyteruser
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  ecommerce:
+    build: data/psql/ecommerce
+    restart: always
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_DB: 'ecommerce'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'password'
+    volumes:
+      - ecommerce_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dev_data:
+  ecommerce_data:

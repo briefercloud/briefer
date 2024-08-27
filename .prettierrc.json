@@ -1,0 +1,8 @@
+{
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "semi": false,
+  "importOrder": ["^@/", "^[./]"],
+  "importOrderSeparation": true,
+  "tabWidth": 2
+}

@@ -1,0 +1,138 @@
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: 'briefer'
+      POSTGRES_USER: ${POSTGRES_USERNAME:?error}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error}
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USERNAME:?error} -d briefer || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  db_migration:
+    build:
+      context: '.'
+      dockerfile: 'apps/api/Dockerfile'
+    working_dir: '/app/packages/database'
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      NODE_ENV: 'production'
+      POSTGRES_PRISMA_URL: 'postgresql://${POSTGRES_USERNAME:?error}:${POSTGRES_PASSWORD:?error}@postgres:5432/briefer?schema=public'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  jupyter_server:
+    labels:
+      'cloud.briefer.jupyter-container': 'true'
+    build:
+      context: 'apps/api'
+      dockerfile: 'jupyter.Dockerfile'
+    command:
+      - 'sh'
+      - '-c'
+      - |
+        chgrp briefer /home/jupyteruser && \
+        chmod 775 /home/jupyteruser && \
+        jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
+    volumes:
+      - shared_data:/home/jupyteruser
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  ai:
+    build:
+      context: 'ai'
+      dockerfile: 'Dockerfile'
+    environment:
+      BASIC_AUTH_USERNAME: ${AI_BASIC_AUTH_USERNAME:?error}
+      BASIC_AUTH_PASSWORD: ${AI_BASIC_AUTH_PASSWORD:?error}
+      OPENAI_DEFAULT_MODEL_NAME: 'gpt-4o'
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?error}
+      PORT: 8000
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8000/ping || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  web:
+    build:
+      context: '.'
+      dockerfile: 'apps/web/Dockerfile'
+      args:
+        NODE_ENV: 'production'
+        NEXT_PUBLIC_API_URL: 'https://api.${TLD:?error}'
+        NEXT_PUBLIC_API_WS_URL: 'wss://api.${TLD:?error}'
+        NEXT_PUBLIC_PUBLIC_URL: 'https://app.${TLD:?error}'
+    ports:
+      - '3000:3000'
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build:
+      context: '.'
+      dockerfile: 'apps/api/Dockerfile'
+    ports:
+      - '8080:8080'
+    environment:
+      NODE_ENV: 'production'
+      LOG_LEVEL: 'info'
+      API_URL: 'https://api.${TLD:?error}'
+      FRONTEND_URL: 'https://app.${TLD:?error}'
+      TLD: ${TLD:?error}
+      LOGIN_JWT_SECRET: ${LOGIN_JWT_SECRET:?error}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?error}
+      AI_API_URL: 'http://ai:8000'
+      AI_API_USERNAME: ${AI_BASIC_AUTH_USERNAME:?error}
+      AI_API_PASSWORD: ${AI_BASIC_AUTH_PASSWORD:?error}
+      PYTHON_ALLOWED_LIBRARIES: 'plotly,matplotlib,numpy,pandas'
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:?error}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error}
+      POSTGRES_HOSTNAME: 'postgres'
+      POSTGRES_PORT: '5432'
+      POSTGRES_DATABASE: 'briefer'
+      ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: ${ENVIRONMENT_VARIABLES_ENCRYPTION_KEY:?error}
+      DATASOURCES_ENCRYPTION_KEY: ${DATASOURCES_ENCRYPTION_KEY:?error}
+      JUPYTER_HOST: 'jupyter_server'
+      JUPYTER_PORT: 8888
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
+      JUPYTER_FILES_DIR: '/home/jupyteruser'
+    volumes:
+      - shared_data:/home/jupyteruser
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8080/readyz || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db_migration:
+        condition: service_completed_successfully
+      jupyter_server:
+        condition: service_healthy
+        restart: true
+      ai:
+        condition: service_healthy
+
+volumes:
+  shared_data:
+  postgres_data:

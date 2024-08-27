@@ -1,0 +1,277 @@
+@import '../../../../node_modules/react-day-picker/src/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  height: 100vh;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#__next {
+  height: 100vh;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: only light;
+    color: #111827; /* gray-900 */
+    background-color: #fff;
+  }
+}
+
+:root {
+  --tw-color-primary-50: 250 255 229; /* #faffe5 */
+  --tw-color-primary-100: 242 255 200; /* #f2ffc8 */
+  /* Original is 200 */
+  --tw-color-primary-200: 222 255 128; /* #deff80 */
+  --tw-color-primary-300: 206 251 91; /* #cefb5b */
+  --tw-color-primary-400: 184 242 41; /* #b8f229 */
+  --tw-color-primary-500: 152 216 10; /* #98d80a */
+  --tw-color-primary-600: 118 173 3; /* #76ad03 */
+  --tw-color-primary-700: 89 131 8; /* #598308 */
+  --tw-color-primary-800: 72 103 13; /* #48670d */
+  --tw-color-primary-900: 60 87 16; /* #3c5710 */
+  --tw-color-primary-950: 30 49 2; /* #1e3102 */
+
+  /* Original is 50 */
+  --tw-color-ceramic-50: 246 249 243;
+  --tw-color-ceramic-100: 228 238 217;
+  --tw-color-ceramic-200: 198 220 179;
+  --tw-color-ceramic-300: 160 195 133;
+  --tw-color-ceramic-400: 121 165 92;
+  --tw-color-ceramic-500: 93 138 66;
+  --tw-color-ceramic-600: 72 110 51;
+  --tw-color-ceramic-700: 60 89 44;
+  --tw-color-ceramic-800: 50 72 39;
+  --tw-color-ceramic-900: 44 61 36;
+  --tw-color-ceramic-950: 22 35 16;
+
+  --tw-color-selago-50: 247 245 253;
+  /* Original is 100 */
+  --tw-color-selago-100: 237 235 249;
+  --tw-color-selago-200: 225 222 246;
+  --tw-color-selago-300: 203 196 238;
+  --tw-color-selago-400: 175 162 227;
+  --tw-color-selago-500: 147 124 214;
+  --tw-color-selago-600: 129 95 200;
+  --tw-color-selago-700: 112 76 181;
+  --tw-color-selago-800: 94 64 151;
+  --tw-color-selago-900: 78 54 124;
+  --tw-color-selago-950: 49 33 84;
+
+  --tw-color-hunter-green-50: 246 247 238;
+  --tw-color-hunter-green-100: 235 238 217;
+  --tw-color-hunter-green-200: 216 222 184;
+  --tw-color-hunter-green-300: 189 200 142;
+  --tw-color-hunter-green-400: 163 178 105;
+  --tw-color-hunter-green-500: 135 151 75;
+  --tw-color-hunter-green-600: 104 119 57;
+  --tw-color-hunter-green-700: 81 92 47;
+  --tw-color-hunter-green-800: 66 75 41;
+  --tw-color-hunter-green-900: 58 65 38;
+  /* Original is 950 */
+  --tw-color-hunter-green-950: 22 26 13;
+}
+
+.rdp-root {
+  --rdp-accent-color: rgb(
+    var(--tw-color-ceramic-300)
+  ); /* Change the accent color. */
+  --rdp-accent-background-color: #f0f0f0; /* Change the accent background color. */
+  /* Add more CSS variables here. */
+}
+
+@font-face {
+  font-family: 'Trap';
+  src: url('/fonts/Trap-Black.ttf');
+  src: url('/fonts/Trap-Bold.ttf');
+  src: url('/fonts/Trap-ExtraBold.ttf');
+  src: url('/fonts/Trap-Light.ttf');
+  src: url('/fonts/Trap-Medium.ttf');
+  src: url('/fonts/Trap-Regular.ttf');
+  src: url('/fonts/Trap-SemiBold.ttf');
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Trap';
+  src: url('/fonts/Trap-Bold.ttf');
+  font-weight: 700;
+  font-style: bold;
+}
+
+@font-face {
+  font-family: 'Trap';
+  src: url('/fonts/Trap-ExtraBold.ttf');
+  font-weight: 900;
+  font-style: black;
+}
+
+@layer base {
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+.python-html-output {
+  font-size: 0.7rem;
+  overflow: auto;
+}
+
+.python-html-output thead {
+  background-color: theme(colors.gray.50);
+  position: sticky;
+  top: 0;
+}
+
+.python-html-output th,
+.python-html-output td {
+  max-width: 100px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid theme(colors.gray.200);
+  white-space: nowrap;
+}
+
+.bn-drag-handle-menu {
+  width: unset !important;
+}
+
+.bn-block-content[data-content-type='numberedListItem'] {
+  padding-left: 0.5rem;
+  gap: 0.5em !important;
+}
+
+.bn-block-content[data-content-type='paragraph'] {
+  padding: 0.5rem 0;
+}
+
+.tiptap h1.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.editor-v2 .tippy-box {
+  background-color: transparent !important;
+}
+
+.editor-v2 .tippy-arrow {
+  display: none !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+
+.tiptap.briefer-editor-body ul {
+  margin-top: 0.25rem !important;
+}
+
+.tiptap.briefer-editor-body li p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.tiptap.briefer-editor-body h1:not(:only-child):not(:last-child) {
+  margin-bottom: 0.7em !important;
+}
+
+.tiptap.briefer-editor-body
+  h1:not(:only-child):not(:last-child):not(:first-child) {
+  margin-top: 0.7em !important;
+}
+
+.tiptap.briefer-editor-body h2:not(:only-child):not(:last-child) {
+  margin-bottom: 0.6em !important;
+}
+
+.tiptap.briefer-editor-body
+  h2:not(:only-child):not(:last-child):not(:first-child) {
+  margin-top: 0.6em !important;
+}
+
+.tiptap.briefer-editor-body h3:not(:only-child):not(:last-child) {
+  margin-bottom: 0.5em !important;
+}
+
+.tiptap.briefer-editor-body
+  h3:not(:only-child):not(:last-child):not(:first-child) {
+  margin-top: 0.5em !important;
+}
+
+.tiptap.briefer-editor-body *:last-child {
+  margin-bottom: 0 !important;
+}
+
+.tiptap.briefer-editor-body pre {
+  background-color: #f3f4f6;
+}
+
+.tiptap.briefer-editor-body pre code {
+  color: var(--tw-prose-body);
+}
+
+/* code not inside <pre> */
+.tiptap.briefer-editor-body :not(pre) code {
+  display: inline-block;
+  padding: 0.05em 0.4em;
+  border-radius: 0.25rem;
+  background-color: #f3f4f6;
+  font-weight: normal;
+  color: #ef4444;
+}
+
+.tiptap.briefer-editor-body {
+  /* same as --tw-prose-body */
+  --tw-prose-bullets: var(--tw-prose-body);
+}
+
+.react-grid-item.react-grid-placeholder {
+  background-color: #f6f9f3 !important;
+  opacity: 0.6 !important;
+}
+
+@media not print and (max-width: 1024px) {
+  html,
+  body {
+    min-width: 1024px;
+    overflow-x: auto;
+  }
+
+  #__next {
+    min-width: 1024px;
+  }
+}
+
+.simplebar-vertical-only {
+  .simplebar-track.simplebar-horizontal {
+    display: none !important;
+  }
+}

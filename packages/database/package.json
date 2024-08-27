@@ -1,0 +1,22 @@
+{
+  "name": "@briefer/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "types": "./types/index.d.ts",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsc --incremental --watch --preserveWatchOutput",
+    "build": "prisma generate && tsc"
+  },
+  "dependencies": {
+    "@briefer/types": "*",
+    "@aws-sdk/rds-signer": "^3.465.0",
+    "@prisma/client": "^5.4.2",
+    "prisma": "^5.4.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.2"
+  }
+}
