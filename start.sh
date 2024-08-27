@@ -27,5 +27,5 @@ if [ ! -f .env ]; then
   read -p "Press enter to continue"
 fi
 
-docker compose up
+docker-compose up -d
 
