@@ -33,6 +33,19 @@ export class ComposeJupyterManager implements JupyterManager {
       })
 
       for (const workspace of workspaces) {
+        let environment = await prisma().environment.findFirst({
+          where: { workspaceId: workspace.id },
+        })
+        if (!environment) {
+          environment = await prisma().environment.create({
+            data: {
+              workspaceId: workspace.id,
+              status: 'Stopped',
+              resourceVersion: 0,
+            },
+          })
+        }
+
         const serverSettings = await this.getServerSettings(workspace.id)
         const url = `${serverSettings.baseUrl}/api/status`
         const options = {
@@ -44,11 +57,18 @@ export class ComposeJupyterManager implements JupyterManager {
         try {
           const res = await fetch(url, options)
           if (res.ok) {
+            if (environment.status !== 'Running') {
+              environment = await prisma().environment.update({
+                where: { id: environment.id },
+                data: { status: 'Running', startedAt: new Date() },
+              })
+            }
+
             broadcastEnvironmentStatus(
               socketServer,
               workspace.id,
               'Running',
-              null
+              environment.startedAt?.toISOString() ?? null
             )
           } else {
             broadcastEnvironmentStatus(
