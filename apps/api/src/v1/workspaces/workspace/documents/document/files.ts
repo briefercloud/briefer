@@ -31,11 +31,27 @@ filesRouter.post('/', async (req, res) => {
 
     req.log.info({ fileName, workspaceId }, 'Uploading file')
 
-    await jupyterManager.putFile(workspaceId, fileName, req)
+    const result = await jupyterManager.putFile(
+      workspaceId,
+      fileName,
+      replace,
+      req
+    )
+    const status: 409 | 204 = (() => {
+      switch (result) {
+        case 'already-exists':
+          req.log.info(
+            { filename: fileName, workspaceId },
+            'File already exists'
+          )
+          return 409
+        case 'success':
+          req.log.info({ filename: fileName, workspaceId }, 'File uploaded')
+          return 204
+      }
+    })()
 
-    req.log.info({ filename: fileName, workspaceId }, 'File uploaded')
-
-    res.status(204).end()
+    res.sendStatus(status)
   } catch (err) {
     req.log.error(
       {

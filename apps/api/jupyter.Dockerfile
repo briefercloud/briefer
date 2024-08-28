@@ -33,6 +33,11 @@ RUN pip install --no-cache-dir ipykernel
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# jupyter extension
+COPY ./jupyter_briefer_extension /usr/src/jupyter_briefer_extension
+RUN pip install /usr/src/jupyter_briefer_extension
+RUN jupyter server extension enable jupyter_briefer_extension --sys-prefix
+
 # Copy example-data to /usr/src for onboarding
 COPY ./example-data/ /usr/src/example-data
 

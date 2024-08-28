@@ -15,7 +15,7 @@ import {
   SuccessRunQueryResult,
 } from '@briefer/types'
 import { SQLEvents } from '../../../../events/index.js'
-import { JupyterManager } from '../../../../jupyter/index.js'
+import { IJupyterManager } from '../../../../jupyter/index.js'
 
 describe('SQLExecutor', () => {
   let ydoc: Y.Doc
@@ -25,7 +25,7 @@ describe('SQLExecutor', () => {
   let events: jest.Mocked<SQLEvents>
   let dataframes: Y.Map<DataFrame>
   let blocks: Y.Map<YBlock>
-  let jupyterManager: jest.Mocked<JupyterManager>
+  let jupyterManager: jest.Mocked<IJupyterManager>
   let queue: PQueue
   beforeEach(() => {
     ydoc = new Y.Doc()

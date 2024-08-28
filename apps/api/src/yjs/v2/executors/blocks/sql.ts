@@ -26,7 +26,10 @@ import { DataFrame, RunQueryResult } from '@briefer/types'
 import { sqlEditStreamed } from '../../../../ai-api.js'
 import config from '../../../../config/index.js'
 import { EventContext, SQLEvents } from '../../../../events/index.js'
-import { JupyterManager, getJupyterManager } from '../../../../jupyter/index.js'
+import {
+  IJupyterManager,
+  getJupyterManager,
+} from '../../../../jupyter/index.js'
 
 async function editWithAI(
   workspaceId: string,
@@ -124,7 +127,7 @@ export class SQLExecutor implements ISQLExecutor {
   private dataframes: Y.Map<DataFrame>
   private blocks: Y.Map<YBlock>
   private runningQueries = new Map<Y.XmlElement<SQLBlock>, RunninQuery>()
-  private jupyterManager: JupyterManager
+  private jupyterManager: IJupyterManager
   private effects: SQLEffects
   private events: SQLEvents
 
@@ -135,7 +138,7 @@ export class SQLExecutor implements ISQLExecutor {
     dataframes: Y.Map<DataFrame>,
     blocks: Y.Map<YBlock>,
     executionQueue: PQueue,
-    jupyterManager: JupyterManager,
+    jupyterManager: IJupyterManager,
     effects: SQLEffects,
     events: SQLEvents
   ) {

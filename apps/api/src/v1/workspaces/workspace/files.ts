@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { Router } from 'express'
 import { getParam } from '../../../utils/express.js'
-import PythonBrieferFilesService from '../../../python/files.js'
 import path from 'path'
+import { getJupyterManager } from '../../../jupyter/index.js'
 
 const filesRouter = Router({ mergeParams: true })
 
@@ -10,7 +10,8 @@ filesRouter.get('/', async (req, res) => {
   const workspaceId = getParam(req, 'workspaceId')
 
   try {
-    res.json(await new PythonBrieferFilesService(workspaceId).list())
+    const jupyterManager = getJupyterManager()
+    res.json(await jupyterManager.listFiles(workspaceId))
   } catch (err) {
     req.log.error({ workspaceId, err }, 'Error listing files')
     res.status(500).end()
@@ -28,7 +29,8 @@ filesRouter.get('/file', async (req, res) => {
   try {
     const fileName = path.basename(filePath)
 
-    const getFileResult = await new PythonBrieferFilesService(workspaceId).get(
+    const getFileResult = await getJupyterManager().getFile(
+      workspaceId,
       filePath
     )
 
@@ -73,19 +75,25 @@ filesRouter.post('/', async (req, res) => {
 
   const workspaceId = getParam(req, 'workspaceId')
   const replace = req.query['replace'] === 'true'
+  const jupyterManager = getJupyterManager()
   try {
-    const fileExists = await new PythonBrieferFilesService(workspaceId).upload(
+    const result = await jupyterManager.putFile(
+      workspaceId,
       fileName,
       replace,
       req
     )
 
-    if (fileExists) {
-      res.status(409).end()
-      return
-    }
+    const status: 409 | 204 = (() => {
+      switch (result) {
+        case 'already-exists':
+          return 409
+        case 'success':
+          return 204
+      }
+    })()
 
-    res.status(204).end()
+    res.sendStatus(status)
   } catch (err) {
     req.log.error(
       {
@@ -113,7 +121,7 @@ filesRouter.delete('/', async (req, res) => {
   const workspaceId = getParam(req, 'workspaceId')
 
   try {
-    await new PythonBrieferFilesService(workspaceId).delete(body.data.path)
+    await getJupyterManager().deleteFile(workspaceId, body.data.path)
 
     res.sendStatus(204)
   } catch (err) {

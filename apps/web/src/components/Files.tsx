@@ -150,7 +150,7 @@ file`
 
   const onRemove = useCallback(
     (file: BrieferFile) => {
-      del(file.path)
+      del(file.relCwdPath)
     },
     [del]
   )
@@ -298,19 +298,21 @@ file`
                   role="list"
                   className="flex-1 divide-y divide-solid overflow-y-scroll"
                 >
-                  {actualFiles.map((file) => (
-                    <li key={file.path}>
-                      <FileItem
-                        workspaceId={props.workspaceId}
-                        file={file}
-                        onUseInPython={onUseInPython}
-                        onUseInSQL={onUseInSQL}
-                        onDelete={onRemove}
-                        isDeleting={deleting[file.path]}
-                        canUse={props.yDoc !== undefined}
-                      />
-                    </li>
-                  ))}
+                  {actualFiles
+                    .filter((f) => !f.isDirectory)
+                    .map((file) => (
+                      <li key={file.path}>
+                        <FileItem
+                          workspaceId={props.workspaceId}
+                          file={file}
+                          onUseInPython={onUseInPython}
+                          onUseInSQL={onUseInSQL}
+                          onDelete={onRemove}
+                          isDeleting={deleting[file.path]}
+                          canUse={props.yDoc !== undefined}
+                        />
+                      </li>
+                    ))}
                 </ul>
               ) : (
                 !isDragActive && (

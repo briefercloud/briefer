@@ -39,14 +39,11 @@ services:
     command:
       - 'sh'
       - '-c'
-      - |
-        chgrp briefer /home/jupyteruser && \
-        chmod 775 /home/jupyteruser && \
-        jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6
+      - 'jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400'
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
     volumes:
-      - shared_data:/home/jupyteruser
+      - jupyter:/home/jupyteruser
     restart: always
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
@@ -114,9 +111,6 @@ services:
       JUPYTER_HOST: 'jupyter_server'
       JUPYTER_PORT: 8888
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
-      JUPYTER_FILES_DIR: '/home/jupyteruser'
-    volumes:
-      - shared_data:/home/jupyteruser
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:8080/readyz || exit 1']
       interval: 5s
@@ -134,5 +128,5 @@ services:
         condition: service_healthy
 
 volumes:
-  shared_data:
+  jupyter:
   postgres_data:

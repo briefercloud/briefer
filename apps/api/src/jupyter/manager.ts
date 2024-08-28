@@ -1,29 +1,31 @@
-import fs from 'fs'
-import fsp from 'fs/promises'
-import { IOServer } from '../../websocket/index.js'
+import { IOServer } from '../websocket/index.js'
 import { WebSocket } from 'ws'
 import services from '@jupyterlab/services'
 import {
   serialize,
   deserialize,
 } from '@jupyterlab/services/lib/kernel/serialize.js'
-import { GetFileResult, JupyterManager } from '../index.js'
+import { GetFileResult, IJupyterManager } from './index.js'
 import path from 'path'
 import { Readable } from 'stream'
 import prisma from '@briefer/database'
-import { broadcastEnvironmentStatus } from '../../websocket/workspace/environment.js'
-import { logger } from '../../logger.js'
+import { broadcastEnvironmentStatus } from '../websocket/workspace/environment.js'
+import { logger } from '../logger.js'
+import { BrieferJupyterExtension } from './extension.js'
+import { BrieferFile } from '@briefer/types'
 
-export class ComposeJupyterManager implements JupyterManager {
+export class JupyterManager implements IJupyterManager {
   private watchTimeout: NodeJS.Timeout | null = null
   private socketServer: IOServer | null = null
+  private jupyterExtension: BrieferJupyterExtension
 
   public constructor(
     private readonly host: string,
     private readonly port: number,
-    private readonly token: string,
-    private readonly filesDir: string
-  ) {}
+    private readonly token: string
+  ) {
+    this.jupyterExtension = new BrieferJupyterExtension(host, port, token)
+  }
 
   public async start(socketServer: IOServer): Promise<void> {
     this.socketServer = socketServer
@@ -159,31 +161,43 @@ export class ComposeJupyterManager implements JupyterManager {
     _workspaceId: string,
     fileName: string
   ): Promise<boolean> {
-    try {
-      await fsp.access(this.getFilepath(fileName))
-      return true
-    } catch (err) {
-      return false
+    await this.ensureRunning()
+    const result = await this.jupyterExtension.statFile(
+      await this.getFilepath(fileName)
+    )
+    if (result._tag === 'error') {
+      if (result.reason === 'not-found') {
+        return false
+      }
+
+      throw new Error(`Failed to stat file: ${result.reason}`)
     }
+
+    return true
   }
 
   public async getFile(
     _workspaceId: string,
     fileName: string
   ): Promise<GetFileResult | null> {
-    const actualPath = this.getFilepath(fileName)
+    await this.ensureRunning()
+    const actualPath = await this.getFilepath(fileName)
 
-    const stat = await fsp.stat(actualPath)
-    const size = stat.size
+    const result = await this.jupyterExtension.readFile(actualPath)
+    if (result._tag === 'error') {
+      if (result.reason === 'not-found') {
+        return null
+      }
 
-    const stream = fs.createReadStream(actualPath)
+      throw new Error(`Failed to read file: ${result.reason}`)
+    }
 
     return {
-      size,
-      stream,
+      size: result.size,
+      stream: result.stream,
       exitCode: new Promise<number>((resolve, reject) => {
-        stream.on('error', reject)
-        stream.on('finish', () => {
+        result.stream.on('error', reject)
+        result.stream.on('finish', () => {
           resolve(0)
         })
       }),
@@ -193,21 +207,62 @@ export class ComposeJupyterManager implements JupyterManager {
   public async putFile(
     _workspaceId: string,
     fileName: string,
+    replace: boolean,
     file: Readable
-  ): Promise<void> {
-    const stream = fs.createWriteStream(this.getFilepath(fileName))
-    file.pipe(stream)
-    await new Promise<void>((resolve, reject) => {
-      stream.on('error', reject)
-      stream.on('finish', resolve)
-    })
+  ): Promise<'success' | 'already-exists'> {
+    await this.ensureRunning()
+    const statResult = await this.jupyterExtension.statFile(
+      await this.getFilepath(fileName)
+    )
+    if (statResult._tag === 'error' && statResult.reason !== 'not-found') {
+      throw new Error(`Failed to stat file: ${statResult.reason}`)
+    }
+
+    if (statResult._tag === 'success' && !replace) {
+      return 'already-exists'
+    }
+
+    const result = await this.jupyterExtension.writeFile(
+      await this.getFilepath(fileName),
+      file
+    )
+    if (result._tag === 'error') {
+      throw new Error(`Failed to write file: ${result.reason}`)
+    }
+
+    return 'success'
   }
 
   public async deleteFile(
     _workspaceId: string,
     fileName: string
   ): Promise<void> {
-    await fsp.unlink(this.getFilepath(fileName))
+    await this.ensureRunning()
+    const result = await this.jupyterExtension.deleteFile(
+      await this.getFilepath(fileName)
+    )
+    if (result._tag === 'error') {
+      throw new Error(`Failed to delete file: ${result.reason}`)
+    }
+  }
+
+  public async listFiles(_workspaceId: string): Promise<BrieferFile[]> {
+    await this.ensureRunning()
+    const cwd = await this.jupyterExtension.getCWD()
+    const result = await this.jupyterExtension.listFiles(cwd)
+    if (result._tag === 'error') {
+      throw new Error(`Failed to list files: ${result.reason}`)
+    }
+
+    return result.files.map((f) => ({
+      name: f.name,
+      path: f.path,
+      relCwdPath: path.relative(cwd, f.path),
+      size: f.size,
+      mimeType: f.mimeType ?? null,
+      createdAt: f.created,
+      isDirectory: f.isDirectory,
+    }))
   }
 
   public async getServerSettings(
@@ -239,7 +294,8 @@ export class ComposeJupyterManager implements JupyterManager {
     return serverSettings
   }
 
-  private getFilepath(fileName: string): string {
-    return path.join(this.filesDir, path.join('/', fileName))
+  private async getFilepath(fileName: string): Promise<string> {
+    const cwd = await this.jupyterExtension.getCWD()
+    return path.join(cwd, path.join('/', fileName))
   }
 }

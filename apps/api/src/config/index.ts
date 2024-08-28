@@ -1,10 +1,10 @@
 import dotenv from 'dotenv'
-import getComposeConfig, { IComposeConfig } from './compose.js'
+import getComposeConfig, { ISimpleConfig } from './simple.js'
 import { IBaseConfig } from './base.js'
 
 dotenv.config()
 
-export type BrieferConfig = IBaseConfig & IComposeConfig
+export type BrieferConfig = IBaseConfig & ISimpleConfig
 
 export function getVar(key: string, allowEmpty?: boolean) {
   const value = process.env[key]

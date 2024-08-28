@@ -741,6 +741,7 @@ export const BrieferFile = z.object({
   size: z.number().int().nonnegative(),
   mimeType: z.string().nullish(),
   createdAt: z.number().nonnegative(),
+  isDirectory: z.boolean(),
 })
 
 export type BrieferFile = z.infer<typeof BrieferFile>
