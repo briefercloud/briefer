@@ -6,8 +6,6 @@ export type {
   Document,
   Workspace,
   User,
-  QueryResult,
-  QueryResultRow,
   YjsDocument,
   UserWorkspace,
   YjsAppDocument,

@@ -32,10 +32,8 @@ model Document {
   yjsDocument        YjsDocument?
   yjsAppDocuments    YjsAppDocument[]
   comments           Comment[]
-  queryResults       QueryResult[]
   Favorite           Favorite[]
   executionSchedules ExecutionSchedule[]
-  QueryExecution     QueryExecution[]
 }
 
 model YjsDocument {
@@ -80,41 +78,6 @@ enum DataSourceType {
   psql
   redshift
   bigquery
-}
-
-model QueryExecution {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  documentId     String         @db.Uuid
-  blockId        String         @db.Uuid
-  jobId          String         @db.Uuid
-  dataSourceId   String         @db.Uuid
-  dataSourceType DataSourceType
-  createdAt      DateTime       @default(now())
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-}
-
-model QueryResult {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  documentId String   @db.Uuid
-  executedAt DateTime @default(now())
-  columns    String[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
-
-  document Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  rows     QueryResultRow[]
-}
-
-model QueryResultRow {
-  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  queryResultId String   @db.Uuid
-  order         Int
-  row           Json
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
-
-  queryResult QueryResult @relation(fields: [queryResultId], references: [id], onDelete: Cascade)
 }
 
 enum ConnStatus {
