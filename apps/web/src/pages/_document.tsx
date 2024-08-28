@@ -42,12 +42,6 @@ export default function Document() {
         <title>Briefer</title>
         <Main />
         <NextScript />
-
-        <script
-          id="warmly-script-loader"
-          src="https://opps-widget.getwarmly.com/warmly.js?clientId=368dc60a36107fc6d9c72069f20c4b06"
-          defer
-        ></script>
       </body>
     </Html>
   )
