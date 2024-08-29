@@ -33,6 +33,14 @@ export class JupyterManager implements IJupyterManager {
     )
   }
 
+  private get baseURL(): string {
+    if (this.port === null) {
+      return `${this.protocol}://${this.host}`
+    }
+
+    return `${this.protocol}://${this.host}:${this.port}`
+  }
+
   public async start(socketServer: IOServer): Promise<void> {
     this.socketServer = socketServer
     const watch = async () => {
@@ -54,11 +62,10 @@ export class JupyterManager implements IJupyterManager {
           })
         }
 
-        const serverSettings = await this.getServerSettings(workspace.id)
-        const url = `${serverSettings.baseUrl}/api/status`
+        const url = `${this.baseURL}/api/status`
         const options = {
           headers: {
-            Authorization: `token ${serverSettings.token}`,
+            Authorization: `token ${this.token}`,
           },
         }
 
@@ -130,7 +137,7 @@ export class JupyterManager implements IJupyterManager {
   }
 
   private async getKernels() {
-    const res = await fetch(`http://${this.host}:${this.port}/api/kernels`, {
+    const res = await fetch(`${this.baseURL}/api/kernels`, {
       headers: {
         Authorization: `token ${this.token}`,
       },
@@ -140,15 +147,12 @@ export class JupyterManager implements IJupyterManager {
   }
 
   private async restartKernel(kernelId: string) {
-    const res = await fetch(
-      `http://${this.host}:${this.port}/api/kernels/${kernelId}/restart`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `token ${this.token}`,
-        },
-      }
-    )
+    const res = await fetch(`${this.baseURL}/api/kernels/${kernelId}/restart`, {
+      method: 'POST',
+      headers: {
+        Authorization: `token ${this.token}`,
+      },
+    })
 
     if (!res.ok) {
       throw new Error(
@@ -274,12 +278,15 @@ export class JupyterManager implements IJupyterManager {
   public async getServerSettings(
     _workspaceId: string
   ): Promise<services.ServerConnection.ISettings> {
+    const wsUrl = this.baseURL.replace(
+      this.protocol,
+      this.protocol === 'https' ? 'wss' : 'ws'
+    )
+
     const baseConfig = {
-      baseUrl: `${this.protocol}://${this.host}:${this.port}`,
-      appUrl: `${this.protocol}://${this.host}:${this.port}`,
-      wsUrl: `${this.protocol === 'https' ? 'wss' : 'ws'}://${this.host}:${
-        this.port
-      }`,
+      baseUrl: this.baseURL,
+      appUrl: this.baseURL,
+      wsUrl,
     }
 
     const serverSettings: services.ServerConnection.ISettings = {
