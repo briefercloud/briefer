@@ -54,6 +54,7 @@ describe('SQLExecutor', () => {
       ensureRunning: jest.fn(),
       isRunning: jest.fn(),
       fileExists: jest.fn(),
+      listFiles: jest.fn(),
       getFile: jest.fn(),
       putFile: jest.fn(),
       deleteFile: jest.fn(),
