@@ -24,6 +24,7 @@ import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { PivotTableExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 interface Props {
   workspaceId: string
@@ -45,6 +46,8 @@ interface Props {
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   dashboardMode: 'live' | 'editing' | 'none'
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function PivotTableBlock(props: Props) {
   const attrs = getPivotTableAttributes(props.block, props.blocks)
@@ -294,6 +297,15 @@ function PivotTableBlock(props: Props) {
     [props.block, props.onRun]
   )
 
+  const { setInteractionState } = useEditorAwareness()
+  const onClickWithin = useCallback(() => {
+    setInteractionState({
+      cursorBlockId: attrs.id,
+      scrollIntoView: false,
+      mode: 'insert',
+    })
+  }, [attrs.id, setInteractionState])
+
   if (props.dashboardMode !== 'none') {
     if (!attrs.result) {
       return (
@@ -334,11 +346,14 @@ function PivotTableBlock(props: Props) {
 
   return (
     <div
+      onClick={onClickWithin}
       className={clsx(
-        'relative group/block bg-white printable-block h-full rounded-md border border-gray-200',
+        'relative group/block bg-white printable-block h-full rounded-md border',
         props.isBlockHiddenInPublished && 'border-dashed',
-        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md'
+        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+        props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
       )}
+      data-block-id={attrs.id}
     >
       <div className="h-full">
         <div className="py-3">

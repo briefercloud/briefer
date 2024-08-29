@@ -5,6 +5,8 @@ import { editor, KeyMod, KeyCode } from 'monaco-editor'
 import { MonacoBinding } from 'y-monaco'
 import useSideBar from './useSideBar'
 import { updateYText } from '@briefer/editor'
+import { useHotkeysContext } from 'react-hotkeys-hook'
+import useEditorAwareness from './useEditorAwareness'
 
 const MAX_EDITOR_CHARACTERS = 15000
 
@@ -44,12 +46,15 @@ export const diffEditorOptions: editor.IStandaloneDiffEditorConstructionOptions 
   }
 
 function useCodeEditor(
+  blockId: string,
   source: Y.Text,
   diffSource: Y.Text | null,
   onRun: () => void,
   isLoading: boolean,
   readOnly: boolean,
-  onOpenAIForm?: () => void
+  onOpenAIForm?: () => void,
+  selectBelow?: () => void,
+  insertBelow?: () => void
 ) {
   const [isSideBarOpen] = useSideBar()
   const [editor, setEditor] = useState<editor.IStandaloneCodeEditor>()
@@ -70,21 +75,59 @@ function useCodeEditor(
     [setDiffEditor]
   )
 
+  const { interactionState, setInteractionState } = useEditorAwareness()
   const [isEditorFocused, setIsEditorFocused] = useState(false)
   useEffect(() => {
     const disposeFocus = editor?.onDidFocusEditorText(() => {
       setIsEditorFocused(true)
+      setInteractionState({
+        cursorBlockId: null,
+        mode: 'normal',
+        scrollIntoView: false,
+      })
     })
 
     const disposeBlur = editor?.onDidBlurEditorText(() => {
       setIsEditorFocused(false)
+      setInteractionState({
+        cursorBlockId: blockId,
+        mode: 'normal',
+        scrollIntoView: false,
+      })
     })
 
     return () => {
       disposeFocus?.dispose()
       disposeBlur?.dispose()
     }
-  }, [editor])
+  }, [editor, blockId, setInteractionState])
+
+  useEffect(() => {
+    if (!editor) {
+      return
+    }
+
+    if (
+      interactionState.cursorBlockId === blockId &&
+      interactionState.mode === 'insert' &&
+      !interactionState.scrollIntoView
+    ) {
+      const scrollView = document.getElementById('editor-scrollview')
+      editor.focus()
+      setIsEditorFocused(true)
+
+      if (!scrollView) {
+        return
+      }
+
+      const currentLine = editor.getPosition()?.lineNumber ?? 0
+      const top = editor.getTopForLineNumber(currentLine)
+      scrollView.scrollBy({
+        top: top - scrollView.getBoundingClientRect().top - 80,
+        behavior: 'smooth',
+      })
+    }
+  }, [interactionState, blockId, editor])
 
   useEffect(() => {
     const color = isLoading ? '#f3f4f6' : '#ffffff'
@@ -114,12 +157,45 @@ function useCodeEditor(
       return
     }
 
+    editor.addAction({
+      id: 'run-select-below',
+      label: 'Blur Editor',
+      keybindings: [KeyCode.Escape],
+      run: () => {
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
+      },
+    })
+
     if (!readOnly) {
       editor.addAction({
-        id: 'make-query',
-        label: 'Make Query',
+        id: 'run-block',
+        label: 'Run block',
         keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
         run: onRun,
+      })
+
+      editor.addAction({
+        id: 'run-and-select-below',
+        label: 'Run block and select below',
+        keybindings: [KeyMod.Shift | KeyCode.Enter],
+        run: () => {
+          onRun()
+          selectBelow?.()
+        },
+      })
+
+      editor.addAction({
+        id: 'run-and-insert-below',
+        label: 'Run block and insert below',
+
+        keybindings: [KeyMod.Alt | KeyCode.Enter],
+        run: () => {
+          console.log('run-and-insert-below')
+          onRun()
+          insertBelow?.()
+        },
       })
 
       if (onOpenAIForm) {
@@ -132,9 +208,23 @@ function useCodeEditor(
       }
     } else {
       editor.addAction({
-        id: 'make-query',
-        label: 'Make Query',
+        id: 'run-block',
+        label: 'Run block',
         keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
+        run: () => {},
+      })
+
+      editor.addAction({
+        id: 'run-and-select-below',
+        label: 'Run block and select below',
+        keybindings: [KeyMod.Shift | KeyCode.Enter],
+        run: () => {},
+      })
+
+      editor.addAction({
+        id: 'run-and-insert-below',
+        label: 'Run block and insert below',
+        keybindings: [KeyMod.Alt | KeyCode.Enter],
         run: () => {},
       })
 

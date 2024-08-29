@@ -12,6 +12,7 @@ import {
 import Spin from '@/components/Spin'
 import { CalendarIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid'
 import { ClockIcon } from '@heroicons/react/20/solid'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 function invalidValueErrorMessage(
   status: 'invalid-value' | 'invalid-variable-and-value' | 'unexpected-error'
@@ -31,6 +32,7 @@ function invalidValueErrorMessage(
 }
 
 interface Props {
+  blockId: string
   value: DateInputValue
   dateType: 'date' | 'datetime'
   newValue: Y.Text
@@ -43,6 +45,9 @@ interface Props {
   isSaving: boolean
   isEnqueued: boolean
   isEditable: boolean
+  belongsToMultiTabGroup: boolean
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function DateInputBlockInput(props: Props) {
   const isLoading = props.isSaving || props.isEnqueued
@@ -112,6 +117,37 @@ function DateInputBlockInput(props: Props) {
     [onChangeNewTextValue, props.dateType]
   )
 
+  const innerRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (props.isCursorWithin && props.isCursorInserting) {
+      innerRef.current?.focus()
+    }
+  }, [props.isCursorWithin, props.isCursorInserting])
+
+  const unfocusOnEscape = useCallback((e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      innerRef.current?.blur()
+      setIsPickerOpen(false)
+    }
+  }, [])
+
+  const { setInteractionState } = useEditorAwareness()
+  const onFocus = useCallback(() => {
+    setInteractionState({
+      mode: 'insert',
+      cursorBlockId: props.blockId,
+      scrollIntoView: false,
+    })
+  }, [setInteractionState, props.blockId])
+
+  const onBlur = useCallback(() => {
+    setInteractionState((prev) => ({
+      ...prev,
+      mode: 'normal',
+      scrollIntoView: false,
+    }))
+  }, [setInteractionState])
+
   return (
     <div className="relative">
       <ReactInputMask
@@ -121,20 +157,29 @@ function DateInputBlockInput(props: Props) {
         onChange={onChangeEvent}
         onKeyUp={onKeyUp}
         onClick={onClick}
+        onFocus={onFocus}
+        onBlur={onBlur}
       >
         {
           // @ts-ignore
           (inputProps: any) => (
             <input
               {...inputProps}
+              ref={innerRef}
               type="text"
               className={clsx(
                 'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white appearance-none',
                 props.error
                   ? 'ring-red-200 focus:ring-red-200'
-                  : 'ring-gray-200 focus:ring-primary-200',
+                  : 'focus:ring-primary-200',
+                props.isCursorWithin &&
+                  !props.isCursorInserting &&
+                  !props.belongsToMultiTabGroup
+                  ? 'ring-blue-400'
+                  : 'ring-gray-200',
                 (isLoading || props.error) && 'bg-none' // this removes the caret
               )}
+              onKeyDown={unfocusOnEscape}
             />
           )
         }

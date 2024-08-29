@@ -11,10 +11,11 @@ import {
   updateInputVariable,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import Spin from '@/components/Spin'
 import { ConnectDragPreview } from 'react-dnd'
 import { ClockIcon } from '@heroicons/react/20/solid'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 function errorMessage(
   error: InputBlock['variable']['error'],
@@ -61,8 +62,11 @@ interface Props {
   isApp: boolean
   isDashboard: boolean
   onRun: (block: Y.XmlElement<InputBlock>) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function InputBlock(props: Props) {
+  const blockId = props.block.getAttribute('id')
   const attrs = getInputAttributes(props.block, props.blocks)
 
   const onChangeLabel = useCallback(
@@ -78,12 +82,6 @@ function InputBlock(props: Props) {
     },
     [props.block]
   )
-
-  const onBlurValue = useCallback(() => {
-    if (attrs.value.newValue !== attrs.value.value) {
-      props.onRun(props.block)
-    }
-  }, [props.block, attrs, props.onRun])
 
   const onChangeVariable = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,12 +122,53 @@ function InputBlock(props: Props) {
   )
   const inputValueExecStatus = getInputValueExecStatus(props.block)
 
+  const selectRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (props.isCursorWithin && props.isCursorInserting) {
+      selectRef.current?.focus()
+    }
+  }, [props.isCursorWithin, props.isCursorInserting])
+
+  const { setInteractionState } = useEditorAwareness()
+  const onFocus = useCallback(() => {
+    setInteractionState({
+      mode: 'insert',
+      cursorBlockId: blockId ?? '',
+      scrollIntoView: false,
+    })
+  }, [blockId, setInteractionState])
+
+  const onBlur = useCallback(() => {
+    if (attrs.value.newValue !== attrs.value.value) {
+      props.onRun(props.block)
+    }
+
+    setInteractionState((prev) => ({
+      ...prev,
+      mode: 'normal',
+      scrollIntoView: false,
+    }))
+  }, [props.block, props.onRun, attrs.value])
+
+  const unfocusOnEscape = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Escape') {
+        selectRef.current?.blur()
+      }
+    },
+    []
+  )
+
   return (
     <div
       className={clsx(
         'w-full',
-        props.belongsToMultiTabGroup && 'border border-gray-200 p-4'
+        props.belongsToMultiTabGroup && 'border p-4 rounded-tr-md rounded-b-md',
+        props.isCursorWithin && !props.isCursorInserting
+          ? 'border-blue-400'
+          : 'border-gray-200'
       )}
+      data-block-id={blockId}
     >
       <div
         className={!props.isDashboard ? 'w-1/2' : ''}
@@ -203,16 +242,24 @@ function InputBlock(props: Props) {
         </div>
         <div className="relative">
           <input
+            ref={selectRef}
+            onFocus={onFocus}
+            onBlur={onBlur}
+            onKeyDown={unfocusOnEscape}
             className={clsx(
               'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
               attrs.value.error
                 ? 'ring-red-200 focus:ring-red-200'
-                : 'ring-gray-200 focus:ring-primary-200'
+                : 'focus:ring-primary-200',
+              props.isCursorWithin &&
+                !props.isCursorInserting &&
+                !props.belongsToMultiTabGroup
+                ? 'ring-blue-400'
+                : 'ring-gray-200'
             )}
             type="text"
             value={attrs.value.newValue}
             onChange={onChangeValue}
-            onBlur={onBlurValue}
             disabled={
               inputValueExecStatus !== 'idle' ||
               (!props.isEditable && !props.isApp)

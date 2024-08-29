@@ -14,12 +14,13 @@ import {
   dropdownInputRequestSaveVariable,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import Spin from '@/components/Spin'
 import { ConnectDragPreview } from 'react-dnd'
 import { ClockIcon } from '@heroicons/react/20/solid'
 import DropdownSettings from './dropdownSettings'
 import { DataFrame } from '@briefer/types'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -68,8 +69,11 @@ interface Props {
   isDashboard: boolean
   dataframes: Y.Map<DataFrame>
   onRun: (block: Y.XmlElement<DropdownInputBlock>) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function DropdownInputBlock(props: Props) {
+  const blockId = props.block.getAttribute('id')
   const attrs = getDropdownInputAttributes(props.block, props.blocks)
 
   const onChangeLabel = useCallback(
@@ -134,12 +138,49 @@ function DropdownInputBlock(props: Props) {
     dropdownInputRequestSaveVariable(props.block)
   }, [props.block])
 
+  const selectRef = useRef<HTMLSelectElement>(null)
+  useEffect(() => {
+    if (props.isCursorWithin && props.isCursorInserting) {
+      selectRef.current?.focus()
+    }
+  }, [props.isCursorWithin, props.isCursorInserting])
+
+  const { setInteractionState } = useEditorAwareness()
+  const onFocus = useCallback(() => {
+    setInteractionState({
+      mode: 'insert',
+      cursorBlockId: blockId ?? '',
+      scrollIntoView: false,
+    })
+  }, [blockId, setInteractionState])
+
+  const onBlur = useCallback(() => {
+    setInteractionState((prev) => ({
+      ...prev,
+      mode: 'normal',
+      scrollIntoView: false,
+    }))
+  }, [setInteractionState])
+
+  const unfocusOnEscape = useCallback(
+    (e: React.KeyboardEvent<HTMLSelectElement>) => {
+      if (e.key === 'Escape') {
+        selectRef.current?.blur()
+      }
+    },
+    []
+  )
+
   return (
     <div
       className={clsx(
         'w-full',
-        props.belongsToMultiTabGroup && 'border border-gray-200 p-4'
+        props.belongsToMultiTabGroup && 'border p-4 rounded-tr-md rounded-b-md',
+        props.isCursorWithin && !props.isCursorInserting
+          ? 'border-blue-400'
+          : 'border-gray-200'
       )}
+      data-block-id={blockId}
     >
       <div
         className={!props.isDashboard ? 'w-1/2' : ''}
@@ -224,11 +265,20 @@ function DropdownInputBlock(props: Props) {
         <div className="flex flex-col space-y-1">
           <div className="relative">
             <select
+              ref={selectRef}
+              onFocus={onFocus}
+              onBlur={onBlur}
+              onKeyDown={unfocusOnEscape}
               className={clsx(
                 'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
                 attrs.value.error
                   ? 'ring-red-200 focus:ring-red-200'
-                  : 'ring-gray-200 focus:ring-primary-200',
+                  : 'focus:ring-primary-200',
+                props.isCursorWithin &&
+                  !props.isCursorInserting &&
+                  !props.belongsToMultiTabGroup
+                  ? 'ring-blue-400'
+                  : 'ring-gray-200',
                 (isLoadingDropdownInputValue || attrs.value.error) && 'bg-none' // this removes the caret
               )}
               value={attrs.value.newValue ?? ''}

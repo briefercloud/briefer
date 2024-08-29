@@ -55,6 +55,7 @@ import { APIDataSources } from '@/hooks/useDatasources'
 import { DataSourceType } from '@/components/DataSourcesList'
 import { useRouter } from 'next/router'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -75,6 +76,10 @@ interface Props {
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   onSchemaExplorer: (dataSourceId: string | null) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
+  selectBelow: () => void
+  insertBelow: () => void
 }
 
 function SQLBlock(props: Props) {
@@ -141,12 +146,15 @@ function SQLBlock(props: Props) {
     reLayout,
     acceptDiffEditor,
   } = useCodeEditor(
+    blockId,
     getSQLSource(props.block),
     getSQLAISuggestions(props.block),
     onRun,
     statusIsDisabled,
     !props.isEditable || (dataSourceId === null && !isFileDataSource),
-    onToggleEditWithAIPromptOpen
+    onToggleEditWithAIPromptOpen,
+    props.selectBelow,
+    props.insertBelow
   )
 
   const onCloseEditWithAIPrompt = useCallback(() => {
@@ -264,8 +272,11 @@ function SQLBlock(props: Props) {
 
   useEffect(() => {
     reLayout()
-    focusEditor()
-  }, [reLayout, aiSuggestions])
+
+    if (props.isCursorWithin && !props.isCursorInserting) {
+      focusEditor()
+    }
+  }, [reLayout, aiSuggestions, props.isEditable])
 
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -296,6 +307,15 @@ function SQLBlock(props: Props) {
   const onSchemaExplorer = useCallback(() => {
     props.onSchemaExplorer(dataSourceId)
   }, [props.onSchemaExplorer, dataSourceId])
+
+  const { setInteractionState } = useEditorAwareness()
+  const onClickWithin = useCallback(() => {
+    setInteractionState({
+      cursorBlockId: blockId ?? null,
+      scrollIntoView: false,
+      mode: 'normal',
+    })
+  }, [blockId, setInteractionState])
 
   if (props.dashboardMode !== 'none') {
     if (!result) {
@@ -330,15 +350,22 @@ function SQLBlock(props: Props) {
   const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
 
   return (
-    <div className="relative group/block">
+    <div
+      className="relative group/block"
+      onClick={onClickWithin}
+      data-block-id={blockId}
+    >
       <div
         className={clsx(
           'rounded-md border',
           props.isBlockHiddenInPublished && 'border-dashed',
           props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-          isEditorFocused && props.isEditable
-            ? 'border-ceramic-400 shadow-sm'
-            : 'border-gray-200'
+          {
+            'border-ceramic-400 shadow-sm': isEditorFocused && props.isEditable,
+            'border-blue-400 shadow-sm':
+              props.isCursorWithin && !props.isCursorInserting,
+            'border-gray-200': !isEditorFocused && !props.isCursorWithin,
+          }
         )}
       >
         <div

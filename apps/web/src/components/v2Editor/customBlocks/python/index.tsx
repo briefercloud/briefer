@@ -43,6 +43,7 @@ import { useMonacoContext } from '@/components/MonacoProvider'
 import { PythonOutputs } from './PythonOutput'
 import ScrollBar from '@/components/ScrollBar'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 interface Props {
   document: ApiDocument
@@ -57,6 +58,10 @@ interface Props {
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
+  selectBelow?: () => void
+  insertBelow?: () => void
 }
 function PythonBlock(props: Props) {
   const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
@@ -102,6 +107,8 @@ function PythonBlock(props: Props) {
     togglePythonEditWithAIPromptOpen(props.block)
   }, [props.block])
 
+  const blockId = getBaseAttributes(props.block).id
+
   const {
     editor,
     isEditorFocused,
@@ -114,12 +121,15 @@ function PythonBlock(props: Props) {
     reLayout,
     acceptDiffEditor,
   } = useCodeEditor(
+    blockId,
     getPythonSource(props.block),
     getPythonAISuggestions(props.block),
     onRun,
     statusIsDisabled,
     !props.isEditable,
-    onToggleEditWithAIPromptOpen
+    onToggleEditWithAIPromptOpen,
+    props.selectBelow,
+    props.insertBelow
   )
 
   const source = props.block.getAttribute('source')
@@ -183,7 +193,10 @@ function PythonBlock(props: Props) {
 
   useEffect(() => {
     reLayout()
-    focusEditor()
+
+    if (props.isCursorWithin && !props.isCursorInserting) {
+      focusEditor()
+    }
   }, [reLayout, aiSuggestions])
 
   const diffButtonsVisible =
@@ -195,7 +208,6 @@ function PythonBlock(props: Props) {
   const [, { setModelDocumentBlock, removeModelDocumentBlock }] =
     useMonacoContext()
 
-  const blockId = getBaseAttributes(props.block).id
   useEffect(() => {
     const model = editor?.getModel()
     if (!model) {
@@ -219,6 +231,15 @@ function PythonBlock(props: Props) {
     props.onToggleIsBlockHiddenInPublished(blockId)
   }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
+  const { setInteractionState } = useEditorAwareness()
+  const onClickWithin = useCallback(() => {
+    setInteractionState({
+      cursorBlockId: blockId ?? null,
+      scrollIntoView: false,
+      mode: 'normal',
+    })
+  }, [blockId, setInteractionState])
+
   if (props.dashboardPlace) {
     return (
       <PythonOutputs
@@ -234,15 +255,22 @@ function PythonBlock(props: Props) {
   }
 
   return (
-    <div className="bg-white relative group/block">
+    <div
+      className="bg-white relative group/block"
+      onClick={onClickWithin}
+      data-block-id={blockId}
+    >
       <div
         className={clsx(
           'rounded-md border',
           props.isBlockHiddenInPublished && 'border-dashed',
           props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-          isEditorFocused && props.isEditable
-            ? 'border-ceramic-400 shadow-sm'
-            : 'border-gray-200'
+          {
+            'border-ceramic-400 shadow-sm': isEditorFocused && props.isEditable,
+            'border-blue-400 shadow-sm':
+              props.isCursorWithin && !props.isCursorInserting,
+            'border-gray-200': !isEditorFocused && !props.isCursorWithin,
+          }
         )}
       >
         <div

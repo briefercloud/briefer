@@ -60,6 +60,8 @@ interface Props {
   onQueryUsage: (filename: string, type: string) => void
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function FileUploadBlock(props: Props) {
   const [state, setState] = useState<FileUploadState>({
@@ -515,7 +517,11 @@ function FileUploadBlock(props: Props) {
     state._tag === 'uploading'
 
   return (
-    <div className="group/block relative" {...rootProps}>
+    <div
+      className="group/block relative"
+      {...rootProps}
+      data-block-id={blockId}
+    >
       {showTable ? (
         <FilesTable
           title={title}
@@ -543,9 +549,10 @@ function FileUploadBlock(props: Props) {
         <div
           className={clsx(
             'rounded-md',
-            props.hasMultipleTabs
-              ? 'p-2 border border-gray-200 rounded-tl-none'
-              : ''
+            props.hasMultipleTabs ? 'p-2 border rounded-tl-none' : '',
+            props.isCursorWithin && !props.isCursorInserting
+              ? 'border-blue-400 shadow-sm'
+              : 'border-gray-200'
           )}
         >
           <EmptyUploadZone isDragActive={isDragActive} />

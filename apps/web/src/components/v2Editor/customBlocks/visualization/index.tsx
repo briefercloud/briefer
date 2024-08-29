@@ -37,6 +37,7 @@ import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 function getValidFilters(
   filters: VisualizationFilter[],
@@ -65,6 +66,8 @@ interface Props {
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function VisualizationBlock(props: Props) {
   const dataframe = getDataframe(props.block, props.dataframes)
@@ -378,6 +381,15 @@ function VisualizationBlock(props: Props) {
     props.onToggleIsBlockHiddenInPublished(blockId)
   }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
+  const { setInteractionState } = useEditorAwareness()
+  const onClickWithin = useCallback(() => {
+    setInteractionState({
+      cursorBlockId: blockId ?? null,
+      scrollIntoView: false,
+      mode: 'insert',
+    })
+  }, [blockId, setInteractionState])
+
   if (props.isDashboard) {
     return (
       <VisualizationView
@@ -403,11 +415,14 @@ function VisualizationBlock(props: Props) {
 
   return (
     <div
+      onClick={onClickWithin}
       className={clsx(
-        'relative group/block bg-white printable-block h-full rounded-md border border-gray-200',
+        'relative group/block bg-white printable-block h-full rounded-md border',
         props.isBlockHiddenInPublished && 'border-dashed',
-        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md'
+        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+        props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
       )}
+      data-block-id={blockId}
     >
       <div className="h-full">
         <div className="py-3">

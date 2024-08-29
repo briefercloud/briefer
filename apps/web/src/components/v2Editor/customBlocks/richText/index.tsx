@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { EditorContent, useEditor } from '@tiptap/react'
+import { EditorContent, Extension, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Collaboration from '@tiptap/extension-collaboration'
 import Underline from '@tiptap/extension-underline'
@@ -12,11 +12,12 @@ import Color from '@tiptap/extension-color'
 import MathExtension from '@aarkue/tiptap-math-extension'
 import type { RichTextBlock } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { ConnectDragPreview } from 'react-dnd'
 import ImageExtension from './ImageExtension'
 
 import 'katex/dist/katex.min.css'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 const useBlockEditor = ({
   content,
@@ -67,6 +68,15 @@ const useBlockEditor = ({
         MathExtension.configure({
           evaluation: false,
         }),
+        Extension.create({
+          name: 'brieferKeyboardShortcuts',
+          addKeyboardShortcuts: () => ({
+            Escape: (args) => {
+              args.editor.commands.blur()
+              return true
+            },
+          }),
+        }),
       ],
       onUpdate({ editor }) {
         const content = editor.getJSON()?.content
@@ -95,6 +105,8 @@ interface Props {
   isEditable: boolean
   dragPreview: ConnectDragPreview | null
   isDashboard: boolean
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 const RichTextBlock = (props: Props) => {
   const id = props.block.getAttribute('id')!
@@ -106,11 +118,39 @@ const RichTextBlock = (props: Props) => {
     [props.block]
   )
 
+  const { setInteractionState } = useEditorAwareness()
+
   const { editor } = useBlockEditor({
     content,
     setTitle,
     isEditable: props.isEditable,
   })
+
+  useEffect(() => {
+    if (editor && props.isCursorInserting && props.isCursorWithin) {
+      editor.commands.focus()
+    }
+  }, [editor, props.isCursorInserting, props.isCursorWithin])
+
+  useEffect(() => {
+    if (editor) {
+      editor.on('focus', () => {
+        setInteractionState({
+          cursorBlockId: id,
+          mode: 'insert',
+          scrollIntoView: false,
+        })
+      })
+
+      editor.on('blur', () => {
+        setInteractionState({
+          cursorBlockId: id,
+          mode: 'normal',
+          scrollIntoView: false,
+        })
+      })
+    }
+  }, [editor, id, setInteractionState])
 
   return (
     <div
@@ -119,15 +159,31 @@ const RichTextBlock = (props: Props) => {
         props.dragPreview?.(d)
       }}
       className={clsx(
+        'ring-outline ring-offset-4',
         props.isDashboard ? 'px-4 py-3' : '',
-        editor?.isFocused &&
-          !props.belongsToMultiTabGroup &&
-          props.isEditable &&
-          'ring-1 ring-outline ring-offset-4 ring-gray-200',
-        props.belongsToMultiTabGroup
-          ? 'rounded-tl-none rounded-sm border border-gray-200 p-2'
-          : 'rounded-sm'
+        {
+          'ring-1 ring-ceramic-400':
+            editor?.isFocused &&
+            !props.belongsToMultiTabGroup &&
+            props.isEditable,
+          'ring-1 ring-blue-400':
+            !editor?.isFocused &&
+            !props.belongsToMultiTabGroup &&
+            props.isEditable &&
+            props.isCursorWithin &&
+            !props.isCursorInserting,
+        },
+        {
+          'rounded-tl-none rounded-sm border border-gray-200 p-2':
+            props.belongsToMultiTabGroup,
+          'rounded-tl-none rounded-sm border border-blue-400 p-2':
+            props.belongsToMultiTabGroup &&
+            props.isCursorWithin &&
+            !props.isCursorInserting,
+          'rounded-sm': !props.belongsToMultiTabGroup,
+        }
       )}
+      data-block-id={id}
     >
       <div className={editor?.isFocused ? 'block' : 'hidden'}>
         {editor && <FormattingToolbar editor={editor} />}

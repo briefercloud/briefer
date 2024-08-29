@@ -28,6 +28,8 @@ import Files from './Files'
 import { PublishBlinkingSignal } from './BlinkingSignal'
 import { Tooltip } from './Tooltips'
 import SchemaExplorer from './schemaExplorer'
+import { EditorAwarenessProvider } from '@/hooks/useEditorAwareness'
+import ShortcutsModal from './ShortcutsModal'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -87,6 +89,7 @@ function PrivateDocumentPageInner(
     | { _tag: 'snapshots' }
     | { _tag: 'files' }
     | { _tag: 'schemaExplorer'; dataSourceId: string | null }
+    | { _tag: 'shortcuts' }
     | null
   >(null)
 
@@ -99,6 +102,12 @@ function PrivateDocumentPageInner(
   const onToggleComments = useCallback(() => {
     setSelectedSidebar((v) =>
       v?._tag === 'comments' ? null : { _tag: 'comments' }
+    )
+  }, [setSelectedSidebar])
+
+  const onToggleShortcuts = useCallback(() => {
+    setSelectedSidebar((v) =>
+      v?._tag === 'shortcuts' ? null : { _tag: 'shortcuts' }
     )
   }, [setSelectedSidebar])
 
@@ -285,6 +294,7 @@ function PrivateDocumentPageInner(
           onToggleFullScreen={onToggleFullScreen}
           onToggleFiles={onToggleFiles}
           onToggleSchemaExplorer={onToggleSchemaExplorerEllipsis}
+          onToggleShortcuts={onToggleShortcuts}
           isViewer={isViewer}
           isDeleted={isDeleted}
           isFullScreen={isFullScreen}
@@ -299,23 +309,26 @@ function PrivateDocumentPageInner(
       topBarContent={topBarContent}
     >
       <div className="w-full relative flex">
-        <V2Editor
-          document={props.document}
-          dataSources={dataSources}
-          isPublicViewer={false}
-          isDeleted={isDeleted}
-          onRestoreDocument={onRestoreDocument}
-          isEditable={!props.isApp}
-          isPDF={false}
-          isApp={props.isApp}
-          role={props.user.roles[props.workspaceId]}
-          isFullScreen={isFullScreen}
-          yDoc={yDoc}
-          provider={provider}
-          isSyncing={syncing}
-          onOpenFiles={onToggleFiles}
-          onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
-        />
+        <EditorAwarenessProvider awareness={provider.awareness}>
+          <V2Editor
+            document={props.document}
+            dataSources={dataSources}
+            isPublicViewer={false}
+            isDeleted={isDeleted}
+            onRestoreDocument={onRestoreDocument}
+            isEditable={!props.isApp}
+            isPDF={false}
+            isApp={props.isApp}
+            userId={props.user.id}
+            role={props.user.roles[props.workspaceId]}
+            isFullScreen={isFullScreen}
+            yDoc={yDoc}
+            provider={provider}
+            isSyncing={syncing}
+            onOpenFiles={onToggleFiles}
+            onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
+          />
+        </EditorAwarenessProvider>
         {!isViewer && (
           <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
         )}
@@ -336,6 +349,11 @@ function PrivateDocumentPageInner(
               ? selectedSidebar.dataSourceId
               : null
           }
+        />
+
+        <ShortcutsModal
+          visible={selectedSidebar?._tag === 'shortcuts'}
+          onHide={onHideSidebar}
         />
 
         {!isViewer && !isDeleted && (

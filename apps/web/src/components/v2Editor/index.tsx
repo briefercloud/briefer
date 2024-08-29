@@ -41,6 +41,8 @@ import {
   getBlockGroup,
   RemoveBlockGroupResult,
   RemoveBlockDashboardConflictResult,
+  getRelativeBlockId as internalGetRelativeBlockId,
+  getNextBlockIdAfterDelete,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -81,6 +83,11 @@ import WritebackBlock from './customBlocks/writeback'
 import RemoveBlockDashboardConflictDialog from './RemoveBlockDashboardConflictDialog'
 import RemoveTabDashboardConflictDialog from './RemoveTabDashboardConflictDialog'
 import PivotTableBlock from './customBlocks/pivotTable'
+import useHotkeys from '@/hooks/useHotkeys'
+import { HotkeysProvider } from 'react-hotkeys-hook'
+import useEditorAwareness, {
+  InteractionState,
+} from '@/hooks/useEditorAwareness'
 
 export enum ElementType {
   Block = 'BLOCK',
@@ -390,6 +397,8 @@ const DraggableTabbedBlock = (props: {
   yDoc: Y.Doc
   isPDF: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
+  selectBelow: () => void
+  insertBelow: () => void
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -599,6 +608,8 @@ file`
     [layout, blocks, props.isApp]
   )
 
+  const { interactionState } = useEditorAwareness()
+
   const nodes = useMemo(() => {
     if (tabRefs.length === 0) {
       return <div>Block group is empty</div>
@@ -610,6 +621,9 @@ file`
         return <div>Block not found</div>
       }
 
+      const isCursorWithin = interactionState.cursorBlockId === tab.blockId
+      const isCursorInserting = interactionState.mode === 'insert'
+
       const jsx = switchBlockType(block, {
         onRichText: (block) => (
           <RichTextBlock
@@ -618,6 +632,8 @@ file`
             belongsToMultiTabGroup={hasMultipleTabs}
             dragPreview={hasMultipleTabs ? null : dragPreview}
             isDashboard={false}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onSQL: (block) => (
@@ -637,6 +653,10 @@ file`
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
             onSchemaExplorer={props.onSchemaExplorer}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
+            selectBelow={props.selectBelow}
+            insertBelow={props.insertBelow}
           />
         ),
         onPython: (block) => (
@@ -653,6 +673,10 @@ file`
             hasMultipleTabs={hasMultipleTabs}
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
+            selectBelow={props.selectBelow}
+            insertBelow={props.insertBelow}
           />
         ),
         onVisualization: (block) => (
@@ -669,6 +693,8 @@ file`
             hasMultipleTabs={hasMultipleTabs}
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onInput: (block) => (
@@ -681,6 +707,8 @@ file`
             isApp={props.isApp}
             onRun={onRun}
             isDashboard={false}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onDropdownInput: (block) => (
@@ -694,6 +722,8 @@ file`
             dataframes={props.dataframes}
             onRun={onRun}
             isDashboard={false}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onDateInput: (block) => (
@@ -706,6 +736,8 @@ file`
             isApp={props.isApp}
             onRun={onRun}
             isDashboard={false}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onFileUpload: (block) => (
@@ -725,6 +757,8 @@ file`
             }
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onDashboardHeader: () => null,
@@ -739,6 +773,8 @@ file`
             dataframes={props.dataframes}
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
         onPivotTable: (block) => (
@@ -755,6 +791,8 @@ file`
             isBlockHiddenInPublished={tab.isHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
             dashboardMode="none"
+            isCursorWithin={isCursorWithin}
+            isCursorInserting={isCursorInserting}
           />
         ),
       })
@@ -788,6 +826,7 @@ file`
     hasMultipleTabs,
     currentBlockId,
     props.onSchemaExplorer,
+    interactionState,
   ])
 
   const onSwitchActiveTab = useCallback(
@@ -1042,6 +1081,8 @@ const V2EditorRow = (props: {
   isPDF: boolean
   writebackEnabled: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
+  selectBelow: () => void
+  insertBelow: () => void
 }) => {
   return (
     <div>
@@ -1073,6 +1114,8 @@ const V2EditorRow = (props: {
         yDoc={props.yDoc}
         isPDF={props.isPDF}
         onSchemaExplorer={props.onSchemaExplorer}
+        selectBelow={props.selectBelow}
+        insertBelow={props.insertBelow}
       />
       <Dropzone
         index={props.index + 1}
@@ -1095,6 +1138,7 @@ type V2EditorProps = {
   isEditable: boolean
   isPDF: boolean
   isApp: boolean
+  userId: string | null
   role: UserWorkspaceRole
   isFullScreen: boolean
   yDoc: Y.Doc
@@ -1139,12 +1183,37 @@ const V2Editor = (props: V2EditorProps) => {
     [props.dataSources]
   )
 
+  const { interactionState, setInteractionState } = useEditorAwareness()
+
+  const scrollViewRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (interactionState.cursorBlockId && interactionState.scrollIntoView) {
+      // find where data-block-id is equal to the cursorBlockId
+      const el = document.querySelector(
+        `[data-block-id="${interactionState.cursorBlockId}"]`
+      )
+      if (!el || !scrollViewRef.current) {
+        return
+      }
+
+      const scrollViewTop = scrollViewRef.current.getBoundingClientRect().top
+      const elTop = el.getBoundingClientRect().top
+
+      scrollViewRef.current.scrollBy({
+        top: elTop - scrollViewTop - 24,
+        behavior: 'smooth',
+      })
+      setInteractionState((prev) => ({ ...prev, scrollIntoView: false }))
+    }
+  }, [interactionState, scrollViewRef])
+
   const onAddBlock = useCallback(
     (type: BlockType, index: number) => {
-      props.yDoc.transact(() => {
+      return props.yDoc.transact(() => {
+        let newBlockId: string | null = null
         switch (type) {
           case BlockType.SQL:
-            addBlockGroup(
+            newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
               {
@@ -1156,7 +1225,7 @@ const V2Editor = (props: V2EditorProps) => {
             )
             break
           case BlockType.Visualization:
-            addBlockGroup(
+            newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
               { type, dataframeName: null },
@@ -1166,13 +1235,194 @@ const V2Editor = (props: V2EditorProps) => {
           case BlockType.DashboardHeader:
             break
           default:
-            addBlockGroup(layout.value, blocks.value, { type }, index)
+            newBlockId = addBlockGroup(
+              layout.value,
+              blocks.value,
+              { type },
+              index
+            )
             break
         }
+
+        console.log('newBlockId', newBlockId)
+        setInteractionState({
+          cursorBlockId: newBlockId,
+          mode: 'insert',
+          scrollIntoView: true,
+        })
+
+        return newBlockId
       })
     },
-    [props.yDoc, layout, blocks, props.dataSources, newSQLDatasourceId]
+    [
+      props.yDoc,
+      layout,
+      blocks,
+      props.dataSources,
+      newSQLDatasourceId,
+      setInteractionState,
+    ]
   )
+
+  const moveCursor = useCallback(
+    (pos: 'above' | 'below' | 'left' | 'right', mode: 'normal' | 'insert') => {
+      const result = internalGetRelativeBlockId(
+        layout.value,
+        blocks.value,
+        interactionState.cursorBlockId,
+        pos
+      )
+      if (!result) {
+        return
+      }
+
+      const {
+        blockGroupId: nextCursorBlockGroupId,
+        blockId: nextCursorBlockId,
+      } = result
+
+      if (nextCursorBlockId !== null) {
+        if (pos === 'left' || pos === 'right') {
+          switchActiveTab(
+            layout.value,
+            nextCursorBlockGroupId,
+            nextCursorBlockId
+          )
+        }
+        setInteractionState({
+          cursorBlockId: nextCursorBlockId,
+          mode,
+          scrollIntoView: true,
+        })
+      }
+    },
+    [layout, blocks, interactionState, setInteractionState]
+  )
+
+  const selectBelow = useCallback(() => {
+    moveCursor('below', 'insert')
+  }, [moveCursor])
+
+  const addBlockShortcut = useCallback(
+    (blockType: BlockType, pos: 'above' | 'below') => {
+      const nextIndex = layout.value.toArray().findIndex((bg) => {
+        const tabs = getTabsFromBlockGroup(bg, blocks.value)
+        return tabs.some((t) => t.blockId === interactionState.cursorBlockId)
+      })
+
+      if (nextIndex === -1) {
+        return
+      }
+
+      onAddBlock(blockType, pos === 'above' ? nextIndex : nextIndex + 1)
+    },
+    [layout, blocks, interactionState, onAddBlock]
+  )
+
+  const insertBelow = useCallback(() => {
+    if (!interactionState.cursorBlockId) {
+      return
+    }
+
+    const blockType = blocks.value
+      .get(interactionState.cursorBlockId)
+      ?.getAttribute('type')
+    if (!blockType) {
+      return
+    }
+
+    addBlockShortcut(blockType, 'below')
+  }, [interactionState, blocks, addBlockShortcut])
+
+  const focusCursorBlock = useCallback(() => {
+    setInteractionState((prev) => ({
+      ...prev,
+      mode: 'insert',
+      scrollIntoView: true,
+    }))
+  }, [setInteractionState])
+
+  const [removeBlockDialog, setRemoveBlockDialog] =
+    useState<RemoveBlockDashboardConflictResult | null>(null)
+  const onRemoveBlock = useCallback(
+    (blockGroupId: string, blockId: string) => {
+      const result = removeBlock(props.yDoc, blockGroupId, blockId, false)
+      if (result._tag !== 'success') {
+        setRemoveBlockDialog(result)
+      }
+    },
+    [props.yDoc, blocks, setRemoveBlockDialog]
+  )
+
+  const [removeBlockGroupDialog, setRemoveBlockGroupDialog] =
+    useState<RemoveBlockGroupResult | null>(null)
+  const onRemoveBlockGroup = useCallback(
+    (blockId: string) => {
+      const result = removeBlockGroup(props.yDoc, blockId, false)
+      if (result._tag !== 'success') {
+        setRemoveBlockGroupDialog(result)
+      }
+    },
+    [props.yDoc, blocks, setRemoveBlockGroupDialog]
+  )
+
+  const deleteBlockShortcut = useCallback(() => {
+    if (!interactionState.cursorBlockId) {
+      return
+    }
+
+    const blockGroupId = layout.value
+      .toArray()
+      .find((bg) => {
+        const tabs = getTabsFromBlockGroup(bg, blocks.value)
+        return tabs.some((t) => t.blockId === interactionState.cursorBlockId)
+      }, null)
+      ?.getAttribute('id')
+
+    if (!blockGroupId) {
+      return
+    }
+
+    const nextCursorBlockId = getNextBlockIdAfterDelete(
+      layout.value,
+      blocks.value,
+      interactionState.cursorBlockId
+    )
+
+    // If block has one tab, remove whole block group
+    if (
+      getTabsFromBlockGroupId(layout.value, blocks.value, blockGroupId).length >
+      1
+    ) {
+      onRemoveBlock(blockGroupId, interactionState.cursorBlockId)
+
+      if (nextCursorBlockId) {
+        switchActiveTab(layout.value, blockGroupId, nextCursorBlockId)
+      }
+    } else {
+      onRemoveBlockGroup(blockGroupId)
+    }
+
+    setInteractionState({
+      cursorBlockId: nextCursorBlockId,
+      mode: 'normal',
+      scrollIntoView: true,
+    })
+  }, [
+    layout,
+    blocks,
+    interactionState,
+    onRemoveBlock,
+    onRemoveBlockGroup,
+    setInteractionState,
+  ])
+
+  useHotkeys({
+    moveCursor,
+    addBlock: addBlockShortcut,
+    deleteBlock: deleteBlockShortcut,
+    focusCursorBlock,
+  })
 
   const onAddGroupedBlock = useCallback(
     (
@@ -1273,30 +1523,6 @@ const V2Editor = (props: V2EditorProps) => {
     [layout]
   )
 
-  const [removeBlockGroupDialog, setRemoveBlockGroupDialog] =
-    useState<RemoveBlockGroupResult | null>(null)
-  const onRemoveBlockGroup = useCallback(
-    (blockId: string) => {
-      const result = removeBlockGroup(props.yDoc, blockId, false)
-      if (result._tag !== 'success') {
-        setRemoveBlockGroupDialog(result)
-      }
-    },
-    [props.yDoc, blocks, setRemoveBlockGroupDialog]
-  )
-
-  const [removeBlockDialog, setRemoveBlockDialog] =
-    useState<RemoveBlockDashboardConflictResult | null>(null)
-  const onRemoveBlock = useCallback(
-    (blockGroupId: string, blockId: string) => {
-      const result = removeBlock(props.yDoc, blockGroupId, blockId, false)
-      if (result._tag !== 'success') {
-        setRemoveBlockDialog(result)
-      }
-    },
-    [props.yDoc, blocks, setRemoveBlockDialog]
-  )
-
   const onDuplicateBlockGroup = useCallback(
     (blockGroupId: string) => {
       props.yDoc.transact(() => {
@@ -1363,6 +1589,8 @@ const V2Editor = (props: V2EditorProps) => {
           isPDF={props.isPDF}
           writebackEnabled={true}
           onSchemaExplorer={props.onSchemaExplorer}
+          selectBelow={selectBelow}
+          insertBelow={insertBelow}
         />
       )
     })
@@ -1416,6 +1644,8 @@ const V2Editor = (props: V2EditorProps) => {
       )}
 
       <div
+        id="editor-scrollview"
+        ref={scrollViewRef}
         className={clsx(
           'flex h-full justify-center',
           props.isFullScreen ? 'px-20' : 'sm:px-0 px-4',
@@ -1443,22 +1673,24 @@ const V2Editor = (props: V2EditorProps) => {
 
           <ContentSkeleton visible={props.isSyncing} />
 
-          {!props.isSyncing && (
-            <>
-              {domBlocks}
+          <HotkeysProvider initiallyActiveScopes={['editor']}>
+            {!props.isSyncing && (
+              <>
+                {domBlocks}
 
-              {domBlocks.length === 0 && (
-                <div className="w-full">
-                  <PlusButton
-                    alwaysVisible
-                    onAddBlock={addBlockToBottom}
-                    isEditable={props.isEditable}
-                    writebackEnabled={hasWriteback}
-                  />
-                </div>
-              )}
-            </>
-          )}
+                {domBlocks.length === 0 && (
+                  <div className="w-full">
+                    <PlusButton
+                      alwaysVisible
+                      onAddBlock={addBlockToBottom}
+                      isEditable={props.isEditable}
+                      writebackEnabled={hasWriteback}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </HotkeysProvider>
 
           {!props.isPDF && <div className="pb-72" />}
         </div>

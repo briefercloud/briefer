@@ -67,6 +67,8 @@ function GridElement(props: Props) {
             isEditable={false}
             dragPreview={null}
             isDashboard={true}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onSQL: (block) => (
@@ -86,6 +88,10 @@ function GridElement(props: Props) {
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
             onSchemaExplorer={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
+            selectBelow={() => {}}
+            insertBelow={() => {}}
           />
         ),
         onPython: (block) => (
@@ -103,6 +109,8 @@ function GridElement(props: Props) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onVisualization: (block) => (
@@ -119,6 +127,8 @@ function GridElement(props: Props) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onPivotTable: (block) => (
@@ -135,6 +145,8 @@ function GridElement(props: Props) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onInput: (block) => (
@@ -147,6 +159,8 @@ function GridElement(props: Props) {
             isApp={true}
             onRun={() => {}}
             isDashboard={true}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onDropdownInput: (block) => (
@@ -160,6 +174,8 @@ function GridElement(props: Props) {
             onRun={() => {}}
             dataframes={dataframes.value}
             isDashboard={true}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onDateInput: (block) => (
@@ -172,6 +188,8 @@ function GridElement(props: Props) {
             isApp={true}
             onRun={() => {}}
             isDashboard={true}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onDashboardHeader: (block) => (

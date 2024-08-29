@@ -24,6 +24,7 @@ import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { WritebackExecTooltip } from '../../ExecTooltip'
 import { XCircleIcon } from 'lucide-react'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 interface Props {
   workspaceId: string
@@ -35,8 +36,11 @@ interface Props {
   dataframes: Y.Map<DataFrame>
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 function WritebackBlock(props: Props) {
+  const blockId = props.block.getAttribute('id')
   const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
     props.workspaceId
   )
@@ -125,13 +129,27 @@ function WritebackBlock(props: Props) {
     [props.block]
   )
 
+  const { setInteractionState } = useEditorAwareness()
+  const onClickWithin = useCallback(() => {
+    setInteractionState({
+      cursorBlockId: blockId ?? null,
+      scrollIntoView: false,
+      mode: 'insert',
+    })
+  }, [blockId, setInteractionState])
+
   return (
-    <div className="relative group/block">
+    <div
+      className="relative group/block"
+      onClick={onClickWithin}
+      data-block-id={blockId}
+    >
       <div
         className={clsx(
           'rounded-md border',
           'bg-white',
-          props.hasMultipleTabs ? 'roudned-tl-none' : 'roudned-tl-md'
+          props.hasMultipleTabs ? 'roudned-tl-none' : 'roudned-tl-md',
+          props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
         )}
       >
         <div

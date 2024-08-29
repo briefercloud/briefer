@@ -288,6 +288,8 @@ function BlockListItem(props: BlockListItemProps) {
             isEditable={false}
             dragPreview={null}
             isDashboard={false}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onSQL: (block) => (
@@ -308,6 +310,10 @@ function BlockListItem(props: BlockListItemProps) {
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
               onSchemaExplorer={() => {}}
+              isCursorWithin={false}
+              isCursorInserting={false}
+              selectBelow={() => {}}
+              insertBelow={() => {}}
             />
           </div>
         ),
@@ -325,6 +331,8 @@ function BlockListItem(props: BlockListItemProps) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onVisualization: (block) => (
@@ -343,6 +351,8 @@ function BlockListItem(props: BlockListItemProps) {
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
+              isCursorWithin={false}
+              isCursorInserting={false}
             />
           </div>
         ),
@@ -356,6 +366,8 @@ function BlockListItem(props: BlockListItemProps) {
             isApp={true}
             onRun={() => {}}
             isDashboard={true}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onDropdownInput: (block) => (
@@ -369,6 +381,8 @@ function BlockListItem(props: BlockListItemProps) {
             isDashboard={true}
             onRun={() => {}}
             dataframes={props.dataframes}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onFileUpload: () => null,
@@ -382,6 +396,8 @@ function BlockListItem(props: BlockListItemProps) {
             isApp={true}
             isDashboard={true}
             onRun={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
           />
         ),
         onPivotTable: (block) => (
@@ -399,6 +415,8 @@ function BlockListItem(props: BlockListItemProps) {
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
+              isCursorWithin={false}
+              isCursorInserting={false}
             />
           </div>
         ),

@@ -10,7 +10,7 @@ import {
   type DateInputBlock,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Cog6ToothIcon, ExclamationCircleIcon } from '@heroicons/react/24/solid'
 import { ClockIcon } from '@heroicons/react/20/solid'
 import Spin from '@/components/Spin'
@@ -50,9 +50,12 @@ interface Props {
   isApp: boolean
   isDashboard: boolean
   onRun: (block: Y.XmlElement<DateInputBlock>) => void
+  isCursorWithin: boolean
+  isCursorInserting: boolean
 }
 
 function DateInput(props: Props) {
+  const blockId = props.block.getAttribute('id')
   const attrs = getDateInputAttributes(props.block, props.blocks)
   const onChangeLabel: React.ChangeEventHandler<HTMLInputElement> = useCallback(
     (e) => {
@@ -107,8 +110,12 @@ function DateInput(props: Props) {
     <div
       className={clsx(
         'w-full',
-        props.belongsToMultiTabGroup && 'border border-gray-200 p-4'
+        props.belongsToMultiTabGroup && 'border p-4 rounded-tr-md rounded-b-md',
+        props.isCursorWithin && !props.isCursorInserting
+          ? 'border-blue-400'
+          : 'border-gray-200'
       )}
+      data-block-id={blockId}
     >
       <div
         className={!props.isDashboard ? 'w-1/2' : ''}
@@ -193,6 +200,7 @@ function DateInput(props: Props) {
         </div>
         <div className="flex flex-col space-y-1">
           <DateInputBlockInput
+            blockId={blockId ?? ''}
             value={attrs.value}
             dateType={attrs.dateType}
             newValue={attrs.newValue}
@@ -207,6 +215,9 @@ function DateInput(props: Props) {
             isSaving={execStatus === 'loading'}
             isEnqueued={execStatus === 'enqueued'}
             isEditable={props.isEditable}
+            belongsToMultiTabGroup={props.belongsToMultiTabGroup}
+            isCursorWithin={props.isCursorWithin}
+            isCursorInserting={props.isCursorInserting}
           />
 
           {attrs.configOpen && !props.isApp && props.isEditable && (
