@@ -20,11 +20,17 @@ export class JupyterManager implements IJupyterManager {
   private jupyterExtension: BrieferJupyterExtension
 
   public constructor(
+    private readonly protocol: string,
     private readonly host: string,
-    private readonly port: number,
+    private readonly port: number | null,
     private readonly token: string
   ) {
-    this.jupyterExtension = new BrieferJupyterExtension(host, port, token)
+    this.jupyterExtension = new BrieferJupyterExtension(
+      protocol,
+      host,
+      port,
+      token
+    )
   }
 
   public async start(socketServer: IOServer): Promise<void> {
@@ -269,9 +275,11 @@ export class JupyterManager implements IJupyterManager {
     _workspaceId: string
   ): Promise<services.ServerConnection.ISettings> {
     const baseConfig = {
-      baseUrl: `http://${this.host}:${this.port}`,
-      appUrl: `http://${this.host}:${this.port}`,
-      wsUrl: `ws://${this.host}:${this.port}`,
+      baseUrl: `${this.protocol}://${this.host}:${this.port}`,
+      appUrl: `${this.protocol}://${this.host}:${this.port}`,
+      wsUrl: `${this.protocol === 'https' ? 'wss' : 'ws'}://${this.host}:${
+        this.port
+      }`,
     }
 
     const serverSettings: services.ServerConnection.ISettings = {

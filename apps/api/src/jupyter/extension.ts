@@ -66,15 +66,24 @@ export type DeleteFileResult =
 
 export class BrieferJupyterExtension {
   public constructor(
+    private readonly protocol: string,
     private readonly host: string,
-    private readonly port: number,
+    private readonly port: number | null,
     private readonly token: string
   ) {}
+
+  private get baseURL(): string {
+    if (this.port === null) {
+      return `${this.protocol}://${this.host}`
+    }
+
+    return `${this.protocol}://${this.host}:${this.port}`
+  }
 
   public async statFile(filePath: string): Promise<StatFileResult> {
     const params = qs.stringify({ filePath })
     const res = await axios.get(
-      `http://${this.host}:${this.port}/api/briefer/files/stat?${params}`,
+      `${this.baseURL}/api/briefer/files/stat?${params}`,
       {
         headers: {
           Authorization: `token ${this.token}`,
@@ -102,7 +111,7 @@ export class BrieferJupyterExtension {
   public async listFiles(dirPath: string): Promise<ListFilesResult> {
     const params = qs.stringify({ dirPath: dirPath })
     const res = await axios.get(
-      `http://${this.host}:${this.port}/api/briefer/files/list?${params}`,
+      `${this.baseURL}/api/briefer/files/list?${params}`,
       {
         headers: {
           Authorization: `token ${this.token}`,
@@ -135,7 +144,7 @@ export class BrieferJupyterExtension {
 
     const params = qs.stringify({ filePath: filePath })
     const res = await axios.get<Readable>(
-      `http://${this.host}:${this.port}/api/briefer/files/read?${params}`,
+      `${this.baseURL}/api/briefer/files/read?${params}`,
       {
         headers: {
           Authorization: `token ${this.token}`,
@@ -177,7 +186,7 @@ export class BrieferJupyterExtension {
   ): Promise<WriteFileResult> {
     const params = qs.stringify({ filePath: filePath })
     const res = await axios.post(
-      `http://${this.host}:${this.port}/api/briefer/files/write?${params}`,
+      `${this.baseURL}/api/briefer/files/write?${params}`,
       stream,
       {
         headers: {
@@ -199,7 +208,7 @@ export class BrieferJupyterExtension {
   public async deleteFile(filePath: string): Promise<DeleteFileResult> {
     const params = qs.stringify({ filePath: filePath })
     const res = await axios.delete(
-      `http://${this.host}:${this.port}/api/briefer/files/remove?${params}`,
+      `${this.baseURL}/api/briefer/files/remove?${params}`,
       {
         headers: {
           Authorization: `token ${this.token}`,
@@ -222,16 +231,13 @@ export class BrieferJupyterExtension {
   }
 
   public async getCWD(): Promise<string> {
-    const res = await axios.get(
-      `http://${this.host}:${this.port}/api/briefer/cwd`,
-      {
-        headers: {
-          Authorization: `token ${this.token}`,
-        },
-        responseType: 'json',
-        validateStatus: (code) => code < 500,
-      }
-    )
+    const res = await axios.get(`${this.baseURL}/api/briefer/cwd`, {
+      headers: {
+        Authorization: `token ${this.token}`,
+      },
+      responseType: 'json',
+      validateStatus: (code) => code < 500,
+    })
 
     if (res.status !== 200) {
       throw new Error(`Failed to get CWD. Status: ${res.status}`)

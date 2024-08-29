@@ -45,6 +45,7 @@ export function getJupyterManager(): IJupyterManager {
 
   const conf = config()
   jupyterManagerInstance = new JupyterManager(
+    conf.JUPYTER_PROTOCOL,
     conf.JUPYTER_HOST,
     conf.JUPYTER_PORT,
     conf.JUPYTER_TOKEN
