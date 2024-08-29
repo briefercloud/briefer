@@ -541,6 +541,10 @@ def _briefer_create_visualization(
               df = df[df[column_name] > value]
           elif operator == 'gte':
               df = df[df[column_name] >= value]
+          elif operator == 'isNull':
+              df = df[df[column_name].isnull()]
+          elif operator == 'isNotNull':
+              df = df[df[column_name].notnull()]
       elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]):
           if operator == 'eq':
               df = df[df[column_name] == value]
@@ -558,6 +562,10 @@ def _briefer_create_visualization(
               df = df[df[column_name].isin(value)]
           elif operator == 'notIn':
               df = df[~df[column_name].isin(value)]
+          elif operator == 'isNull':
+              df = df[df[column_name].isnull()]
+          elif operator == 'isNotNull':
+              df = df[df[column_name].notnull()]
       elif pd.api.types.is_datetime64_any_dtype(df[column_name]):
           # Convert both DataFrame column and value to UTC safely
           df_column_utc, value_utc = _briefer_convert_to_utc_safe(df[column_name], pd.to_datetime(value))
@@ -575,6 +583,10 @@ def _briefer_create_visualization(
               df = df[df_column_utc > value_utc]
           elif operator == 'afterOrEq':
               df = df[df_column_utc >= value_utc]
+          elif operator == 'isNull':
+              df = df[df[column_name].isnull()]
+          elif operator == 'isNotNull':
+              df = df[df[column_name].notnull()]
 
     def _briefer_create_histogram(
         df,

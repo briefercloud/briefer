@@ -374,6 +374,8 @@ export const VisualizationStringFilterSingleValueOperator = z.union([
   z.literal('notContains'),
   z.literal('startsWith'),
   z.literal('endsWith'),
+  z.literal('isNull'),
+  z.literal('isNotNull'),
 ])
 export type VisualizationStringFilterSingleValueOperator = z.infer<
   typeof VisualizationStringFilterSingleValueOperator
@@ -422,6 +424,8 @@ export const stringFilterOperators: VisualizationStringFilterOperator[] = [
   'notContains',
   'startsWith',
   'endsWith',
+  'isNull',
+  'isNotNull',
 ]
 
 export const VisualizationNumberFilterOperator = z.union([
@@ -431,6 +435,8 @@ export const VisualizationNumberFilterOperator = z.union([
   z.literal('lte'),
   z.literal('gt'),
   z.literal('gte'),
+  z.literal('isNull'),
+  z.literal('isNotNull'),
 ])
 export type VisualizationNumberFilterOperator = z.infer<
   typeof VisualizationNumberFilterOperator
@@ -452,6 +458,8 @@ export const numberFilterOperators: VisualizationNumberFilterOperator[] = [
   'lte',
   'gt',
   'gte',
+  'isNull',
+  'isNotNull',
 ]
 
 export const VisualizationDateFilterOperator = z.union([
@@ -461,6 +469,8 @@ export const VisualizationDateFilterOperator = z.union([
   z.literal('beforeOrEq'),
   z.literal('after'),
   z.literal('afterOrEq'),
+  z.literal('isNull'),
+  z.literal('isNotNull'),
 ])
 export type VisualizationDateFilterOperator = z.infer<
   typeof VisualizationDateFilterOperator
@@ -472,6 +482,8 @@ export const dateFilterOperators: VisualizationDateFilterOperator[] = [
   'beforeOrEq',
   'after',
   'afterOrEq',
+  'isNull',
+  'isNotNull',
 ]
 
 export const VisualizationDateFilter = z.object({

@@ -82,6 +82,10 @@ function numberOperatorSymbol(
       return '>='
     case 'lte':
       return '<='
+    case 'isNull':
+      return 'is null'
+    case 'isNotNull':
+      return 'is not null'
   }
 }
 function numberOperatorLabel(
@@ -100,6 +104,10 @@ function numberOperatorLabel(
       return 'Greater Than or Equals'
     case 'lte':
       return 'Less Than or Equals'
+    case 'isNull':
+      return 'Is Null'
+    case 'isNotNull':
+      return 'Is Not Null'
   }
 }
 
@@ -123,6 +131,10 @@ function stringOperatorSymbol(
       return 'in'
     case 'notIn':
       return 'not in'
+    case 'isNull':
+      return 'is null'
+    case 'isNotNull':
+      return 'is not null'
   }
 }
 function stringOperatorLabel(
@@ -145,6 +157,10 @@ function stringOperatorLabel(
       return 'In'
     case 'notIn':
       return 'Not In'
+    case 'isNull':
+      return 'Is Null'
+    case 'isNotNull':
+      return 'Is Not Null'
   }
 }
 
@@ -162,6 +178,10 @@ function dateOperatorSymbol(operator: VisualizationDateFilterOperator): string {
       return '<='
     case 'afterOrEq':
       return '>='
+    case 'isNull':
+      return 'is null'
+    case 'isNotNull':
+      return 'is not null'
   }
 }
 function dateOperatorLabel(operator: VisualizationDateFilterOperator): string {
@@ -178,6 +198,10 @@ function dateOperatorLabel(operator: VisualizationDateFilterOperator): string {
       return 'Before or Equals'
     case 'afterOrEq':
       return 'After or Equals'
+    case 'isNull':
+      return 'Is Null'
+    case 'isNotNull':
+      return 'Is Not Null'
   }
 }
 
@@ -461,6 +485,24 @@ function FilterSelector(props: Props) {
         }
       }
 
+      if (column && (newOp === 'isNull' || newOp === 'isNotNull')) {
+        if (
+          NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(column.type)
+            .success
+        ) {
+          setValue('0')
+        }
+
+        if (
+          NumpyStringTypes.or(NumpyJsonTypes).safeParse(column.type).success
+        ) {
+          setValue('filter')
+        }
+
+        if (NumpyDateTypes.safeParse(column.type).success) {
+          setValue(new Date().toISOString())
+        }
+      }
       setOperator(newOp)
     },
     [operator, value]
@@ -539,7 +581,9 @@ function FilterSelector(props: Props) {
           <span>{column?.name ?? 'New filter'}</span>
           <span
             className={clsx(
-              'px-0.5',
+              operator === 'isNull' || operator === 'isNotNull'
+                ? 'pl-0.5'
+                : 'px-0.5',
               props.isInvalid ? 'text-red-400' : 'text-gray-400'
             )}
           >
@@ -551,13 +595,15 @@ function FilterSelector(props: Props) {
                 : dateOperatorSymbol(operator)
               : ''}
           </span>
-          <span>
-            {Array.isArray(value)
-              ? value.length > 1
-                ? `[${value.join(', ')}]`
-                : value[0]
-              : value}
-          </span>
+          {operator !== 'isNull' && operator !== 'isNotNull' && (
+            <span>
+              {Array.isArray(value)
+                ? value.length > 1
+                  ? `[${value.join(', ')}]`
+                  : value[0]
+                : value}
+            </span>
+          )}
         </div>
         <span className="p-0.5 rounded-full hover:bg-red-100  hover:text-red-700">
           <XMarkIcon className="h-3 w-3" onClick={onRemove} />
@@ -617,42 +663,49 @@ function FilterSelector(props: Props) {
                     placeholder="Operator"
                     disabled={props.disabled}
                   />
-                  {VisualizationStringFilterMultiValuesOperator.safeParse(
-                    operator
-                  ).success ? (
-                    <MultiCombobox
-                      label="Value"
-                      value={Array.from(value)}
-                      options={
-                        'categories' in column
-                          ? column.categories?.map((c) => c.toString()) ?? []
-                          : []
-                      }
-                      onChange={setValue}
-                      search={(options, query) =>
-                        options.filter((c) => c.includes(query))
-                      }
-                      getLabel={(value) => value}
-                      icon={() => null}
-                      placeholder="Value"
-                      disabled={props.disabled}
-                      valueFromQuery={identity}
-                    />
-                  ) : (
-                    <div>
-                      <label className="text-xs font-medium leading-6 text-gray-900">
-                        Value
-                      </label>
-                      <input
-                        className="w-full truncate border-0 text-xs  rounded-md ring-1 ring-inset ring-gray-200 focus-within:ring-1 focus-within:ring-inset focus-within:ring-gray-300 bg-white text-gray-800"
-                        type="text"
-                        value={Array.isArray(value) ? value[0] ?? null : value}
-                        onChange={onChangeValue}
-                        placeholder="Value"
-                        onKeyDown={preventPropagation}
-                        disabled={props.disabled}
-                      />
-                    </div>
+                  {operator !== 'isNull' && operator !== 'isNotNull' && (
+                    <>
+                      {VisualizationStringFilterMultiValuesOperator.safeParse(
+                        operator
+                      ).success ? (
+                        <MultiCombobox
+                          label="Value"
+                          value={Array.from(value)}
+                          options={
+                            'categories' in column
+                              ? column.categories?.map((c) => c.toString()) ??
+                                []
+                              : []
+                          }
+                          onChange={setValue}
+                          search={(options, query) =>
+                            options.filter((c) => c.includes(query))
+                          }
+                          getLabel={(value) => value}
+                          icon={() => null}
+                          placeholder="Value"
+                          disabled={props.disabled}
+                          valueFromQuery={identity}
+                        />
+                      ) : (
+                        <div>
+                          <label className="text-xs font-medium leading-6 text-gray-900">
+                            Value
+                          </label>
+                          <input
+                            className="w-full truncate border-0 text-xs  rounded-md ring-1 ring-inset ring-gray-200 focus-within:ring-1 focus-within:ring-inset focus-within:ring-gray-300 bg-white text-gray-800"
+                            type="text"
+                            value={
+                              Array.isArray(value) ? value[0] ?? null : value
+                            }
+                            onChange={onChangeValue}
+                            placeholder="Value"
+                            onKeyDown={preventPropagation}
+                            disabled={props.disabled}
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
