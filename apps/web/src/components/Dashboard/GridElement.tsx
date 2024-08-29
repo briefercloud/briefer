@@ -227,7 +227,12 @@ function GridElement(props: Props) {
   return (
     <div className="relative group h-full">
       {props.block ? (
-        <ScrollBar className="w-full h-full rounded-md overflow-hidden flex flex-col">
+        <ScrollBar
+          className="w-full h-full rounded-md overflow-hidden flex flex-col"
+          disabled={
+            props.block.getAttribute('type') === BlockType.Visualization
+          }
+        >
           {hasTitle && titleContent && (
             <h2 className="text-gray-700 font-medium text-left text-sm truncate min-h-6 px-3.5 py-2.5">
               {titleContent}
