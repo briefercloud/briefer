@@ -4,6 +4,8 @@ import PQueue from 'p-queue'
 
 import { logger } from '../logger.js'
 import { getJupyterManager } from '../jupyter/index.js'
+import prisma, { decrypt } from '@briefer/database'
+import config from '../config/index.js'
 
 export class PythonExecutionError extends Error {
   constructor(
@@ -347,6 +349,56 @@ export async function cancelExecution(workspaceId: string, sessionId: string) {
   await kernel.interrupt()
 }
 
+async function setEnvironmentVariables(
+  kernel: services.Kernel.IKernelConnection,
+  variables: { add: { name: string; value: string }[]; remove: string[] }
+) {
+  const code = ['import os']
+    .concat(variables.remove.map((v) => `os.environ.pop('${v}', None)`))
+    .concat(variables.add.map((v) => `os.environ['${v.name}'] = '${v.value}'`))
+    .join('\n')
+
+  await kernel.requestExecute({
+    code,
+    store_history: false,
+  }).done
+}
+
+async function startNewSession(
+  sessionManager: services.SessionManager,
+  workspaceId: string,
+  sessionId: string
+) {
+  const session = await sessionManager.startNew({
+    path: sessionId,
+    type: 'notebook',
+    name: sessionId,
+    kernel: {
+      name: 'python',
+    },
+  })
+
+  if (!session.kernel) {
+    throw new Error('session.kernel is null')
+  }
+
+  const encryptedVariables = await prisma().environmentVariable.findMany({
+    where: { workspaceId },
+  })
+
+  const variables = encryptedVariables.map((v) => ({
+    name: decrypt(v.name, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY),
+    value: decrypt(v.value, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY),
+  }))
+
+  await setEnvironmentVariables(session.kernel, {
+    add: variables,
+    remove: [],
+  })
+
+  return session
+}
+
 type Jupyter = {
   session: services.Session.ISessionConnection
   kernel: services.Kernel.IKernelConnection
@@ -374,14 +426,7 @@ async function getSession(
   const session = sessionModel
     ? sessionManager.connectTo({ model: sessionModel })
     : await withRetry(() =>
-        sessionManager.startNew({
-          path: sessionId,
-          type: 'notebook',
-          name: sessionId,
-          kernel: {
-            name: 'python',
-          },
-        })
+        startNewSession(sessionManager, workspaceId, sessionId)
       )
 
   if (!session.kernel) {
@@ -391,6 +436,19 @@ async function getSession(
   jupyter = { session: session, kernel: session.kernel }
   sessions.set(key, jupyter)
   return jupyter
+}
+
+export async function updateEnvironmentVariables(
+  workspaceId: string,
+  variables: { add: { name: string; value: string }[]; remove: string[] }
+) {
+  await Promise.all(
+    Array.from(sessions.entries()).map(async ([key, { kernel }]) => {
+      if (key.startsWith(workspaceId)) {
+        await setEnvironmentVariables(kernel, variables)
+      }
+    })
+  )
 }
 
 async function withRetry<T>(
@@ -491,4 +549,18 @@ del _briefer_render_template`
   }
 
   return result
+}
+
+export async function disposeAll(workspaceId: string) {
+  await Promise.all(
+    Array.from(sessions.entries()).map(async ([key, { kernel, session }]) => {
+      if (key.startsWith(workspaceId)) {
+        await session.shutdown()
+        await kernel.shutdown()
+        session.dispose()
+        kernel.dispose()
+      }
+    })
+  )
+  sessions.clear()
 }

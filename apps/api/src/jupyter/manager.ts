@@ -13,6 +13,7 @@ import { broadcastEnvironmentStatus } from '../websocket/workspace/environment.j
 import { logger } from '../logger.js'
 import { BrieferJupyterExtension } from './extension.js'
 import { BrieferFile } from '@briefer/types'
+import { disposeAll, updateEnvironmentVariables } from '../python/index.js'
 
 export class JupyterManager implements IJupyterManager {
   private watchTimeout: NodeJS.Timeout | null = null
@@ -123,10 +124,7 @@ export class JupyterManager implements IJupyterManager {
 
     broadcastEnvironmentStatus(this.socketServer, workspaceId, 'Stopping', null)
 
-    const kernels = await this.getKernels()
-    for (const kernel of kernels) {
-      await this.restartKernel(kernel.id)
-    }
+    await disposeAll(workspaceId)
 
     broadcastEnvironmentStatus(
       this.socketServer,
@@ -134,31 +132,6 @@ export class JupyterManager implements IJupyterManager {
       'Running',
       new Date().toISOString()
     )
-  }
-
-  private async getKernels() {
-    const res = await fetch(`${this.baseURL}/api/kernels`, {
-      headers: {
-        Authorization: `token ${this.token}`,
-      },
-    })
-
-    return res.json()
-  }
-
-  private async restartKernel(kernelId: string) {
-    const res = await fetch(`${this.baseURL}/api/kernels/${kernelId}/restart`, {
-      method: 'POST',
-      headers: {
-        Authorization: `token ${this.token}`,
-      },
-    })
-
-    if (!res.ok) {
-      throw new Error(
-        `Failed to restart kernel ${kernelId}. Status: ${res.status}`
-      )
-    }
   }
 
   public async ensureRunning(): Promise<void> {}
@@ -307,6 +280,14 @@ export class JupyterManager implements IJupyterManager {
     }
 
     return serverSettings
+  }
+
+  public async setEnvironmentVariables(
+    workspaceId: string,
+    variables: { add: { name: string; value: string }[]; remove: string[] }
+  ): Promise<void> {
+    await this.ensureRunning()
+    await updateEnvironmentVariables(workspaceId, variables)
   }
 
   private async getFilepath(fileName: string): Promise<string> {

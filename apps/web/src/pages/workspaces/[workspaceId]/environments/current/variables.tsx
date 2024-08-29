@@ -12,15 +12,13 @@ import {
   CommandLineIcon,
   CodeBracketIcon,
 } from '@heroicons/react/24/outline'
-import { Fragment, useCallback, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { uniq } from 'ramda'
 import Spin from '@/components/Spin'
 import clsx from 'clsx'
 import FormError from '@/components/forms/formError'
 import EnvBar from '@/components/EnvBar'
-import { Dialog, Transition } from '@headlessui/react'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { EnvironmentStatus } from '@briefer/database'
 import { useRouter } from 'next/router'
 import Files from '@/components/Files'
 
@@ -64,7 +62,6 @@ function errorToMessage(error: ErrorType): string {
 export default function EnvirontVariablesPage() {
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
-  const [restartOpen, setRestartOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [swr, { save }] = useEnvironmentVariables(workspaceId)
   const environment = useEnvironmentStatus(workspaceId)
@@ -116,9 +113,6 @@ export default function EnvirontVariablesPage() {
         .then(() => {
           setAdded([])
           setRemoved([])
-          if (environment.status !== 'Stopped') {
-            setRestartOpen(true)
-          }
         })
         .catch(() => {
           alert('Something went wrong')
@@ -160,15 +154,6 @@ export default function EnvirontVariablesPage() {
     [setAdded]
   )
 
-  const onCloseRestart = useCallback(() => {
-    setRestartOpen(false)
-  }, [])
-
-  const onRestart = useCallback(() => {
-    environment.restart()
-    setRestartOpen(false)
-  }, [environment.restart])
-
   const [filesOpen, setFilesOpen] = useState(false)
   const onToggleFilesOpen = useCallback(() => {
     setFilesOpen((prev) => !prev)
@@ -176,11 +161,6 @@ export default function EnvirontVariablesPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId)}>
-      <RestartDialog
-        open={restartOpen}
-        onClose={onCloseRestart}
-        onRestart={onRestart}
-      />
       <div className="flex flex-col flex-grow h-full">
         <div className="w-full bg-white h-full overflow-scroll">
           <div className="px-4 sm:p-6 lg:p-8">
@@ -346,71 +326,5 @@ function EnvVarInput(props: EnvVarInputProps) {
         </div>
       </div>
     </div>
-  )
-}
-
-interface RestartDialogProps {
-  open: boolean
-  onClose: () => void
-  onRestart: () => void
-}
-function RestartDialog(props: RestartDialogProps) {
-  return (
-    <Transition.Root show={props.open} as={Fragment}>
-      <Dialog
-        as="div"
-        className="fixed inset-0 z-50 overflow-y-auto"
-        onClose={props.onClose}
-      >
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <Dialog.Overlay className="fixed inset-0 bg-black opacity-30 z-40" />
-        </Transition.Child>
-
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0 scale-95"
-          enterTo="opacity-100 scale-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100 scale-100"
-          leaveTo="opacity-0 scale-95"
-        >
-          <div className="flex items-center justify-center h-screen">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full text-center shadow-md z-50 flex-col space-y-4">
-              <Dialog.Title className="text-lg font-medium">
-                We need to restart your environment.
-              </Dialog.Title>
-              <p className="text-sm text-gray-600">
-                Your environment variables will only be available and up-to-date
-                after you restart your environment.
-              </p>
-              <div className="flex justify-end space-x-2 pt-2">
-                <button
-                  onClick={props.onClose}
-                  type="button"
-                  className="text-sm font-semibold leading-6 text-gray-600 border border-gray-400 px-6 py-1.5 rounded-sm shadow-sm hover:bg-gray-50"
-                >
-                  {"I'll restart later"}
-                </button>
-                <button
-                  className="flex items-center gap-x-2 rounded-sm shadow-sm bg-primary-200 px-6 py-2.5 text-sm font-semibold hover:bg-primary-300 border-stone-950 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  onClick={props.onRestart}
-                >
-                  Restart now
-                </button>
-              </div>
-            </div>
-          </div>
-        </Transition.Child>
-      </Dialog>
-    </Transition.Root>
   )
 }

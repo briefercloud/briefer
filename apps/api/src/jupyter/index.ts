@@ -35,6 +35,11 @@ export interface IJupyterManager {
   getServerSettings(
     workspaceId: string
   ): Promise<services.ServerConnection.ISettings>
+
+  setEnvironmentVariables(
+    workspaceId: string,
+    variables: { add: { name: string; value: string }[]; remove: string[] }
+  ): Promise<void>
 }
 
 let jupyterManagerInstance: IJupyterManager | null = null

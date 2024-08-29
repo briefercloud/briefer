@@ -4,6 +4,7 @@ import prisma, { decrypt, encrypt } from '@briefer/database'
 import { uuidSchema } from '@briefer/types'
 import config from '../../../config/index.js'
 import { getParam } from '../../../utils/express.js'
+import { getJupyterManager } from '../../../jupyter/index.js'
 
 const environmentVariablesRouter = Router({ mergeParams: true })
 
@@ -45,6 +46,10 @@ environmentVariablesRouter.post('/', async (req, res) => {
 
   try {
     await prisma().$transaction(async (tx) => {
+      const removeNames = await tx.environmentVariable.findMany({
+        where: { id: { in: body.data.remove }, workspaceId },
+        select: { name: true },
+      })
       await tx.environmentVariable.deleteMany({
         where: { id: { in: body.data.remove }, workspaceId },
       })
@@ -58,6 +63,13 @@ environmentVariablesRouter.post('/', async (req, res) => {
           ),
           workspaceId,
         })),
+      })
+
+      await getJupyterManager().setEnvironmentVariables(workspaceId, {
+        add: body.data.add,
+        remove: removeNames.map((v) =>
+          decrypt(v.name, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY)
+        ),
       })
     })
 

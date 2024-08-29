@@ -52,18 +52,15 @@ function EnvBar(props: Props) {
             <div>
               <EnvironmentButton name="Python 3.9" workspaceId={workspaceId} />
             </div>
-            {/* TODO: Implement environment variables for oss version */}
-            {false && (
-              <div>
-                <Link
-                  href={`/workspaces/${workspaceId}/environments/current/variables`}
-                  className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
-                >
-                  <CodeBracketIcon className="h-4 w-4 text-gray-600" />
-                  <span className="text-gray-700">Environment variables</span>
-                </Link>
-              </div>
-            )}
+            <div>
+              <Link
+                href={`/workspaces/${workspaceId}/environments/current/variables`}
+                className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
+              >
+                <CodeBracketIcon className="h-4 w-4 text-gray-600" />
+                <span className="text-gray-700">Environment variables</span>
+              </Link>
+            </div>
             <button
               className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
               onClick={props.onOpenFiles}
