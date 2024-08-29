@@ -795,7 +795,7 @@ def _briefer_create_visualization(
     vis = alt.layer(*layers, usermeta=usermeta).resolve_scale(y='independent').configure_view(stroke=None).configure_range(category={"scheme": "tableau20"})
 
     # return spec as json
-    print(json.dumps({"success": True, "spec": vis.to_json()}))
+    print(json.dumps({"success": True, "spec": vis.to_json(default=str)}, default=str))
 
 if not "${dataframe.name}" in globals():
     try:
