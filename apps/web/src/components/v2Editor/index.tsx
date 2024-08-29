@@ -85,9 +85,7 @@ import RemoveTabDashboardConflictDialog from './RemoveTabDashboardConflictDialog
 import PivotTableBlock from './customBlocks/pivotTable'
 import useHotkeys from '@/hooks/useHotkeys'
 import { HotkeysProvider } from 'react-hotkeys-hook'
-import useEditorAwareness, {
-  InteractionState,
-} from '@/hooks/useEditorAwareness'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 export enum ElementType {
   Block = 'BLOCK',
@@ -1196,13 +1194,23 @@ const V2Editor = (props: V2EditorProps) => {
         return
       }
 
-      const scrollViewTop = scrollViewRef.current.getBoundingClientRect().top
-      const elTop = el.getBoundingClientRect().top
+      // const scrollViewTop = scrollViewRef.current.getBoundingClientRect().top
+      const scrollRect = scrollViewRef.current.getBoundingClientRect()
+      const elRect = el.getBoundingClientRect()
 
-      scrollViewRef.current.scrollBy({
-        top: elTop - scrollViewTop - 24,
-        behavior: 'smooth',
-      })
+      // if el height is larger than scroll view visible height, scroll to the top of the el
+      if (elRect.height > scrollRect.height) {
+        scrollViewRef.current.scrollBy({
+          top: elRect.top - scrollRect.top - 48,
+          behavior: 'smooth',
+        })
+      } else {
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+      }
+
       setInteractionState((prev) => ({ ...prev, scrollIntoView: false }))
     }
   }, [interactionState, scrollViewRef])
