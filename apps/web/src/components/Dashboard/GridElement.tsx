@@ -5,6 +5,7 @@ import {
   getBlocks,
   getDataframes,
   getLayout,
+  requestRun,
   switchBlockType,
 } from '@briefer/editor'
 import { useCallback, useEffect, useState } from 'react'
@@ -24,6 +25,7 @@ import clsx from 'clsx'
 import DashboardHeader from '../v2Editor/customBlocks/dashboardHeader'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 interface Props {
   item: GridLayout.Layout
@@ -44,9 +46,13 @@ const NO_TITLE_BLOCKS = [
 ]
 
 function GridElement(props: Props) {
+  const { state: layout } = useYDocState(props.yDoc, getLayout)
   const { state: blocks } = useYDocState(props.yDoc, getBlocks)
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
   const { state: yLayout } = useYDocState(props.yDoc, getLayout)
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.document.workspaceId
+  )
 
   // set editing when adding a new block to the dashboard
   useEffect(() => {
@@ -56,6 +62,20 @@ function GridElement(props: Props) {
   }, [props.latestBlockId, props.block?.getAttribute('id')])
 
   const [isEditingBlock, setIsEditingBlock] = useState(false)
+
+  const onRun = useCallback(
+    <B extends YBlock>(block: B, customCallback?: (block: B) => void) => {
+      requestRun(
+        block,
+        blocks.value,
+        layout.value,
+        environmentStartedAt,
+        false,
+        customCallback
+      )
+    },
+    [blocks.value, layout.value, environmentStartedAt]
+  )
 
   const renderItem = useCallback(
     (block: YBlock, item: GridLayout.Layout) =>
@@ -140,7 +160,7 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            onRun={() => {}}
+            onRun={onRun}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
@@ -210,6 +230,7 @@ function GridElement(props: Props) {
       yLayout,
       props.isEditingDashboard,
       isEditingBlock,
+      onRun,
     ]
   )
 
