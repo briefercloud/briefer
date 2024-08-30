@@ -59,6 +59,7 @@ describe('SQLExecutor', () => {
       putFile: jest.fn(),
       deleteFile: jest.fn(),
       getServerSettings: jest.fn(),
+      setEnvironmentVariables: jest.fn(),
     }
     queue = new PQueue({ concurrency: 1 })
     blocksExecutor = new SQLExecutor(
