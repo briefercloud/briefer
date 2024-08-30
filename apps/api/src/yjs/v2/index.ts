@@ -17,6 +17,7 @@ import prisma, {
   UserWorkspaceRole,
   Document,
   ApiUser,
+  getDocument,
 } from '@briefer/database'
 import { decoding, encoding } from 'lib0'
 import { logger } from '../../logger.js'
@@ -204,6 +205,7 @@ export function setupYJSSocketServerV2(
         role,
         ydoc,
         clock,
+        isDataApp,
       }
 
       wss.handleUpgrade(req, socket, head, (ws) => {
@@ -990,8 +992,15 @@ const setupWSConnection =
     const role: Role = briefer?.role
     const user: ApiUser = briefer?.user
     const clock: number = briefer?.clock
+    const isDataApp = briefer?.isDataApp
 
-    if (!ydoc || !role || !user || clock === undefined) {
+    if (
+      !ydoc ||
+      !role ||
+      !user ||
+      clock === undefined ||
+      isDataApp === undefined
+    ) {
       logger.error(
         { briefer: { ...briefer, ydoc: Boolean(ydoc) } },
         'Missing required fields'
@@ -1012,9 +1021,27 @@ const setupWSConnection =
         },
         'Invalid clock'
       )
-      await broadcastDocument(socketServer, ydoc.workspaceId, ydoc.documentId)
-      conn.close()
-      return
+
+      // is the user correct?
+      const doc = await getDocument(ydoc.documentId)
+      if (doc && doc.workspaceId === ydoc.workspaceId) {
+        const dbClock = isDataApp
+          ? doc.userAppClock[user.id] ?? doc.appClock
+          : doc.clock
+
+        if (dbClock !== clock) {
+          await broadcastDocument(
+            socketServer,
+            ydoc.workspaceId,
+            ydoc.documentId
+          )
+          conn.close()
+          return
+        }
+
+        // user clock is correct, fix ydoc clock
+        ydoc.clock = clock
+      }
     }
 
     ydoc.conns.set(conn, new Set())
