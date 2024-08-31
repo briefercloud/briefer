@@ -97,7 +97,8 @@ export class BlocksObserver implements IBlocksObserver {
       this.dropdownInputBlocksObserver.isIdle() &&
       this.dateInputBlocksObserver.isIdle() &&
       this.fileUploadBlocksObserver.isIdle() &&
-      this.writebackBlocksObserver.isIdle()
+      this.writebackBlocksObserver.isIdle() &&
+      this.pivotTableBlocksObserver.isIdle()
     )
   }
 

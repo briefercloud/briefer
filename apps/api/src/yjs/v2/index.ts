@@ -280,11 +280,12 @@ export const docsCache = new LRUCache<string, WSSharedDocV2>({
     }
   },
 })
+
 async function collectDocs() {
   const start = Date.now()
   try {
     logger.trace({ docsCount: docs.size }, 'Collecting docs')
-    const queue = new PQueue({ concurrency: 2 })
+    const queue = new PQueue({ concurrency: 6 })
     let collected = 0
     for (const [docId, doc] of docs) {
       logger.trace({ docId }, 'Checking if doc can be collected')
@@ -300,7 +301,7 @@ async function collectDocs() {
           }
 
           logger.trace({ docId }, 'Persisting doc state')
-          await doc.persist(false) // true)
+          await doc.persist(true)
           if (!doc.canCollect()) {
             logger.trace(
               { docId },

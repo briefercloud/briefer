@@ -24,7 +24,7 @@ export class MainObserver {
   }
 
   public isIdle() {
-    return this.blocksObserver.isIdle() // && this.runAllObserver.isIdle()
+    return this.blocksObserver.isIdle() && this.runAllObserver.isIdle()
   }
 
   public start() {

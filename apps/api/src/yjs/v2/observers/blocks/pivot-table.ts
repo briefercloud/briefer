@@ -27,7 +27,7 @@ export class PivotTableObserver implements IPivotTableObserver {
   }
 
   public isIdle() {
-    return true
+    return this.executor.isIdle()
   }
 
   public handleInitialBlockState(block: Y.XmlElement<PivotTableBlock>) {
