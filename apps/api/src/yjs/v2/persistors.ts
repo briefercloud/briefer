@@ -32,6 +32,7 @@ import { equals, omit } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
 import { getYDocWithoutHistory } from './documents.js'
 import { WritebackBlock } from '@briefer/editor/types/blocks/writeback.js'
+import { acquireLock } from '../../lock.js'
 
 export type LoadStateResult = {
   ydoc: Y.Doc
@@ -63,26 +64,7 @@ export class DocumentPersistor implements Persistor {
 
   public async load(tx?: PrismaTransaction) {
     try {
-      const ydoc = new Y.Doc()
-      const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
-        where: { documentId: this.documentId },
-      })
-
-      if (!dbDoc) {
-        return {
-          ydoc,
-          clock: 0,
-          byteLength: Y.encodeStateAsUpdate(ydoc).length,
-        }
-      }
-
-      this.applyUpdate(ydoc, dbDoc.state)
-
-      return {
-        ydoc,
-        clock: dbDoc.clock,
-        byteLength: dbDoc.state.length,
-      }
+      return acquireLock(`document:${this.documentId}`, () => this._load(tx))
     } catch (err) {
       logger.error(
         { documentId: this.documentId, err },
@@ -92,9 +74,44 @@ export class DocumentPersistor implements Persistor {
     }
   }
 
+  private async _load(tx?: PrismaTransaction) {
+    const ydoc = new Y.Doc()
+    const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
+      where: { documentId: this.documentId },
+    })
+
+    if (!dbDoc) {
+      return {
+        ydoc,
+        clock: 0,
+        byteLength: Y.encodeStateAsUpdate(ydoc).length,
+      }
+    }
+
+    this.applyUpdate(ydoc, dbDoc.state)
+
+    return {
+      ydoc,
+      clock: dbDoc.clock,
+      byteLength: dbDoc.state.length,
+    }
+  }
+
   public async persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    // This is called when all connections to the document are closed.
-    // In the future, this method might also be called in intervals or after a certain number of updates.
+    try {
+      return acquireLock(`document:${this.documentId}`, () =>
+        this._persist(ydoc, tx)
+      )
+    } catch (err) {
+      logger.error(
+        { documentId: this.documentId, err },
+        'Failed to persist Yjs document'
+      )
+      throw err
+    }
+  }
+
+  private async _persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const save = async (state: Buffer, tx: PrismaTransaction) => {
       const doc = await tx.document.findUnique({
         where: { id: this.documentId },
@@ -129,17 +146,9 @@ export class DocumentPersistor implements Persistor {
       })
     }
 
-    try {
-      const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
-      await save(state, tx ?? prisma())
-      return state.length
-    } catch (err) {
-      logger.error(
-        { documentId: this.documentId, err },
-        'Failed to persist Yjs document'
-      )
-      throw err
-    }
+    const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
+    await save(state, tx ?? prisma())
+    return state.length
   }
 
   public canWrite(
@@ -157,6 +166,12 @@ export class DocumentPersistor implements Persistor {
   }
 
   public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
+    return acquireLock(`document:${this.documentId}`, () =>
+      this._cleanHistory(wsdoc, tx)
+    )
+  }
+
+  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const ydoc = getYDocWithoutHistory(wsdoc)
 
     let yjsAppDoc = await (tx ?? prisma()).yjsDocument.findFirstOrThrow({
@@ -214,6 +229,18 @@ export class AppPersistor implements Persistor {
   }
 
   public async load(tx?: PrismaTransaction | undefined) {
+    try {
+      return acquireLock(`app:${this.yjsAppDocumentId}`, () => this._load(tx))
+    } catch (err) {
+      logger.error(
+        { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
+        'Failed to load Yjs app document state'
+      )
+      throw err
+    }
+  }
+
+  private async _load(tx?: PrismaTransaction | undefined) {
     const bind = async (tx: PrismaTransaction) => {
       const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
         where: {
@@ -254,25 +281,31 @@ export class AppPersistor implements Persistor {
       }
     }
 
+    if (tx) {
+      return await bind(tx)
+    }
+
+    return await prisma().$transaction(bind, {
+      maxWait: 31000,
+      timeout: 30000,
+    })
+  }
+
+  public async persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
     try {
-      if (tx) {
-        return await bind(tx)
-      } else {
-        return await prisma().$transaction(bind, {
-          maxWait: 31000,
-          timeout: 30000,
-        })
-      }
+      return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
+        this._persist(ydoc, tx)
+      )
     } catch (err) {
       logger.error(
         { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
-        'Failed to load Yjs app document state'
+        'Failed to persist Yjs app document'
       )
       throw err
     }
   }
 
-  public async persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
+  private async _persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const upsert = async (tx: PrismaTransaction) => {
       const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
       if (this.userId) {
@@ -323,18 +356,16 @@ export class AppPersistor implements Persistor {
       return state.length
     }
 
-    try {
-      return await upsert(tx ?? prisma())
-    } catch (err) {
-      logger.error(
-        { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
-        'Failed to persist Yjs app document'
-      )
-      throw err
-    }
+    return await upsert(tx ?? prisma())
   }
 
   public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
+    return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
+      this._cleanHistory(wsdoc, tx)
+    )
+  }
+
+  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const ydoc = getYDocWithoutHistory(wsdoc)
 
     if (this.userId) {
@@ -376,6 +407,12 @@ export class AppPersistor implements Persistor {
   }
 
   public async replaceState(newState: Buffer) {
+    return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
+      this._replaceState(newState)
+    )
+  }
+
+  private async _replaceState(newState: Buffer) {
     const ydoc = new Y.Doc()
 
     this.applyUpdate(ydoc, newState)

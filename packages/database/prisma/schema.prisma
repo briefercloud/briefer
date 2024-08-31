@@ -401,3 +401,12 @@ model Environment {
 
   @@unique([workspaceId], map: "unique_workspaceId")
 }
+
+model Lock {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+  isLocked   Boolean  @default(false)
+  ownerId    String   @db.Uuid
+}
