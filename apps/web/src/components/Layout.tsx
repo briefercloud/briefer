@@ -5,6 +5,7 @@ import {
   useRef,
   MouseEventHandler,
   useMemo,
+  useState,
 } from 'react'
 import { Menu, Transition } from '@headlessui/react'
 import { Syne } from 'next/font/google'
@@ -21,6 +22,7 @@ import {
   UsersIcon,
   AdjustmentsHorizontalIcon,
   PuzzlePieceIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -44,6 +46,8 @@ import { SubscriptionBadge } from './SubscriptionBadge'
 import MobileWarning from './MobileWarning'
 import ScrollBar from './ScrollBar'
 import { DataSourceBlinkingSignal } from './BlinkingSignal'
+import CommandPalette from './commandPalette'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 const syne = Syne({ subsets: ['latin'] })
 
@@ -117,6 +121,11 @@ export default function Layout({
   hideOnboarding,
 }: Props) {
   const session = useSession()
+
+  const [isSearchOpen, setSearchOpen] = useState(false)
+  useHotkeys(['mod+k'], () => {
+    setSearchOpen((prev) => !prev)
+  })
 
   const [isSideBarOpen, setSideBarOpen] = useSideBar()
   const toggleSideBar = useCallback(
@@ -313,6 +322,12 @@ export default function Layout({
     <div className={`flex w-full h-full ${syne.className}`}>
       <MobileWarning />
 
+      <CommandPalette
+        workspaceId={workspaceId}
+        isOpen={isSearchOpen}
+        setOpen={setSearchOpen}
+      />
+
       {isSideBarOpen && (
         <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-scroll border-r border-gray-200">
           <div className="flex items-center justify-between pt-4 px-5">
@@ -365,14 +380,27 @@ export default function Layout({
             <div className="pt-8 overflow-x-hidden">
               <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1 justify-between">
                 <span>Pages</span>
-                {session.data?.roles[workspaceId] !== 'viewer' && (
+
+                <div className="flex items-center">
                   <button
-                    onClick={onCreateDocumentHandler}
+                    onClick={() => setSearchOpen(true)}
                     className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
                   >
-                    <PlusSmallIcon className="h-4 w-4 " aria-hidden="true" />
+                    <MagnifyingGlassIcon
+                      className="h-4 w-4 "
+                      aria-hidden="true"
+                    />
                   </button>
-                )}
+
+                  {session.data?.roles[workspaceId] !== 'viewer' && (
+                    <button
+                      onClick={onCreateDocumentHandler}
+                      className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
+                    >
+                      <PlusSmallIcon className="h-4 w-4 " aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               <DocumentTree
