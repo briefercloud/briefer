@@ -98,6 +98,7 @@ describe('BlocksObserver', () => {
       { name: 'fileUploadObserver', mock: fileUploadObserver },
       { name: 'writebackObserver', mock: writebackObserver },
       { name: 'dateInputObserver', mock: dateInputObserver },
+      { name: 'pivotTableObserver', mock: pivotTableObserver },
     ]
 
     const table = []
@@ -110,19 +111,22 @@ describe('BlocksObserver', () => {
               for (const fileUploadIdle of [true, false]) {
                 for (const writebackIdle of [true, false]) {
                   for (const dateInputIdle of [true, false]) {
-                    row = [
-                      sqlIdle,
-                      pythonIdle,
-                      visualizationIdle,
-                      inputIdle,
-                      dropdownInputIdle,
-                      fileUploadIdle,
-                      writebackIdle,
-                      dateInputIdle,
-                    ]
-                    row.push(row.reduce((acc, curr) => acc && curr, true))
-                    table.push(row)
-                    row = []
+                    for (const pivotTableIdle of [true, false]) {
+                      row = [
+                        sqlIdle,
+                        pythonIdle,
+                        visualizationIdle,
+                        inputIdle,
+                        dropdownInputIdle,
+                        fileUploadIdle,
+                        writebackIdle,
+                        dateInputIdle,
+                        pivotTableIdle,
+                      ]
+                      row.push(row.reduce((acc, curr) => acc && curr, true))
+                      table.push(row)
+                      row = []
+                    }
                   }
                 }
               }
