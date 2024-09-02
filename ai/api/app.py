@@ -88,13 +88,14 @@ class SQLEditInputData(BaseModel):
     query: str
     instructions: str
     modelId: Optional[str] = None
+    openaiApiKey: Optional[str] = None
 
 @app.post("/v1/sql/edit")
 async def v1_sql_edit(data: SQLEditInputData, _ = Depends(get_current_username)):
     engine = get_database_engine(data.databaseURL, data.credentialsInfo)
     db = SQLDatabase(engine=engine)
 
-    llm = initialize_llm(model_id=data.modelId)
+    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
     chain = create_sql_edit_query_chain(llm, db)
     res = chain.invoke({"query": data.query, "instructions": data.instructions})
 
@@ -106,10 +107,11 @@ class PythonEditInputData(BaseModel):
     allowedLibraries: List[str]
     variables: str
     modelId: Optional[str] = None
+    openaiApiKey: Optional[str] = None
 
 @app.post("/v1/python/edit")
 async def v1_python_edit(data: PythonEditInputData, _ = Depends(get_current_username)):
-    llm = initialize_llm(model_id=data.modelId)
+    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
     chain = create_python_edit_query_chain(llm)
     res = chain.invoke({"source": data.source, "instructions": data.instructions, "allowed_libraries": data.allowedLibraries})
 
@@ -130,7 +132,7 @@ async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_user
         engine = None
         if data.databaseURL != "duckdb":
             engine = get_database_engine(data.databaseURL, credentialsInfo, cert_temp_file_path)
-        llm = initialize_llm(model_id=data.modelId)
+        llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
         chain = create_sql_edit_stream_query_chain(llm, engine)
 
         async def generate():
@@ -141,7 +143,7 @@ async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_user
 
 @app.post("/v1/stream/python/edit")
 async def v1_stream_python_edit(data: PythonEditInputData, _ = Depends(get_current_username)):
-    llm = initialize_llm(model_id=data.modelId)
+    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
     chain = create_python_edit_stream_query_chain(llm)
 
     async def generate():

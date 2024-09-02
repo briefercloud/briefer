@@ -35,6 +35,11 @@ async function editWithAI(
         },
         select: {
           assistantModel: true,
+          secrets: {
+            select: {
+              openAiApiKey: true,
+            },
+          },
         },
       })
     : null
@@ -46,7 +51,8 @@ async function editWithAI(
     instructions,
     dataFrames,
     onSource,
-    workspace?.assistantModel ?? null
+    workspace?.assistantModel ?? null,
+    workspace?.secrets?.openAiApiKey ?? null
   )
 }
 

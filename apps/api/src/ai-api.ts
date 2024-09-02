@@ -76,7 +76,8 @@ export async function sqlEditStreamed(
   instructions: string,
   credentialsInfo: object | null,
   onSQL: (sql: string) => void,
-  modelId: string | null
+  modelId: string | null,
+  openaiApiKey: string | null
 ): Promise<{
   promise: Promise<void>
   abortController: AbortController
@@ -90,6 +91,7 @@ export async function sqlEditStreamed(
       instructions,
       credentialsInfo,
       modelId,
+      openaiApiKey,
     },
     {
       headers: {
@@ -171,7 +173,8 @@ export async function pythonEditStreamed(
   instructions: string,
   dataFrames: DataFrame[],
   onSource: (source: string) => void,
-  modelId: string | null
+  modelId: string | null,
+  openaiApiKey: string | null
 ): Promise<void> {
   const allowedLibraries = (config().PYTHON_ALLOWED_LIBRARIES ?? '')
     .split(',')
@@ -187,6 +190,7 @@ export async function pythonEditStreamed(
       allowedLibraries,
       variables,
       modelId,
+      openaiApiKey,
     },
     {
       headers: {

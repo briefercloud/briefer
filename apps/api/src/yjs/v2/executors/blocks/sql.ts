@@ -51,6 +51,11 @@ async function editWithAI(
         },
         select: {
           assistantModel: true,
+          secrets: {
+            select: {
+              openAiApiKey: true,
+            },
+          },
         },
       })
     : null
@@ -66,7 +71,8 @@ async function editWithAI(
       instructions,
       null,
       onSuggestions,
-      assistantModelId
+      assistantModelId,
+      workspace?.secrets?.openAiApiKey ?? null
     )
   }
 
@@ -89,7 +95,8 @@ async function editWithAI(
     instructions,
     credentialsInfo,
     onSuggestions,
-    assistantModelId
+    assistantModelId,
+    workspace?.secrets?.openAiApiKey ?? null
   )
 }
 
