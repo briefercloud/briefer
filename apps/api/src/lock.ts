@@ -13,6 +13,7 @@ export async function acquireLock<T>(
   const expiresAt = new Date(now.getTime() + expirationTimeMs)
   const ownerId = uuidv4()
 
+  let interval: NodeJS.Timeout | null = null
   try {
     let attempt = 1
     while (true) {
@@ -46,7 +47,7 @@ export async function acquireLock<T>(
         })
         logger.debug({ name, ownerId }, 'lock acquired')
 
-        const interval = setInterval(async () => {
+        interval = setInterval(async () => {
           logger.debug({ name, ownerId }, 'incrementing lock expiration time')
           await prisma().lock.update({
             where: {
@@ -84,6 +85,9 @@ export async function acquireLock<T>(
     }
   } finally {
     logger.debug({ name, ownerId }, 'releasing lock')
+    if (interval) {
+      clearInterval(interval)
+    }
     await prisma().lock.deleteMany({
       where: {
         name,
