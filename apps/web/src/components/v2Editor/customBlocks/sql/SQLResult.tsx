@@ -21,6 +21,7 @@ import {
   SparklesIcon,
 } from '@heroicons/react/20/solid'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
+import { Tooltip } from '@/components/Tooltips'
 
 interface Props {
   blockId: string
@@ -34,6 +35,7 @@ interface Props {
   isFixingWithAI: boolean
   onFixWithAI: () => void
   dashboardMode: 'live' | 'editing' | 'none'
+  canFixWithAI: boolean
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -59,6 +61,7 @@ function SQLResult(props: Props) {
           result={props.result}
           isFixingWithAI={props.isFixingWithAI}
           onFixWithAI={props.onFixWithAI}
+          canFixWithAI={props.canFixWithAI}
         />
       )
     case 'python-error':
@@ -404,10 +407,11 @@ function SQLSyntaxError(props: {
   result: SyntaxErrorRunQueryResult
   isFixingWithAI: boolean
   onFixWithAI?: () => void
+  canFixWithAI: boolean
 }) {
   return (
     <div className="text-xs border-t p-4">
-      <div className="flex border border-red-300 p-4 gap-x-3 overflow-hidden word-wrap">
+      <div className="flex border border-red-300 p-4 gap-x-3 word-wrap">
         <div className="w-full">
           <span className="flex items-center gap-x-2 pb-2">
             <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
@@ -416,26 +420,36 @@ function SQLSyntaxError(props: {
             </h4>
           </span>
           <p>We received the following error:</p>
-          <pre className="whitespace-pre-wrap ph-no-capture">
+          <pre className="whitespace-pre-wrap ph-no-capture overflow-hidden">
             {props.result.message}
           </pre>
           {props.onFixWithAI && (
-            <button
-              onClick={props.onFixWithAI}
-              className="mt-2 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne border-gray-200 hover:bg-gray-50 hover:text-gray-700"
+            <Tooltip
+              title="Missing OpenAI API key"
+              message="Admins can add an OpenAI key in settings."
+              className="inline-block"
+              tooltipClassname="w-40 text-center"
+              position="top"
+              active={!props.canFixWithAI}
             >
-              {props.isFixingWithAI ? (
-                <>
-                  <Spin />
-                  Fixing - click to cancel
-                </>
-              ) : (
-                <>
-                  <SparklesIcon className="w-3 h-3" />
-                  Fix with AI
-                </>
-              )}
-            </button>
+              <button
+                disabled={!props.canFixWithAI}
+                onClick={props.onFixWithAI}
+                className="mt-2 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne border-gray-200 hover:bg-gray-50 hover:text-gray-700 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed"
+              >
+                {props.isFixingWithAI ? (
+                  <>
+                    <Spin />
+                    Fixing - click to cancel
+                  </>
+                ) : (
+                  <>
+                    <SparklesIcon className="w-3 h-3" />
+                    Fix with AI
+                  </>
+                )}
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

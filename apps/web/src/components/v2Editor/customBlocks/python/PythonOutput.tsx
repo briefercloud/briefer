@@ -19,6 +19,7 @@ interface Props {
   className?: string
   outputs: Output[]
   isFixWithAILoading: boolean
+  canFixWithAI: boolean
   onFixWithAI: (error: PythonErrorOutput) => void
   isPDF: boolean
   isDashboardView: boolean
@@ -87,6 +88,7 @@ export function PythonOutputs(props: Props) {
             isFixWithAILoading={props.isFixWithAILoading}
             onFixWithAI={props.onFixWithAI}
             isPDF={props.isPDF}
+            canFixWithAI={props.canFixWithAI}
             isDashboardView={props.isDashboardView}
           />
         </div>
@@ -101,6 +103,7 @@ interface ItemProps {
   onFixWithAI: (error: PythonErrorOutput) => void
   isPDF: boolean
   isDashboardView: boolean
+  canFixWithAI: boolean
 }
 export function PythonOutput(props: ItemProps) {
   switch (props.output.type) {
@@ -141,6 +144,7 @@ export function PythonOutput(props: ItemProps) {
     case 'error':
       return (
         <PythonError
+          canFixWithAI={props.canFixWithAI}
           error={props.output}
           isFixWithAILoading={props.isFixWithAILoading}
           onFixWithAI={props.onFixWithAI}

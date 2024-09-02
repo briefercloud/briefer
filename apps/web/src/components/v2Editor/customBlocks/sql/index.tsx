@@ -34,7 +34,7 @@ import {
 } from '@briefer/editor'
 import { DiffEditor, Editor } from '@monaco-editor/react'
 import SQLResult from './SQLResult'
-import type { ApiDocument } from '@briefer/database'
+import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import DataframeNameInput from './DataframeNameInput'
 import HeaderSelect from '@/components/v2Editor/customBlocks/sql/HeaderSelect'
 import clsx from 'clsx'
@@ -56,6 +56,9 @@ import { DataSourceType } from '@/components/DataSourcesList'
 import { useRouter } from 'next/router'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { useWorkspaces } from '@/hooks/useWorkspaces'
+import { useStringQuery } from '@/hooks/useQueryArgs'
+import useProperties from '@/hooks/useProperties'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -83,6 +86,21 @@ interface Props {
 }
 
 function SQLBlock(props: Props) {
+  const properties = useProperties()
+  const workspaceId = useStringQuery('workspaceId')
+  const [workspaces] = useWorkspaces()
+  const currentWorkspace: ApiWorkspace | undefined = useMemo(
+    () => workspaces.data.find((w) => w.id === workspaceId),
+    [workspaces.data, workspaceId]
+  )
+
+  const hasOaiKey = useMemo(() => {
+    return (
+      !properties.data?.requiresOpenAiKey ||
+      (currentWorkspace?.secrets.hasOpenAiApiKey ?? false)
+    )
+  }, [currentWorkspace, properties.data])
+
   const toggleResultHidden = useCallback(() => {
     props.block.doc?.transact(() => {
       const currentIsResultHidden = props.block.getAttribute('isResultHidden')
@@ -111,8 +129,12 @@ function SQLBlock(props: Props) {
   const statusIsDisabled = execStatusIsDisabled(execStatus)
 
   const onToggleEditWithAIPromptOpen = useCallback(() => {
+    if (!hasOaiKey) {
+      return
+    }
+
     toggleSQLEditWithAIPromptOpen(props.block)
-  }, [props.block])
+  }, [props.block, hasOaiKey])
 
   useEffect(() => {
     const currentSrc = getSQLSource(props.block)
@@ -232,6 +254,10 @@ function SQLBlock(props: Props) {
   }, [props.block])
 
   const onFixWithAI = useCallback(() => {
+    if (hasOaiKey) {
+      return
+    }
+
     const status = props.block.getAttribute('status')
     if (status === 'fix-with-ai-running') {
       props.block.setAttribute('status', 'idle')
@@ -343,6 +369,7 @@ function SQLBlock(props: Props) {
         isFixingWithAI={isFixingSQLWithAI(props.block)}
         onFixWithAI={onFixWithAI}
         dashboardMode={props.dashboardMode}
+        canFixWithAI={hasOaiKey}
       />
     )
   }
@@ -524,20 +551,38 @@ function SQLBlock(props: Props) {
                       disabled={!props.isEditable}
                       onClick={onToggleEditWithAIPromptOpen}
                       className={clsx(
-                        !props.isEditable
+                        !props.isEditable || !hasOaiKey
                           ? 'cursor-not-allowed bg-gray-200'
                           : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
                         'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
                       )}
                     >
                       <SparklesIcon className="w-3 h-3" />
+
                       <span>Edit with AI</span>
-                      <div className="font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1">
-                        <span>Open AI edit form</span>
+                      <div
+                        className={clsx(
+                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-20',
+                          hasOaiKey ? 'w-28' : 'w-40'
+                        )}
+                      >
+                        <span>
+                          {hasOaiKey
+                            ? 'Open AI edit form'
+                            : 'Missing OpenAI API key'}
+                        </span>
                         <span className="inline-flex gap-x-1 items-center text-gray-400">
-                          <span>⌘</span>
-                          <span>+</span>
-                          <span>e</span>
+                          {hasOaiKey ? (
+                            <>
+                              <span>⌘</span>
+                              <span>+</span>
+                              <span>e</span>
+                            </>
+                          ) : (
+                            <span>
+                              Admins can add an OpenAI key in settings.
+                            </span>
+                          )}
                         </span>
                       </div>
                     </button>
@@ -559,6 +604,7 @@ function SQLBlock(props: Props) {
             isFixingWithAI={isFixingSQLWithAI(props.block)}
             onFixWithAI={onFixWithAI}
             dashboardMode={props.dashboardMode}
+            canFixWithAI={hasOaiKey}
           />
         )}
       </div>

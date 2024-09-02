@@ -17,10 +17,10 @@ import { PERSONAL_DOMAINS } from '@/utils/personalDomains'
 import { Tooltip } from '@/components/Tooltips'
 import {
   CheckCircleIcon,
-  CheckIcon,
   XMarkIcon,
   XCircleIcon,
 } from '@heroicons/react/24/solid'
+import useProperties from '@/hooks/useProperties'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -41,6 +41,7 @@ export function getDomain(email: string): string {
 export default function SettingsPage() {
   const workspaceId = useStringQuery('workspaceId')
   const session = useSession()
+  const properties = useProperties()
 
   const [state, setState] = useState({
     isEditingName: false,
@@ -261,139 +262,141 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="space-y-8 border-b border-gray-900/10 pb-0 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 ">
-              <div className="flex items-center justify-between sm:gap-4 sm:py-6">
-                <div className="flex flex-col gap-y-2 justify-left">
-                  <label
-                    htmlFor="assistant_model"
-                    className="block text-md font-medium leading-6 text-gray-900 sm:pt-1.5"
-                  >
-                    OpenAI API Key
-                  </label>
-                  <span className="text-xs text-gray-400">
-                    {`Enter your OpenAI API key to use AI features like "Edit with AI" and "Fix with AI".`}
-                  </span>
-                </div>
+            {properties.data?.requiresOpenAiKey && (
+              <div className="space-y-8 border-b border-gray-900/10 pb-0 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 ">
+                <div className="flex items-center justify-between sm:gap-4 sm:py-6">
+                  <div className="flex flex-col gap-y-2 justify-left">
+                    <label
+                      htmlFor="assistant_model"
+                      className="block text-md font-medium leading-6 text-gray-900 sm:pt-1.5"
+                    >
+                      OpenAI API Key
+                    </label>
+                    <span className="text-xs text-gray-400">
+                      {`Enter your OpenAI API key to use AI features like "Edit with AI" and "Fix with AI".`}
+                    </span>
+                  </div>
 
-                <div className="w-1/2 flex justify-center gap-x-6">
-                  {!state.isEditingOpenAIKey ? (
-                    <>
-                      <span className="flex gap-x-1 items-center justify-center text-sm">
-                        {currentWorkspace?.secrets.hasOpenAiApiKey ? (
-                          <>
-                            <CheckCircleIcon
-                              className="h-5 w-5 text-ceramic-300"
-                              aria-hidden="true"
-                            />
-                            API key set.
-                          </>
-                        ) : (
-                          <>
-                            <XCircleIcon
-                              className="h-5 w-5 text-red-500"
-                              aria-hidden="true"
-                            />
-                            API key missing.
-                          </>
-                        )}
-                      </span>
+                  <div className="w-1/2 flex justify-center gap-x-6">
+                    {!state.isEditingOpenAIKey ? (
+                      <>
+                        <span className="flex gap-x-1 items-center justify-center text-sm">
+                          {currentWorkspace?.secrets.hasOpenAiApiKey ? (
+                            <>
+                              <CheckCircleIcon
+                                className="h-5 w-5 text-ceramic-300"
+                                aria-hidden="true"
+                              />
+                              API key set.
+                            </>
+                          ) : (
+                            <>
+                              <XCircleIcon
+                                className="h-5 w-5 text-red-500"
+                                aria-hidden="true"
+                              />
+                              API key missing.
+                            </>
+                          )}
+                        </span>
 
-                      <div className="flex items-center justify-center gap-x-2">
+                        <div className="flex items-center justify-center gap-x-2">
+                          <button
+                            type="button"
+                            className="flex gap-x-1.5 items-center px-4 py-1.5 border border-gray-200 text-xs rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                            onClick={() =>
+                              setState((s) => ({
+                                ...s,
+                                newOpenAIKey: '',
+                                isEditingOpenAIKey: true,
+                              }))
+                            }
+                          >
+                            <PencilIcon className="h-3 w-3" />
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            className={clsx(
+                              'flex gap-x-1.5 items-center px-4 py-1.5 border border-gray-200 text-xs rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none',
+                              currentWorkspace?.secrets.hasOpenAiApiKey
+                                ? 'block'
+                                : 'hidden'
+                            )}
+                            onClick={() => {
+                              updateSettings(workspaceId, {
+                                openAiApiKey: '',
+                              })
+                              setState((s) => ({
+                                ...s,
+                                newOpenAIKey: '',
+                                isEditingOpenAIKey: false,
+                              }))
+                            }}
+                          >
+                            <XMarkIcon className="h-3 w-3" />
+                            Remove
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          updateSettings(workspaceId, {
+                            openAiApiKey: state.newOpenAIKey,
+                          })
+                          setState((s) => ({
+                            ...s,
+                            openAIKey: '',
+                            isEditingOpenAIKey: false,
+                          }))
+                        }}
+                        className="flex gap-x-2 items-center"
+                      >
+                        <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-600 sm:max-w-md w-full">
+                          <input
+                            type="text"
+                            placeholder="Your OpenAI API key"
+                            name="openAIKey"
+                            id="openAIKey"
+                            className="block flex-1 border-0 bg-transparent px-2 py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 text-md leading-6"
+                            value={state.newOpenAIKey}
+                            onChange={(e) =>
+                              setState((s) => ({
+                                ...s,
+                                newOpenAIKey: e.target.value,
+                              }))
+                            }
+                          />
+                        </div>
+
                         <button
                           type="button"
-                          className="flex gap-x-1.5 items-center px-4 py-1.5 border border-gray-200 text-xs rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                          className="flex gap-x-2 items-center px-4 py-2 border border-gray-200 text-xs rounded-sm shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                           onClick={() =>
                             setState((s) => ({
                               ...s,
-                              newOpenAIKey: '',
-                              isEditingOpenAIKey: true,
+                              isEditingOpenAIKey: false,
                             }))
                           }
                         >
-                          <PencilIcon className="h-3 w-3" />
-                          Edit
+                          Cancel
                         </button>
 
                         <button
-                          type="button"
-                          className={clsx(
-                            'flex gap-x-1.5 items-center px-4 py-1.5 border border-gray-200 text-xs rounded-full shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none',
-                            currentWorkspace?.secrets.hasOpenAiApiKey
-                              ? 'block'
-                              : 'hidden'
-                          )}
-                          onClick={() => {
-                            updateSettings(workspaceId, {
-                              openAiApiKey: '',
-                            })
-                            setState((s) => ({
-                              ...s,
-                              newOpenAIKey: '',
-                              isEditingOpenAIKey: false,
-                            }))
-                          }}
+                          type="submit"
+                          className="flex items-center justify-center px-4 py-2 border border-transparent text-xs rounded-sm shadow-sm text-hunter-950 bg-primary-200 hover:bg-primary-300"
                         >
-                          <XMarkIcon className="h-3 w-3" />
-                          Remove
+                          Save
                         </button>
-                      </div>
-                    </>
-                  ) : (
-                    <form
-                      onSubmit={(e) => {
-                        e.preventDefault()
-                        updateSettings(workspaceId, {
-                          openAiApiKey: state.newOpenAIKey,
-                        })
-                        setState((s) => ({
-                          ...s,
-                          openAIKey: '',
-                          isEditingOpenAIKey: false,
-                        }))
-                      }}
-                      className="flex gap-x-2 items-center"
-                    >
-                      <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-600 sm:max-w-md w-full">
-                        <input
-                          type="text"
-                          placeholder="Your OpenAI API key"
-                          name="openAIKey"
-                          id="openAIKey"
-                          className="block flex-1 border-0 bg-transparent px-2 py-1.5 text-gray-900 placeholder:text-gray-400 focus:ring-0 text-md leading-6"
-                          value={state.newOpenAIKey}
-                          onChange={(e) =>
-                            setState((s) => ({
-                              ...s,
-                              newOpenAIKey: e.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-
-                      <button
-                        type="button"
-                        className="flex gap-x-2 items-center px-4 py-2 border border-gray-200 text-xs rounded-sm shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
-                        onClick={() =>
-                          setState((s) => ({
-                            ...s,
-                            isEditingOpenAIKey: false,
-                          }))
-                        }
-                      >
-                        Cancel
-                      </button>
-
-                      <button
-                        type="submit"
-                        className="flex items-center justify-center px-4 py-2 border border-transparent text-xs rounded-sm shadow-sm text-hunter-950 bg-primary-200 hover:bg-primary-300"
-                      >
-                        Save
-                      </button>
-                    </form>
-                  )}
+                      </form>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

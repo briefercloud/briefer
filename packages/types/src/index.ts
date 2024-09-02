@@ -859,6 +859,7 @@ export type WriteBackResult = z.infer<typeof WriteBackResult>
 
 export type Properties = {
   needsSetup: boolean
+  requiresOpenAiKey: boolean
 }
 
 export function getDomain(email: string): string {
