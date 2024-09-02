@@ -24,6 +24,7 @@ export interface IBaseConfig {
   POSTGRES_POOL_TIMEOUT: number
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
+  WORKSPACE_SECRETS_ENCRYPTION_KEY: string
   YJS_DOCS_CACHE_SIZE_MB: number
 }
 
@@ -51,6 +52,7 @@ export class BaseConfig implements IBaseConfig {
   public POSTGRES_POOL_TIMEOUT: number
   public ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   public DATASOURCES_ENCRYPTION_KEY: string
+  public WORKSPACE_SECRETS_ENCRYPTION_KEY: string
   public YJS_DOCS_CACHE_SIZE_MB: number
 
   public constructor() {
@@ -85,6 +87,9 @@ export class BaseConfig implements IBaseConfig {
       'ENVIRONMENT_VARIABLES_ENCRYPTION_KEY'
     )
     this.DATASOURCES_ENCRYPTION_KEY = getVar('DATASOURCES_ENCRYPTION_KEY')
+    this.WORKSPACE_SECRETS_ENCRYPTION_KEY = getVar(
+      'WORKSPACE_SECRETS_ENCRYPTION_KEY'
+    )
     this.YJS_DOCS_CACHE_SIZE_MB = parseIntOr(
       process.env['YJS_DOCS_CACHE_SIZE_MB'] ?? '',
       // set default to 1 byte in MB to effectively disable the cache

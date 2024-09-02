@@ -3,6 +3,7 @@ import split2 from 'split2'
 import config from './config/index.js'
 import { z } from 'zod'
 import { DataFrame } from '@briefer/types'
+import { decrypt } from '@briefer/database'
 
 const base64Credentials = () =>
   Buffer.from(
@@ -91,7 +92,9 @@ export async function sqlEditStreamed(
       instructions,
       credentialsInfo,
       modelId,
-      openaiApiKey,
+      openaiApiKey: openaiApiKey
+        ? decrypt(openaiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
+        : null,
     },
     {
       headers: {
@@ -190,7 +193,9 @@ export async function pythonEditStreamed(
       allowedLibraries,
       variables,
       modelId,
-      openaiApiKey,
+      openaiApiKey: openaiApiKey
+        ? decrypt(openaiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
+        : null,
     },
     {
       headers: {

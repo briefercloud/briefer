@@ -13,6 +13,9 @@ export type {
 
 export { UserWorkspaceRole } from '@prisma/client'
 
+// TODO move these to their own package
+export { encrypt, decrypt } from './datasources/crypto.js'
+
 export * from './documents.js'
 export * from './schedule.js'
 export * from './datasources/index.js'

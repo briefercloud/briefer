@@ -8,12 +8,13 @@ import environmentVariablesRouter from './environment-variables.js'
 import { IOServer } from '../../../websocket/index.js'
 import { getParam } from '../../../utils/express.js'
 import { broadcastDocuments } from '../../../websocket/workspace/documents.js'
-import { z } from 'zod'
-import prisma, { UserWorkspaceRole, updateWorkspace } from '@briefer/database'
+import { UserWorkspaceRole, updateWorkspace } from '@briefer/database'
 import onboardingRouter from './onboarding.js'
 import filesRouter from './files.js'
 import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
 import { WorkspaceEditFormValues } from '@briefer/types'
+import { encrypt } from '@briefer/database'
+import config from '../../../config/index.js'
 
 const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 
@@ -59,6 +60,15 @@ export default function workspaceRouter(socketServer: IOServer) {
     if (!payload.success) {
       res.status(400).end()
       return
+    }
+
+    if (payload.data.openAiApiKey) {
+      const key = payload.data.openAiApiKey
+      delete payload.data.openAiApiKey
+      payload.data.openAiApiKey = encrypt(
+        key,
+        config().WORKSPACE_SECRETS_ENCRYPTION_KEY
+      )
     }
 
     const updatedWorkspace = await updateWorkspace(workspaceId, payload.data)
