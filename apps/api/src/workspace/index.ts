@@ -3,21 +3,12 @@ import {
   prisma,
   PrismaTransaction,
   UserWorkspaceRole,
-  Workspace,
+  ApiWorkspace,
+  createWorkspace as prismaCreateWorkspace,
 } from '@briefer/database'
 import { z } from 'zod'
 import { IOServer } from '../websocket/index.js'
-
-export const WorkspaceCreateValues = z.object({
-  name: z.string(),
-  useContext: z
-    .union([z.literal('work'), z.literal('personal'), z.literal('studies')])
-    .optional(),
-  useCases: z.array(z.string()).optional(),
-  source: z.string().optional(),
-  inviteEmails: z.array(z.string()).optional(),
-})
-export type WorkspaceCreateInput = z.infer<typeof WorkspaceCreateValues>
+import { WorkspaceCreateInput } from '@briefer/types'
 
 export interface IWorkspaceCreator {
   createWorkspace(
@@ -25,7 +16,7 @@ export interface IWorkspaceCreator {
     input: WorkspaceCreateInput,
     socketServer: IOServer,
     tx?: PrismaTransaction
-  ): Promise<{ workspace: Workspace; invitedUsers: ApiUser[] }>
+  ): Promise<{ workspace: ApiWorkspace; invitedUsers: ApiUser[] }>
 }
 
 export class WorkspaceCreator implements IWorkspaceCreator {
@@ -34,19 +25,9 @@ export class WorkspaceCreator implements IWorkspaceCreator {
     input: WorkspaceCreateInput,
     _socketServer: IOServer,
     tx?: PrismaTransaction
-  ): Promise<{ workspace: Workspace; invitedUsers: ApiUser[] }> {
+  ): Promise<{ workspace: ApiWorkspace; invitedUsers: ApiUser[] }> {
     const run = async (tx: PrismaTransaction) => {
-      const data = {
-        name: input.name,
-        useContext: input.useContext,
-        useCases: input.useCases,
-        source: input.source,
-        ownerId: owner.id,
-      }
-
-      const workspace = await tx.workspace.create({
-        data,
-      })
+      const workspace = await prismaCreateWorkspace(input, owner.id, tx)
 
       let userWorkspaceAssociations = [
         {

@@ -4,7 +4,6 @@ import { ITXClientDenyList } from '@prisma/client/runtime/library.js'
 
 export type {
   Document,
-  Workspace,
   User,
   YjsDocument,
   UserWorkspace,

@@ -44,7 +44,7 @@ model YjsDocument {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
-  document  Document              @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
 
 model YjsAppDocument {
@@ -55,7 +55,7 @@ model YjsAppDocument {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
-  document            Document                 @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document            Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userYjsAppDocuments UserYjsAppDocument[]
 }
 
@@ -163,7 +163,7 @@ model AthenaDataSource {
   s3OutputPath      String
   notes             String
   structure         String?
-  isDemo         Boolean    @default(false)
+  isDemo            Boolean    @default(false)
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @default(now()) @updatedAt
   connStatus        ConnStatus @default(online)
@@ -183,7 +183,7 @@ model BigQueryDataSource {
   structure         String?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @default(now()) @updatedAt
-  isDemo         Boolean    @default(false)
+  isDemo            Boolean    @default(false)
   connStatus        ConnStatus @default(online)
   connError         String?
   lastConnection    DateTime?
@@ -251,9 +251,9 @@ model User {
   ownedWorkspaces    Workspace[]
   confirmedAt        DateTime?
 
-  comments                Comment[]
-  Favorite                Favorite[]
-  UserYjsAppDocument      UserYjsAppDocument[]
+  comments           Comment[]
+  Favorite           Favorite[]
+  UserYjsAppDocument UserYjsAppDocument[]
 }
 
 model Comment {
@@ -303,7 +303,7 @@ model ExecutionSchedule {
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @default(now()) @updatedAt
 
-  document           Document                        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
 
 enum Plan {
@@ -328,6 +328,7 @@ model Workspace {
   useContext     String?
   plan           Plan           @default(free)
   ownerId        String         @db.Uuid
+  secretsId      String?        @unique @db.Uuid
   onboardingStep OnboardingStep @default(intro)
   assistantModel String         @default("gpt-4o")
 
@@ -335,6 +336,7 @@ model Workspace {
   updatedAt DateTime @default(now()) @updatedAt
 
   owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  secrets              WorkspaceSecrets?      @relation(fields: [secretsId], references: [id])
   documents            Document[]
   users                UserWorkspace[]
   postgresDataSources  PostgreSQLDataSource[]
@@ -409,4 +411,10 @@ model Lock {
   expiresAt  DateTime
   isLocked   Boolean  @default(false)
   ownerId    String   @db.Uuid
+}
+
+model WorkspaceSecrets {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  openAiApiKey String?
+  Workspace    Workspace?
 }

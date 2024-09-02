@@ -894,3 +894,29 @@ export type PivotTableSort =
       row: string
       order: 'asc' | 'desc'
     }
+
+const workspaceEditBase = z.object({
+  name: z.string().optional(),
+  assistantModel: z.string().optional(),
+  openAiApiKey: z.string().optional(),
+})
+
+export const WorkspaceEditFormValues = z.union([
+  workspaceEditBase.extend({ name: z.string() }),
+  workspaceEditBase.extend({ assistantModel: z.string() }),
+  workspaceEditBase.extend({ openAiApiKey: z.string() }),
+])
+
+export type WorkspaceEditFormValues = z.infer<typeof WorkspaceEditFormValues>
+
+export const WorkspaceCreateValues = z.object({
+  name: z.string(),
+  useContext: z
+    .union([z.literal('work'), z.literal('personal'), z.literal('studies')])
+    .optional(),
+  useCases: z.array(z.string()).optional(),
+  source: z.string().optional(),
+  inviteEmails: z.array(z.string()).optional(),
+})
+
+export type WorkspaceCreateInput = z.infer<typeof WorkspaceCreateValues>
