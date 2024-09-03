@@ -72,14 +72,16 @@ export async function acquireLock<T>(
           continue
         }
 
-        logger.error(
-          {
-            name,
-            ownerId,
-            err,
-          },
-          'error acquiring lock'
-        )
+        if (!interval) {
+          logger.error(
+            {
+              name,
+              ownerId,
+              err,
+            },
+            'error acquiring lock'
+          )
+        }
         throw err
       }
     }

@@ -301,7 +301,7 @@ async function collectDocs() {
           }
 
           logger.trace({ docId }, 'Persisting doc state')
-          await doc.persist(true)
+          await doc.persist(false)
           if (!doc.canCollect()) {
             logger.trace(
               { docId },

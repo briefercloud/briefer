@@ -173,25 +173,27 @@ export class DocumentPersistor implements Persistor {
 
   private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const ydoc = getYDocWithoutHistory(wsdoc)
+    const state = Y.encodeStateAsUpdate(ydoc)
+    const buffer = Buffer.from(state)
 
-    let yjsAppDoc = await (tx ?? prisma()).yjsDocument.findFirstOrThrow({
+    const yjsAppDoc = await (tx ?? prisma()).yjsDocument.upsert({
       where: { documentId: this.documentId },
-    })
-    yjsAppDoc = await (tx ?? prisma()).yjsDocument.update({
-      where: { id: yjsAppDoc.id },
-      data: {
+      create: {
+        documentId: this.documentId,
+        state: buffer,
+      },
+      update: {
         clock: {
           increment: 1,
         },
+        state: buffer,
       },
     })
-
-    const byteLength = Y.encodeStateAsUpdate(ydoc).length
 
     return {
       ydoc,
       clock: yjsAppDoc.clock,
-      byteLength,
+      byteLength: state.byteLength,
     }
   }
 
