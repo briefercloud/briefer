@@ -18,6 +18,14 @@ In this document, you'll learn how to run Briefer in development mode and how to
 
 You need to be able to run Briefer in development mode to contribute to the project and test changes.
 
+<p>
+<picture align="center">
+  <source  align="center" media="(prefers-color-scheme: dark)" srcset="../assets/img/briefer-dev-mode-dark.png">
+  <source align="center" media="(prefers-color-scheme: light)" srcset="../assets/img/briefer-dev-mode.png">
+  <img align="center" alt="Briefer architecture diagram for dev mode" src="../assets/img/briefer-dev-mode.png">
+</picture>
+</p>
+
 > [!NOTE]
 > If you're looking to deploy Briefer, you can check our [deployment guide here](./DEPLOYMENT.md). This guide is focused on running Briefer in _development_ mode.
 
@@ -64,6 +72,8 @@ After installing the dependencies, you can start Briefer by running:
 ```bash
 yarn dev
 ```
+
+<br />
 
 ### 4. (Optional) Running the AI service
 
@@ -133,11 +143,11 @@ In any case, either by opening an issue or asking a question in our Slack commun
 
 Finally, if you're not sure whether you should open an issue or ask a question on Slack, just do what feels right to you - it's all good. :v:
 
+<br />
+
 ### :lock: Reporting Security Issues
 
 If you've found a security issue in Briefer, please don't open an issue. Instead, send an email to [founders@briefer.cloud](mailto:founders@briefer.cloud).
-
-## :love_letter: Feature Requests
 
 <br />
 
