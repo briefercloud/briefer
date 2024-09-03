@@ -1,7 +1,7 @@
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useEffect, useCallback } from 'react'
 import { NextRouter, useRouter } from 'next/router'
-import { useSession } from '@/hooks/useAuth'
+import { useSession, useSignout } from '@/hooks/useAuth'
 import Cookies from 'js-cookie'
 import useProperties from './useProperties'
 
@@ -45,6 +45,7 @@ export const useSessionRedirect = (shouldRedirect = true) => {
   const router = useRouter()
   const session = useSession()
   const [workspaces] = useWorkspaces()
+  const signOut = useSignout()
 
   useEffect(() => {
     if (
@@ -64,9 +65,9 @@ export const useSessionRedirect = (shouldRedirect = true) => {
         redirectToLogin(router)
       }
     } else if (workspaces.data.length === 0) {
-      router.replace('/new-workspace')
+      signOut()
     } else {
       router.replace(`/workspaces/${workspaces.data[0].id}/documents`)
     }
-  }, [properties, workspaces, session, router, shouldRedirect])
+  }, [properties, workspaces, session, router, shouldRedirect, signOut])
 }

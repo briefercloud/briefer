@@ -104,7 +104,7 @@ export async function createWorkspace(
   owner: ApiUser,
   input: WorkspaceCreateInput,
   socketServer: IOServer,
-  tx?: PrismaTransaction
+  tx: PrismaTransaction
 ): Promise<Workspace> {
   if (instance) {
     return (await instance.createWorkspace(owner, input, socketServer, tx))

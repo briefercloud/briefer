@@ -13,7 +13,7 @@ import clsx from 'clsx'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useUsers } from '@/hooks/useUsers'
 import { Switch } from '@headlessui/react'
-import { PERSONAL_DOMAINS } from '@/components/forms/NewWorkspace'
+import { PERSONAL_DOMAINS } from '@/utils/personalDomains'
 import { Tooltip } from '@/components/Tooltips'
 
 const pagePath = (workspaceId: string) => [

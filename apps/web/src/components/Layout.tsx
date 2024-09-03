@@ -31,7 +31,6 @@ import { Page } from '@/components/PagePath'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
-import WorkspacesDropdown from './WorkspacesDropdown'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useSession, useSignout } from '@/hooks/useAuth'
 import { CpuChipIcon } from '@heroicons/react/24/solid'
@@ -140,16 +139,8 @@ export default function Layout({
   const documentId = useStringQuery('documentId')
 
   const [{ data: workspaces, isLoading: isLoadingWorkspaces }] = useWorkspaces()
-  const onChangeWorkspace = useCallback(
-    (workspaceId: string) => {
-      router.push(`/workspaces/${workspaceId}/documents`)
-    },
-    [router]
-  )
-  const onNewWorkspace = useCallback(() => {
-    router.push(`/workspaces/${workspaceId}/new-workspace`)
-  }, [router, workspaceId])
 
+  const signOut = useSignout()
   useEffect(() => {
     const workspace = workspaces.find((w) => w.id === workspaceId)
 
@@ -157,10 +148,10 @@ export default function Layout({
       if (workspaces.length > 0) {
         router.replace(`/workspaces/${workspaces[0].id}/documents`)
       } else {
-        router.replace('/new-workspace')
+        signOut()
       }
     }
-  }, [workspaces, isLoadingWorkspaces])
+  }, [workspaces, isLoadingWorkspaces, signOut])
 
   const [
     documentsState,
@@ -336,14 +327,6 @@ export default function Layout({
             </span>
 
             <SubscriptionBadge planName="open-source" />
-          </div>
-          <div className="px-2 pt-8">
-            <WorkspacesDropdown
-              current={workspaceId}
-              workspaces={workspaces}
-              onChange={onChangeWorkspace}
-              onNew={onNewWorkspace}
-            />
           </div>
 
           <ScrollBar

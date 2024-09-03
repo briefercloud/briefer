@@ -1,3 +1,4 @@
+import { useSignout } from '@/hooks/useAuth'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
@@ -5,6 +6,7 @@ import { useEffect } from 'react'
 export default function WorkspacesPage() {
   const router = useRouter()
   const [{ isLoading, data }] = useWorkspaces()
+  const signOut = useSignout()
 
   useEffect(() => {
     if (isLoading) {
@@ -13,11 +15,11 @@ export default function WorkspacesPage() {
 
     const workspace = data[0]
     if (!workspace) {
-      router.replace('/new-workspace')
+      signOut()
     } else {
       router.replace(`/workspaces/${workspace.id}/documents`)
     }
-  }, [isLoading, data])
+  }, [isLoading, data, signOut, router])
 
   return null
 }

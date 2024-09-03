@@ -1,4 +1,3 @@
-import { WorkspaceFormValues } from '@/components/forms/NewWorkspace'
 import fetcher from '@/utils/fetcher'
 import type { Workspace } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
@@ -6,7 +5,6 @@ import useSWR from 'swr'
 import { useSession } from './useAuth'
 import { OnboardingStep } from '@briefer/types'
 type API = {
-  createWorkspace: (payload: WorkspaceFormValues) => Promise<Workspace>
   updateName: (workspaceId: string, name: string) => Promise<Workspace>
   updateAssistantModel: (
     workspaceId: string,
@@ -23,40 +21,6 @@ export const useWorkspaces = (): UseWorkspaces => {
   const swrRes = useSWR<Workspace[]>(
     `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces`,
     fetcher
-  )
-
-  const createWorkspace = useCallback(
-    async (payload: WorkspaceFormValues) => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces`,
-        {
-          credentials: 'include',
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        }
-      )
-
-      const workspace: Workspace = await res.json()
-      // add the newly created workspace to the user's session
-      session.mutate((s) =>
-        s
-          ? {
-              ...s,
-              roles: {
-                ...s.roles,
-                [workspace.id]: 'admin',
-              },
-            }
-          : s
-      )
-      swrRes.mutate((workspaces) => (workspaces ?? []).concat(workspace))
-
-      return workspace
-    },
-    [swrRes]
   )
 
   const updateName = useCallback(
@@ -144,18 +108,11 @@ export const useWorkspaces = (): UseWorkspaces => {
     () => [
       { data: swrRes.data ?? [], isLoading: swrRes.isLoading },
       {
-        createWorkspace,
         updateName,
         updateAssistantModel,
         updateOnboarding,
       },
     ],
-    [
-      swrRes,
-      createWorkspace,
-      updateName,
-      updateOnboarding,
-      updateAssistantModel,
-    ]
+    [swrRes, updateName, updateOnboarding, updateAssistantModel]
   )
 }
