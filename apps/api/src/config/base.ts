@@ -25,6 +25,7 @@ export interface IBaseConfig {
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
   WORKSPACE_SECRETS_ENCRYPTION_KEY: string
+  ENABLE_CUSTOM_OAI_KEY: boolean
   YJS_DOCS_CACHE_SIZE_MB: number
 }
 
@@ -54,6 +55,7 @@ export class BaseConfig implements IBaseConfig {
   public DATASOURCES_ENCRYPTION_KEY: string
   public WORKSPACE_SECRETS_ENCRYPTION_KEY: string
   public YJS_DOCS_CACHE_SIZE_MB: number
+  public ENABLE_CUSTOM_OAI_KEY: boolean
 
   public constructor() {
     this.NODE_ENV = getVar('NODE_ENV')
@@ -96,5 +98,6 @@ export class BaseConfig implements IBaseConfig {
       // can't be 0 because LRUCache doesn't allow that
       1 / 1024 / 1024
     )
+    this.ENABLE_CUSTOM_OAI_KEY = Boolean(process.env['ENABLE_CUSTOM_OAI_KEY'])
   }
 }

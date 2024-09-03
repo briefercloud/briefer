@@ -17,7 +17,7 @@ import { executeCode as executePython } from '../../../../python/index.js'
 import { DataFrame, PythonErrorOutput } from '@briefer/types'
 import { listDataFrames } from '../../../../python/query/index.js'
 import { pythonEditStreamed } from '../../../../ai-api.js'
-import { prisma } from '@briefer/database'
+import { prisma, getWorkspaceWithSecrets } from '@briefer/database'
 import { EventContext, PythonEvents } from '../../../../events/index.js'
 
 async function editWithAI(
@@ -29,19 +29,7 @@ async function editWithAI(
   onSource: (source: string) => void
 ) {
   const workspace = workspaceId
-    ? await prisma().workspace.findFirst({
-        where: {
-          id: workspaceId,
-        },
-        select: {
-          assistantModel: true,
-          secrets: {
-            select: {
-              openAiApiKey: true,
-            },
-          },
-        },
-      })
+    ? await getWorkspaceWithSecrets(workspaceId)
     : null
 
   event(workspace?.assistantModel ?? null)

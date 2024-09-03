@@ -6,7 +6,6 @@ import {
   ApiWorkspace,
   createWorkspace as prismaCreateWorkspace,
 } from '@briefer/database'
-import { z } from 'zod'
 import { IOServer } from '../websocket/index.js'
 import { WorkspaceCreateInput } from '@briefer/types'
 
@@ -86,7 +85,7 @@ export async function createWorkspace(
   input: WorkspaceCreateInput,
   socketServer: IOServer,
   tx: PrismaTransaction
-): Promise<Workspace> {
+): Promise<ApiWorkspace> {
   if (instance) {
     return (await instance.createWorkspace(owner, input, socketServer, tx))
       .workspace

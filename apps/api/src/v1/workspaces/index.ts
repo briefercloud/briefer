@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { prisma } from '@briefer/database'
+import { getWorkspacesForUser } from '@briefer/database'
 import workspaceRouter from './workspace/index.js'
 import { validate } from 'uuid'
 import { IOServer } from '../../websocket/index.js'

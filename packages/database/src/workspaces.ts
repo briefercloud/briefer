@@ -44,6 +44,22 @@ export async function getWorkspacesForUser(userId: string) {
   return uw.map(({ workspace }) => transformSecrets(workspace))
 }
 
+export async function getWorkspaceWithSecrets(workspaceId: string) {
+  return await prisma().workspace.findFirst({
+    where: {
+      id: workspaceId,
+    },
+    select: {
+      assistantModel: true,
+      secrets: {
+        select: {
+          openAiApiKey: true,
+        },
+      },
+    },
+  })
+}
+
 export async function getWorkspaceById(id: string) {
   const w = await prisma().workspace.findUnique({
     where: { id },

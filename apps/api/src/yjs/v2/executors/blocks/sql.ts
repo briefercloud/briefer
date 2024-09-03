@@ -10,10 +10,10 @@ import {
 import PQueue from 'p-queue'
 import * as Y from 'yjs'
 import {
-  prisma,
   getCredentialsInfo,
   getDatabaseURL,
   listDataSources,
+  getWorkspaceWithSecrets,
 } from '@briefer/database'
 import {
   listDataFrames,
@@ -45,19 +45,7 @@ async function editWithAI(
   onSuggestions: (suggestions: string) => void
 ) {
   const workspace = workspaceId
-    ? await prisma().workspace.findFirst({
-        where: {
-          id: workspaceId,
-        },
-        select: {
-          assistantModel: true,
-          secrets: {
-            select: {
-              openAiApiKey: true,
-            },
-          },
-        },
-      })
+    ? await getWorkspaceWithSecrets(workspaceId)
     : null
 
   const assistantModelId = workspace?.assistantModel ?? null
