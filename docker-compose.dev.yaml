@@ -30,7 +30,8 @@ services:
     ports:
       - '8888:8888'
     environment:
-      JUPYTER_TOKEN: '6e71736b45ba55329421c16b2042b22616740d634d03bb78'
+      # Use passed value
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
     volumes:
       - ./jupyterfiles:/home/jupyteruser
     restart: always
