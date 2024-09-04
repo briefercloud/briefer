@@ -16,7 +16,9 @@ if [ ! -f .env ]; then
   echo "LOGIN_JWT_SECRET=$(openssl rand -hex 24)" >> .env
   echo "AUTH_JWT_SECRET=$(openssl rand -hex 24)" >> .env
   echo "ENVIRONMENT_VARIABLES_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
+  echo "WORKSPACE_SECRETS_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
   echo "DATASOURCES_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
+  echo "ENABLE_CUSTOM_OAI_KEY=true" >> .env
 
   echo
   echo "Here are the URLs you should use to access Briefer:"

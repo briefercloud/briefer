@@ -1,30 +1,31 @@
 import fetcher from '@/utils/fetcher'
-import type { Workspace } from '@briefer/database'
+import type { ApiWorkspace } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
 import { useSession } from './useAuth'
 import { OnboardingStep } from '@briefer/types'
+import { WorkspaceEditFormValues } from '@briefer/types'
+
 type API = {
-  updateName: (workspaceId: string, name: string) => Promise<Workspace>
-  updateAssistantModel: (
+  updateSettings: (
     workspaceId: string,
-    modelId: string
-  ) => Promise<Workspace>
+    data: WorkspaceEditFormValues
+  ) => Promise<ApiWorkspace>
   updateOnboarding: (
     workspaceId: string,
     onboardingStep: OnboardingStep
   ) => Promise<void>
 }
-type UseWorkspaces = [{ data: Workspace[]; isLoading: boolean }, API]
+type UseWorkspaces = [{ data: ApiWorkspace[]; isLoading: boolean }, API]
 export const useWorkspaces = (): UseWorkspaces => {
   const session = useSession()
-  const swrRes = useSWR<Workspace[]>(
+  const swrRes = useSWR<ApiWorkspace[]>(
     `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces`,
     fetcher
   )
 
-  const updateName = useCallback(
-    async (workspaceId: string, name: string) => {
+  const updateSettings = useCallback(
+    async (workspaceId: string, data: WorkspaceEditFormValues) => {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}`,
         {
@@ -33,36 +34,10 @@ export const useWorkspaces = (): UseWorkspaces => {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            name,
-          }),
+          body: JSON.stringify(data),
         }
       )
-      const workspace: Workspace = await res.json()
-      swrRes.mutate((workspaces) =>
-        (workspaces ?? []).map((w) => (w.id === workspace.id ? workspace : w))
-      )
-      return workspace
-    },
-    [swrRes]
-  )
-
-  const updateAssistantModel = useCallback(
-    async (workspaceId: string, modelId: string) => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}`,
-        {
-          credentials: 'include',
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            assistantModel: modelId,
-          }),
-        }
-      )
-      const workspace: Workspace = await res.json()
+      const workspace: ApiWorkspace = await res.json()
       swrRes.mutate((workspaces) =>
         (workspaces ?? []).map((w) => (w.id === workspace.id ? workspace : w))
       )
@@ -85,7 +60,7 @@ export const useWorkspaces = (): UseWorkspaces => {
             }
           )
 
-          const workspace: Workspace = await res.json()
+          const workspace: ApiWorkspace = await res.json()
           return (swrRes.data ?? []).map((w) =>
             w.id === workspace.id ? workspace : w
           )
@@ -108,11 +83,10 @@ export const useWorkspaces = (): UseWorkspaces => {
     () => [
       { data: swrRes.data ?? [], isLoading: swrRes.isLoading },
       {
-        updateName,
-        updateAssistantModel,
+        updateSettings,
         updateOnboarding,
       },
     ],
-    [swrRes, updateName, updateOnboarding, updateAssistantModel]
+    [swrRes, updateSettings, updateOnboarding]
   )
 }

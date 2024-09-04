@@ -8,11 +8,13 @@ import environmentVariablesRouter from './environment-variables.js'
 import { IOServer } from '../../../websocket/index.js'
 import { getParam } from '../../../utils/express.js'
 import { broadcastDocuments } from '../../../websocket/workspace/documents.js'
-import { z } from 'zod'
-import prisma, { UserWorkspaceRole } from '@briefer/database'
+import { UserWorkspaceRole, updateWorkspace } from '@briefer/database'
 import onboardingRouter from './onboarding.js'
 import filesRouter from './files.js'
 import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
+import { WorkspaceEditFormValues } from '@briefer/types'
+import { encrypt } from '@briefer/database'
+import config from '../../../config/index.js'
 
 const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 
@@ -52,19 +54,6 @@ export default function workspaceRouter(socketServer: IOServer) {
     next()
   })
 
-  const WorkspaceEditFormValues = z.union([
-    z.object({
-      name: z.string(),
-      assistantModel: z.string(),
-    }),
-    z.object({
-      name: z.string(),
-    }),
-    z.object({
-      assistantModel: z.string(),
-    }),
-  ])
-
   router.put('/', isAdmin, async (req, res) => {
     const workspaceId = getParam(req, 'workspaceId')
     const payload = WorkspaceEditFormValues.safeParse(req.body)
@@ -73,11 +62,16 @@ export default function workspaceRouter(socketServer: IOServer) {
       return
     }
 
-    const updatedWorkspace = await prisma().workspace.update({
-      where: { id: workspaceId },
-      data: payload.data,
-    })
+    if (payload.data.openAiApiKey) {
+      const key = payload.data.openAiApiKey
+      delete payload.data.openAiApiKey
+      payload.data.openAiApiKey = encrypt(
+        key,
+        config().WORKSPACE_SECRETS_ENCRYPTION_KEY
+      )
+    }
 
+    const updatedWorkspace = await updateWorkspace(workspaceId, payload.data)
     res.status(200).json(updatedWorkspace)
   })
 

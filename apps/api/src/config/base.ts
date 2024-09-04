@@ -24,6 +24,8 @@ export interface IBaseConfig {
   POSTGRES_POOL_TIMEOUT: number
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
+  WORKSPACE_SECRETS_ENCRYPTION_KEY: string
+  ENABLE_CUSTOM_OAI_KEY: boolean
   YJS_DOCS_CACHE_SIZE_MB: number
 }
 
@@ -51,7 +53,9 @@ export class BaseConfig implements IBaseConfig {
   public POSTGRES_POOL_TIMEOUT: number
   public ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   public DATASOURCES_ENCRYPTION_KEY: string
+  public WORKSPACE_SECRETS_ENCRYPTION_KEY: string
   public YJS_DOCS_CACHE_SIZE_MB: number
+  public ENABLE_CUSTOM_OAI_KEY: boolean
 
   public constructor() {
     this.NODE_ENV = getVar('NODE_ENV')
@@ -85,11 +89,15 @@ export class BaseConfig implements IBaseConfig {
       'ENVIRONMENT_VARIABLES_ENCRYPTION_KEY'
     )
     this.DATASOURCES_ENCRYPTION_KEY = getVar('DATASOURCES_ENCRYPTION_KEY')
+    this.WORKSPACE_SECRETS_ENCRYPTION_KEY = getVar(
+      'WORKSPACE_SECRETS_ENCRYPTION_KEY'
+    )
     this.YJS_DOCS_CACHE_SIZE_MB = parseIntOr(
       process.env['YJS_DOCS_CACHE_SIZE_MB'] ?? '',
       // set default to 1 byte in MB to effectively disable the cache
       // can't be 0 because LRUCache doesn't allow that
       1 / 1024 / 1024
     )
+    this.ENABLE_CUSTOM_OAI_KEY = Boolean(process.env['ENABLE_CUSTOM_OAI_KEY'])
   }
 }

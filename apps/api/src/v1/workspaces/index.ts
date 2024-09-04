@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { prisma } from '@briefer/database'
+import { getWorkspacesForUser } from '@briefer/database'
 import workspaceRouter from './workspace/index.js'
 import { validate } from 'uuid'
 import { IOServer } from '../../websocket/index.js'
@@ -8,13 +8,7 @@ export default function workspacesRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
 
   router.get('/', async (req, res) => {
-    const userWorkspaces = await prisma().userWorkspace.findMany({
-      where: { userId: req.session.user.id },
-      select: { workspace: true },
-      orderBy: { workspace: { name: 'asc' } },
-    })
-
-    res.json(userWorkspaces.map((uw) => uw.workspace))
+    res.json(await getWorkspacesForUser(req.session.user.id))
   })
 
   router.use(

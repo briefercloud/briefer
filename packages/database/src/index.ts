@@ -4,7 +4,6 @@ import { ITXClientDenyList } from '@prisma/client/runtime/library.js'
 
 export type {
   Document,
-  Workspace,
   User,
   YjsDocument,
   UserWorkspace,
@@ -13,6 +12,9 @@ export type {
 } from '@prisma/client'
 
 export { UserWorkspaceRole } from '@prisma/client'
+
+// TODO move these to their own package
+export { encrypt, decrypt } from './datasources/crypto.js'
 
 export * from './documents.js'
 export * from './schedule.js'

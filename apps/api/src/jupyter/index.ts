@@ -1,6 +1,6 @@
 import services from '@jupyterlab/services'
 import { Readable } from 'stream'
-import { Workspace } from '@briefer/database'
+import { ApiWorkspace } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import config from '../config/index.js'
 import { BrieferFile } from '@briefer/types'
@@ -15,7 +15,7 @@ export type GetFileResult = {
 export interface IJupyterManager {
   start(socketSerever: IOServer): Promise<void>
   stop(): Promise<void>
-  deploy(workspace: Workspace): Promise<void>
+  deploy(workspace: ApiWorkspace): Promise<void>
   restart(workspaceId: string): Promise<void>
   ensureRunning(workspaceId: string): Promise<void>
   isRunning(workspaceId: string): Promise<boolean>

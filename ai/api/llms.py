@@ -10,7 +10,9 @@ bedrock_model_ids = [
     "cohere.command-r-plus-v1:0",
 ]
 
-def initialize_llm(model_id=None):
+def initialize_llm(model_id=None, openai_api_key=None):
+    openai_api_key = openai_api_key or config("OPENAI_API_KEY")
+
     if model_id in bedrock_model_ids:
         # Initialize Bedrock using default AWS credentials provider chain
         llm = BedrockLLM(
@@ -21,7 +23,7 @@ def initialize_llm(model_id=None):
         llm = ChatOpenAI(
             temperature=0,
             verbose=False,
-            openai_api_key=config("OPENAI_API_KEY"),
+            openai_api_key=openai_api_key,
             model_name=model_id if model_id else config("OPENAI_DEFAULT_MODEL_NAME"),
         )
     return llm

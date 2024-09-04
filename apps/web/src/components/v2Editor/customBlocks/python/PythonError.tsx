@@ -5,11 +5,13 @@ import { useCallback } from 'react'
 import { SparklesIcon } from '@heroicons/react/20/solid'
 import { PythonErrorOutput } from '@briefer/types'
 import Spin from '@/components/Spin'
+import { Tooltip } from '@/components/Tooltips'
 
 interface Props {
   error: PythonErrorOutput
   isFixWithAILoading: boolean
   onFixWithAI: (error: PythonErrorOutput) => void
+  canFixWithAI: boolean
 }
 function PythonError(props: Props) {
   const onFixWithAI = useCallback(() => {
@@ -18,6 +20,7 @@ function PythonError(props: Props) {
 
   return (
     <PythonErrorUI
+      canFixWithAI={props.canFixWithAI}
       ename={props.error.ename}
       evalue={props.error.evalue}
       traceback={props.error.traceback}
@@ -35,6 +38,7 @@ interface PythonErrorUIProps {
   traceback: string[]
   isFixWithAILoading: boolean
   onFixWithAI?: () => void
+  canFixWithAI: boolean
 }
 export function PythonErrorUI(props: PythonErrorUIProps) {
   return (
@@ -55,23 +59,29 @@ export function PythonErrorUI(props: PythonErrorUIProps) {
             </pre>
           ))}
           {props.onFixWithAI && (
-            <button
-              onClick={props.onFixWithAI}
-              className={clsx(
-                'mt-2 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne',
-                props.isFixWithAILoading && 'bg-gray-200 border-gray-400',
-                !props.isFixWithAILoading &&
-                  'border-gray-200 hover:bg-gray-50 hover:text-gray-700'
-              )}
-              disabled={props.isFixWithAILoading}
+            <Tooltip
+              title="Missing OpenAI API key"
+              message="Admins can add an OpenAI key in settings."
+              className="inline-block"
+              tooltipClassname="w-40 text-center"
+              position="top"
+              active={!props.canFixWithAI}
             >
-              {props.isFixWithAILoading ? (
-                <Spin />
-              ) : (
-                <SparklesIcon className="w-3 h-3" />
-              )}
-              Fix with AI
-            </button>
+              <button
+                onClick={props.onFixWithAI}
+                className={clsx(
+                  'mt-2 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne border-gray-200 hover:bg-gray-50 hover:text-gray-700 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed'
+                )}
+                disabled={props.isFixWithAILoading || !props.canFixWithAI}
+              >
+                {props.isFixWithAILoading ? (
+                  <Spin />
+                ) : (
+                  <SparklesIcon className="w-3 h-3" />
+                )}
+                Fix with AI
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>

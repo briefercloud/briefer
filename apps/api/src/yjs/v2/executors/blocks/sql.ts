@@ -10,10 +10,10 @@ import {
 import PQueue from 'p-queue'
 import * as Y from 'yjs'
 import {
-  prisma,
   getCredentialsInfo,
   getDatabaseURL,
   listDataSources,
+  getWorkspaceWithSecrets,
 } from '@briefer/database'
 import {
   listDataFrames,
@@ -45,14 +45,7 @@ async function editWithAI(
   onSuggestions: (suggestions: string) => void
 ) {
   const workspace = workspaceId
-    ? await prisma().workspace.findFirst({
-        where: {
-          id: workspaceId,
-        },
-        select: {
-          assistantModel: true,
-        },
-      })
+    ? await getWorkspaceWithSecrets(workspaceId)
     : null
 
   const assistantModelId = workspace?.assistantModel ?? null
@@ -66,7 +59,8 @@ async function editWithAI(
       instructions,
       null,
       onSuggestions,
-      assistantModelId
+      assistantModelId,
+      workspace?.secrets?.openAiApiKey ?? null
     )
   }
 
@@ -89,7 +83,8 @@ async function editWithAI(
     instructions,
     credentialsInfo,
     onSuggestions,
-    assistantModelId
+    assistantModelId,
+    workspace?.secrets?.openAiApiKey ?? null
   )
 }
 

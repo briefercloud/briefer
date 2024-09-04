@@ -1,8 +1,8 @@
-import prisma from '@briefer/database'
 import { Router } from 'express'
 import { getParam } from '../../../utils/express.js'
 import z from 'zod'
 import { OnboardingStep } from '@briefer/types'
+import { updateOnboardingStep } from '@briefer/database'
 
 const onboardingRouter = Router({ mergeParams: true })
 
@@ -18,10 +18,10 @@ onboardingRouter.put('/', async (req, res) => {
     return
   }
 
-  const workspace = await prisma().workspace.update({
-    where: { id: workspaceId },
-    data: { onboardingStep: payload.data.onboardingStep },
-  })
+  const workspace = updateOnboardingStep(
+    workspaceId,
+    payload.data.onboardingStep
+  )
 
   res.json(workspace)
 })
