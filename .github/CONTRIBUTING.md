@@ -115,7 +115,7 @@ Here are a few things to try if you have trouble running Briefer in development 
 
 1. Ensure you're running the latest version of Docker and Docker Compose.
 2. Double-check that you have Node.js and Yarn installed, and make sure that you're using Node v18.
-3. Reinstall the dependencies by removing the `node_modules` folder and running `yarn install` again. Please ensure that you're running Node v18during the installation.
+3. Reinstall the dependencies by removing the `node_modules` folder and running `yarn install` again. Please ensure that you're running Node v18 during the installation.
 4. If you're having trouble running the AI service, ensure that you have Python 3.9 installed and that you've created a virtual environment for it. Also, make sure that you've installed the dependencies by running `pip install -r requirements.txt`.
 5. If you can't find the necessary `.env` files within each app's folder, try running `./start-dev.sh` again.
 6. In case the applications complain about missing environment variables, you can always delete the `.env` files and run `./start-dev.sh` again to recreate them.
