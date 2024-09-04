@@ -217,7 +217,7 @@ function PythonPlotOutput(props: {
   }, [props.output.layout])
 
   const hideControls = useMemo(() => {
-    return !props.isPDF || !props.isDashboardView
+    return props.isPDF || props.isDashboardView
   }, [props.isPDF, props.isDashboardView])
 
   const config = useMemo(() => {
