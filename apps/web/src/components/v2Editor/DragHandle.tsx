@@ -7,6 +7,7 @@ import {
   RectangleStackIcon,
   FolderIcon,
   EyeSlashIcon,
+  BarsArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import { useRef } from 'react'
@@ -14,6 +15,7 @@ import { createPortal } from 'react-dom'
 
 const DragHandle = ({
   isDragging,
+  onRunBelowBlock,
   onRunAllTabs,
   onDeleteTab,
   onDeleteBlock,
@@ -23,6 +25,7 @@ const DragHandle = ({
   targetRef,
 }: {
   isDragging: boolean
+  onRunBelowBlock: () => void
   onRunAllTabs: (() => void) | null
   onDeleteTab: (() => void) | null
   onDeleteBlock: () => void
@@ -91,8 +94,8 @@ const DragHandle = ({
                   className="absolute -translate-x-full z-30 rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600"
                 >
                   <div className="flex flex-col divide-y divide-gray-200">
-                    {onRunAllTabs && (
-                      <div className="py-0.5 px-0.5">
+                    <div className="py-0.5 px-0.5">
+                      {onRunAllTabs && (
                         <Menu.Item
                           as="button"
                           onClick={onRunAllTabs}
@@ -101,16 +104,30 @@ const DragHandle = ({
                           <ForwardIcon className="h-4 w-4" />
                           <span>Run all tabs</span>
                         </Menu.Item>
-                        <Menu.Item
-                          as="button"
-                          onClick={onHideAllTabs}
-                          className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
-                        >
-                          <EyeSlashIcon className="h-4 w-4" />
-                          <span>Hide all tabs</span>
-                        </Menu.Item>
-                      </div>
-                    )}
+                      )}
+
+                      <Menu.Item
+                        as="button"
+                        onClick={onRunBelowBlock}
+                        className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                      >
+                        <BarsArrowDownIcon className="h-4 w-4" />
+                        <span>Run onwards</span>
+                      </Menu.Item>
+
+                      {onRunAllTabs && (
+                        <>
+                          <Menu.Item
+                            as="button"
+                            onClick={onHideAllTabs}
+                            className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                          >
+                            <EyeSlashIcon className="h-4 w-4" />
+                            <span>Hide all tabs</span>
+                          </Menu.Item>
+                        </>
+                      )}
+                    </div>
 
                     <div className="py-0.5 px-0.5">
                       {onDuplicateTab && (
