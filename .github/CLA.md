@@ -9,7 +9,7 @@ The following terms are used throughout this agreement:
 
 ## 1. Grant of Copyright License.
 
-Subject to the terms and conditions of this agreement, You grant to the Projects’ maintainers, contributors, users and to ERGOMAKE DESENVOLVIMENTO DE SOFTWARE LTDA. (d.b.a Briefer) a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Your contributions and such derivative works. Except for this license, You reserve all rights, title, and interest in your contributions.
+Subject to the terms and conditions of this agreement, You grant to the Projects’ maintainers, contributors, users, and to ERGOMAKE DESENVOLIMENTO DE SOFTWARE LTDA. (d.b.a Briefer) a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute Your contributions. Furthermore, You agree to transfer all rights, title, and interest in and to Your contributions to ERGOMAKE DESENVOLVIMENTO DE SOFTWARE LTDA. upon submission.
 
 ## 2. Grant of Patent License.
 
