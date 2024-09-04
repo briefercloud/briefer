@@ -889,6 +889,47 @@ file`
     })
   }, [blocks, layout, tabRefs, environmentStartedAt])
 
+  const runBelowBlock = useCallback(() => {
+    debugger
+    const currentBlockGroupIndex = layout.value.toArray().findIndex((bg) => {
+      return bg.getAttribute('id') === props.id
+    })
+    const currentTabIndex = tabRefs.findIndex((tab) => tab.isCurrent)
+
+    if (currentBlockGroupIndex === -1 || currentTabIndex === -1) {
+      return
+    }
+
+    const blocksBelow = layout.value.toArray().slice(currentBlockGroupIndex)
+    for (const blockGroup of blocksBelow) {
+      const currBlockGroupId = blockGroup.getAttribute('id')
+      const tabs = getTabsFromBlockGroup(blockGroup, blocks.value)
+
+      tabs.forEach((tab, i) => {
+        const tabBlock = blocks.value.get(tab.blockId)
+        if (
+          !tabBlock ||
+          (i < currentTabIndex && currBlockGroupId === props.id)
+        ) {
+          return
+        }
+
+        if (!execStatusIsDisabled(getExecStatus(tabBlock, blocks.value))) {
+          requestRun(
+            tabBlock,
+            blocks.value,
+            layout.value,
+            environmentStartedAt,
+            // we must skip dependency checks because running any blocks above
+            // is counterintuitive given the user's intention is to run the
+            // blocks below
+            true
+          )
+        }
+      })
+    }
+  }, [blocks, layout, tabRefs, environmentStartedAt])
+
   const popupContainerRef = useRef<HTMLDivElement>(null)
 
   const onDuplicateBlockGroup = useCallback(() => {
@@ -955,6 +996,7 @@ file`
       >
         <DragHandle
           isDragging={isDragging}
+          onRunBelowBlock={runBelowBlock}
           onRunAllTabs={hasMultipleTabs ? runAllTabs : null}
           onDuplicateTab={hasMultipleTabs ? onDuplicateCurrentTab : null}
           onDuplicateBlock={onDuplicateBlockGroup}

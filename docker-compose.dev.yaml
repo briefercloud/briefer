@@ -31,7 +31,7 @@ services:
       - '8888:8888'
     environment:
       # Use passed value
-      JUPYTER_TOKEN: ${JUPYTER_TOKEN}
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
     volumes:
       - ./jupyterfiles:/home/jupyteruser
     restart: always
