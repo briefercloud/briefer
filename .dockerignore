@@ -1,6 +1,9 @@
 data
-docker
 nginx
 node_modules
 .env.*
 .turbo
+.git
+dist
+.next
+venv

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "briefer"
+version = "0.0.6"
+description = ""
+license = { text="GNU Affero General Public License v3.0" }
+requires-python = ">=3.7"
+dependencies = ["docker"]
+
+[project.urls]
+Homepage = "https://briefer.cloud"
+
+[project.scripts]
+briefer = "briefer.main:main"
+
