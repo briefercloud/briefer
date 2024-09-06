@@ -27,8 +27,19 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Is release version
+        id: tag_check
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_release_version=true" >> $GITHUB_ENV
+          else
+            echo "is_release_version=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push tag
         uses: depot/build-push-action@v1
+        if: env.is_release_version == 'false'
         with:
           project: 6zxrst4dlr
           platforms: linux/amd64,linux/arm64
@@ -36,3 +47,14 @@ jobs:
           context: .
           file: docker/Dockerfile
           tags: briefercloud/briefer:${{ github.ref_name }}
+
+      - name: Build and push tag and release
+        uses: depot/build-push-action@v1
+        if: env.is_release_version == 'true'
+        with:
+          project: 6zxrst4dlr
+          platforms: linux/amd64,linux/arm64
+          push: true
+          context: .
+          file: docker/Dockerfile
+          tags: briefercloud/briefer:${{ github.ref_name }},briefercloud/briefer:latest
