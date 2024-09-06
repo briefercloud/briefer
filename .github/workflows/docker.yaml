@@ -35,4 +35,4 @@ jobs:
           push: true
           context: .
           file: docker/Dockerfile
-          tags: briefercloud:${{ github.ref_name }}
+          tags: briefercloud/briefer:${{ github.ref_name }}
