@@ -4,14 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "briefer"
-version = "0.0.6"
+version = "0.0.8"
 description = ""
-license = { text="GNU Affero General Public License v3.0" }
+readme = "README.md"
+license = { file="LICENSE" }
 requires-python = ">=3.7"
 dependencies = ["docker"]
 
 [project.urls]
 Homepage = "https://briefer.cloud"
+Repository = "https://github.com/briefercloud/briefer"
 
 [project.scripts]
 briefer = "briefer.main:main"
