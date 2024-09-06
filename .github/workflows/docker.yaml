@@ -1,0 +1,38 @@
+name: Build and Push to DockerHUB
+
+on:
+  push:
+    tags:
+      - 'v*' # Only run on tags that start with 'v'
+
+permissions:
+  # allow issuing OIDC tokens for this workflow run
+  id-token: write
+  # allow at least reading the repo contents, add other permissions if necessary
+  contents: read
+
+jobs:
+  docker-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: depot/build-push-action@v1
+        with:
+          project: 6zxrst4dlr
+          platforms: linux/amd64,linux/arm64
+          push: true
+          context: .
+          file: docker/Dockerfile
+          tags: briefercloud:${{ github.ref_name }}

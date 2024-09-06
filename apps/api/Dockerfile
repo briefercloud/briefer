@@ -2,24 +2,6 @@ FROM node:18-slim AS base
 
 ENV TURBO_TELEMETRY_DISABLED=1
 
-# Install dependencies required for Puppeteer
-RUN apt-get update \
-    && apt-get install -y wget gnupg curl \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf fonts-noto-color-emoji libxss1 --no-install-recommends 
-
-# Install Chrome based on architecture
-RUN if [ "$(uname -m)" = "x86_64" ]; then \
-      apt-get install -y google-chrome-stable; \
-    elif [ "$(uname -m)" = "aarch64" ]; then \
-      apt-get install -y chromium; \
-    else \
-      echo "Unsupported architecture $(uname -m)"; \
-      exit 1; \
-    fi
-
 # Clean up
 RUN rm -rf /var/lib/apt/lists/*
 
@@ -48,7 +30,6 @@ COPY .gitignore .gitignore
 COPY --from=builder /app/out/json/ .
 COPY --from=builder /app/out/yarn.lock ./yarn.lock
 
-ENV PUPPETEER_SKIP_DOWNLOAD true
 RUN yarn install
 
 # Build the project and its dependencies
@@ -71,10 +52,8 @@ WORKDIR /app
 RUN groupadd -r expressjs && useradd -r -g expressjs expressjs \
     && mkdir -p /home/expressjs/Downloads \
     && chown -R expressjs:expressjs /home/expressjs
-RUN groupadd -g 1001 briefer && usermod -aG briefer expressjs
 
 USER expressjs
-
 
 COPY --from=installer /app .
 
