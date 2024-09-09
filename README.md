@@ -29,7 +29,7 @@
 
 <i>Here's a brief demo (no pun intended) of Briefer. It may take a few seconds to load.</i>
 
-https://github.com/user-attachments/assets/90796420-f0a1-4009-afbc-04d07f427196
+https://github.com/user-attachments/assets/dfc6c1ef-f26c-44a9-8566-857178a8c5db
 
 ---
 
