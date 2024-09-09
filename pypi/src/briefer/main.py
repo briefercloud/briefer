@@ -1,9 +1,33 @@
+import os
 import docker
 import sys
 import socket
 import argparse
 import signal
 
+ENV_VARS = [
+    "LOG_LEVEL",
+    "API_URL",
+    "FRONTEND_URL",
+    "TLD",
+    "LOGIN_JWT_SECRET",
+    "AUTH_JWT_SECRET",
+    "AI_API_URL",
+    "AI_API_USERNAME",
+    "AI_API_PASSWORD",
+    "PYTHON_ALLOWED_LIBRARIES",
+    "POSTGRES_USERNAME",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_HOSTNAME",
+    "POSTGRES_PORT",
+    "POSTGRES_DATABASE",
+    "ENVIRONMENT_VARIABLES_ENCRYPTION_KEY",
+    "WORKSPACE_SECRETS_ENCRYPTION_KEY",
+    "DATASOURCES_ENCRYPTION_KEY",
+    "JUPYTER_HOST",
+    "JUPYTER_PORT",
+    "JUPYTER_TOKEN"
+]
 
 def check_docker_running():
     client = docker.from_env()
@@ -94,12 +118,17 @@ def start_or_run_container(client, container_name, image, detach):
             'briefer_briefer_data': {'bind': '/home/briefer', 'mode': 'rw'}
         }
         print('Starting Briefer...')
+        env = {}
+        for var in ENV_VARS:
+            if var in os.environ:
+                env[var] = os.environ[var]
         container = client.containers.run(
             image,
             detach=True,
             ports={'3000/tcp': 3000, '8080/tcp': 8080},
             name=container_name,
-            volumes=volumes
+            volumes=volumes,
+            environment=env
         )
 
     if not detach:
