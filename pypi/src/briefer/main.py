@@ -72,6 +72,10 @@ def start_or_run_container(client, container_name, image, detach):
         print("Error: Port 8080 is already in use. Please stop the service using this port before starting Briefer.", file=sys.stderr)
         sys.exit(1)
 
+    # check if image already exists
+    if not client.images.list(name=image):
+        pull_image(client, image)
+
     if is_container_existing(client, container_name):
         container = client.containers.get(container_name)
         container.start()
@@ -92,6 +96,11 @@ def start_or_run_container(client, container_name, image, detach):
 
     if not detach:
         attach(container)
+
+def pull_image(client, image):
+    print(f"Downloading image {image}...")
+    client.images.pull(image)
+    print(f"Downloaded image {image}.")
 
 def attach(container):
     for stdout, stderr in container.attach(stream=True, stdout=True, stderr=True, demux=True):
