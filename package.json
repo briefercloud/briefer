@@ -1,0 +1,25 @@
+{
+  "name": "briefer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:ergomake/nora.git",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "build": "turbo run build",
+    "clean": "turbo run clean",
+    "dev": "turbo run dev",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "eslint-config-custom": "*",
+    "prettier": "^2.8.8",
+    "turbo": "^1.9.3"
+  }
+}

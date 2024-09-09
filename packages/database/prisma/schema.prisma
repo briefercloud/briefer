@@ -1,0 +1,420 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["tracing", "interactiveTransactions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model Document {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title      String
+  icon       String    @default("DocumentIcon")
+  orderIndex Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @default(now()) @updatedAt
+  deletedAt  DateTime?
+  version    Int       @default(1)
+
+  isSyncedWithYjs Boolean @default(false)
+
+  workspaceId String     @db.Uuid
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parentId    String?    @db.Uuid
+  parent      Document?  @relation("DocumentParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Document[] @relation("DocumentParent")
+
+  yjsDocument        YjsDocument?
+  yjsAppDocuments    YjsAppDocument[]
+  comments           Comment[]
+  Favorite           Favorite[]
+  executionSchedules ExecutionSchedule[]
+}
+
+model YjsDocument {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clock      Int      @default(0)
+  state      Bytes
+  documentId String   @unique @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model YjsAppDocument {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clock      Int      @default(0)
+  state      Bytes
+  documentId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  document            Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userYjsAppDocuments UserYjsAppDocument[]
+}
+
+model UserYjsAppDocument {
+  clock            Int      @default(0)
+  state            Bytes
+  yjsAppDocumentId String   @db.Uuid
+  userId           String   @db.Uuid
+  userChangedState Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
+
+  yjsAppDocument YjsAppDocument @relation(fields: [yjsAppDocumentId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([yjsAppDocumentId, userId])
+}
+
+enum DataSourceType {
+  psql
+  redshift
+  bigquery
+}
+
+enum ConnStatus {
+  online
+  offline
+  checking
+}
+
+model PostgreSQLDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String
+  username       String
+  password       String
+  notes          String
+  readOnly       Boolean    @default(true)
+  cert           String?
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model MySQLDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String
+  username       String
+  password       String
+  cert           String?
+  notes          String
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model OracleDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String     @default("")
+  serviceName    String     @default("")
+  sid            String     @default("")
+  username       String
+  password       String
+  notes          String
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model AthenaDataSource {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  region            String
+  accessKeyId       String
+  secretAccessKeyId String
+  s3OutputPath      String
+  notes             String
+  structure         String?
+  isDemo            Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @default(now()) @updatedAt
+  connStatus        ConnStatus @default(online)
+  connError         String?
+  lastConnection    DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model BigQueryDataSource {
+  id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  projectId         String
+  serviceAccountKey String
+  notes             String
+  structure         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @default(now()) @updatedAt
+  isDemo            Boolean    @default(false)
+  connStatus        ConnStatus @default(online)
+  connError         String?
+  lastConnection    DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model RedshiftDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String
+  username       String
+  password       String
+  notes          String
+  cert           String?
+  structure      String?
+  readOnly       Boolean    @default(true)
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model TrinoDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  catalog        String?
+  username       String
+  password       String?
+  notes          String
+  readOnly       Boolean    @default(true)
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String   @default("")
+  email          String   @unique
+  picture        String?
+  passwordDigest String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  workspacesInvitees UserWorkspace[] @relation("UserWorkspaceInviter")
+  workspaces         UserWorkspace[] @relation("UserWorkspaceUser")
+  ownedWorkspaces    Workspace[]
+  confirmedAt        DateTime?
+
+  comments           Comment[]
+  Favorite           Favorite[]
+  UserYjsAppDocument UserYjsAppDocument[]
+}
+
+model Comment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content    String
+  documentId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+}
+
+model Favorite {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId String   @db.Uuid
+  userId     String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, documentId])
+  @@index([documentId], name: "documentId_index")
+}
+
+enum ExecutionScheduleType {
+  hourly
+  daily
+  weekly
+  monthly
+  cron
+}
+
+model ExecutionSchedule {
+  id         String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       ExecutionScheduleType
+  hour       Int? // NULL if type is 'hourly' or 'cron'
+  minute     Int? // NULL if type is 'cron'
+  cron       String? // NULL if type is not 'cron'
+  weekdays   String? // Serialized array of integers, NULL if type is not 'weekly'
+  days       String? // Serialized array of integers, NULL if type is not 'monthly'
+  timezone   String
+  documentId String                @db.Uuid
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @default(now()) @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+enum Plan {
+  free
+  trial
+  professional
+}
+
+enum OnboardingStep {
+  intro
+  connectDataSource
+  activateTrial
+  joinSlack
+  done
+}
+
+model Workspace {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  source         String?
+  useCases       String[]       @default([])
+  useContext     String?
+  plan           Plan           @default(free)
+  ownerId        String         @db.Uuid
+  secretsId      String?        @unique @db.Uuid
+  onboardingStep OnboardingStep @default(intro)
+  assistantModel String         @default("gpt-4o")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  secrets              WorkspaceSecrets?      @relation(fields: [secretsId], references: [id])
+  documents            Document[]
+  users                UserWorkspace[]
+  postgresDataSources  PostgreSQLDataSource[]
+  bigQueryDataSources  BigQueryDataSource[]
+  redshiftDataSources  RedshiftDataSource[]
+  athenaDataSources    AthenaDataSource[]
+  oracleDataSources    OracleDataSource[]
+  mySQLDataSources     MySQLDataSource[]
+  trinoDataSources     TrinoDataSource[]
+  environmentVariables EnvironmentVariable[]
+}
+
+enum UserWorkspaceRole {
+  editor
+  viewer
+  admin
+}
+
+model UserWorkspace {
+  userId      String            @db.Uuid
+  workspaceId String            @db.Uuid
+  inviterId   String?           @db.Uuid
+  role        UserWorkspaceRole
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+  inviter     User?             @relation("UserWorkspaceInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  user        User              @relation("UserWorkspaceUser", fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, workspaceId])
+}
+
+model EnvironmentVariable {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  value       String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, name], map: "unique_workspaceId_name")
+}
+
+enum EnvironmentStatus {
+  Running
+  Stopped
+  Failing
+  Starting
+  Stopping
+}
+
+model Environment {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId     String            @unique @db.Uuid
+  status          EnvironmentStatus
+  startedAt       DateTime?
+  lastActivityAt  DateTime?
+  resourceVersion Int
+  jupyterToken    String            @default("")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([workspaceId], map: "unique_workspaceId")
+}
+
+model Lock {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @unique
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+  isLocked   Boolean  @default(false)
+  ownerId    String   @db.Uuid
+}
+
+model WorkspaceSecrets {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  openAiApiKey String?
+  Workspace    Workspace?
+}

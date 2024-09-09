@@ -1,0 +1,21 @@
+{
+  "name": "@briefer/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./types/index.d.ts",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsc --incremental --watch --preserveWatchOutput",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "date-fns": "^3.3.1",
+    "date-fns-tz": "^3.1.3",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
