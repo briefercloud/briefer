@@ -2,6 +2,8 @@ import docker
 import sys
 import socket
 import argparse
+import signal
+
 
 def check_docker_running():
     client = docker.from_env()
@@ -12,12 +14,14 @@ def check_docker_running():
         print("Error: Docker is not running.", file=sys.stderr)
         sys.exit(1)
 
+
 def is_container_running(client, container_name):
     try:
         container = client.containers.get(container_name)
         return container.status == "running"
     except docker.errors.NotFound:
         return False
+
 
 def is_container_existing(client, container_name):
     try:
@@ -26,9 +30,11 @@ def is_container_existing(client, container_name):
     except docker.errors.NotFound:
         return False
 
+
 def create_volume_if_not_exists(client, volume_name):
     if volume_name not in [v.name for v in client.volumes.list()]:
         client.volumes.create(name=volume_name)
+
 
 def handle_existing_container(client, container_name, detach):
     print('Error: Briefer is already running.', file=sys.stderr)
@@ -53,6 +59,7 @@ def handle_existing_container(client, container_name, detach):
         print('Error: invalid action.', file=sys.stderr)
         sys.exit(1)
 
+
 def is_port_in_use(port):
     """Check if a port is in use by attempting to bind to it."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -61,6 +68,7 @@ def is_port_in_use(port):
             return False
         except OSError:
             return True
+
 
 def start_or_run_container(client, container_name, image, detach):
     # Check if the ports 3000 and 8080 are available
@@ -97,10 +105,12 @@ def start_or_run_container(client, container_name, image, detach):
     if not detach:
         attach(container)
 
+
 def pull_image(client, image):
     print(f"Downloading image {image}...")
     client.images.pull(image)
     print(f"Downloaded image {image}.")
+
 
 def attach(container):
     for stdout, stderr in container.attach(stream=True, stdout=True, stderr=True, demux=True):
@@ -110,6 +120,15 @@ def attach(container):
         if stderr:
             sys.stderr.buffer.write(stderr)
             sys.stderr.flush()
+
+
+def signal_handler(sig, frame, container_name, client):
+    print("\nCTRL-C detected. Stopping Briefer...")
+    container = client.containers.get(container_name)
+    container.stop()
+    print("Briefer stopped.")
+    sys.exit(0)
+
 
 def main():
     # Argument parser
@@ -133,6 +152,9 @@ def main():
     create_volume_if_not_exists(client, "briefer_psql_data")
     create_volume_if_not_exists(client, "briefer_jupyter_data")
     create_volume_if_not_exists(client, "briefer_briefer_data")
+
+    # Register signal handler for CTRL-C
+    signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(sig, frame, container_name, client))
 
     # start or run the container
     start_or_run_container(client, container_name, args.image, args.detach)
