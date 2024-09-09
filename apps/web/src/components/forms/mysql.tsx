@@ -68,7 +68,7 @@ export default function MySQLForm({
             {mySQLDataSource ? 'Edit' : 'Add'} a MySQL database for Briefer to
             pull data from. Our fixed IP address is{' '}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
-              {GATEWAY_IP}
+              {GATEWAY_IP()}
             </code>
             .
           </p>

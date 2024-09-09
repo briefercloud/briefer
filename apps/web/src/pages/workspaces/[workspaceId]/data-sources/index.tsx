@@ -244,7 +244,7 @@ function OfflineDataSourceDialog(props: OfflineDataSourceDialogProps) {
                         Please double check whether the credentials are correct.
                         Also ensure your data source accepts connections from{' '}
                         <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500">
-                          {GATEWAY_IP}
+                          {GATEWAY_IP()}
                         </code>
                         .
                       </p>

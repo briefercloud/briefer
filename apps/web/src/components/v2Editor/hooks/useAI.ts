@@ -2,6 +2,7 @@ import { DataSource } from '@briefer/database'
 import { useCallback, useMemo, useState } from 'react'
 import { io } from 'socket.io-client'
 import { editor } from 'monaco-editor'
+import { NEXT_PUBLIC_API_WS_URL } from '@/utils/env'
 
 export type AIResult = {
   data?: string
@@ -51,7 +52,7 @@ export const useAI = <OnRunInputT, Output, InitialInput = DefaultInitialInput>(
         let finished = false
         let error: Error | undefined = undefined
 
-        const socket = io(process.env.NEXT_PUBLIC_API_WS_URL!, {
+        const socket = io(NEXT_PUBLIC_API_WS_URL(), {
           withCredentials: true,
         })
 

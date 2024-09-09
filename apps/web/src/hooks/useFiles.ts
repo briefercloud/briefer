@@ -5,6 +5,7 @@ import axios from 'axios'
 import qs from 'qs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 export type UploadFile = {
   status: 'enqueued' | 'uploading' | 'asking-replace'
@@ -57,7 +58,7 @@ export const useFiles = (
   refreshInterval?: number
 ): UseFiles => {
   const { data, mutate } = useSWR<BrieferFile[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/files`,
+    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/files`,
     fetcher,
     { refreshInterval: refreshInterval ?? 0, refreshWhenHidden: false }
   )
@@ -77,7 +78,7 @@ export const useFiles = (
       const params = qs.stringify({ path })
       try {
         await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/files/?${params}`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/files/?${params}`,
           {
             credentials: 'include',
             method: 'DELETE',
@@ -223,7 +224,7 @@ export const useFiles = (
     }
 
     const replace = uploadState.current.replace || uploadState.replaceAll
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/files?replace=${replace}`
+    const url = `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/files?replace=${replace}`
     axios({
       signal: uploadState.current.abortController.signal,
       url,

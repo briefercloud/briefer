@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 interface Props {
   blockId: string
@@ -130,7 +131,13 @@ function SQLSuccess(props: SQLSuccessProps) {
     }
 
     fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${props.workspaceId}/documents/${props.documentId}/queries/${props.blockId}?page=${currentPageIndex}&pageSize=${rowsPerPage}&dataframeName=${props.dataframeName}`,
+      `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${props.workspaceId}/documents/${
+        props.documentId
+      }/queries/${
+        props.blockId
+      }?page=${currentPageIndex}&pageSize=${rowsPerPage}&dataframeName=${
+        props.dataframeName
+      }`,
       {
         credentials: 'include',
       }

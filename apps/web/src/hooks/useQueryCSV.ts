@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import { useCallback, useMemo, useState } from 'react'
 
 export type CSVResult = {
@@ -23,7 +24,7 @@ export const useCSV = (workspaceId: string, documentId: string): UseCSV => {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${documentId}/queries/${queryId}/csv?name=${name}`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${documentId}/queries/${queryId}/csv?name=${name}`,
           { credentials: 'include' }
         )
 

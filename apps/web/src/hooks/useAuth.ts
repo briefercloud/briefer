@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_API_URL, NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
 import type { ApiUser, UserWorkspaceRole } from '@briefer/database'
 import { useRouter } from 'next/router'
@@ -27,13 +28,13 @@ export const useSignup = (): UseSignup => {
   const signupWithEmail = useCallback(
     (email: string) => {
       setState((s) => ({ ...s, loading: true }))
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sign-up/email`, {
+      fetch(`${NEXT_PUBLIC_API_URL()}/auth/sign-up/email`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          callback: process.env.NEXT_PUBLIC_PUBLIC_URL,
+          callback: NEXT_PUBLIC_PUBLIC_URL(),
         }),
       })
         .then(async (res) => {
@@ -73,13 +74,13 @@ export const useLogin = (): UseLogin => {
   const loginWithEmail = useCallback(
     (email: string) => {
       setState((s) => ({ ...s, loading: true }))
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/link/request`, {
+      fetch(`${NEXT_PUBLIC_API_URL()}/auth/link/request`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          callback: process.env.NEXT_PUBLIC_PUBLIC_URL,
+          callback: NEXT_PUBLIC_PUBLIC_URL(),
         }),
       })
         .then(async (res) => {
@@ -104,7 +105,7 @@ export const useLogin = (): UseLogin => {
   const loginWithPassword = useCallback(
     (email: string, password: string) => {
       setState((s) => ({ ...s, loading: true }))
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sign-in/password`, {
+      fetch(`${NEXT_PUBLIC_API_URL()}/auth/sign-in/password`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -149,20 +150,17 @@ export type SessionUser = ApiUser & {
 }
 
 export const useSession = () =>
-  useSWR<SessionUser>(
-    `${process.env.NEXT_PUBLIC_API_URL}/auth/session`,
-    fetcher
-  )
+  useSWR<SessionUser>(`${NEXT_PUBLIC_API_URL()}/auth/session`, fetcher)
 
 export const useSignout = () => {
   const router = useRouter()
   return useCallback(
     (callback?: string) => {
-      const cb = callback ?? process.env.NEXT_PUBLIC_PUBLIC_URL!
+      const cb = callback ?? NEXT_PUBLIC_PUBLIC_URL()
       router.push(
-        `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/auth/logout?callback=${encodeURIComponent(cb)}`
+        `${NEXT_PUBLIC_API_URL()}/auth/logout?callback=${encodeURIComponent(
+          cb
+        )}`
       )
     },
     [router]

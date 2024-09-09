@@ -9,6 +9,7 @@ import StateFiles from './StateFiles'
 import { useCallback, useMemo } from 'react'
 import Spin from '@/components/Spin'
 import Link from 'next/link'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 export type FilesTableHeader = 'Name' | 'Type' | 'Size' | 'Usage' | 'DL' | 'Del'
 const editorHeaders: FilesTableHeader[] = [
@@ -120,7 +121,7 @@ function FilesTable(props: Props) {
             <UploadedFileC
               key={i}
               file={file}
-              downloadLink={`${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${
+              downloadLink={`${NEXT_PUBLIC_API_URL()}/v1/workspaces/${
                 props.workspaceId
               }/documents/${props.documentId}/files/${encodeURIComponent(
                 file.name
