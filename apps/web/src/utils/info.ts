@@ -1,1 +1,3 @@
-export const GATEWAY_IP = process.env.NEXT_PUBLIC_GATEWAY_IP || '54.146.99.180'
+import { NEXT_PUBLIC_GATEWAY_IP } from './env'
+
+export const GATEWAY_IP = NEXT_PUBLIC_GATEWAY_IP

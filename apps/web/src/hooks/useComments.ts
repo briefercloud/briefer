@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
 import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
@@ -20,7 +21,7 @@ export const useComments = (
   docId: string
 ): UseComments => {
   const { data, mutate } = useSWR<Comment[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
+    `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
     fetcher,
     { refreshInterval: 5000 }
   )
@@ -30,7 +31,7 @@ export const useComments = (
   const createComment = useCallback(
     async (content: string) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
         {
           credentials: 'include',
           method: 'POST',
@@ -50,7 +51,7 @@ export const useComments = (
   const deleteComment = useCallback(
     async (id: string) => {
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments/${id}`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/comments/${id}`,
         {
           credentials: 'include',
           method: 'DELETE',

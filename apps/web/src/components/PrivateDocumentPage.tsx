@@ -30,6 +30,7 @@ import { Tooltip } from './Tooltips'
 import SchemaExplorer from './schemaExplorer'
 import { EditorAwarenessProvider } from '@/hooks/useEditorAwareness'
 import ShortcutsModal from './ShortcutsModal'
+import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -149,7 +150,7 @@ function PrivateDocumentPageInner(
   const router = useRouter()
   const copyLink = useMemo(
     () =>
-      `${process.env.NEXT_PUBLIC_PUBLIC_URL}/workspaces/${props.workspaceId}/documents/${props.documentId}`,
+      `${NEXT_PUBLIC_PUBLIC_URL}/workspaces/${props.workspaceId}/documents/${props.documentId}`,
     [router]
   )
 

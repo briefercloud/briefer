@@ -7,6 +7,7 @@ import WorkspaceNameSetupStep, {
 import UserSetupForm, { UserStepFormValues } from '@/components/setup/UserForm'
 import { useRouter } from 'next/router'
 import useProperties from '@/hooks/useProperties'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 function SetupPage() {
   const { isLoading, data: properties } = useProperties()
@@ -82,7 +83,7 @@ function SetupForm() {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/sign-up/password`,
+          `${NEXT_PUBLIC_API_URL}/auth/sign-up/password`,
           {
             method: 'POST',
             headers: {

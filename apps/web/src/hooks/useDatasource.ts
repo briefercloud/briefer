@@ -11,6 +11,7 @@ import { useCallback, useMemo } from 'react'
 import useSWR, { SWRResponse } from 'swr'
 import { useDataSources } from './useDatasources'
 import { TrinoDataSourceInput } from '@/components/forms/trino'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 type DataSourceInput =
   | PostgreSQLDataSourceInput
@@ -34,7 +35,7 @@ export const useDataSource = (
   dataSourceId: string
 ): UseDataSource => {
   const swrRes = useSWR<State>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
+    `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
     fetcher
   )
 
@@ -46,7 +47,7 @@ export const useDataSource = (
         }
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
+          `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
           {
             credentials: 'include',
             method: 'PUT',
@@ -108,7 +109,7 @@ export const useNewDataSource = (workspaceId: string) => {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources`,
         {
           credentials: 'include',
           method: 'POST',

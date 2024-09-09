@@ -18,6 +18,7 @@ import { uniqBy } from 'ramda'
 import { useYElementMemo } from '@/hooks/useYMemo'
 import { ConnectDragPreview } from 'react-dnd'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 type UploadFile = {
   status: 'enqueued' | 'uploading' | 'asking-replace'
@@ -183,7 +184,7 @@ function FileUploadBlock(props: Props) {
     })
 
     const replace = state.current.replace || state.replaceAll
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${props.workspaceId}/documents/${props.documentId}/files?replace=${replace}`
+    const url = `${NEXT_PUBLIC_API_URL}/v1/workspaces/${props.workspaceId}/documents/${props.documentId}/files?replace=${replace}`
     axios({
       signal: state.current.abortController.signal,
       url,

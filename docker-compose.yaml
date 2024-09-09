@@ -77,6 +77,11 @@ services:
         NEXT_PUBLIC_API_URL: 'https://api.${TLD:?error}'
         NEXT_PUBLIC_API_WS_URL: 'wss://api.${TLD:?error}'
         NEXT_PUBLIC_PUBLIC_URL: 'https://app.${TLD:?error}'
+    environment:
+      NODE_ENV: 'production'
+      NEXT_PUBLIC_API_URL: 'https://api.${TLD:?error}'
+      NEXT_PUBLIC_API_WS_URL: 'wss://api.${TLD:?error}'
+      NEXT_PUBLIC_PUBLIC_URL: 'https://app.${TLD:?error}'
     ports:
       - '3000:3000'
     depends_on:

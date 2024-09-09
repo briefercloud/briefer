@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
 import type { DataSource } from '@briefer/database'
 import { DataSourceStructure } from '@briefer/types'
@@ -33,7 +34,7 @@ export const useDataSources = (workspaceId: string): UseDataSources => {
     dataSources: DataSource[]
     structures: Record<string, DataSourceStructure>
   }>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources`,
+    `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources`,
     fetcher
   )
   const data: APIDataSources = useMemo(() => {
@@ -55,7 +56,7 @@ export const useDataSources = (workspaceId: string): UseDataSources => {
     async (id: string) => {
       await mutate(async (data) => {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${id}`,
+          `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${id}`,
           {
             credentials: 'include',
             method: 'DELETE',
@@ -85,7 +86,7 @@ export const useDataSources = (workspaceId: string): UseDataSources => {
   const ping = useCallback(
     async (id: string, type: string) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${id}/ping`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/data-sources/${id}/ping`,
         {
           credentials: 'include',
           method: 'POST',

@@ -138,6 +138,7 @@ COPY --from=web-installer --chown=briefer:briefer /app/apps/web/package.json .
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/.next/standalone ./
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/public ./apps/web/public
+COPY --from=web-installer --chown=briefer:briefer /app/apps/web/start.sh ./apps/web/start.sh
 ##### END OF COPY API AND WEB BUILDS ####
 
 USER postgres

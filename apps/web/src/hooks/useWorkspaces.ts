@@ -5,6 +5,7 @@ import useSWR from 'swr'
 import { useSession } from './useAuth'
 import { OnboardingStep } from '@briefer/types'
 import { WorkspaceEditFormValues } from '@briefer/types'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 type API = {
   updateSettings: (
@@ -20,14 +21,14 @@ type UseWorkspaces = [{ data: ApiWorkspace[]; isLoading: boolean }, API]
 export const useWorkspaces = (): UseWorkspaces => {
   const session = useSession()
   const swrRes = useSWR<ApiWorkspace[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces`,
+    `${NEXT_PUBLIC_API_URL}/v1/workspaces`,
     fetcher
   )
 
   const updateSettings = useCallback(
     async (workspaceId: string, data: WorkspaceEditFormValues) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}`,
         {
           credentials: 'include',
           method: 'PUT',
@@ -51,7 +52,7 @@ export const useWorkspaces = (): UseWorkspaces => {
       await swrRes.mutate(
         async () => {
           const res = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/onboarding`,
+            `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/onboarding`,
             {
               credentials: 'include',
               method: 'PUT',

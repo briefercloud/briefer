@@ -7,6 +7,7 @@ import type {
 import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
 import type { UserFormValues } from '@/components/forms/user'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 type UpdateUserPayload = {
   name?: string
@@ -30,7 +31,7 @@ type UseUsers = [WorkspaceUser[], API]
 
 export const useUsers = (workspaceId: string): UseUsers => {
   const { data, mutate } = useSWR<WorkspaceUser[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users`,
+    `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users`,
     fetcher
   )
 
@@ -43,7 +44,7 @@ export const useUsers = (workspaceId: string): UseUsers => {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users`,
         {
           credentials: 'include',
           method: 'POST',
@@ -67,7 +68,7 @@ export const useUsers = (workspaceId: string): UseUsers => {
   const updateUser = useCallback(
     async (id: string, payload: UpdateUserPayload) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}`,
         {
           credentials: 'include',
           method: 'PUT',
@@ -104,7 +105,7 @@ export const useUsers = (workspaceId: string): UseUsers => {
   const removeUser = useCallback(
     async (id: string) => {
       const data = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}`,
         {
           credentials: 'include',
           method: 'DELETE',
@@ -124,7 +125,7 @@ export const useUsers = (workspaceId: string): UseUsers => {
   const resetPassword = useCallback(
     async (id: string) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}/reset-password`,
+        `${NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/users/${id}/reset-password`,
         {
           credentials: 'include',
           method: 'POST',
