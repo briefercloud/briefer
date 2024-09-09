@@ -13,8 +13,8 @@ Ideally, you should deploy it to a server that is accessible to all the people w
 <br />
 <p>
 <picture align="center">
-  <source  align="center" media="(prefers-color-scheme: dark)" srcset="./assets/img/briefer-usage-overview-dark.png">
-  <source align="center" media="(prefers-color-scheme: light)" srcset="./assets/img/briefer-usage-overview.png">
+  <source  align="center" media="(prefers-color-scheme: dark)" srcset="../assets/img/briefer-usage-overview-dark.png">
+  <source align="center" media="(prefers-color-scheme: light)" srcset="../assets/img/briefer-usage-overview.png">
   <img align="center" alt="Briefer usage diagram" src="./assets/img/briefer-usage-overview.png">
 </picture>
 </p>
@@ -33,9 +33,9 @@ After deploying Briefer, you'll access the web application in your browser and i
 <br />
 <p>
 <picture align="center">
-  <source  align="center" media="(prefers-color-scheme: dark)" srcset="./assets/img/deployment-overview-dark.png">
-  <source align="center" media="(prefers-color-scheme: light)" srcset="./assets/img/deployment-overview.png">
-  <img align="center" alt="Briefer usage diagram" src="./assets/img/deployment-overview.png">
+  <source  align="center" media="(prefers-color-scheme: dark)" srcset="../assets/img/deployment-overview-dark.png">
+  <source align="center" media="(prefers-color-scheme: light)" srcset="../assets/img/deployment-overview.png">
+  <img align="center" alt="Briefer usage diagram" src="../assets/img/deployment-overview.png">
 </picture>
 </p>
 <br />
