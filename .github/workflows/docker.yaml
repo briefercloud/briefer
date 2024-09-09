@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 jobs:
-  docker-image:
+  docker-monolith-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
@@ -58,3 +58,66 @@ jobs:
           context: .
           file: docker/Dockerfile
           tags: briefercloud/briefer:${{ github.ref_name }},briefercloud/briefer:latest
+
+  docker-multiple-images:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: 'web'
+            dockerfile: 'apps/web/Dockerfile'
+            context: '.'
+          - name: 'api'
+            dockerfile: 'apps/api/Dockerfile'
+            context: '.'
+          - name: 'ai'
+            dockerfile: 'ai/Dockerfile'
+            context: 'ai'
+          - name: 'jupyter'
+            context: 'apps/api'
+            dockerfile: 'apps/api/jupyter.Dockerfile'
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Depot CLI
+        uses: depot/setup-action@v1
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Is release version
+        id: tag_check
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "is_release_version=true" >> $GITHUB_ENV
+          else
+            echo "is_release_version=false" >> $GITHUB_ENV
+          fi
+
+      - name: Build and push tag
+        uses: depot/build-push-action@v1
+        if: env.is_release_version == 'false'
+        with:
+          project: 6zxrst4dlr
+          platforms: linux/amd64,linux/arm64
+          push: true
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          tags: briefercloud/briefer-${{ matrix.name }}:${{ github.ref_name }}
+
+      - name: Build and push tag and release
+        uses: depot/build-push-action@v1
+        if: env.is_release_version == 'true'
+        with:
+          project: 6zxrst4dlr
+          platforms: linux/amd64,linux/arm64
+          push: true
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          tags: briefercloud/briefer-${{ matrix.name }}:${{ github.ref_name }},briefercloud/briefer-${{ matrix.name }}:latest
