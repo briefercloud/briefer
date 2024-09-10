@@ -55,6 +55,10 @@ def run_api(cfg):
             env[k] = v
     
 
+    with open("/app/api/apps/api/package.json", "r") as f:
+        pkgjson = json.load(f)
+        env["VERSION"] = pkgjson["version"]
+
     api = subprocess.run(["bash", "-c", "node /app/api/apps/api/dist/src/index.js | /app/api/node_modules/.bin/pino-pretty"], env=env)
     api.check_returncode()
 
