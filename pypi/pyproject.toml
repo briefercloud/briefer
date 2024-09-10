@@ -9,7 +9,7 @@ description = "Python notebooks and dashboards in a single place. Create powerfu
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.7"
-dependencies = ["docker"]
+dependencies = ["docker", "requests"]
 
 [project.urls]
 Homepage = "https://briefer.cloud"

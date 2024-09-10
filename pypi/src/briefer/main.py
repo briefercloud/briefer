@@ -1,9 +1,13 @@
-import os
-import docker
-import sys
-import socket
 import argparse
+import docker
+import os
+import requests
 import signal
+import socket
+import sys
+import threading
+import time
+import webbrowser
 
 ENV_VARS = [
     "LOG_LEVEL",
@@ -94,45 +98,74 @@ def is_port_in_use(port):
             return True
 
 
+def find_free_port(start_port):
+    while is_port_in_use(start_port):
+        start_port += 1
+    return start_port
+
 def start_or_run_container(client, container_name, image, detach):
-    # Check if the ports 3000 and 8080 are available
-    if is_port_in_use(3000):
-        print("Error: Port 3000 is already in use. Please stop the service using this port before starting Briefer.", file=sys.stderr)
-        sys.exit(1)
+    web_port = find_free_port(3000)
+    api_port = find_free_port(8080)
 
-    if is_port_in_use(8080):
-        print("Error: Port 8080 is already in use. Please stop the service using this port before starting Briefer.", file=sys.stderr)
-        sys.exit(1)
-
-    # check if image already exists
+    # Pull the image if not already present
     if not client.images.list(name=image):
         pull_image(client, image)
 
+    # If the container exists, remove it to allow new port mappings and env variables
     if is_container_existing(client, container_name):
         container = client.containers.get(container_name)
-        container.start()
-    else:
-        volumes = {
-            'briefer_psql_data': {'bind': '/var/lib/postgresql/data', 'mode': 'rw'},
-            'briefer_jupyter_data': {'bind': '/home/jupyteruser', 'mode': 'rw'},
-            'briefer_briefer_data': {'bind': '/home/briefer', 'mode': 'rw'}
-        }
-        print('Starting Briefer...')
-        env = {}
-        for var in ENV_VARS:
-            if var in os.environ:
-                env[var] = os.environ[var]
-        container = client.containers.run(
-            image,
-            detach=True,
-            ports={'3000/tcp': 3000, '8080/tcp': 8080},
-            name=container_name,
-            volumes=volumes,
-            environment=env
-        )
+        container.stop()
+        container.remove()
 
+    # Define the volumes and environment variables
+    volumes = {
+        'briefer_psql_data': {'bind': '/var/lib/postgresql/data', 'mode': 'rw'},
+        'briefer_jupyter_data': {'bind': '/home/jupyteruser', 'mode': 'rw'},
+        'briefer_briefer_data': {'bind': '/home/briefer', 'mode': 'rw'}
+    }
+
+    env = {}
+    for var in ENV_VARS:
+        if var in os.environ:
+            env[var] = os.environ[var]
+
+    if "API_URL" not in env:
+        env["API_URL"] = f"http://localhost:{api_port}"
+
+    if "FRONTEND_URL" not in env:
+        env["FRONTEND_URL"] = f"http://localhost:{web_port}"
+
+    # Run a new container with the updated ports and environment
+    container = client.containers.run(
+        image,
+        detach=True,
+        ports={f"3000/tcp": web_port, f"8080/tcp": api_port},
+        name=container_name,
+        volumes=volumes,
+        environment=env
+    )
+
+    frontend_url = env["FRONTEND_URL"]
+
+    def check_frontend_reachability():
+        while True:
+            try:
+                response = requests.get(frontend_url)
+                if response.status_code == 200:
+                    webbrowser.open(frontend_url)
+                    break
+            except requests.ConnectionError:
+                pass
+            time.sleep(1)
+
+    thread = threading.Thread(target=check_frontend_reachability)
+    thread.start()
+
+    # Attach to logs so the user can see what's happening
     if not detach:
         attach(container)
+
+    thread.join()
 
 
 def pull_image(client, image):
