@@ -182,6 +182,18 @@ export class VisualizationExecutor implements IVisualizationExecutor {
           }
 
           const result = await promise
+          if (Object.keys(result.filterResults).length > 0) {
+            const nextFilters = filters.map((f) => {
+              const next = result.filterResults[f.id]
+              if (next) {
+                return next
+              }
+
+              return f
+            })
+            block.setAttribute('filters', nextFilters)
+          }
+
           if (!result.success) {
             if (result.reason !== 'aborted') {
               block.setAttribute('error', result.reason)

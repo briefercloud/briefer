@@ -93,8 +93,28 @@ function getCode(
   const code = `import json
 import altair as alt
 import pandas as pd
+from jinja2 import Template
 
 axisTitlePadding = 10
+
+
+def _briefer_render_filter_value(filter):
+    try:
+        if isinstance(filter["value"], list):
+            value = list(map(lambda x: Template(x).render(**globals()), filter["value"]))
+        else:
+            value = Template(filter["value"]).render(**globals())
+
+        return value
+    except Exception as e:
+        filter["renderError"] = {
+          "type": "error",
+          "ename": e.__class__.__name__,
+          "evalue": str(e),
+          "traceback": []
+        }
+        print(json.dumps({ "type": "filter-result", "filter": filter }))
+        return None
 
 def _briefer_convert_to_utc_safe(datetime_series, comparison_value):
     # Localize timezone-naive datetimes to UTC
@@ -527,8 +547,21 @@ def _briefer_create_visualization(
     for filter in filtering:
       column_name = filter['column']['name']
       operator = filter['operator']
-      value = filter['value']
+
+      if isinstance(filter["value"], list):
+          value = list(map(lambda x: _briefer_render_filter_value(x), filter["value"]))
+      else:
+          value = _briefer_render_filter_value(filter)
+
+      # if the value is None, rendering failed, skip this filter
+      if value == None:
+          continue
+
+      filter["renderedValue"] = value
+      print(json.dumps({"type": "filter-result", "filter": filter}))
+
       if pd.api.types.is_numeric_dtype(df[column_name]):
+          value = pd.to_numeric(value, errors='coerce')
           if operator == 'eq':
               df = df[df[column_name] == value]
           elif operator == 'ne':
@@ -546,6 +579,7 @@ def _briefer_create_visualization(
           elif operator == 'isNotNull':
               df = df[df[column_name].notnull()]
       elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]) or pd.api.types.is_object_dtype(df[column_name]):
+          value = str(value)
           if operator == 'eq':
               df = df[df[column_name] == value]
           elif operator == 'ne':
@@ -731,7 +765,7 @@ def _briefer_create_visualization(
         # if no y or y is not numeric, return
         is_y_numeric = series["column"]["type"] == "Q"
         if not series['column'] or not is_y_numeric:
-            print(json.dumps({"success": False, "reason": "invalid-params"}))
+            print(json.dumps({"type": "result", "success": False, "reason": "invalid-params"}))
             return
 
         chart, capped = _briefer_create_chart(
@@ -807,14 +841,14 @@ def _briefer_create_visualization(
     vis = alt.layer(*layers, usermeta=usermeta).resolve_scale(y='independent').configure_view(stroke=None).configure_range(category={"scheme": "tableau20"})
 
     # return spec as json
-    print(json.dumps({"success": True, "spec": vis.to_json(default=str)}, default=str))
+    print(json.dumps({"type": "result", "success": True, "spec": vis.to_json(default=str)}, default=str))
 
 if not "${dataframe.name}" in globals():
     try:
         import pandas as pd
         ${dataframe.name} = pd.read_parquet("/home/jupyteruser/.briefer/query-${
-          dataframe.id
-        }.parquet.gzip")
+    dataframe.id
+  }.parquet.gzip")
     except:
         pass
 
@@ -835,17 +869,19 @@ if "${dataframe.name}" in globals():
         json.loads(${JSON.stringify(JSON.stringify(filtering))})
     )
 else:
-    print(json.dumps({"success": False, "reason": "dataframe-not-found"}))`
+    print(json.dumps({"type": "result", "success": False, "reason": "dataframe-not-found"}))`
 
   return code
 }
 
 const CreateVisualizationPythonResult = z.union([
   z.object({
+    type: z.literal('result'),
     success: z.literal(true),
     spec: jsonString.pipe(JsonObject),
   }),
   z.object({
+    type: z.literal('result'),
     success: z.literal(false),
     reason: z.union([
       z.literal('dataframe-not-found'),
@@ -858,15 +894,23 @@ type CreateVisualizationPythonResult = z.infer<
   typeof CreateVisualizationPythonResult
 >
 
+const FilterResult = z.object({
+  type: z.literal('filter-result'),
+  filter: VisualizationFilter,
+})
+type FilterResult = z.infer<typeof FilterResult>
+
 export type CreateVisualizationResult = {
   promise: Promise<
     | {
         success: true
         spec: JsonObject
+        filterResults: Record<string, VisualizationFilter>
       }
     | {
         success: false
         reason: 'dataframe-not-found' | 'aborted' | 'invalid-params'
+        filterResults: Record<string, VisualizationFilter>
       }
   >
   abort: () => Promise<void>
@@ -938,6 +982,8 @@ export async function createVisualization(
     { storeHistory: false }
   )
 
+  const filterResults: Record<string, VisualizationFilter> = {}
+
   const promise = execute.then(
     async (): CreateVisualizationResult['promise'] => {
       let result: CreateVisualizationPythonResult | null = null
@@ -945,7 +991,7 @@ export async function createVisualization(
       for (const output of outputs) {
         if (output.type === 'error') {
           if (output.ename === 'KeyboardInterrupt') {
-            result = { success: false, reason: 'aborted' }
+            result = { type: 'result', success: false, reason: 'aborted' }
             break
           }
 
@@ -966,10 +1012,19 @@ export async function createVisualization(
             for (const line of output.text.split('\n')) {
               try {
                 const asJson = JSON.parse(line)
-                const parsed = CreateVisualizationPythonResult.safeParse(asJson)
+                const parsed =
+                  CreateVisualizationPythonResult.or(FilterResult).safeParse(
+                    asJson
+                  )
                 if (parsed.success) {
-                  result = parsed.data
-                  break
+                  if (parsed.data.type === 'result') {
+                    if (parsed.data.success) {
+                      result = parsed.data
+                      break
+                    }
+                  } else {
+                    filterResults[parsed.data.filter.id] = parsed.data.filter
+                  }
                 }
               } catch (err) {
                 errors.push(err as Error)
@@ -993,10 +1048,10 @@ export async function createVisualization(
       }
 
       if (!result.success) {
-        return result
+        return { ...result, filterResults }
       }
 
-      return { success: true, spec: result.spec }
+      return { success: true, spec: result.spec, filterResults }
     }
   )
 
