@@ -12,6 +12,7 @@ import React, {
 import { useFavorites } from './useFavorites'
 import { equals } from 'ramda'
 import useWebsocket from './useWebsocket'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 function upsertDocumentInMemory(
   documents: List<ApiDocument>,
@@ -348,7 +349,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents`,
           {
             credentials: 'include',
             method: 'POST',
@@ -406,7 +407,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
       })
 
       const deletedDocRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}?isPermanent=${isPermanent}`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}?isPermanent=${isPermanent}`,
         {
           credentials: 'include',
           method: 'DELETE',
@@ -445,7 +446,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
       )
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}/duplicate`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}/duplicate`,
           {
             credentials: 'include',
             method: 'POST',
@@ -498,7 +499,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
       }
 
       const restoreDocRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}/restore`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}/restore`,
         {
           credentials: 'include',
           method: 'POST',
@@ -536,7 +537,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
 
       try {
         await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}/icon`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}/icon`,
           {
             credentials: 'include',
             method: 'POST',
@@ -658,7 +659,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}`,
           {
             credentials: 'include',
             method: 'PUT',
@@ -695,7 +696,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
       }
 
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${id}/publish`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}/publish`,
         {
           credentials: 'include',
           method: 'POST',

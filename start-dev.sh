@@ -3,10 +3,11 @@ set -e
 
 # if there is no .env file in API, create one
 if [ ! -f ./apps/api/.env ]; then
-  echo "NODE_ENV.envelopment" > ./apps/api/.env
-  echo "LOG_LEVEL=debug" > ./apps/api/.env
-  echo "API_URL='https://localhost:3000'" > ./apps/api/.env
-  echo "TLD=localhost" > ./apps/api/.env
+  echo "NODE_ENV=development" > ./apps/api/.env
+  echo "LOG_LEVEL=debug" >> ./apps/api/.env
+  echo "API_URL='https://localhost:3000'" >> ./apps/api/.env
+  echo "FRONTEND_URL='https://localhost:3000'" >> ./apps/api/.env
+  echo "TLD=localhost" >> ./apps/api/.env
   echo "LOGIN_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "AUTH_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "AI_API_URL='http://localhost:8000" >> ./apps/api/.env
@@ -22,6 +23,8 @@ if [ ! -f ./apps/api/.env ]; then
   echo "ENVIRONMENT_VARIABLES_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> ./apps/api/.env
   echo "DATASOURCES_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> ./apps/api/.env
   echo "WORKSPACE_SECRETS_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> ./apps/api/.env
+  echo "JUPYTER_HOST=localhost" >> ./apps/api/.env
+  echo "JUPYTER_PORT=8888" >> ./apps/api/.env
   echo "JUPYTER_TOKEN=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "OPENAI_API_KEY=sk-placeholder" >> ./apps/api/.env
 
@@ -31,17 +34,15 @@ fi
 # if there is no .env file in WEB, create one
 if [ ! -f ./apps/web/.env ]; then
   echo "NODE_ENV=development" > ./apps/web/.env
-  echo "NEXT_PUBLIC_API_URL='https://localhost:8080'" > ./apps/web/.env
-  echo "NEXT_PUBLIC_API_WS_URL='wss://localhost:8080'" > ./apps/web/.env
-  echo "NEXT_PUBLIC_PUBLIC_URL='https://localhost:3000'" > ./apps/web/.env
+  echo "NEXT_PUBLIC_API_URL='https://localhost:8080'" >> ./apps/web/.env
+  echo "NEXT_PUBLIC_API_WS_URL='wss://localhost:8080'" >> ./apps/web/.env
+  echo "NEXT_PUBLIC_PUBLIC_URL='https://localhost:3000'" >> ./apps/web/.env
 
   echo "Generated a new ./apps/eb/.env file with default values"
 fi
 
-# We must load the environment variables from the .env file so that
-# we have JUPYTER_TOKEN available to pass to the docker-compose command
-# and so that it will be the same as the one used in the API
-source ./apps/api/.env
+# Read JUPYTER_TOKEN from apps/api/.env, remove single and double quotes
+JUPYTER_TOKEN=$(grep JUPYTER_TOKEN ./apps/api/.env | cut -d '=' -f 2 | tr -d "'" | tr -d '"')
 
 # Check if docker compose exists, if it does use it
 # otherwise use docker-compose

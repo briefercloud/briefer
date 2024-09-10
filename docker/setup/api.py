@@ -28,8 +28,8 @@ def run_api(cfg):
     default_env = {
       "NODE_ENV": "production",
       "LOG_LEVEL": "info",
-      "API_URL": "http://localhost:8080",
-      "FRONTEND_URL": "http://localhost:3000",
+      "API_URL": cfg["API_URL"],
+      "FRONTEND_URL": cfg["FRONTEND_URL"],
       "TLD": cfg["TLD"],
       "LOGIN_JWT_SECRET": cfg["LOGIN_JWT_SECRET"],
       "AUTH_JWT_SECRET": cfg["AUTH_JWT_SECRET"],

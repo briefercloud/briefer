@@ -1,3 +1,4 @@
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
 import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
@@ -9,7 +10,7 @@ type API = {
 type UseFavorites = [Set<string>, API]
 export const useFavorites = (workspaceId: string): UseFavorites => {
   const { data, mutate } = useSWR<string[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/favorites`,
+    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/favorites`,
     fetcher
   )
 
@@ -18,7 +19,7 @@ export const useFavorites = (workspaceId: string): UseFavorites => {
   const favoriteDocument = useCallback(
     async (docId: string) => {
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/favorite`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/favorite`,
         {
           credentials: 'include',
           method: 'POST',
@@ -34,7 +35,7 @@ export const useFavorites = (workspaceId: string): UseFavorites => {
     async (docId: string, refetch = true) => {
       if (refetch) {
         await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/favorite`,
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/favorite`,
           {
             credentials: 'include',
             method: 'DELETE',

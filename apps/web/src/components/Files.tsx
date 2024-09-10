@@ -30,6 +30,7 @@ import {
   CloudArrowUpIcon as CloudArrowUpIconSolid,
 } from '@heroicons/react/20/solid'
 import { PortalTooltip, Tooltip } from './Tooltips'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 interface Props {
   workspaceId: string
@@ -497,7 +498,7 @@ function FileItem(props: FileItemProps) {
             'Download'
           ) : (
             <Link
-              href={`${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${
+              href={`${NEXT_PUBLIC_API_URL()}/v1/workspaces/${
                 props.workspaceId
               }/files/file?path=${encodeURIComponent(props.file.relCwdPath)}`}
               target="_blank"

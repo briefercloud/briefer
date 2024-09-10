@@ -1,4 +1,5 @@
 import { CreateSchedulePayload } from '@/components/Schedules/AddScheduleForm'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
 import type { ExecutionSchedule } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
@@ -15,7 +16,7 @@ export const useSchedules = (
   docId: string
 ): UseSchedules => {
   const { data, mutate } = useSWR<ExecutionSchedule[]>(
-    `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/schedules`,
+    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/schedules`,
     fetcher
   )
 
@@ -24,7 +25,7 @@ export const useSchedules = (
   const createSchedule = useCallback(
     async (payload: CreateSchedulePayload) => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/schedules`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/schedules`,
         {
           credentials: 'include',
           method: 'POST',
@@ -44,7 +45,7 @@ export const useSchedules = (
   const deleteSchedule = useCallback(
     async (id: string) => {
       await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/v1/workspaces/${workspaceId}/documents/${docId}/schedules/${id}`,
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/schedules/${id}`,
         {
           credentials: 'include',
           method: 'DELETE',

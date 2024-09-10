@@ -27,6 +27,7 @@ import EnvBar from '../EnvBar'
 import Files from '../Files'
 import { PublishBlinkingSignal } from '../BlinkingSignal'
 import { Tooltip } from '../Tooltips'
+import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 
 interface Props {
   document: ApiDocument
@@ -75,7 +76,9 @@ export default function Dashboard(props: Props) {
 
   const copyLink = useMemo(
     () =>
-      `${process.env.NEXT_PUBLIC_PUBLIC_URL}/workspaces/${props.document.workspaceId}/documents/${props.document.id}`,
+      `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${
+        props.document.workspaceId
+      }/documents/${props.document.id}`,
     [router]
   )
 

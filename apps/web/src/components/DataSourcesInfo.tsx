@@ -66,7 +66,7 @@ export default function DataSourcesInfo({
                         <span className="font-semibold">
                           Our IP address is{' '}
                           <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500">
-                            {GATEWAY_IP}
+                            {GATEWAY_IP()}
                           </code>
                         </span>
                         .

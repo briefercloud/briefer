@@ -76,13 +76,13 @@ COPY turbo.json turbo.json
 
 ENV NEXT_PUBLIC_SINGLE_PROCESS=true
 
-ARG NEXT_PUBLIC_API_URL="http://localhost:8080"
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-ARG NEXT_PUBLIC_API_WS_URL="ws://localhost:8080"
+ARG NEXT_PUBLIC_API_WS_URL
 ENV NEXT_PUBLIC_API_WS_URL=$NEXT_PUBLIC_API_WS_URL
 
-ARG NEXT_PUBLIC_PUBLIC_URL="http://localhost:3000"
+ARG NEXT_PUBLIC_PUBLIC_URL
 ENV NEXT_PUBLIC_PUBLIC_URL=$NEXT_PUBLIC_PUBLIC_URL
 
 RUN yarn next telemetry disable
@@ -138,6 +138,7 @@ COPY --from=web-installer --chown=briefer:briefer /app/apps/web/package.json .
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/.next/standalone ./
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/public ./apps/web/public
+COPY --from=web-installer --chown=briefer:briefer /app/apps/web/start.sh ./apps/web/start.sh
 ##### END OF COPY API AND WEB BUILDS ####
 
 USER postgres

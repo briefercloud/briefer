@@ -3,6 +3,7 @@ import { useSession } from './useAuth'
 import { useContext, createContext, useEffect, useState } from 'react'
 import { useStringQuery } from './useQueryArgs'
 import { validate } from 'uuid'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 const Context = createContext<Socket | null>(null)
 
@@ -15,7 +16,7 @@ export function WebsocketProvider({ children }: Props) {
   const workspaceId = useStringQuery('workspaceId')
   useEffect(() => {
     if (session.data) {
-      const socket = io(process.env.NEXT_PUBLIC_API_URL!, {
+      const socket = io(NEXT_PUBLIC_API_URL(), {
         withCredentials: true,
       })
       setSocket(socket)

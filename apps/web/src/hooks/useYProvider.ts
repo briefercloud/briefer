@@ -2,6 +2,7 @@ import { Awareness } from 'y-protocols/awareness'
 import * as Y from 'yjs'
 import { useEffect, useRef, useState } from 'react'
 import { WebsocketProvider } from 'y-websocket'
+import { NEXT_PUBLIC_API_WS_URL } from '@/utils/env'
 
 export function getDocId(
   id: string,
@@ -26,7 +27,7 @@ function getWSProvider(
   publishedAt: string | null
 ): WebsocketProvider {
   const id = getDocId(documentId, isDataApp, clock, publishedAt)
-  const wsUrl = `${process.env.NEXT_PUBLIC_API_WS_URL!}/v2/yjs`
+  const wsUrl = `${NEXT_PUBLIC_API_WS_URL()}/v2/yjs`
 
   const provider = new WebsocketProvider(wsUrl, id, yDoc, {
     connect: false,

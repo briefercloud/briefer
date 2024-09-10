@@ -37,6 +37,7 @@ export default function Document() {
           rel="stylesheet"
         />
         <title>Briefer</title>
+        <script src="/env.js" />
       </Head>
       <body>
         <title>Briefer</title>

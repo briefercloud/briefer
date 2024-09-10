@@ -24,8 +24,13 @@ def get_config(dir):
 
 def generate_apps_config():
     fpath = get_config_path(APPS_CONFIG_DIR)
+    tld = os.getenv("TLD", "localhost")
     cfg = {
-        "TLD": "localhost",
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info",
+        "TLD": tld,
+        "API_URL": f"https://api.{tld}" if tld != "localhost" else "http://localhost:8080",
+        "FRONTEND_URL": f"https://app.{tld}" if tld != "localhost" else "http://localhost:3000",
         "POSTGRES_USERNAME": "briefer",
         "POSTGRES_PASSWORD": get_random_secret(8),
         "JUPYTER_TOKEN": get_random_secret(32),
@@ -37,6 +42,12 @@ def generate_apps_config():
         "DATASOURCES_ENCRYPTION_KEY": get_random_secret(32),
         "WORKSPACE_SECRETS_ENCRYPTION_KEY": get_random_secret(32),
     }
+
+    # override config with env vars
+    for k, _ in cfg.items():
+        if k in os.environ:
+            cfg[k] = os.environ[k]
+
     with open(fpath, "w") as f:
         json.dump(cfg, f, indent=4)
     os.chown(fpath, pwd.getpwnam("briefer").pw_uid, grp.getgrnam("briefer").gr_gid)
