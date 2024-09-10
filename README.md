@@ -74,6 +74,19 @@ docker run -d \
   briefercloud/briefer
 ```
 
+When running on Windows' PowerShell, it might be necessary to add an extra to the end of each line instead of the`, like this:
+
+```bash
+# Run Briefer using Docker
+docker run -d `
+  -p 3000:3000 `
+  -p 8080:8080 `
+  -v briefer_psql_data:/var/lib/postgresql/data `
+  -v briefer_jupyter_data:/home/jupyteruser `
+  -v briefer_briefer_data:/home/briefer `
+  briefercloud/briefer
+```
+
 These volumes are for Briefer to store its data, including its pages, dashboards, schedules, and users. If you want to remove Briefer's data, you can remove these volumes.
 
 For more information on how to deploy Briefer in production, please refer to our [deployment guide](/docs/DEPLOYMENT.md).
