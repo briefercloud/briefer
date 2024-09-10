@@ -21,7 +21,14 @@ def get_config():
 
     logging.info("Reading config file")
     with open(CONFIG_FILE_PATH, "r") as f:
-        return json.load(f)
+        cfg = json.load(f)
+
+        # override config with env vars
+        for k, _ in cfg.items():
+            if k in os.environ:
+                cfg[k] = os.environ[k]
+
+        return cfg
 
 
 def run_web(cfg):

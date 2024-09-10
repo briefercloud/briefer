@@ -104,11 +104,13 @@ def find_free_port(start_port):
     return start_port
 
 def start_or_run_container(client, container_name, image, detach):
+    if ":" not in image and "/" in image:
+        image += ":latest"
+
     web_port = find_free_port(3000)
     api_port = find_free_port(8080)
 
-    # Pull the image if not already present
-    if not client.images.list(name=image):
+    if "/" in image and "latest" in image or not client.images.list(name=image):
         pull_image(client, image)
 
     # If the container exists, remove it to allow new port mappings and env variables
@@ -145,20 +147,26 @@ def start_or_run_container(client, container_name, image, detach):
         environment=env
     )
 
-    frontend_url = env["FRONTEND_URL"]
+    api_url = env["API_URL"]
+    web_url = env["FRONTEND_URL"]
 
-    def check_frontend_reachability():
+    def check_reachability():
         while True:
             try:
-                response = requests.get(frontend_url)
+                response = requests.get(f"{api_url}/readyz")
+                if response.status_code != 200:
+                    time.sleep(1)
+                    continue
+
+                response = requests.get(web_url)
                 if response.status_code == 200:
-                    webbrowser.open(frontend_url)
+                    webbrowser.open(web_url)
                     break
             except requests.ConnectionError:
                 pass
             time.sleep(1)
 
-    thread = threading.Thread(target=check_frontend_reachability)
+    thread = threading.Thread(target=check_reachability)
     thread.start()
 
     # Attach to logs so the user can see what's happening
@@ -170,8 +178,15 @@ def start_or_run_container(client, container_name, image, detach):
 
 def pull_image(client, image):
     print(f"Downloading image {image}...")
-    client.images.pull(image)
-    print(f"Downloaded image {image}.")
+    has_some_version = len(client.images.list(name=image)) > 0
+    try:
+        client.images.pull(image)
+        print(f"Downloaded image {image}.")
+    except:
+        if has_some_version:
+            print(f"Error: failed to download image {image}. Using cached version.", file=sys.stderr)
+        else:
+            raise
 
 
 def attach(container):

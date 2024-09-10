@@ -20,7 +20,14 @@ def get_config_path(dir):
 def get_config(dir):
     fpath = get_config_path(dir)
     with open(fpath, "r") as f:
-        return json.load(f)
+        cfg = json.load(f)
+
+        # override config with env vars
+        for k, _ in cfg.items():
+            if k in os.environ:
+                cfg[k] = os.environ[k]
+
+        return cfg
 
 def generate_apps_config():
     fpath = get_config_path(APPS_CONFIG_DIR)
