@@ -545,82 +545,79 @@ def _briefer_create_visualization(
         df.loc[:, x_axis] = pd.to_datetime(df[x_axis])
 
     for filter in filtering:
-      column_name = filter['column']['name']
-      operator = filter['operator']
+        column_name = filter['column']['name']
+        operator = filter['operator']
 
-      if isinstance(filter["value"], list):
-          value = list(map(lambda x: _briefer_render_filter_value(x), filter["value"]))
-      else:
-          value = _briefer_render_filter_value(filter)
+        value = _briefer_render_filter_value(filter)
 
-      # if the value is None, rendering failed, skip this filter
-      if value == None:
-          continue
+        # if the value is None, rendering failed, skip this filter
+        if value == None:
+            continue
 
-      filter["renderedValue"] = value
-      print(json.dumps({"type": "filter-result", "filter": filter}))
+        if filter["value"] != value:
+            filter["renderedValue"] = value
+            print(json.dumps({"type": "filter-result", "filter": filter}))
 
-      if pd.api.types.is_numeric_dtype(df[column_name]):
-          value = pd.to_numeric(value, errors='coerce')
-          if operator == 'eq':
-              df = df[df[column_name] == value]
-          elif operator == 'ne':
-              df = df[df[column_name] != value]
-          elif operator == 'lt':
-              df = df[df[column_name] < value]
-          elif operator == 'lte':
-              df = df[df[column_name] <= value]
-          elif operator == 'gt':
-              df = df[df[column_name] > value]
-          elif operator == 'gte':
-              df = df[df[column_name] >= value]
-          elif operator == 'isNull':
-              df = df[df[column_name].isnull()]
-          elif operator == 'isNotNull':
-              df = df[df[column_name].notnull()]
-      elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]) or pd.api.types.is_object_dtype(df[column_name]):
-          value = str(value)
-          if operator == 'eq':
-              df = df[df[column_name] == value]
-          elif operator == 'ne':
-              df = df[df[column_name] != value]
-          elif operator == 'contains':
-              df = df[df[column_name].str.contains(value)]
-          elif operator == 'notContains':
-              df = df[~df[column_name].str.contains(value)]
-          elif operator == 'startsWith':
-              df = df[df[column_name].str.startswith(value)]
-          elif operator == 'endsWith':
-              df = df[df[column_name].str.endswith(value)]
-          elif operator == 'in':
-              df = df[df[column_name].isin(value)]
-          elif operator == 'notIn':
-              df = df[~df[column_name].isin(value)]
-          elif operator == 'isNull':
-              df = df[df[column_name].isnull()]
-          elif operator == 'isNotNull':
-              df = df[df[column_name].notnull()]
-      elif pd.api.types.is_datetime64_any_dtype(df[column_name]):
-          # Convert both DataFrame column and value to UTC safely
-          df_column_utc, value_utc = _briefer_convert_to_utc_safe(df[column_name], pd.to_datetime(value))
+        if pd.api.types.is_numeric_dtype(df[column_name]):
+            value = pd.to_numeric(value, errors='coerce')
+            if operator == 'eq':
+                df = df[df[column_name] == value]
+            elif operator == 'ne':
+                df = df[df[column_name] != value]
+            elif operator == 'lt':
+                df = df[df[column_name] < value]
+            elif operator == 'lte':
+                df = df[df[column_name] <= value]
+            elif operator == 'gt':
+                df = df[df[column_name] > value]
+            elif operator == 'gte':
+                df = df[df[column_name] >= value]
+            elif operator == 'isNull':
+                df = df[df[column_name].isnull()]
+            elif operator == 'isNotNull':
+                df = df[df[column_name].notnull()]
+        elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]) or pd.api.types.is_object_dtype(df[column_name]):
+            if operator == 'eq':
+                df = df[df[column_name] == value]
+            elif operator == 'ne':
+                df = df[df[column_name] != value]
+            elif operator == 'contains':
+                df = df[df[column_name].str.contains(value)]
+            elif operator == 'notContains':
+                df = df[~df[column_name].str.contains(value)]
+            elif operator == 'startsWith':
+                df = df[df[column_name].str.startswith(value)]
+            elif operator == 'endsWith':
+                df = df[df[column_name].str.endswith(value)]
+            elif operator == 'in':
+                df = df[df[column_name].isin(value)]
+            elif operator == 'notIn':
+                df = df[~df[column_name].isin(value)]
+            elif operator == 'isNull':
+                df = df[df[column_name].isnull()]
+            elif operator == 'isNotNull':
+                df = df[df[column_name].notnull()]
+        elif pd.api.types.is_datetime64_any_dtype(df[column_name]):
+            # Convert both DataFrame column and value to UTC safely
+            df_column_utc, value_utc = _briefer_convert_to_utc_safe(df[column_name], pd.to_datetime(value))
 
-          # Perform comparisons using the safely converted UTC values
-          if operator == 'eq':
-              df = df[df_column_utc == value_utc]
-          elif operator == 'ne':
-              df = df[df_column_utc != value_utc]
-          elif operator == 'before':
-              df = df[df_column_utc < value_utc]
-          elif operator == 'beforeOrEq':
-              df = df[df_column_utc <= value_utc]
-          elif operator == 'after':
-              df = df[df_column_utc > value_utc]
-          elif operator == 'afterOrEq':
-              df = df[df_column_utc >= value_utc]
-          elif operator == 'isNull':
-              df = df[df[column_name].isnull()]
-          elif operator == 'isNotNull':
-              df = df[df[column_name].notnull()]
+            # Perform comparisons using the safely converted UTC values
+            if operator == 'eq':
+                df = df[df_column_utc == value_utc]
+            elif operator == 'ne':
+                df = df[df_column_utc != value_utc]
+            elif operator == 'before':
+                df = df[df_column_utc < value_utc]
+            elif operator == 'beforeOrEq':
+                df = df[df_column_utc <= value_utc]
+            elif operator == 'after':
+                df = df[df_column_utc > value_utc]
+            elif operator == 'afterOrEq':
+                df = df[df_column_utc >= value_utc]
+            elif operator == 'isNull':
+                df = df[df[column_name].isnull()]
+            elif operator == 'isNotNull':
+                df = df[df[column_name].notnull()]
 
     def _briefer_create_histogram(
         df,
@@ -807,6 +804,12 @@ def _briefer_create_visualization(
                 if not ct:
                     ct = chart_type
                 color = colors[i % len(colors)]
+
+                color_by = serie.get('colorBy', None)
+                # if df is empty, color_by is not valid, ignore it
+                if len(df) == 0:
+                    color_by = None
+
                 chart, capped = _briefer_create_chart(
                     df.copy(),
                     ct,
@@ -819,8 +822,8 @@ def _briefer_create_visualization(
                     serie['column']['name'],
                     serie['column']['type'],
                     serie['aggregateFunction'],
-                    serie['colorBy']['name'] if serie['colorBy'] else None,
-                    serie['colorBy']['type'] if serie['colorBy'] else None,
+                    color_by["name"] if color_by else None,
+                    color_by["type"] if color_by else None,
                     number_values_format,
                     show_data_labels,
                     len(y_axis['series']) == 1,
