@@ -281,6 +281,10 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
         def create_temp_table():
             step = "insert"
             temp_table_name = f"{table_name}_{int(datetime.datetime.now().timestamp())}"
+            if table:
+                temp_table = bigquery.Table(temp_table_name, schema=table.schema)
+                client.create_table(temp_table)
+
             job = client.load_table_from_dataframe(df, temp_table_name)
             job.result()
             return temp_table_name
