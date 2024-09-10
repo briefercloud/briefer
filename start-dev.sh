@@ -10,7 +10,7 @@ if [ ! -f ./apps/api/.env ]; then
   echo "TLD=localhost" >> ./apps/api/.env
   echo "LOGIN_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "AUTH_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
-  echo "AI_API_URL='http://localhost:8000" >> ./apps/api/.env
+  echo "AI_API_URL='http://localhost:8000'" >> ./apps/api/.env
   echo "AI_API_USERNAME=$(openssl rand -hex 12)" >> ./apps/api/.env
   echo "AI_API_PASSWORD=$(openssl rand -hex 12)" >> ./apps/api/.env
   echo "PYTHON_ALLOWED_LIBRARIES='plotly,matplotlib,numpy,pandas'" >> ./apps/api/.env
