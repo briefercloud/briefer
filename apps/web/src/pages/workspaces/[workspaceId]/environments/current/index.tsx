@@ -212,4 +212,5 @@ sqlalchemy-redshift==0.8.14
 trino==0.329.0
 duckdb==1.0.0
 openpyxl==3.1.2
-mysqlclient==2.2.4`
+mysqlclient==2.2.4
+pymongo=4.8.0`
