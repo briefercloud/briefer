@@ -185,7 +185,10 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
     from google.api_core.exceptions import BadRequest
     from google.api_core.exceptions import NotFound
     from google.api_core.exceptions import PermissionDenied
+    import os
+    import tempfile
 
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".parquet.gz")
     try:
         from google.cloud import bigquery
         from google.oauth2 import service_account
@@ -233,17 +236,24 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
         table_name = f"{project_id}.{table_name}"
         client = bigquery.Client(credentials=credentials, project=project_id)
 
+        # Convert the dataframe to Parquet and save to temp_file
+        df.to_parquet(temp_file.name, compression='gzip', index=False, engine="fastparquet")
+
+        job_config = bigquery.LoadJobConfig()
+        job_config.source_format = bigquery.SourceFormat.PARQUET
+
         # check if table already exists
         table = None
         try:
             table = client.get_table(table_name)
+            job_config.schema = table.schema
         except NotFound:
+            job_config.autodetect = True
             pass
-
 
         def writeback_new_table():
             step = "insert"
-            job = client.load_table_from_dataframe(df, table_name)
+            job = client.load_table_from_file(temp_file, table_name, job_config=job_config)
             result = job.result()
             inserted_rows = result.output_rows
             updated_rows = 0
@@ -269,7 +279,7 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             job.result()
 
             step = "insert"
-            job = client.load_table_from_dataframe(df, table_name)
+            job = client.load_table_from_file(temp_file, table_name, job_config=job_config)
             result = job.result()
             inserted_rows = result.output_rows
             updated_rows = 0
@@ -292,9 +302,10 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             temp_table_name = f"{table_name}_{int(datetime.datetime.now().timestamp())}"
             if table:
                 temp_table = bigquery.Table(temp_table_name, schema=table.schema)
+
                 client.create_table(temp_table)
 
-            job = client.load_table_from_dataframe(df, temp_table_name)
+            job = client.load_table_from_file(temp_file, temp_table_name, job_config=job_config)
             job.result()
             return temp_table_name
 
@@ -443,6 +454,9 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             "executedAt": executed_at
         }
         print(json.dumps(result))
+    finally:
+        temp_file.close()
+        os.unlink(temp_file.name)
 
 
 if "${dataframeName}" in globals():
