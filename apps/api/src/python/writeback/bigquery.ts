@@ -68,9 +68,6 @@ export async function writebackBigQuery(
               executedAt,
               step: 'unknown',
             }
-            console.log(`${output.ename}: ${output.evalue}`)
-            console.log(output.traceback.join('\n'))
-
             logger.error(
               {
                 workspaceId,
@@ -93,6 +90,18 @@ export async function writebackBigQuery(
                     executedAt,
                     step: 'unknown',
                   }
+                  logger.error(
+                    {
+                      workspaceId,
+                      sessionId,
+                      dataframeName,
+                      tableName,
+                      overwriteTable,
+                      onConflict,
+                      error: output.text,
+                    },
+                    `Python stderr during writeback`
+                  )
                   break
                 case 'stdout':
                   const parsed = jsonString
