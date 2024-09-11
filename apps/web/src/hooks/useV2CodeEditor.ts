@@ -113,19 +113,30 @@ function useCodeEditor(
       !interactionState.scrollIntoView
     ) {
       const scrollView = document.getElementById('editor-scrollview')
+      const editorRect = editor.getDomNode()?.getBoundingClientRect()
       editor.focus()
       setIsEditorFocused(true)
 
-      if (!scrollView) {
+      if (!scrollView || !editorRect) {
         return
       }
 
       const currentLine = editor.getPosition()?.lineNumber ?? 0
-      const top = editor.getTopForLineNumber(currentLine)
-      scrollView.scrollBy({
-        top: top - scrollView.getBoundingClientRect().top - 80,
-        behavior: 'smooth',
-      })
+      const scrollViewRect = scrollView.getBoundingClientRect()
+      const top = editorRect.top + editor.getTopForLineNumber(currentLine)
+
+      // scroll to make sure we can see cursor in screen
+      if (top < scrollViewRect.top) {
+        scrollView.scrollBy({
+          top: top - scrollViewRect.top - 80,
+          behavior: 'smooth',
+        })
+      } else if (top + 20 > scrollViewRect.bottom) {
+        scrollView.scrollBy({
+          top: top - scrollViewRect.bottom + 80,
+          behavior: 'smooth',
+        })
+      }
     }
   }, [interactionState, blockId, editor])
 
