@@ -49,12 +49,15 @@ FROM base AS runner
 WORKDIR /app
 
 # Don't run production as root
+RUN apt update -y && apt install -y openssl libssl-dev curl
 RUN groupadd -r expressjs && useradd -r -g expressjs expressjs \
     && mkdir -p /home/expressjs/Downloads \
     && chown -R expressjs:expressjs /home/expressjs
 
+COPY --from=installer /app .
+RUN chown -R expressjs:expressjs /app
+
 USER expressjs
 
-COPY --from=installer /app .
 
 CMD node --max-old-space-size=12000 apps/api/dist/src/index.js
