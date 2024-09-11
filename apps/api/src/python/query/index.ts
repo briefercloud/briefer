@@ -224,7 +224,7 @@ def _briefer_read_query():
     retries = 3
     while retries > 0:
         try:
-            return pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
+            return pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip", engine="fastparquet")
         except:
             retries -= 1
             if retries == 0:
