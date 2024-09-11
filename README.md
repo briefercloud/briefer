@@ -27,6 +27,12 @@
 
 ---
 
+<p align="center">
+  We can help you deploy Briefer for free. <a href="https://calendly.com/lucasfcosta/briefer-deployment">Book a time here</a>.
+</p>
+
+---
+
 <i>Here's a brief demo (no pun intended) of Briefer. It may take a few seconds to load.</i>
 
 https://github.com/user-attachments/assets/dfc6c1ef-f26c-44a9-8566-857178a8c5db
