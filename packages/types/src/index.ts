@@ -404,12 +404,16 @@ export const VisualizationStringFilter = z.union([
     column: DataFrameStringColumn,
     operator: VisualizationStringFilterOperator,
     value: z.string(),
+    renderError: PythonErrorOutput.optional(),
+    renderedValue: z.string().optional(),
   }),
   z.object({
     id: uuidSchema,
     column: DataFrameStringColumn,
     operator: VisualizationStringFilterMultiValuesOperator,
     value: z.array(z.string()),
+    renderError: PythonErrorOutput.optional(),
+    renderedValue: z.array(z.string()).optional(),
   }),
 ])
 export type VisualizationStringFilter = z.infer<
@@ -446,7 +450,9 @@ export const VisualizationNumberFilter = z.object({
   id: uuidSchema,
   column: DataFrameNumberColumn,
   operator: VisualizationNumberFilterOperator,
-  value: z.number(),
+  value: z.union([z.string(), z.number()]),
+  renderError: PythonErrorOutput.optional(),
+  renderedValue: z.string().optional(),
 })
 export type VisualizationNumberFilter = z.infer<
   typeof VisualizationNumberFilter
@@ -490,7 +496,9 @@ export const VisualizationDateFilter = z.object({
   id: uuidSchema,
   column: DataFrameDateColumn,
   operator: VisualizationDateFilterOperator,
-  value: dateSchema,
+  value: z.union([dateSchema, z.string()]),
+  renderError: PythonErrorOutput.optional(),
+  renderedValue: z.string().optional(),
 })
 export type VisualizationDateFilter = z.infer<typeof VisualizationDateFilter>
 
@@ -648,6 +656,55 @@ export function emptyVisualizationBlockState(): VisualizationBlockState {
   }
 }
 
+export type InvalidReason =
+  | {
+      type: 'simple'
+      reason: 'invalid-column' | 'empty-value' | 'invalid-value'
+    }
+  | {
+      type: 'render'
+      reason: PythonErrorOutput
+    }
+
+export function getInvalidReason(
+  column: DataFrameColumn,
+  value: string | string[]
+): InvalidReason | null {
+  if (NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(column.type).success) {
+    if (value === '') {
+      return { type: 'simple', reason: 'empty-value' as const }
+    }
+
+    if (Number.isNaN(Number(value))) {
+      return { type: 'simple', reason: 'invalid-value' as const }
+    }
+    return null
+  }
+
+  if (NumpyStringTypes.or(NumpyJsonTypes).safeParse(column.type).success) {
+    if ((Array.isArray(value) && value.length === 0) || value === '') {
+      return { type: 'simple', reason: 'empty-value' as const }
+    }
+
+    return null
+  }
+
+  if (NumpyDateTypes.safeParse(column.type).success) {
+    if (value === '') {
+      return { type: 'simple', reason: 'empty-value' as const }
+    }
+
+    const date = toDate(value.toString())
+    if (!date) {
+      return { type: 'simple', reason: 'invalid-value' as const }
+    }
+
+    return null
+  }
+
+  return null
+}
+
 export function isInvalidVisualizationFilter(
   filter: VisualizationFilter,
   dataframe: DataFrame
@@ -663,10 +720,6 @@ export function isInvalidVisualizationFilter(
     return true
   }
 
-  if (NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(column.type).success) {
-    return Number.isNaN(Number(filter.value))
-  }
-
   if (
     VisualizationStringFilterMultiValuesOperator.safeParse(filter.operator)
       .success
@@ -674,7 +727,12 @@ export function isInvalidVisualizationFilter(
     return !Array.isArray(filter.value) || filter.value.length === 0
   }
 
-  return false
+  return (
+    filter.value === '' ||
+    filter.renderError !== undefined ||
+    (filter.renderedValue !== undefined &&
+      getInvalidReason(column, filter.renderedValue) !== null)
+  )
 }
 
 export const OnboardingStep = z.union([

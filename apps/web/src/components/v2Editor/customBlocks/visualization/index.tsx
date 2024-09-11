@@ -39,13 +39,32 @@ import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 
-function getValidFilters(
-  filters: VisualizationFilter[],
-  dataframe: DataFrame
-): VisualizationFilter[] {
-  return filters.filter(
-    (filter) => !isInvalidVisualizationFilter(filter, dataframe)
-  )
+function didChangeFilters(
+  oldFilters: VisualizationFilter[],
+  newFilters: VisualizationFilter[]
+) {
+  const toCompare = new Set(newFilters.map((f) => f.id))
+
+  if (oldFilters.length !== newFilters.length) {
+    return true
+  }
+
+  const didChange = oldFilters.some((of) => {
+    const nf = newFilters.find((f) => f.id === of.id)
+    if (!nf) {
+      return true
+    }
+
+    toCompare.delete(of.id)
+
+    return (
+      !equals(of.value, nf.value) ||
+      of.operator !== nf.operator ||
+      of.column?.name !== nf.column?.name
+    )
+  })
+
+  return didChange || toCompare.size > 0
 }
 
 interface Props {
@@ -298,9 +317,9 @@ function VisualizationBlock(props: Props) {
             key === 'error' ||
             key === 'updatedAt' ||
             (key === 'filters' &&
-              equals(
-                getValidFilters(val.oldValue ?? [], dataframe),
-                getValidFilters(block.getAttribute('filters') ?? [], dataframe)
+              !didChangeFilters(
+                val.oldValue ?? [],
+                block.getAttribute('filters') ?? []
               ))
         )
 

@@ -27,6 +27,12 @@
 
 ---
 
+<p align="center">
+  We can help you deploy Briefer for free. <a href="https://calendly.com/lucasfcosta/briefer-deployment">Book a time here</a>.
+</p>
+
+---
+
 <i>Here's a brief demo (no pun intended) of Briefer. It may take a few seconds to load.</i>
 
 https://github.com/user-attachments/assets/dfc6c1ef-f26c-44a9-8566-857178a8c5db
@@ -71,6 +77,19 @@ docker run -d \
   -v briefer_psql_data:/var/lib/postgresql/data \
   -v briefer_jupyter_data:/home/jupyteruser \
   -v briefer_briefer_data:/home/briefer \
+  briefercloud/briefer
+```
+
+When running on Windows' PowerShell, it might be necessary to add an extra ``` ` ``` to the end of each line instead of the `\`, like this:
+
+```bash
+# Run Briefer using Docker
+docker run -d `
+  -p 3000:3000 `
+  -p 8080:8080 `
+  -v briefer_psql_data:/var/lib/postgresql/data `
+  -v briefer_jupyter_data:/home/jupyteruser `
+  -v briefer_briefer_data:/home/briefer `
   briefercloud/briefer
 ```
 

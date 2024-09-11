@@ -61,6 +61,46 @@ const keywordRanking = [
   'DO',
 ]
 
+function adjustCasing(currentWord: string, suggestion: string): string {
+  console.log(currentWord, suggestion)
+
+  // Check if the current word is all uppercase
+  if (currentWord === currentWord.toUpperCase()) {
+    return suggestion.toUpperCase()
+  }
+
+  // Check if the current word is all lowercase
+  if (currentWord === currentWord.toLowerCase()) {
+    return suggestion.toLowerCase()
+  }
+
+  // Check if the current word is in title case (first letter uppercase, rest lowercase)
+  if (
+    currentWord[0] === currentWord[0].toUpperCase() &&
+    currentWord.slice(1) === currentWord.slice(1).toLowerCase()
+  ) {
+    return suggestion[0].toUpperCase() + suggestion.slice(1).toLowerCase()
+  }
+
+  // if last character is uppercase, make the suggestion uppercase
+  if (
+    currentWord[currentWord.length - 1] ===
+    currentWord[currentWord.length - 1].toUpperCase()
+  ) {
+    return suggestion.toUpperCase()
+  }
+
+  // if last character is lowercase, make the suggestion lowercase
+  if (
+    currentWord[currentWord.length - 1] ===
+    currentWord[currentWord.length - 1].toLowerCase()
+  ) {
+    return suggestion.toLowerCase()
+  }
+
+  return suggestion
+}
+
 type KnownMonacoKind =
   | languages.CompletionItemKind.Keyword
   | languages.CompletionItemKind.Class
@@ -316,9 +356,7 @@ function MonacoProvider({ children }: Props) {
             anchor
           )
 
-          const currentWord = model
-            .getWordAtPosition(position)
-            ?.word.toLowerCase()
+          const currentWord = model.getWordAtPosition(position)?.word
 
           const suggestions = (
             await Promise.all(
@@ -335,7 +373,9 @@ function MonacoProvider({ children }: Props) {
                 const suggestion: languages.CompletionItem[] = result.options
                   .filter((o) => {
                     if (currentWord) {
-                      return o.label.toLowerCase().startsWith(currentWord)
+                      return o.label
+                        .toLowerCase()
+                        .startsWith(currentWord.toLowerCase())
                     }
 
                     return true
@@ -346,11 +386,16 @@ function MonacoProvider({ children }: Props) {
                         ? getMonacoKeywordKind(c.type)
                         : getMonacoSchemaKind(c.type)
                       : languages.CompletionItemKind.Text
+
+                    let insertText = currentWord
+                      ? adjustCasing(currentWord, c.label)
+                      : c.label
+                    insertText = insertText.slice(currentWord?.length)
                     return {
                       label: c.displayLabel ?? c.label,
                       kind,
                       // remove the intersection of the current word
-                      insertText: c.label.slice(currentWord?.length),
+                      insertText,
                       range: {
                         startLineNumber: position.lineNumber,
                         startColumn: position.column,

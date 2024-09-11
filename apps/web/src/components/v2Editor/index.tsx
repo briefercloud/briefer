@@ -890,7 +890,6 @@ file`
   }, [blocks, layout, tabRefs, environmentStartedAt])
 
   const runBelowBlock = useCallback(() => {
-    debugger
     const currentBlockGroupIndex = layout.value.toArray().findIndex((bg) => {
       return bg.getAttribute('id') === props.id
     })
@@ -1247,9 +1246,16 @@ const V2Editor = (props: V2EditorProps) => {
           behavior: 'smooth',
         })
       } else {
-        el.scrollIntoView({
+        // scroll el so that it's center is at the center of the scroll view
+        const top =
+          elRect.top -
+          scrollRect.top -
+          scrollRect.height / 2 +
+          elRect.height / 2
+
+        scrollViewRef.current.scrollBy({
+          top,
           behavior: 'smooth',
-          block: 'center',
         })
       }
 
