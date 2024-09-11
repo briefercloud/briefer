@@ -54,8 +54,7 @@ RUN groupadd -r expressjs && useradd -r -g expressjs expressjs \
     && mkdir -p /home/expressjs/Downloads \
     && chown -R expressjs:expressjs /home/expressjs
 
-COPY --from=installer /app .
-RUN chown -R expressjs:expressjs /app
+COPY --from=installer --chown=expressjs:expressjs /app .
 
 USER expressjs
 
