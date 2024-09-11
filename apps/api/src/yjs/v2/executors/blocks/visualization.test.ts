@@ -101,6 +101,7 @@ describe('VisualizationExecutor', () => {
         promise: Promise.resolve({
           success: true,
           spec,
+          filterResults: {},
         }),
         abort: jest.fn(),
       })
@@ -147,6 +148,7 @@ describe('VisualizationExecutor', () => {
         promise: Promise.resolve({
           success: false,
           reason: 'dataframe-not-found',
+          filterResults: {},
         }),
         abort: jest.fn(),
       })
@@ -163,6 +165,7 @@ describe('VisualizationExecutor', () => {
         promise: Promise.resolve({
           success: false,
           reason: 'aborted',
+          filterResults: {},
         }),
         abort: jest.fn(),
       })

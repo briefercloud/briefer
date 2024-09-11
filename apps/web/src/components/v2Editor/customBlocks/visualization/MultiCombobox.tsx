@@ -10,7 +10,7 @@ import ReactDOM from 'react-dom'
 import useDropdownPosition from '@/hooks/dropdownPosition'
 
 interface Props<T> {
-  label?: string
+  label?: string | JSX.Element
   value: T[]
   options: T[]
   equals?: (a: T, b: T) => boolean
@@ -91,11 +91,15 @@ export default function MultiCombobox<T>(props: Props<T>) {
 
   return (
     <div className="w-full">
-      {props.label && (
-        <div className="block text-xs font-medium leading-6 text-gray-900">
-          {props.label}
-        </div>
-      )}
+      {props.label ? (
+        typeof props.label === 'string' ? (
+          <div className="block text-xs font-medium leading-6 text-gray-900">
+            {props.label}
+          </div>
+        ) : (
+          props.label
+        )
+      ) : null}
       <div className="relative mt-1 mb-0.5" ref={inputContainerRef}>
         <div
           className={clsx(
