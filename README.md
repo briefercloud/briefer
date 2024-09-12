@@ -179,7 +179,7 @@ We love notebooks, but there are three main problems with them:
 
 The main problem with notebooks is that they're difficult to share and maintain, especially with non-technical people. Therefore, data scientists, analysts, and engineers often struggle to share their work and get the visibility they deserve within their organizations.
 
-Usually, the only way to share a notebook is to take screenshots and paste them in Notion or Confuence. That workaround is not ideal because it's time-consuming, and the information quickly becomes outdated, especially when you need to update it.
+Usually, the only way to share a notebook is to take screenshots and paste them in Notion or Confluence. That workaround is not ideal because it's time-consuming, and the information quickly becomes outdated, especially when you need to update it.
 
 Briefer solves this problem because every Briefer notebook is stored in a single place that everyone in your organization can access. Briefer's interface is also much more user-friendly than Jupyter, which makes it easier for non-technical people to view and interact with data.
 
