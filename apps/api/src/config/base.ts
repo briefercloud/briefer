@@ -4,11 +4,11 @@ import { logger } from '../logger.js'
 
 export interface IBaseConfig {
   NODE_ENV: string
+  ALLOW_HTTP: boolean
   VERSION: string
   LOG_LEVEL: string
   API_URL: string
   FRONTEND_URL: string
-  TLD: string
   LOGIN_LINK_EXPIRATION: string
   LOGIN_JWT_SECRET: string
   AUTH_JWT_EXPIRATION: string
@@ -35,11 +35,11 @@ export interface IBaseConfig {
 
 export class BaseConfig implements IBaseConfig {
   public readonly NODE_ENV: string
+  public readonly ALLOW_HTTP: boolean
   public readonly VERSION: string
   public readonly LOG_LEVEL: string
   public readonly API_URL: string
   public readonly FRONTEND_URL: string
-  public readonly TLD: string
   public readonly LOGIN_LINK_EXPIRATION: string
   public readonly LOGIN_JWT_SECRET: string
   public readonly AUTH_JWT_EXPIRATION: string
@@ -65,9 +65,9 @@ export class BaseConfig implements IBaseConfig {
 
   public constructor() {
     this.NODE_ENV = getVar('NODE_ENV')
+    this.ALLOW_HTTP = this.getBooleanVar('ALLOW_HTTP')
     this.VERSION = this.getVersion()
     this.LOG_LEVEL = getVar('LOG_LEVEL')
-    this.TLD = getVar('TLD')
     this.API_URL = getVar('API_URL')
     this.FRONTEND_URL = getVar('FRONTEND_URL')
     this.LOGIN_LINK_EXPIRATION = process.env['LOGIN_LINK_EXPIRATION'] || '15m'
@@ -104,23 +104,14 @@ export class BaseConfig implements IBaseConfig {
       // can't be 0 because LRUCache doesn't allow that
       1 / 1024 / 1024
     )
-    this.ENABLE_CUSTOM_OAI_KEY = Boolean(process.env['ENABLE_CUSTOM_OAI_KEY'])
-
-    const disableTelemetry = (
-      process.env['DISABLE_ANONYMOUS_TELEMETRY'] ?? ''
-    ).toLowerCase()
-    this.DISABLE_ANONYMOUS_TELEMETRY =
-      disableTelemetry === 'true' ||
-      disableTelemetry === '1' ||
-      disableTelemetry === 'yes'
-
-    const disableUpdateCheck = (
-      process.env['DISABLE_UPDATE_CHECK'] ?? ''
-    ).toLowerCase()
-    this.DISABLE_UPDATE_CHECK =
-      disableUpdateCheck === 'true' ||
-      disableUpdateCheck === '1' ||
-      disableUpdateCheck === 'yes'
+    this.ENABLE_CUSTOM_OAI_KEY = this.getBooleanVar(
+      'ENABLE_CUSTOM_OAI_KEY',
+      true
+    )
+    this.DISABLE_ANONYMOUS_TELEMETRY = this.getBooleanVar(
+      'DISABLE_ANONYMOUS_TELEMETRY'
+    )
+    this.DISABLE_UPDATE_CHECK = this.getBooleanVar('DISABLE_UPDATE_CHECK')
   }
 
   private getVersion() {
@@ -144,5 +135,18 @@ export class BaseConfig implements IBaseConfig {
 
       return 'unknown'
     }
+  }
+
+  private getBooleanVar(name: string, or?: boolean): boolean {
+    const value = process.env[name]?.toLowerCase()
+    if (value === undefined && or !== undefined) {
+      return or
+    }
+
+    if (value === 'true' || value === '1' || value === 'yes') {
+      return true
+    }
+
+    return false
   }
 }

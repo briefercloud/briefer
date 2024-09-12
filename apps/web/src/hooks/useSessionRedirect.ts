@@ -1,8 +1,7 @@
 import { useWorkspaces } from '@/hooks/useWorkspaces'
-import { useEffect, useCallback } from 'react'
+import { useEffect } from 'react'
 import { NextRouter, useRouter } from 'next/router'
 import { useSession, useSignout } from '@/hooks/useAuth'
-import Cookies from 'js-cookie'
 import useProperties from './useProperties'
 
 const redirectToLogin = (router: NextRouter) => {
@@ -13,31 +12,6 @@ const redirectToLogin = (router: NextRouter) => {
       : `/auth/signin?r=${encodeURIComponent(postRedirPath)}`
 
   router.replace(path)
-}
-
-export const useCookieCheck = () => {
-  const session = useSession()
-  const router = useRouter()
-  const redirectOnCookieExpiry = useCallback(() => {
-    if (!session.data) {
-      return
-    }
-
-    const tokenExists = Cookies.get('sessionExpiry')
-    const isAlreadyOnLoginPage = router.asPath.includes('/auth/signin')
-    if (!tokenExists && !isAlreadyOnLoginPage) {
-      redirectToLogin(router)
-    }
-  }, [router, session])
-
-  useEffect(() => {
-    window.addEventListener('focus', redirectOnCookieExpiry)
-    const timer = setInterval(redirectOnCookieExpiry, 5000)
-    return () => {
-      window.removeEventListener('focus', redirectOnCookieExpiry)
-      clearInterval(timer)
-    }
-  }, [redirectOnCookieExpiry])
 }
 
 export const useSessionRedirect = (shouldRedirect = true) => {

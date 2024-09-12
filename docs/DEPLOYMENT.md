@@ -67,24 +67,27 @@ Here's a step-by-step guide to deploy Briefer as a single container:
    sudo systemctl start docker
    ```
 3. Pull and run the all-in-one Docker image for Briefer.
+
    ```bash
-    # if using an IP set API_URL and FRONTEND_URL to your-ip:8080
+    # if using an IP set API_URL to https://your-ip:3000 and FRONTEND_URL to https://your-ip:8080
     docker run -d \
       -p 3000:3000 \
       -p 8080:8080 \
       -v briefer_psql_data:/var/lib/postgresql/data \
       -v briefer_jupyter_data:/home/jupyteruser \
       -v briefer_briefer_data:/home/briefer \
-      --env API_URL="your_api_address" \
-      --env FRONTEND_URL="your_frontend_address" \
+      --env API_URL="https://your_api_address" \
+      --env FRONTEND_URL="https://your_frontend_address" \
       briefercloud/briefer
    ```
-   ℹ️ The most crucial part of this step is to make sure that `API_URL` and `FRONTEND_URL` point to the host's address. For example, if you're running Briefer on a machine whose IP is `192.168.0.1`, you should set the `API_URL` to `192.168.0.1:8080` (considering API is running on port 8080) and `FRONTEND_URL` to `192.168.0.1:3000` (considering the front-end is running on port 3000).
-   
+
+   ℹ️ The most crucial part of this step is to make sure that `API_URL` and `FRONTEND_URL` point to the host's address. For example, if you're running Briefer on a machine whose IP is `192.168.0.1`, you should set the `API_URL` to `https://192.168.0.1:8080` (considering API is running on port 8080) and `FRONTEND_URL` to `https://192.168.0.1:3000` (considering the front-end is running on port 3000).
+
    ℹ️ If you want to serve Briefer over HTTP (usually because you're using an IP directly) you should consider setting `--env ALLOW_HTTP="true"` in the above command.
-5. Expose your server to the internet or your local network.
+
+4. Expose your server to the internet or your local network.
    Make sure that you allow traffic on ports 3000 and 8080. The first one is for the Briefer web application (the one you'll access in your browser), and the second one is for the API that the web application talks to.
-6. Create the necessary DNS records to access ports 3000 and 8080.
+5. Create the necessary DNS records to access ports 3000 and 8080.
    Use `app.briefer.your_domain_here.com` as the name for the web application bound to port 3000, and `api.briefer.your_domain_here.com` as the name for the API bound to port 8080.
 
 Now you should be able to access the Briefer web application at `app.briefer.your_domain_here.com` and the API at `api.briefer.your_domain_here.com`.
