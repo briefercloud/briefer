@@ -228,7 +228,7 @@ export async function getDatabaseURL(
       const password = encodeURIComponent(
         await getDatasourcePassword(ds, encryptionKey)
       )
-      return `mysql://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
+      return `mysql+mysqldb://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}?ssl_mode=REQUIRED`
     }
   }
 }
