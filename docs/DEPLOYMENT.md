@@ -87,7 +87,7 @@ Here's a step-by-step guide to deploy Briefer as a single container:
 
 4. Expose your server to the internet or your local network.
    Make sure that you allow traffic on ports 3000 and 8080. The first one is for the Briefer web application (the one you'll access in your browser), and the second one is for the API that the web application talks to.
-5. Create the necessary DNS records to access ports 3000 and 8080.
+5. If you want to use a domain name rather than an IP, create the necessary DNS records to access ports 3000 and 8080. Otherwise, skip this step.
    Use `app.briefer.your_domain_here.com` as the name for the web application bound to port 3000, and `api.briefer.your_domain_here.com` as the name for the API bound to port 8080.
 
 Now you should be able to access the Briefer web application at `app.briefer.your_domain_here.com` and the API at `api.briefer.your_domain_here.com`.
