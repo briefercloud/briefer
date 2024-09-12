@@ -80,6 +80,7 @@ Here's a step-by-step guide to deploy Briefer as a single container:
       briefercloud/briefer
    ```
    ℹ️ The most crucial part of this step is to make sure that `API_URL` and `FRONTEND_URL` point to the host's address. For example, if you're running Briefer on a machine whose IP is `192.168.0.1`, you should set the `API_URL` to `192.168.0.1:8080` (considering API is running on port 8080) and `FRONTEND_URL` to `192.168.0.1:3000` (considering the front-end is running on port 3000).
+   
    ℹ️ If you want to serve Briefer over HTTP (usually because you're using an IP directly) you should consider setting `--env ALLOW_HTTP="true"` in the above command.
 5. Expose your server to the internet or your local network.
    Make sure that you allow traffic on ports 3000 and 8080. The first one is for the Briefer web application (the one you'll access in your browser), and the second one is for the API that the web application talks to.
