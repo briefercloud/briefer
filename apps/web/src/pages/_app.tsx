@@ -8,7 +8,6 @@ import posthog from 'posthog-js'
 
 import { DocumentsProvider } from '@/hooks/useDocuments'
 import { EnvironmentStatusProvider } from '@/hooks/useEnvironmentStatus'
-import { useCookieCheck } from '@/hooks/useSessionRedirect'
 import { WebsocketProvider } from '@/hooks/useWebsocket'
 import '@/styles/globals.css'
 import 'simplebar-react/dist/simplebar.min.css'
@@ -36,8 +35,6 @@ function App({ Component, pageProps: { session, ...pageProps } }: Props) {
   const telemetryEnabled = !(
     properties.data?.disabledAnonymousTelemetry ?? true
   )
-
-  useCookieCheck()
 
   return (
     <PostHogProvider client={posthog}>

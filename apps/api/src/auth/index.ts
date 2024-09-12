@@ -15,15 +15,9 @@ export const callbackUrlSchema = z
 
 export const cookieOptions: CookieOptions = {
   httpOnly: true,
-  secure: config().NODE_ENV === 'production',
+  secure: config().NODE_ENV === 'production' && !config().ALLOW_HTTP,
   sameSite: 'strict',
   maxAge: JWT_EXPIRATION_MS,
-}
-
-export const sessionExpiryCookieOption: CookieOptions = {
-  sameSite: 'strict',
-  maxAge: JWT_EXPIRATION_MS,
-  domain: config().TLD,
 }
 
 export default function authRouter(socketServer: IOServer) {

@@ -6,11 +6,7 @@ import { obscureEmail } from '../emails.js'
 import { comparePassword, hashPassword, isValidPassword } from '../password.js'
 import properties from '../properties.js'
 import { IOServer } from '../websocket/index.js'
-import {
-  callbackUrlSchema,
-  cookieOptions,
-  sessionExpiryCookieOption,
-} from './index.js'
+import { callbackUrlSchema, cookieOptions } from './index.js'
 import {
   authenticationMiddleware,
   createAuthToken,
@@ -51,7 +47,6 @@ export default function getRouter<H extends ApiUser>(
     await confirmUser(data.userId)
 
     res.cookie('token', createAuthToken(data.userId), cookieOptions)
-    res.cookie('sessionExpiry', Date.now(), sessionExpiryCookieOption)
     res.redirect(data.callback)
   })
 

@@ -13,6 +13,7 @@ ENV_VARS = [
     "LOG_LEVEL",
     "API_URL",
     "FRONTEND_URL",
+    "ALLOW_HTTP",
     "TLD",
     "LOGIN_JWT_SECRET",
     "AUTH_JWT_SECRET",
