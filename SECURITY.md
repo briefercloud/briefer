@@ -4,5 +4,5 @@
 
 You have two channels for this: 
 
-* Using [repository](https://github.com/briefercloud/briefer) > Security > Report a vunerability. Make sure that fill all or the max of information to correct report, we can contact you for collect more information about this
-* Using the founders email: [founders@briefer.cloud](mailto:founders@briefer.cloud)
+1. Using [repository](https://github.com/briefercloud/briefer) > Security > Report a vunerability. Make sure to fill in as much information as possible and enter your contact details so we can contact you to ask for more details.
+2. Using the founders email: [founders@briefer.cloud](mailto:founders@briefer.cloud)
