@@ -444,7 +444,8 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
                 query = f"DROP TABLE {temp_table_name}"
                 job = client.query(query)
                 job.result()
-    except (BadRequest, PermissionDenied) as e:
+    # except (BadRequest, PermissionDenied) as e:
+    except Exception as e:
         result = {
             "_tag": "error",
             "step": step,
