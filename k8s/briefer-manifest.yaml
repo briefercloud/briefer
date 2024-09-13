@@ -1,0 +1,307 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: briefer-env-config
+data:
+  TLD: "briefer.domain.internal"
+  POSTGRES_USERNAME: "briefer"
+  POSTGRES_PASSWORD: "briefer"
+  POSTGRES_HOSTNAME: "rds.aws.com"
+  JUPYTER_TOKEN: "xxx"
+  AI_BASIC_AUTH_USERNAME: "xxx"
+  AI_BASIC_AUTH_PASSWORD: "xxx"
+  OPENAI_API_KEY: "sk-placeholder"
+  LOGIN_JWT_SECRET: "xxx"
+  AUTH_JWT_SECRET: "xxx"
+  ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: "xxx"
+  WORKSPACE_SECRETS_ENCRYPTION_KEY: "xxx"
+  DATASOURCES_ENCRYPTION_KEY: "xxx"
+  ENABLE_CUSTOM_OAI_KEY: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: briefer-api
+spec:
+  type: NodePort
+  selector:
+    app: briefer-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: briefer-web
+spec:
+  type: NodePort
+  selector:
+    app: briefer-web
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-service
+spec:
+  selector:
+    app: briefer-jupyter
+  ports:
+    - protocol: TCP
+      port: 8888
+      targetPort: 8888
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: briefer-jupyter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-jupyter
+  template:
+    metadata:
+      labels:
+        app: briefer-jupyter
+    spec:
+      containers:
+      - name: jupyter-container
+        image: briefercloud/briefer-jupyter
+        command: ["sh", "-c", "jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400"]
+        envFrom:
+        - configMapRef:
+            name: briefer-env-config
+        ports:
+        - containerPort: 8888
+        readinessProbe:
+          httpGet:
+            path: /api
+            port: 8888
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: briefer-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-web
+  template:
+    metadata:
+      labels:
+        app: briefer-web
+    spec:
+      containers:
+      - name: web-container
+        image: briefercloud/briefer-web:v0.0.9
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXT_PUBLIC_API_URL
+          value: "http://api.briefer.domain.internal"
+        - name: NEXT_PUBLIC_API_WS_URL
+          value: "ws://api.briefer.domain.internal"
+        - name: NEXT_PUBLIC_PUBLIC_URL
+          value: "http://app.briefer.domain.internal"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: briefer-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-api
+  template:
+    metadata:
+      labels:
+        app: briefer-api
+    spec:
+      containers:
+      - name: api-container
+        image: briefercloud/briefer-api:v0.0.9
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: API_URL
+          value: "http://api.briefer.domain.internal"
+        - name: FRONTEND_URL
+          value: "http://app.briefer.domain.internal"
+        - name: ALLOW_HTTP
+          value: "true"
+        - name: TLD
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: TLD
+        - name: LOGIN_JWT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: LOGIN_JWT_SECRET
+        - name: AUTH_JWT_SECRET
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: AUTH_JWT_SECRET
+        - name: AI_API_URL
+          value: "http://ai:8000"
+        - name: AI_API_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: AI_BASIC_AUTH_USERNAME
+        - name: AI_API_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: AI_BASIC_AUTH_PASSWORD
+        - name: PYTHON_ALLOWED_LIBRARIES
+          value: "plotly,matplotlib,numpy,pandas"
+        - name: POSTGRES_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: POSTGRES_USERNAME
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: POSTGRES_HOSTNAME
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_DATABASE
+          value: "briefer"
+        - name: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+        - name: WORKSPACE_SECRETS_ENCRYPTION_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: WORKSPACE_SECRETS_ENCRYPTION_KEY
+        - name: DATASOURCES_ENCRYPTION_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: DATASOURCES_ENCRYPTION_KEY
+        - name: JUPYTER_HOST
+          value: "jupyter-service"
+        - name: JUPYTER_PORT
+          value: "8888"
+        - name: JUPYTER_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              name: briefer-env-config
+              key: JUPYTER_TOKEN
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-briefer
+  annotations:
+    kubernetes.io/ingress.class: "kong"
+    httpbin.ingress.kubernetes.io/rewrite-target: /
+    konghq.com/plugins: "deny-external-ips"
+    konghq.com/plugins: briefer-cors
+spec:
+  rules:
+  - host: app.briefer.domain.internal
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: briefer-web
+            port:
+              number: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-briefer
+  annotations:
+    kubernetes.io/ingress.class: "kong"
+    httpbin.ingress.kubernetes.io/rewrite-target: /
+    konghq.com/plugins: "deny-external-ips"
+    konghq.com/plugins: briefer-cors
+spec:
+  rules:
+  - host: api.briefer.domain.internal
+    http:
+      paths:
+      - path: /
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: briefer-api
+            port:
+              number: 8080
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: briefer-cors
+plugin: cors
+config:
+  origins:
+    - 'http://app.briefer.domain.internal'
+  methods:
+    - GET
+    - POST
+    - PUT
+    - PATCH
+    - DELETE
+    - OPTIONS
+  headers:
+    - Accept
+    - Accept-Version
+    - Content-Length
+    - Content-MD5
+    - Content-Type
+    - Date
+    - X-Auth-Token
+    - Authorization
+    - X-Requested-With
+  credentials: true
+  max_age: 3600
