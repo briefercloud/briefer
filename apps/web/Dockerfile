@@ -64,7 +64,7 @@ COPY --from=installer /app/apps/web/package.json .
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-COPY --from=installer --chown=nextjs:nodejs /app/apps/web/start.sh .
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/start.sh ./apps/web/start.sh
 
 EXPOSE 3000
 
