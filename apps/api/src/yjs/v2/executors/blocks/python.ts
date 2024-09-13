@@ -50,7 +50,7 @@ export type PythonEffects = {
   editWithAI: typeof editWithAI
 }
 
-type RunninCode = {
+type RunningCode = {
   abortController: AbortController
   abort?: () => Promise<void>
 }
@@ -71,7 +71,7 @@ export class PythonExecutor implements IPythonExecutor {
   private workspaceId: string
   private documentId: string
   private executionQueue: PQueue
-  private runningCode = new Map<Y.XmlElement<PythonBlock>, RunninCode>()
+  private runningCode = new Map<Y.XmlElement<PythonBlock>, RunningCode>()
   private dataframes: Y.Map<DataFrame>
   private blocks: Y.Map<YBlock>
   private effects: PythonEffects
@@ -107,7 +107,7 @@ export class PythonExecutor implements IPythonExecutor {
     this.events.pythonRun(EventContext.fromYTransaction(tr))
 
     const abortController = new AbortController()
-    const runningCode: RunninCode = { abortController }
+    const runningCode: RunningCode = { abortController }
     this.runningCode.set(block, runningCode)
     block.setAttribute('result', [])
 
@@ -117,7 +117,7 @@ export class PythonExecutor implements IPythonExecutor {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
-          queeueSize: this.executionQueue.size,
+          queueSize: this.executionQueue.size,
         },
         'enqueueing python block execution'
       )

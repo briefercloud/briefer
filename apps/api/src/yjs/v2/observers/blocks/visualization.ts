@@ -161,7 +161,7 @@ export class VisualizationObserver implements IVisualizationObserver {
         'Error while handling block status change'
       )
 
-      // TODO: introduce an unexpetected error result
+      // TODO: introduce an unexpected error result
       block.setAttribute('status', 'idle')
     }
 

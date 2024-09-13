@@ -3,14 +3,14 @@ import { v4 as uuidv4 } from 'uuid'
 import * as Y from 'yjs'
 import {
   YBlock,
-  computeDepencyQueue,
+  computeDependencyQueue,
   makeFileUploadBlock,
   makePythonBlock,
   makeRichTextBlock,
 } from './index.js'
 import { YBlockGroup, makeYBlockGroup } from '../operations/blockGroup.js'
 
-describe('computeDepencyQueue', () => {
+describe('computeDependencyQueue', () => {
   let doc: Y.Doc
   let blocks: Y.Map<YBlock>
   let layout: Y.Array<YBlockGroup>
@@ -82,7 +82,7 @@ describe('computeDepencyQueue', () => {
 
     layout.push([blockGroup])
 
-    const queue = computeDepencyQueue(
+    const queue = computeDependencyQueue(
       clickedBlock,
       layout,
       blocks,

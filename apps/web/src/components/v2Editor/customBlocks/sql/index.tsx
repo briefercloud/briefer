@@ -47,7 +47,7 @@ import {
 } from '@/components/ExecutionStatusText'
 import { ConnectDragPreview } from 'react-dnd'
 import EditWithAIForm from '../../EditWithAIForm'
-import ApproveDiffButons from '../../ApproveDiffButtons'
+import ApproveDiffButtons from '../../ApproveDiffButtons'
 import { SQLExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import { useMonacoContext } from '@/components/MonacoProvider'
@@ -519,7 +519,7 @@ function SQLBlock(props: Props) {
               />
             </div>
           </div>
-          <ApproveDiffButons
+          <ApproveDiffButtons
             visible={diffButtonsVisible}
             canTry={status === 'idle'}
             onTry={onTry}
@@ -553,7 +553,7 @@ function SQLBlock(props: Props) {
                       className={clsx(
                         !props.isEditable || !hasOaiKey
                           ? 'cursor-not-allowed bg-gray-200'
-                          : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                          : 'cursor-pointer hover:bg-gray-50 hover:text-gray-700',
                         'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
                       )}
                     >

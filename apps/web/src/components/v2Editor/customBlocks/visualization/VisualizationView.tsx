@@ -1,4 +1,4 @@
-import { fontFamily as twFontFamiliy } from 'tailwindcss/defaultTheme'
+import { fontFamily as twFontFamily } from 'tailwindcss/defaultTheme'
 import { timeFormat } from 'd3-time-format'
 import { format as d3Format } from 'd3-format'
 import {
@@ -22,7 +22,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import debounce from 'lodash.debounce'
 import { findMaxFontSize, measureText } from '@/measureText'
 
-const FONT_FAMILY = ['Inter', ...twFontFamiliy.sans].join(', ')
+const FONT_FAMILY = ['Inter', ...twFontFamily.sans].join(', ')
 
 interface Props {
   title: string

@@ -124,7 +124,7 @@ export const requestRun = <B extends YBlock>(
 ) => {
   const dependencies = skipDependencyCheck
     ? []
-    : computeDepencyQueue(block, layout, blocks, environmentStartedAt)
+    : computeDependencyQueue(block, layout, blocks, environmentStartedAt)
 
   const queue = dependencies
   if (!customOnRequestRun) {
@@ -160,7 +160,7 @@ export const requestTrySuggestion = (
 ) => {
   const dependencies = skipDependencyCheck
     ? []
-    : computeDepencyQueue(block, layout, blocks, environmentStartedAt)
+    : computeDependencyQueue(block, layout, blocks, environmentStartedAt)
   const queue = dependencies.concat(block)
 
   for (const block of queue) {
@@ -409,7 +409,7 @@ function mustExecute(
   return dfns.isAfter(environmentStartedAt, executedAt)
 }
 
-export function computeDepencyQueue(
+export function computeDependencyQueue(
   block: YBlock,
   layout: Y.Array<YBlockGroup>,
   blocks: Y.Map<YBlock>,

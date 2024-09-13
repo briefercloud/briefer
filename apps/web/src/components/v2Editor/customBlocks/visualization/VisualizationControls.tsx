@@ -502,7 +502,7 @@ function VisualizationControls(props: Props) {
                   ) : (
                     <AxisModifierSelector
                       label={
-                        props.chartType === 'number' ? 'Choosen value' : 'Sort'
+                        props.chartType === 'number' ? 'Chosen value' : 'Sort'
                       }
                       value={props.xAxisSort}
                       options={[

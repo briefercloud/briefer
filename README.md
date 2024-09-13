@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-   <a href="https://github.com/briefercloud/briefer/stargazers" target="_blank"><img src="https://img.shields.io/github/stars/briefercloud/briefer" alt="Github Stars"></a>
+   <a href="https://github.com/briefercloud/briefer/stargazers" target="_blank"><img src="https://img.shields.io/github/stars/briefercloud/briefer" alt="GitHub Stars"></a>
    <a href="https://pypi.org/project/briefer/" target="_blank"><img src="https://img.shields.io/pypi/v/briefer.svg?style=flat-square&label=PyPI+briefer" alt="PyPi Briefer"></a>
    <a href="https://github.com/briefercloud/briefer/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPLv3-red" alt="License"></a>
    <a href="https://www.ycombinator.com/companies/briefer"><img src="https://img.shields.io/badge/Y%20Combinator-S23-orange" alt="Backed by Y Combinator S23"></a>
