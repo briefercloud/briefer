@@ -296,7 +296,7 @@ const plans: Record<PlanName, Plan> = {
     editorSeats: 'Unlimited (free)',
     viewerSeats: 'Unlimited viewer seats (free)',
     schedules: 'Unlimited scheduled runs',
-    snapshots: true,
+    snapshots: false,
     pdfExport: false,
     slackIntegration: false,
     granularPermissions: false,
