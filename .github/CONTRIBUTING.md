@@ -85,13 +85,13 @@ After installing Python, we recommend creating a virtual environment to install 
 
 ```bash
 cd ai
-virtualenv venv
+virtualenv venv (or windows users: python -m venv venv)
 ```
 
 After creating the virtual environment, you can activate it by running:
 
 ```bash
-source venv/bin/activate
+source venv/bin/activate (or windows users: venv\Scripts\activate)
 ```
 
 Then, you can install the dependencies by running:
