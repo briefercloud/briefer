@@ -126,7 +126,7 @@ services:
         condition: service_healthy
 
   nginx:
-    image: nginx:latest
+    image: nginx:1.27
     depends_on:
       - web
       - api

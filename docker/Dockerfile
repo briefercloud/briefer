@@ -141,6 +141,13 @@ COPY --from=web-installer --chown=briefer:briefer /app/apps/web/public ./apps/we
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/start.sh ./apps/web/start.sh
 ##### END OF COPY API AND WEB BUILDS ####
 
+# NGINX
+RUN mkdir -p /var/log/nginx /etc/nginx /etc/nginx/conf.d
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/start-nginx.sh /app/start-nginx.sh
+RUN chmod +x /app/start-nginx.sh
+
+
 USER postgres
 RUN mkdir -p /var/lib/postgresql/data \
     && chown -R postgres:postgres /var/lib/postgresql \

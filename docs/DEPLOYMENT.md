@@ -54,7 +54,7 @@ If you're not sure which option to choose, we recommend starting with the first 
 
 This is the simplest way to deploy Briefer. You'll only need to install Docker on your server and run a single command to start the application.
 
-Then, you'll have to make sure that this server is accessible to all the people who will use Briefer, and use the necessary DNS records to access the web application and the API.
+Then, you'll have to make sure that this server is accessible to all the people who will use Briefer.
 
 Here's a step-by-step guide to deploy Briefer as a single container:
 
@@ -69,28 +69,19 @@ Here's a step-by-step guide to deploy Briefer as a single container:
 3. Pull and run the all-in-one Docker image for Briefer.
 
    ```bash
-    # if using an IP set API_URL to https://your-ip:3000 and FRONTEND_URL to https://your-ip:8080
     docker run -d \
       -p 3000:3000 \
-      -p 8080:8080 \
       -v briefer_psql_data:/var/lib/postgresql/data \
       -v briefer_jupyter_data:/home/jupyteruser \
       -v briefer_briefer_data:/home/briefer \
-      --env API_URL="https://your_api_address" \
-      --env FRONTEND_URL="https://your_frontend_address" \
       briefercloud/briefer
    ```
-
-   ℹ️ The most crucial part of this step is to make sure that `API_URL` and `FRONTEND_URL` point to the host's address. For example, if you're running Briefer on a machine whose IP is `192.168.0.1`, you should set the `API_URL` to `https://192.168.0.1:8080` (considering API is running on port 8080) and `FRONTEND_URL` to `https://192.168.0.1:3000` (considering the front-end is running on port 3000).
 
    ℹ️ If you want to serve Briefer over HTTP (usually because you're using an IP directly) you should consider setting `--env ALLOW_HTTP="true"` in the above command.
 
 4. Expose your server to the internet or your local network.
-   Make sure that you allow traffic on ports 3000 and 8080. The first one is for the Briefer web application (the one you'll access in your browser), and the second one is for the API that the web application talks to.
-5. If you want to use a domain name rather than an IP, create the necessary DNS records to access ports 3000 and 8080. Otherwise, skip this step.
-   Use `app.briefer.your_domain_here.com` as the name for the web application bound to port 3000, and `api.briefer.your_domain_here.com` as the name for the API bound to port 8080.
-
-Now you should be able to access the Briefer web application at `app.briefer.your_domain_here.com` and the API at `api.briefer.your_domain_here.com`.
+   Make sure that you allow traffic on port 3000.
+5. (Optional) If you want to use a domain name rather than an IP, create the necessary DNS records to access port 3000. Otherwise, skip this step.
 
 <br />
 
@@ -98,7 +89,7 @@ Now you should be able to access the Briefer web application at `app.briefer.you
 
 Besides deploying Briefer as a single container, you can also deploy it as multiple containers. That way, you'll have separate containers for the web application, the API, the AI service, the database, and the Jupyter notebook server.
 
-This approach is more complex than the previous one, but it allows you to use configure each container separately.
+This approach is more complex than the previous one, but it allows you to configure each container separately.
 
 That way, you can scale each part of the application independently or just change the configuration of one part without affecting the others. If you want to use an RDS instance for the database, for example, you can do that by changing the configuration of the database container.
 
@@ -112,15 +103,13 @@ Here's a step-by-step guide to deploy Briefer as multiple containers:
    sudo yum install docker -y
    sudo systemctl start docker
    ```
-3. Run the `start.sh` script and enter Briefer's TLD to start all the containers.
-   We recommend using `briefer.your_domain_here.com` as the TLD.
+3. Run `start.sh` to start all the containers.
    ```bash
    ./start.sh
    ```
 4. Expose your server to the internet or your local network.
-   Make sure that you allow traffic on ports 3000 and 8080. The first one is for the Briefer web application (the one you'll access in your browser), and the second one is for the API that the web application talks to.
-5. Create the necessary DNS records to access ports 3000 and 8080.
-   Use `app.briefer.your_domain_here.com` as the name for the web application bound to port 3000, and `api.briefer.your_domain_here.com` as the name for the API bound to port 8080.
+   Make sure that you allow traffic on port 3000.
+5. (Optional) Create DNS records to make it easier to access Briefer.
 
 If you want to use an RDS instance for the database, you will need to:
 
@@ -160,21 +149,19 @@ To check if Briefer is running, SSH into your server and run `docker ps`. You sh
 
 If Briefer is running, have a look at its logs and see if there are any errors. You can do that by running `docker logs <container_id>`, where `<container_id>` is the ID of the Briefer container.
 
-Finally, make sure that you've exposed your server to the internet or your local network. You can do that by allowing traffic on ports 3000 and 8080 and creating the necessary DNS records to access these ports, which should be `app.briefer.your_domain_here.com` and `api.briefer.your_domain_here.com`.
-
-If you want to change the domains that Briefer uses, you can do that by changing the `TLD` environment variable in your root `.env` file and restarting the Briefer container.
+Finally, make sure that you've exposed your server to the internet or your local network. You can do that by allowing traffic on port 3000 and creating the necessary DNS records to access the host.
 
 </details>
 
 <details>
   <summary>I can access the web application, but it can't talk to the API</summary>
 
-In this case, it's likely that the API is not available on `api.briefer.your_domain_here.com`, so double check that you've created the necessary DNS records using the correct values.
+In this case, it's likely that the web process is running, but the API is not.
 
-If you do have the correct DNS records, check if the API is running by SSHing into your server and running `docker ps`. You should see a container using the image `briefercloud/briefer` or `briefercloud/briefer-api` and exposing port 8080.
+If the API is running, have a look at its logs and see if there are any errors. You can do that by running `docker logs <container_id>`, where `<container_id>` is the ID of the API container or the monolithic Briefer container in case that's what you're using.
 
-If the container is running, check its logs by running `docker logs <container_id>`, where `<container_id>` is the ID of the API container. Look for any errors that might indicate why the API is not working.
+Check if it complains about any missing environment variables or if there's any other straightforward error that you can solve.
 
-Also, see if you can `cURL` the API from your server. You can do that by running `curl api.briefer.your_domain_here.com` in your terminal. If you can cURL the API from the server but the web application can't talk to it, it's likely that there's a network issue at play.
+If you can't figure out what's happening, please [open an issue here](https://github.com/briefercloud/briefer/issues).
 
 </details>
