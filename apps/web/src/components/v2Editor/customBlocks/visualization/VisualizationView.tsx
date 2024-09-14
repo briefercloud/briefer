@@ -154,14 +154,16 @@ function VisualizationView(props: Props) {
           )}
         </button>
       )}
-      {!props.isDashboard && (
-        <button
-          className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
-          onClick={props.onExportToPNG}
-        >
-          PNG
-        </button>
-      )}
+      {!props.isDashboard &&
+        props.chartType !== 'number' &&
+        props.chartType !== 'trend' && (
+          <button
+            className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
+            onClick={props.onExportToPNG}
+          >
+            PNG
+          </button>
+        )}
     </div>
   )
 }

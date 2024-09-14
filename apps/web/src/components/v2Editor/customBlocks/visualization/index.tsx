@@ -205,7 +205,12 @@ function VisualizationBlock(props: Props) {
 
   const onExportToPNG = async () => {
     // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
-    if (props.renderer === 'svg') return
+    if (
+      props.renderer === 'svg' ||
+      chartType === 'number' ||
+      chartType === 'trend'
+    )
+      return
 
     // if the controls are visible the canvas got shrinked, making the export smaller
     if (!controlsHidden) {
@@ -215,7 +220,7 @@ function VisualizationBlock(props: Props) {
     }
 
     const canvas = document.querySelector(
-      `div[data-block-id=${blockId}] canvas`
+      `div[data-block-id='${blockId}'] canvas`
     ) as HTMLCanvasElement
 
     // TODO: identify when this is true
