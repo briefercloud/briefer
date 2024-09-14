@@ -9,6 +9,7 @@ In this document, you'll learn how to run Briefer in development mode and how to
 - [Running Briefer in dev mode](#computer-running-briefer-in-dev-mode)
 - [Questions, bugs, and feature requests](#bulb-questions-bugs-and-feature-requests)
 - [Submitting pull requests](#repeat-submitting-pull-requests)
+- [Possible Error fixes](#warning-possible-error-fixes)
 
 > **This guide serves to set clear expectations for everyone involved with the project so that we can improve it together while also creating a welcoming space for everyone to participate. Following these guidelines will help ensure a positive experience for contributors and maintainers.**
 
@@ -161,3 +162,34 @@ If you're new to open-source or to Briefer, you can start by looking at the issu
 When opening a pull request, please make sure to fill the template with as much information as you can. This will help us understand your contribution and review it more effectively.
 
 After submitting a pull request, please make sure to sign [our CLA (Contributor License Agreement)](./CLA.md) by following the instructions that our bot will provide you. This is a necessary step for us to accept your contribution.
+
+Here’s the fully formatted version of the content with properly labeled code blocks:
+
+<br/>
+
+## :warning: Possible Error Fixes
+Below are some common errors and their possible fixes:
+
+1. **ERR_CERT_AUTHORITY_INVALID**
+this error happens when content is not loaded and in console it displays this error message.
+
+To resolve open a new tab in chrome if chrome is the browser incase other browser check for same options make sure its enabled.
+> chrome://flags/#allow-insecure-localhost
+
+Enable the flag.
+This should resolve the issue.
+
+2. **Jupyter Permissions Issue on Linux/WSL**
+If you're running Jupyter on Linux/WSL and encounter the following error:
+
+> RuntimeError: Permissions assignment failed for secure file:
+'/home/jupyteruser/.local/share/jupyter/runtime/jpserver-8.json'.Got '0o677' instead of '0o0600'.
+
+This typically means the folder doesn't exist, or the user doesn't have the required permissions. To fix this issue, run the following commands:
+
+```bash
+mkdir -p ./jupyterfiles
+sudo chown -R $(whoami):$(whoami) ./jupyterfiles
+mkdir -p ./jupyterfiles/.local/share/jupyter
+```
+After executing these commands, restart the Jupyter server container for the changes to take effect.
