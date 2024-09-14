@@ -1,0 +1,51 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: briefer
+  name: briefer-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-web
+  template:
+    metadata:
+      labels:
+        app: briefer-web
+    spec:
+      containers:
+      - name: api
+        image: briefercloud/briefer-web
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'wget http://localhost:3000']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3                                                                      
+          timeoutSeconds: 5
+        env:
+        - name: NODE_ENV 
+          value: {{.Values.web.env}} 
+        - name: NEXT_PUBLIC_API_URL 
+          value: {{.Values.api.url}} 
+        - name: NEXT_PUBLIC_API_WS_URL
+          value: {{.Values.api.wsUrl}} 
+        - name: NEXT_PUBLIC_PUBLIC_URL
+          value: {{.Values.web.url}} 
+        ports:
+        - containerPort: {{.Values.web.port}} 
+          name: web-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: briefer
+  name: briefer-web-service
+spec:
+  selector:
+    app: briefer-web
+  ports:
+  - protocol: TCP
+    port: {{.Values.web.port}} 
+    targetPort: web-port
