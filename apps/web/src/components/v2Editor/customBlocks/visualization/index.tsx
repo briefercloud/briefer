@@ -215,6 +215,8 @@ function VisualizationBlock(props: Props) {
     // TODO: identify when this is true
     if (!canvas) return
 
+    if (!controlsHidden) onToggleHidden()
+
     const imageUrl = canvas.toDataURL('image/png')
     const fileName = title || 'Visualization'
     downloadFile(imageUrl, fileName)
