@@ -5,7 +5,7 @@ set -e
 if [ ! -f ./apps/api/.env ]; then
   echo "NODE_ENV=development" > ./apps/api/.env
   echo "LOG_LEVEL=debug" >> ./apps/api/.env
-  echo "API_URL='https://localhost:3000'" >> ./apps/api/.env
+  echo "API_URL='https://localhost:8080'" >> ./apps/api/.env
   echo "FRONTEND_URL='https://localhost:3000'" >> ./apps/api/.env
   echo "TLD=localhost" >> ./apps/api/.env
   echo "LOGIN_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
