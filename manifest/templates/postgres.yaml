@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: briefer
+  name: briefer-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-postgres
+  template:
+    metadata:
+      labels:
+        app: briefer-postgres
+    spec:
+      containers:
+      - name: api
+        image: postgres:latest
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'pg_isready -U {{.Values.postgres.username}} -d briefer || exit 1']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 3                                                                      
+          timeoutSeconds: 5
+        env:
+        - name: POSTGRES_DB 
+          value: "{{.Values.postgres.database}}" 
+        - name: POSTGRES_USER 
+          value: "{{.Values.postgres.username}}" 
+        - name: POSTGRES_PASSWORD 
+          value: "{{.Values.postgres.password}}"
+        ports:
+        - containerPort: {{.Values.postgres.port}} 
+          name: postgres-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: briefer
+  name: briefer-postgres-service
+spec:
+  selector:
+    app: briefer-postgres
+  ports:
+  - protocol: TCP
+    port: {{.Values.postgres.port}} 
+    targetPort: postgres-port
