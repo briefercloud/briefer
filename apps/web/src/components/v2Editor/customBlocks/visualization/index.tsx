@@ -202,6 +202,36 @@ function VisualizationBlock(props: Props) {
     props.block.setAttribute('controlsHidden', !controlsHidden)
   }, [controlsHidden, props.block])
 
+  const onExportToPNG = () => {
+    // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
+    // TODO: add download for svg visualizations
+    if (props.renderer === 'svg') return
+
+    const canvas = document.querySelector(
+      `div[data-block-id=${blockId}] canvas`
+    ) as HTMLCanvasElement
+
+    // TODO: identify when this is true
+    if (!canvas) return
+
+    const imageUrl = canvas.toDataURL('image/png')
+    var downloadLink = document.createElement('a')
+
+    // some browsers don't support this solution
+    if (typeof downloadLink.download === 'undefined') {
+      // TODO: verify a solution for downloading in unsupported browsers
+      // 'window.location.href = downloadLink' no long works due to new Chrome policies
+      return
+    }
+
+    downloadLink.download = title || 'Visualization'
+    downloadLink.href = imageUrl
+
+    document.body.appendChild(downloadLink)
+    downloadLink.click()
+    document.body.removeChild(downloadLink)
+  }
+
   const onChangeChartType = useCallback(
     (chartType: ChartType) => {
       props.block.setAttribute('chartType', chartType)
@@ -426,6 +456,7 @@ function VisualizationBlock(props: Props) {
         renderer={props.renderer}
         isHidden={controlsHidden}
         onToggleHidden={onToggleHidden}
+        onExportToPNG={onExportToPNG}
         isDashboard={props.isDashboard}
         isEditable={isEditable}
       />
@@ -555,6 +586,7 @@ function VisualizationBlock(props: Props) {
             renderer={props.renderer}
             isHidden={controlsHidden}
             onToggleHidden={onToggleHidden}
+            onExportToPNG={onExportToPNG}
             isDashboard={props.isDashboard}
             isEditable={isEditable}
           />
