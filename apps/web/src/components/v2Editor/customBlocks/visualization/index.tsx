@@ -215,7 +215,7 @@ function VisualizationBlock(props: Props) {
     if (!canvas) return
 
     const imageUrl = canvas.toDataURL('image/png')
-    var downloadLink = document.createElement('a')
+    const downloadLink = document.createElement('a')
 
     // some browsers don't support this solution
     if (typeof downloadLink.download === 'undefined') {
