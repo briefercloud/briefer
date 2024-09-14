@@ -12,6 +12,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
 import createDomPurify, { DOMPurifyI } from 'dompurify'
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import useResettableState from '@/hooks/useResettableState'
+import { downloadFile } from '@/utils/file'
 import debounce from 'lodash.debounce'
 import { PythonBlock } from '@briefer/editor'
 
@@ -106,16 +107,33 @@ interface ItemProps {
   canFixWithAI: boolean
 }
 export function PythonOutput(props: ItemProps) {
+  const onExportToPNG = () => {
+    if (props.output.type !== 'image' || props.output.format !== 'png') return
+
+    downloadFile(
+      `data:image/${props.output.format};base64, ${props.output.data}`,
+      'Generated Python image'
+    )
+  }
+
   switch (props.output.type) {
     case 'image':
       switch (props.output.format) {
         case 'png':
           return (
-            <img
-              className="printable-block"
-              alt="generated image"
-              src={`data:image/${props.output.format};base64, ${props.output.data}`}
-            />
+            <>
+              <img
+                className="printable-block"
+                alt="generated image"
+                src={`data:image/${props.output.format};base64, ${props.output.data}`}
+              />
+              <button
+                className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs"
+                onClick={onExportToPNG}
+              >
+                PNG
+              </button>
+            </>
           )
       }
     case 'stdio':
