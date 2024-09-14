@@ -38,6 +38,7 @@ import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { downloadFile } from '@/utils/file'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -215,21 +216,8 @@ function VisualizationBlock(props: Props) {
     if (!canvas) return
 
     const imageUrl = canvas.toDataURL('image/png')
-    const downloadLink = document.createElement('a')
-
-    // some browsers don't support this solution
-    if (typeof downloadLink.download === 'undefined') {
-      // TODO: verify a solution for downloading in unsupported browsers
-      // 'window.location.href = downloadLink' no long works due to new Chrome policies
-      return
-    }
-
-    downloadLink.download = title || 'Visualization'
-    downloadLink.href = imageUrl
-
-    document.body.appendChild(downloadLink)
-    downloadLink.click()
-    document.body.removeChild(downloadLink)
+    const fileName = title || 'Visualization'
+    downloadFile(imageUrl, fileName)
   }
 
   const onChangeChartType = useCallback(
