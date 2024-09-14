@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: briefer
+  name: briefer-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-ai
+  template:
+    metadata:
+      labels:
+        app: briefer-ai
+    spec:
+      containers:
+      - name: api
+        image: briefercloud/briefer-ai 
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'curl -f http://localhost:{{.Values.ai.port}}/ping || exit 1']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5                                                                      
+          timeoutSeconds: 10 
+        env:
+        - name: AI_BASIC_AUTH_USERNAME 
+          value: {{.Values.ai.username}} 
+        - name: AI_BASIC_AUTH_PASSWORD
+          value: {{.Values.ai.password}} 
+        - name: OPENAI_DEFAULT_MODEL_NAME
+          value: "gpt-4o"
+        - name: OPENAI_API_KEY 
+          value: {{.Values.ai.apiKey}} 
+        - name: PORT 
+          value: "{{.Values.ai.port}}"
+        ports:
+        - containerPort: {{.Values.ai.port}} 
+          name: ai-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: briefer
+  name: briefer-ai-service
+spec:
+  selector:
+    app: briefer-ai
+  ports:
+  - protocol: TCP
+    port: {{.Values.ai.port}} 
+    targetPort: ai-port
