@@ -203,10 +203,16 @@ function VisualizationBlock(props: Props) {
     props.block.setAttribute('controlsHidden', !controlsHidden)
   }, [controlsHidden, props.block])
 
-  const onExportToPNG = () => {
+  const onExportToPNG = async () => {
     // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
-    // TODO: add download for svg visualizations
     if (props.renderer === 'svg') return
+
+    // if the controls are visible the canvas got shrinked, making the export smaller
+    if (!controlsHidden) {
+      onToggleHidden()
+      // tick to ensure the canvas size gets updated
+      await new Promise((r) => setTimeout(r, 0))
+    }
 
     const canvas = document.querySelector(
       `div[data-block-id=${blockId}] canvas`
@@ -214,8 +220,6 @@ function VisualizationBlock(props: Props) {
 
     // TODO: identify when this is true
     if (!canvas) return
-
-    if (!controlsHidden) onToggleHidden()
 
     const imageUrl = canvas.toDataURL('image/png')
     const fileName = title || 'Visualization'
