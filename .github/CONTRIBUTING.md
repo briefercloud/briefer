@@ -163,8 +163,6 @@ When opening a pull request, please make sure to fill the template with as much 
 
 After submitting a pull request, please make sure to sign [our CLA (Contributor License Agreement)](./CLA.md) by following the instructions that our bot will provide you. This is a necessary step for us to accept your contribution.
 
-Here’s the fully formatted version of the content with properly labeled code blocks:
-
 <br/>
 
 ## :wrench: Troubleshooting
