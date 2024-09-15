@@ -9,6 +9,7 @@ In this document, you'll learn how to run Briefer in development mode and how to
 - [Running Briefer in dev mode](#computer-running-briefer-in-dev-mode)
 - [Questions, bugs, and feature requests](#bulb-questions-bugs-and-feature-requests)
 - [Submitting pull requests](#repeat-submitting-pull-requests)
+- [Troubleshooting](#wrench-troubleshooting)
 
 > **This guide serves to set clear expectations for everyone involved with the project so that we can improve it together while also creating a welcoming space for everyone to participate. Following these guidelines will help ensure a positive experience for contributors and maintainers.**
 
@@ -161,3 +162,31 @@ If you're new to open-source or to Briefer, you can start by looking at the issu
 When opening a pull request, please make sure to fill the template with as much information as you can. This will help us understand your contribution and review it more effectively.
 
 After submitting a pull request, please make sure to sign [our CLA (Contributor License Agreement)](./CLA.md) by following the instructions that our bot will provide you. This is a necessary step for us to accept your contribution.
+
+<br/>
+
+## :wrench: Troubleshooting
+Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
+
+1. **ERR_CERT_AUTHORITY_INVALID**
+
+This error happens when content is not loaded and the browser's console displays the `ERR_CERT_AUTHORITY_INVALID` error message.
+
+That's because you're using a self-signed certificate for development and your browser does not allow those.
+
+
+If you're using Chrome, open a new tab and access `chrome://flags/#allow-insecure-localhost`. Then enable this flag. If you're using another browser, please look for similar options if needed.
+
+2. **Jupyter permissions issue on Linux/WSL**
+If you're running Jupyter on Linux/WSL and encounter the following error:
+
+RuntimeError: Permissions assignment failed for secure file: '/home/jupyteruser/.local/share/jupyter/runtime/jpserver-8.json'. Got '0o677' instead of '0o0600'.
+
+This typically means that the folder doesn't exist or that the user doesn't have the required permissions. To fix this issue, update the permissions as in the example below.
+
+```bash
+mkdir -p ./jupyterfiles
+sudo chown -R $(whoami):$(whoami) ./jupyterfiles
+mkdir -p ./jupyterfiles/.local/share/jupyter
+```
+After running the above commands, restart the Jupyter server container to apply the changes. 
