@@ -170,7 +170,7 @@ After submitting a pull request, please make sure to sign [our CLA (Contributor 
 Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
 
 <details>
-  <summary>**ERR_CERT_AUTHORITY_INVALID** in the browser's console</summary>
+  <summary>`ERR_CERT_AUTHORITY_INVALID` in the browser's console</summary>
 
 This error happens when content is not loaded and the browser's console displays the `ERR_CERT_AUTHORITY_INVALID` error message.
 
@@ -181,7 +181,7 @@ If you're using Chrome, open a new tab and access `chrome://flags/#allow-insecur
 </details>
 
 <details>
-  <summary>**Jupyter permissions issue on Linux/WSL**</summary>
+  <summary>Jupyter permissions issue on Linux/WSL</summary>
 
 This error usually manifests as the following message:
 
