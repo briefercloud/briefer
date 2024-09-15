@@ -169,7 +169,10 @@ After submitting a pull request, please make sure to sign [our CLA (Contributor 
 Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
 
 1. **ERR_CERT_AUTHORITY_INVALID**
-this error happens when content is not loaded and in console it displays this error message.
+
+This error happens when content is not loaded and the browser's console displays the `ERR_CERT_AUTHORITY_INVALID` error message.
+
+That's because you're using a self-signed certificate for development and your browser does not allow those.
 
 To resolve open a new tab in chrome if chrome is the browser incase other browser check for same options make sure its enabled.
 > chrome://flags/#allow-insecure-localhost
