@@ -12,6 +12,7 @@ import { UserWorkspaceRole } from '@briefer/database'
 import clsx from 'clsx'
 import { Tooltip } from '@/components/Tooltips'
 import { PasswordDialog } from './new'
+import { useRouter } from 'next/router'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -26,6 +27,7 @@ const pagePath = (workspaceId: string) => [
 export default function UsersPage() {
   const workspaceId = useStringQuery('workspaceId')
   const session = useSession()
+  const router = useRouter()
 
   const isAdmin = session.data?.roles[workspaceId] === UserWorkspaceRole.admin
 
@@ -79,8 +81,11 @@ export default function UsersPage() {
               position="left"
               active={!isAddEnabled}
             >
-              <Link
-                href={`/workspaces/${workspaceId}/users/new`}
+              <button
+                onClick={() => {
+                  router.push(`/workspaces/${workspaceId}/users/new`)
+                }}
+                disabled={!isAddEnabled}
                 className={clsx(
                   isAddEnabled
                     ? 'bg-primary-200 hover:bg-primary-300'
@@ -89,7 +94,7 @@ export default function UsersPage() {
                 )}
               >
                 <UserPlusIcon className="h-4 w-4" /> Add user
-              </Link>
+              </button>
             </Tooltip>
           </div>
 
