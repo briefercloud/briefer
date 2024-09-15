@@ -177,7 +177,7 @@ That's because you're using a self-signed certificate for development and your b
 
 If you're using Chrome, open a new tab and access `chrome://flags/#allow-insecure-localhost`. Then enable this flag. If you're using another browser, please look for similar options if needed.
 
-2. **Jupyter Permissions Issue on Linux/WSL**
+2. **Jupyter permissions issue on Linux/WSL**
 If you're running Jupyter on Linux/WSL and encounter the following error:
 
 > RuntimeError: Permissions assignment failed for secure file:
