@@ -174,11 +174,8 @@ This error happens when content is not loaded and the browser's console displays
 
 That's because you're using a self-signed certificate for development and your browser does not allow those.
 
-To resolve open a new tab in chrome if chrome is the browser incase other browser check for same options make sure its enabled.
-> chrome://flags/#allow-insecure-localhost
 
-Enable the flag.
-This should resolve the issue.
+If you're using Chrome, open a new tab and access `chrome://flags/#allow-insecure-localhost`. Then enable this flag. If you're using another browser, please look for similar options if needed.
 
 2. **Jupyter Permissions Issue on Linux/WSL**
 If you're running Jupyter on Linux/WSL and encounter the following error:
