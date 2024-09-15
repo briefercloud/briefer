@@ -167,7 +167,7 @@ Here’s the fully formatted version of the content with properly labeled code b
 
 <br/>
 
-## :warning: Possible Error Fixes
+## :wrench: Troubleshooting
 Below are some common errors and their possible fixes:
 
 1. **ERR_CERT_AUTHORITY_INVALID**
