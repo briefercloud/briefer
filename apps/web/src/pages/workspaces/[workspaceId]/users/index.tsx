@@ -79,7 +79,7 @@ export default function UsersPage() {
               className="flex"
               tooltipClassname="w-48"
               position="left"
-              active={!isAddEnabled}
+              active={false}
             >
               <button
                 onClick={() => {
