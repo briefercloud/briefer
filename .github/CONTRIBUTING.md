@@ -9,7 +9,7 @@ In this document, you'll learn how to run Briefer in development mode and how to
 - [Running Briefer in dev mode](#computer-running-briefer-in-dev-mode)
 - [Questions, bugs, and feature requests](#bulb-questions-bugs-and-feature-requests)
 - [Submitting pull requests](#repeat-submitting-pull-requests)
-- [Possible Error fixes](#warning-possible-error-fixes)
+- [Troubleshooting](#wrench-troubleshooting)
 
 > **This guide serves to set clear expectations for everyone involved with the project so that we can improve it together while also creating a welcoming space for everyone to participate. Following these guidelines will help ensure a positive experience for contributors and maintainers.**
 
