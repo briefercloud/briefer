@@ -168,7 +168,7 @@ Here’s the fully formatted version of the content with properly labeled code b
 <br/>
 
 ## :wrench: Troubleshooting
-Below are some common errors and their possible fixes:
+Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
 
 1. **ERR_CERT_AUTHORITY_INVALID**
 this error happens when content is not loaded and in console it displays this error message.
