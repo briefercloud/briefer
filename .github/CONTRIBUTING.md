@@ -166,7 +166,7 @@ After submitting a pull request, please make sure to sign [our CLA (Contributor 
 <br/>
 
 ## :wrench: Troubleshooting
-Below are some common errors and their possible fixes:
+Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
 
 1. **ERR_CERT_AUTHORITY_INVALID**
 this error happens when content is not loaded and in console it displays this error message.
