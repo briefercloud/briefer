@@ -183,11 +183,9 @@ If you're running Jupyter on Linux/WSL and encounter the following error:
 > RuntimeError: Permissions assignment failed for secure file:
 '/home/jupyteruser/.local/share/jupyter/runtime/jpserver-8.json'.Got '0o677' instead of '0o0600'.
 
-This typically means the folder doesn't exist, or the user doesn't have the required permissions. To fix this issue, run the following commands:
+This typically means that the folder doesn't exist or that the user doesn't have the required permissions. To fix this issue, update the permissions as in the example below.
 
 ```bash
 mkdir -p ./jupyterfiles
 sudo chown -R $(whoami):$(whoami) ./jupyterfiles
 mkdir -p ./jupyterfiles/.local/share/jupyter
-```
-After executing these commands, restart the Jupyter server container for the changes to take effect.
