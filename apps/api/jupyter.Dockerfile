@@ -2,10 +2,6 @@ FROM python:3.9-slim
 
 WORKDIR /usr/src/app
 
-ARG JUPYTER_REQUIREMENTS_FILE=jupyter-requirements.txt
-
-COPY $JUPYTER_REQUIREMENTS_FILE ./requirements.txt
-
 RUN apt-get update && \
     apt-get install -y \
         libpq-dev \
@@ -26,6 +22,9 @@ RUN apt-get update && \
 # Set the GDAL version
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
+
+ARG JUPYTER_REQUIREMENTS_FILE=jupyter-requirements.txt
+COPY $JUPYTER_REQUIREMENTS_FILE ./requirements.txt
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir jupyter_server
