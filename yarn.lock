@@ -3185,13 +3185,6 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@types/oracledb@^6.5.0":
-  version "6.5.1"
-  resolved "https://registry.yarnpkg.com/@types/oracledb/-/oracledb-6.5.1.tgz#17d021cabc9d216dfa6d3d65ae3ee585c33baab3"
-  integrity sha512-Ll0bKGXmCZVngBL3juSaytA8Jeocx0VghDHTt+FEC2bs8fdl9pzoaBXYWXjBUxCCT8Y/69m5AzuTgBd79j24WA==
-  dependencies:
-    "@types/node" "*"
-
 "@types/papaparse@^5.3.10":
   version "5.3.14"
   resolved "https://registry.yarnpkg.com/@types/papaparse/-/papaparse-5.3.14.tgz#345cc2a675a90106ff1dc33b95500dfb30748031"
@@ -9503,11 +9496,6 @@ optionator@^0.9.3:
     prelude-ls "^1.2.1"
     type-check "^0.4.0"
     word-wrap "^1.2.5"
-
-oracledb@^6.5.1:
-  version "6.6.0"
-  resolved "https://registry.yarnpkg.com/oracledb/-/oracledb-6.6.0.tgz#bb40adbe81a84a1e544c48af9f120c61f030e936"
-  integrity sha512-T3dx+o3j+tVN53wQyr4yGTmoPHLy+a2V8yb1T2PmWrsj3ZlSt2Yu1BgV2yTDqnmBZYpRi/I3yJXRCOHHD7PiyA==
 
 orderedmap@^2.0.0:
   version "2.1.1"
