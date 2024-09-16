@@ -133,7 +133,7 @@ export function PythonOutput(props: ItemProps) {
               />
               {!props.isDashboardView && (
                 <button
-                  className="relative bottom-[1px] right-[1px] bg-white rounded-tl-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
+                  className="relative g-white rounded-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
                   onClick={onExportToPNG}
                 >
                   PNG
