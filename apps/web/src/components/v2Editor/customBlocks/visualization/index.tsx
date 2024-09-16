@@ -38,6 +38,7 @@ import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { downloadFile } from '@/utils/file'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -201,6 +202,34 @@ function VisualizationBlock(props: Props) {
   const onToggleHidden = useCallback(() => {
     props.block.setAttribute('controlsHidden', !controlsHidden)
   }, [controlsHidden, props.block])
+
+  const onExportToPNG = async () => {
+    // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
+    if (
+      props.renderer === 'svg' ||
+      chartType === 'number' ||
+      chartType === 'trend'
+    )
+      return
+
+    // if the controls are visible the canvas shrinks, making the export smaller
+    if (!controlsHidden) {
+      onToggleHidden()
+      // tick to ensure the canvas size gets updated
+      await new Promise((r) => setTimeout(r, 0))
+    }
+
+    const canvas = document.querySelector(
+      `div[data-block-id='${blockId}'] canvas`
+    ) as HTMLCanvasElement
+
+    // TODO: identify when this is true
+    if (!canvas) return
+
+    const imageUrl = canvas.toDataURL('image/png')
+    const fileName = title || 'Visualization'
+    downloadFile(imageUrl, fileName)
+  }
 
   const onChangeChartType = useCallback(
     (chartType: ChartType) => {
@@ -426,6 +455,7 @@ function VisualizationBlock(props: Props) {
         renderer={props.renderer}
         isHidden={controlsHidden}
         onToggleHidden={onToggleHidden}
+        onExportToPNG={onExportToPNG}
         isDashboard={props.isDashboard}
         isEditable={isEditable}
       />
@@ -555,6 +585,7 @@ function VisualizationBlock(props: Props) {
             renderer={props.renderer}
             isHidden={controlsHidden}
             onToggleHidden={onToggleHidden}
+            onExportToPNG={onExportToPNG}
             isDashboard={props.isDashboard}
             isEditable={isEditable}
           />

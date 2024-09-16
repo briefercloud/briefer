@@ -277,6 +277,7 @@ function PythonBlock(props: Props) {
         isDashboardView={props.dashboardPlace === 'view'}
         lazyRender={props.dashboardPlace === 'controls'}
         canFixWithAI={hasOaiKey}
+        blockId={blockId}
       />
     )
   }
@@ -463,6 +464,7 @@ function PythonBlock(props: Props) {
               isPDF={props.isPDF}
               isDashboardView={false}
               lazyRender={!props.isPDF}
+              blockId={blockId}
             />
           </ScrollBar>
         </div>

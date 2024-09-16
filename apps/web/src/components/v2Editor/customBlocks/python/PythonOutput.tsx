@@ -12,6 +12,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/20/solid'
 import createDomPurify, { DOMPurifyI } from 'dompurify'
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import useResettableState from '@/hooks/useResettableState'
+import { downloadFile } from '@/utils/file'
 import debounce from 'lodash.debounce'
 import { PythonBlock } from '@briefer/editor'
 
@@ -24,6 +25,7 @@ interface Props {
   isPDF: boolean
   isDashboardView: boolean
   lazyRender: boolean
+  blockId: string
 }
 
 let domPurify: DOMPurifyI
@@ -80,6 +82,7 @@ export function PythonOutputs(props: Props) {
           key={i}
           className={clsx(
             ['plotly'].includes(output.type) ? 'flex-grow' : '',
+            !props.isDashboardView ? 'flex flex-col items-end' : '',
             'bg-white overflow-x-scroll'
           )}
         >
@@ -90,6 +93,7 @@ export function PythonOutputs(props: Props) {
             isPDF={props.isPDF}
             canFixWithAI={props.canFixWithAI}
             isDashboardView={props.isDashboardView}
+            blockId={props.blockId}
           />
         </div>
       ))}
@@ -104,18 +108,38 @@ interface ItemProps {
   isPDF: boolean
   isDashboardView: boolean
   canFixWithAI: boolean
+  blockId: string
 }
 export function PythonOutput(props: ItemProps) {
+  const onExportToPNG = () => {
+    if (props.output.type !== 'image' || props.output.format !== 'png') return
+
+    downloadFile(
+      `data:image/${props.output.format};base64, ${props.output.data}`,
+      props.blockId
+    )
+  }
+
   switch (props.output.type) {
     case 'image':
       switch (props.output.format) {
         case 'png':
           return (
-            <img
-              className="printable-block"
-              alt="generated image"
-              src={`data:image/${props.output.format};base64, ${props.output.data}`}
-            />
+            <>
+              <img
+                className="printable-block"
+                alt="generated image"
+                src={`data:image/${props.output.format};base64, ${props.output.data}`}
+              />
+              {!props.isDashboardView && (
+                <button
+                  className="relative bottom-[1px] right-[1px] bg-white rounded-tl-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
+                  onClick={onExportToPNG}
+                >
+                  PNG
+                </button>
+              )}
+            </>
           )
       }
     case 'stdio':
