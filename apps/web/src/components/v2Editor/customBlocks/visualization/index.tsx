@@ -212,7 +212,7 @@ function VisualizationBlock(props: Props) {
     )
       return
 
-    // if the controls are visible the canvas got shrinked, making the export smaller
+    // if the controls are visible the canvas shrinks, making the export smaller
     if (!controlsHidden) {
       onToggleHidden()
       // tick to ensure the canvas size gets updated
