@@ -31,13 +31,9 @@ def get_config(dir):
 
 def generate_apps_config():
     fpath = get_config_path(APPS_CONFIG_DIR)
-    tld = os.getenv("TLD", "localhost")
     cfg = {
         "NODE_ENV": "production",
         "LOG_LEVEL": "info",
-        "TLD": tld,
-        "API_URL": f"https://api.{tld}" if tld != "localhost" else "http://localhost:8080",
-        "FRONTEND_URL": f"https://app.{tld}" if tld != "localhost" else "http://localhost:3000",
         "POSTGRES_USERNAME": "briefer",
         "POSTGRES_PASSWORD": get_random_secret(8),
         "JUPYTER_TOKEN": get_random_secret(32),

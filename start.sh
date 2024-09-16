@@ -3,10 +3,6 @@ set -e
 
 # if there is no .env file, create one
 if [ ! -f .env ]; then
-  echo "Enter the top level domain (e.g. example.com):"
-  read TLD
-
-  echo "TLD=$TLD" > .env
   echo "POSTGRES_USERNAME=$(openssl rand -hex 12)" >> .env
   echo "POSTGRES_PASSWORD=$(openssl rand -hex 12)" >> .env
   echo "JUPYTER_TOKEN=$(openssl rand -hex 24)" >> .env
@@ -19,14 +15,6 @@ if [ ! -f .env ]; then
   echo "WORKSPACE_SECRETS_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
   echo "DATASOURCES_ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env
   echo "ENABLE_CUSTOM_OAI_KEY=true" >> .env
-
-  echo
-  echo "Here are the URLs you should use to access Briefer:"
-  echo "APP: https://app.${TLD}"
-  echo "API: https://api.${TLD}"
-  echo
-
-  read -p "Press enter to continue"
 fi
 
 # Check if docker compose exists, if it does use it
@@ -42,3 +30,4 @@ fi
 
 # Running docker compose up
 $COMPOSE_CMD up -d
+echo "Briefer is now running at port 3000"
