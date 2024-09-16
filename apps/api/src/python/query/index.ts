@@ -389,6 +389,14 @@ export async function listDataFrames(
 def _briefer_list_dataframes():
     import pandas as pd
     import json
+    from datetime import date, datetime
+
+    def handle_non_serializable(obj):
+        """Custom handler for non-serializable objects."""
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()  # Convert datetime/date to ISO format string
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
     dataframes = []
 
     names = %who_ls
@@ -399,7 +407,7 @@ def _briefer_list_dataframes():
                 columns = [{"name": str(col), "type": dtype.name} for col, dtype in df.dtypes.items()]
 
                 for col in columns:
-                    # ignore if the col already has categories
+                    # Ignore if the column already has categories
                     if "categories" in col:
                         continue
 
@@ -409,16 +417,25 @@ def _briefer_list_dataframes():
                             categories = df[col["name"]].dropna().unique()
                             categories = list(categories)
                             categories = list(dict.fromkeys(categories))
-                            categories = categories[:1000]
+                            categories = categories[:1000] 
                             col["categories"] = categories
                         except:
                             pass
+                    # Handle datetime and date types by converting them to strings
+                    elif pd.api.types.is_datetime64_any_dtype(dtype):
+                        df[col["name"]] = df[col["name"]].apply(
+                            lambda x: x.isoformat() if isinstance(x, (datetime, date)) else x
+                        )  # Only apply isoformat to datetime objects
 
                 dataframes.append({"name": name, "columns": columns})
-        except:
+        except Exception as e:
+            print(f"Error processing dataframe '{name}': {e}")
             pass
 
-    print(json.dumps(dataframes))
+    try:
+        print(json.dumps(dataframes, default=handle_non_serializable))
+    except Exception as e:
+        print(f"Error serializing dataframes: {e}")
 
 _briefer_list_dataframes()
 del _briefer_list_dataframes`
