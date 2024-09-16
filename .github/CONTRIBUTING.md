@@ -170,17 +170,6 @@ After submitting a pull request, please make sure to sign [our CLA (Contributor 
 Below are some common errors and their possible fixes. Please feel free to open an issue if none of these suggested fixes work.
 
 <details>
-  <summary>`ERR_CERT_AUTHORITY_INVALID` in the browser's console</summary>
-
-This error happens when content is not loaded and the browser's console displays the `ERR_CERT_AUTHORITY_INVALID` error message.
-
-It usually happens because you're using a self-signed certificate for development and your browser probably does not allow those yet.
-
-If you're using Chrome, open a new tab and access `chrome://flags/#allow-insecure-localhost`. Then enable this flag. If you're using another browser, please look for similar options if needed.
-
-</details>
-
-<details>
   <summary>Jupyter permissions issue on Linux/WSL</summary>
 
 This error usually manifests as the following message:

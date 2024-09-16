@@ -3,7 +3,7 @@
   "version": "0.0.14",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 4000 --experimental-https && local-ssl-proxy --key",
+    "dev": "next dev -p 4000",
     "build": "next build",
     "start": "node dist/server.js",
     "lint": "next lint",
