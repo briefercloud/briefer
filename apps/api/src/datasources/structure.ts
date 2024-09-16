@@ -5,6 +5,7 @@ import * as psql from './psql.js'
 import * as athena from './athena.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
+import * as oracle from './oracle.js'
 import { DataSourceStructure, jsonString } from '@briefer/types'
 import { logger } from '../logger.js'
 import { z } from 'zod'
@@ -202,7 +203,7 @@ async function fetchStructure(
         return await trino.getSchema(ds.data)
       }
       case 'oracle': {
-        return null
+        return await oracle.getSchema(ds.data)
       }
     }
   } catch (err) {
