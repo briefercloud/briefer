@@ -25,6 +25,7 @@ interface Props {
   isPDF: boolean
   isDashboardView: boolean
   lazyRender: boolean
+  blockId: string
 }
 
 let domPurify: DOMPurifyI
@@ -81,6 +82,7 @@ export function PythonOutputs(props: Props) {
           key={i}
           className={clsx(
             ['plotly'].includes(output.type) ? 'flex-grow' : '',
+            !props.isDashboardView ? 'flex flex-col items-end' : '',
             'bg-white overflow-x-scroll'
           )}
         >
@@ -91,6 +93,7 @@ export function PythonOutputs(props: Props) {
             isPDF={props.isPDF}
             canFixWithAI={props.canFixWithAI}
             isDashboardView={props.isDashboardView}
+            blockId={props.blockId}
           />
         </div>
       ))}
@@ -105,6 +108,7 @@ interface ItemProps {
   isPDF: boolean
   isDashboardView: boolean
   canFixWithAI: boolean
+  blockId: string
 }
 export function PythonOutput(props: ItemProps) {
   const onExportToPNG = () => {
@@ -112,7 +116,7 @@ export function PythonOutput(props: ItemProps) {
 
     downloadFile(
       `data:image/${props.output.format};base64, ${props.output.data}`,
-      'Generated Python image'
+      props.blockId
     )
   }
 
@@ -127,12 +131,14 @@ export function PythonOutput(props: ItemProps) {
                 alt="generated image"
                 src={`data:image/${props.output.format};base64, ${props.output.data}`}
               />
-              <button
-                className="absolute bottom-0 bg-white rounded-md border border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
-                onClick={onExportToPNG}
-              >
-                PNG
-              </button>
+              {!props.isDashboardView && (
+                <button
+                  className="max-w-10 relative bottom-[2px] bg-white rounded-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
+                  onClick={onExportToPNG}
+                >
+                  PNG
+                </button>
+              )}
             </>
           )
       }
