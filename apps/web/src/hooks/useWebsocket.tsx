@@ -18,9 +18,10 @@ export function WebsocketProvider({ children }: Props) {
     if (session.data) {
       const url = new URL(NEXT_PUBLIC_API_URL())
       const withoutPathname = url.origin
+
       const socket = io(withoutPathname, {
         withCredentials: true,
-        path: url.pathname + '/socket.io',
+        path: url.pathname === '/' ? undefined : url.pathname + '/socket.io',
         transports: ['websocket'],
       })
       setSocket(socket)
