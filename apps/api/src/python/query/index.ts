@@ -389,14 +389,6 @@ export async function listDataFrames(
 def _briefer_list_dataframes():
     import pandas as pd
     import json
-    from datetime import date, datetime
-
-    def handle_non_serializable(obj):
-        """Custom handler for non-serializable objects."""
-        if isinstance(obj, (datetime, date)):
-            return obj.isoformat()  # Convert datetime/date to ISO format string
-        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
     dataframes = []
 
     names = %who_ls
