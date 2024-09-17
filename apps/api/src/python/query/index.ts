@@ -426,10 +426,7 @@ def _briefer_list_dataframes():
         except Exception as e:
             pass
 
-    try:
-        print(json.dumps(dataframes, default=handle_non_serializable))
-    except Exception as e:
-        print(f"Error serializing dataframes: {e}")
+    print(json.dumps(dataframes, default=str))
 
 _briefer_list_dataframes()
 del _briefer_list_dataframes`
