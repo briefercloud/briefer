@@ -399,7 +399,7 @@ def _briefer_list_dataframes():
                 columns = [{"name": str(col), "type": dtype.name} for col, dtype in df.dtypes.items()]
 
                 for col in columns:
-                    # ignore if the col already has categories
+                    # Ignore if the column already has categories
                     if "categories" in col:
                         continue
 
@@ -409,16 +409,16 @@ def _briefer_list_dataframes():
                             categories = df[col["name"]].dropna().unique()
                             categories = list(categories)
                             categories = list(dict.fromkeys(categories))
-                            categories = categories[:1000]
+                            categories = categories[:1000] 
                             col["categories"] = categories
                         except:
                             pass
 
                 dataframes.append({"name": name, "columns": columns})
-        except:
+        except Exception as e:
             pass
 
-    print(json.dumps(dataframes))
+    print(json.dumps(dataframes, default=str))
 
 _briefer_list_dataframes()
 del _briefer_list_dataframes`
