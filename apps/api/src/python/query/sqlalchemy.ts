@@ -118,8 +118,8 @@ def briefer_make_sqlalchemy_query():
 
         # if oracle, initialize the oracle client
         if ${JSON.stringify(dataSourceType)} == "oracle":
-            import oracle
-            oracle.init_oracle_client()
+            import oracledb
+            oracledb.init_oracle_client()
 
         try:
             print(json.dumps({"type": "log", "message": "Running query"}))
@@ -254,8 +254,8 @@ from sqlalchemy.sql.expression import text
 
 # if oracle, initialize the oracle client
 if ${JSON.stringify(ds.type)} == "oracle":
-    import oracle
-    oracle.init_oracle_client()
+    import oracledb
+    oracledb.init_oracle_client()
 
 engine = create_engine(${JSON.stringify(databaseUrl)})
 connection = engine.connect()
@@ -308,8 +308,8 @@ def get_data_source_structure(data_source_id):
 
     # if oracle, initialize the oracle client
     if ${JSON.stringify(ds.type)} == "oracle":
-        import oracle
-        oracle.init_oracle_client()
+        import oracledb
+        oracledb.init_oracle_client()
 
     schemas = {}
     inspector = inspect(engine)
