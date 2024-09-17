@@ -421,11 +421,6 @@ def _briefer_list_dataframes():
                             col["categories"] = categories
                         except:
                             pass
-                    # Handle datetime and date types by converting them to strings
-                    elif pd.api.types.is_datetime64_any_dtype(dtype):
-                        df[col["name"]] = df[col["name"]].apply(
-                            lambda x: x.isoformat() if isinstance(x, (datetime, date)) else x
-                        )  # Only apply isoformat to datetime objects
 
                 dataframes.append({"name": name, "columns": columns})
         except Exception as e:
