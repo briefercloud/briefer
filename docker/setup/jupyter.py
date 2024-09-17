@@ -27,6 +27,7 @@ def get_config():
 def run_jupyter(cfg):
     env = os.environ.copy()
     env["JUPYTER_TOKEN"] = cfg["JUPYTER_TOKEN"]
+    env["PATH"] = "/app/jupyter/venv/bin:" + env.get("PATH", "")
 
     jupyter = subprocess.run([
         "/app/jupyter/venv/bin/jupyter",
