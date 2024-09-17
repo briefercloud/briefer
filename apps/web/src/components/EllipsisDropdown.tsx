@@ -1,4 +1,9 @@
-import { BookOpenIcon, ClockIcon, MapIcon } from '@heroicons/react/24/outline'
+import {
+  BookOpenIcon,
+  ClockIcon,
+  CodeBracketSquareIcon,
+  MapIcon,
+} from '@heroicons/react/24/outline'
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/20/solid'
 import { Menu, Transition } from '@headlessui/react'
 import {
@@ -16,6 +21,7 @@ interface Props {
   onToggleFiles?: () => void
   onToggleSchemaExplorer?: () => void
   onToggleShortcuts?: () => void
+  onToggleReusableComponents?: () => void
   isViewer: boolean
   isDeleted: boolean
   isFullScreen: boolean
@@ -99,6 +105,14 @@ function EllipsisDropdown(props: Props) {
                   : 'Stretch horizontally'
               }
               onClick={props.onToggleFullScreen}
+            />
+          )}
+
+          {props.onToggleReusableComponents && (
+            <MenuButton
+              icon={<CodeBracketSquareIcon className="h-4 w-4" />}
+              text="Reusable components"
+              onClick={props.onToggleReusableComponents}
             />
           )}
 

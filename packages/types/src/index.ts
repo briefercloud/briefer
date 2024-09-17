@@ -6,6 +6,15 @@ export const uuidSchema = z.string().refine((uuid) => validateUUID(uuid), {
   message: 'Invalid UUID format',
 })
 
+export const base64Schema = z.string().refine((base64) => {
+  try {
+    Buffer.from(base64, 'base64')
+    return true
+  } catch {
+    return false
+  }
+})
+
 // List of date format strings commonly returned by databases
 const dateFormatStrings = [
   'yyyy-MM-dd',

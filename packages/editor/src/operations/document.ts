@@ -25,6 +25,7 @@ import { makeWritebackBlock } from '../blocks/writeback.js'
 import { makeDateInputBlock } from '../blocks/dateInput.js'
 import {
   YDashboardItem,
+  getBaseAttributes,
   getBlocks,
   getDashboard,
   getLayout,
@@ -33,7 +34,7 @@ import {
 } from '../index.js'
 import { makePivotTableBlock } from '../blocks/pivotTable.js'
 
-type AddBlockGroupBlock =
+export type AddBlockGroupBlock =
   | {
       type:
         | BlockType.RichText
@@ -129,6 +130,29 @@ export function addBlockGroupAfterBlock(
   }
 
   return addBlockGroup(yLayout, yBlockDefs, addBlock, index + 1)
+}
+
+export function appendBlock(
+  id: string,
+  block: YBlock,
+  blocks: Y.Map<YBlock>,
+  yLayout: Y.Array<YBlockGroup>
+) {
+  blocks.set(id, block)
+
+  const blockGroupId = uuidv4()
+  const yBlockGroup: YBlockGroup = new Y.XmlElement('block-group')
+  yLayout.push([yBlockGroup])
+  yBlockGroup.setAttribute('id', blockGroupId)
+
+  const currentRef = new Y.XmlElement('block-ref')
+  currentRef.setAttribute('id', id)
+  yBlockGroup.setAttribute('current', currentRef)
+
+  const tabs: Y.Array<YBlockRef> = new Y.Array()
+  tabs.push([currentRef.clone()])
+
+  yBlockGroup.setAttribute('tabs', tabs)
 }
 
 export const addBlockGroup = (
