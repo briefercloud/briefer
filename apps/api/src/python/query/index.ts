@@ -429,7 +429,6 @@ def _briefer_list_dataframes():
 
                 dataframes.append({"name": name, "columns": columns})
         except Exception as e:
-            print(f"Error processing dataframe '{name}': {e}")
             pass
 
     try:
