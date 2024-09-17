@@ -39,6 +39,7 @@ export async function makePSQLQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    type,
     jobId,
     query,
     queryId,
