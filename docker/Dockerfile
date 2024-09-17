@@ -125,6 +125,7 @@ RUN groupadd -r briefer \
     && useradd -r -g jupyteruser jupyteruser \
     && mkdir -p /home/jupyteruser \
     && chown -R jupyteruser:jupyteruser /home/jupyteruser \
+    && chown -R jupyteruser:jupyteruser /app/jupyter/venv \
     && chmod 700 /home/jupyteruser
 
 
