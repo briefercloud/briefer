@@ -264,7 +264,7 @@ function SQLBlock(props: Props) {
     } else {
       requestSQLFixWithAI(props.block)
     }
-  }, [props.block])
+  }, [props.block, hasOaiKey])
 
   const isAIEditing = isSQLBlockAIEditing(props.block)
 

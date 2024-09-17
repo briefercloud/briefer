@@ -215,7 +215,7 @@ function PythonBlock(props: Props) {
     }
 
     requestPythonFixWithAI(props.block)
-  }, [props.block])
+  }, [props.block, hasOaiKey])
 
   useEffect(() => {
     reLayout()
