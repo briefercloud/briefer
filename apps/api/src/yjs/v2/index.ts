@@ -68,8 +68,7 @@ async function getRequestData(req: http.IncomingMessage): Promise<{
 } | null> {
   const cookiesHeader = req.headers.cookie
   const cookies = cookie.parse(cookiesHeader ?? '')
-  const url = new URL(req.url ?? '', config().API_URL)
-  const query = qs.parse(url.search.slice(1))
+  const query = qs.parse(req.url?.split('?')[1] ?? '')
   const docId = query['documentId']
   const clock = parseInt((query['clock'] ?? '').toString())
   const isDataApp = query['isDataApp'] === 'true'

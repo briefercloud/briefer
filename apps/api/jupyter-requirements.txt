@@ -18,7 +18,7 @@ vegafusion-python-embed==1.5.0
 vl-convert-python==1.2.0
 tiktoken==0.5.2
 polars==0.19.19
-SQLAlchemy==1.4.50
+SQLAlchemy==2.0.34
 google-api-core==2.15.0
 google-api-python-client==1.6.7
 google-api-support==0.1.4
@@ -46,7 +46,8 @@ db-dtypes==1.2.0
 fastparquet==2024.2.0
 oracledb==2.2.0
 redshift-connector==2.0.917
-sqlalchemy-redshift==0.8.14
+# sqlalchemy-redshift==0.8.14
+git+https://github.com/briefercloud/sqlalchemy-redshift.git#egg=sqlalchemy-redshift
 trino==0.329.0
 duckdb==1.0.0
 openpyxl==3.1.2

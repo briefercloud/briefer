@@ -1,5 +1,4 @@
 data
-nginx
 node_modules
 .env.*
 .turbo

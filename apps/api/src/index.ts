@@ -1,5 +1,3 @@
-import https from 'https'
-import fs from 'fs'
 import qs from 'querystring'
 import bodyParser from 'body-parser'
 import express, { NextFunction, Request, Response } from 'express'
@@ -51,16 +49,7 @@ async function main() {
   db.init(dbUrl)
 
   const app = express()
-  const server =
-    config().NODE_ENV === 'development'
-      ? https.createServer(
-          {
-            key: fs.readFileSync('../web/certificates/localhost-key.pem'),
-            cert: fs.readFileSync('../web/certificates/localhost.pem'),
-          },
-          app
-        )
-      : http.createServer(app)
+  const server = http.createServer(app)
 
   let shutdownFunctions: (() => Promise<void> | void)[] = []
   const socketServer = createSocketServer(server)

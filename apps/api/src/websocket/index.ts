@@ -53,6 +53,7 @@ type Server = {
 export function createSocketServer(server: http.Server): Server {
   const io: IOServer = new BaseServer(server, {
     cors: { credentials: true, origin: config().FRONTEND_URL },
+    transports: ['websocket'],
   })
 
   io.use(async (socket: Socket, next) => {
@@ -68,6 +69,13 @@ export function createSocketServer(server: http.Server): Server {
         next(new Error('Unauthorized'))
       }
     } catch (err) {
+      logger.error(
+        {
+          err,
+          socketId: socket.id,
+        },
+        'Error authenticating socket connection'
+      )
       next(new Error('Internal Server Error'))
     }
   })
@@ -75,8 +83,17 @@ export function createSocketServer(server: http.Server): Server {
   let workInProgress: Map<string, Promise<void>> = new Map()
 
   io.on('connection', (socket: Socket) => {
+    logger.info({ socketId: socket.id }, 'Client connected to socket server')
+
     const session = socket.session
     if (!session) {
+      logger.error(
+        {
+          socketId: socket.id,
+        },
+        'Socket connection did not have a session'
+      )
+
       socket.disconnect(true)
       return
     }
@@ -104,6 +121,20 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(handleRestartEnvironment(socket, session))
     )
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
+
+    socket.on('disconnect', (reason) => {
+      logger.info(
+        { socketId: socket.id, reason },
+        'Client disconnected from socket server'
+      )
+    })
+
+    socket.on('error', (error) => {
+      logger.error(
+        { socketId: socket.id, error },
+        'Socket server error occurred'
+      )
+    })
   })
 
   return {

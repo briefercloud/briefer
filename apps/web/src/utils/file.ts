@@ -19,3 +19,14 @@ export function readFile(
     }
   })
 }
+
+export function downloadFile(url: string, name: string) {
+  const downloadLink = document.createElement('a')
+
+  downloadLink.download = name
+  downloadLink.href = url
+
+  document.body.appendChild(downloadLink)
+  downloadLink.click()
+  document.body.removeChild(downloadLink)
+}

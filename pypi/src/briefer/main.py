@@ -11,24 +11,15 @@ import webbrowser
 
 ENV_VARS = [
     "LOG_LEVEL",
-    "API_URL",
-    "FRONTEND_URL",
     "ALLOW_HTTP",
-    "TLD",
-    "LOGIN_JWT_SECRET",
-    "AUTH_JWT_SECRET",
-    "AI_API_URL",
-    "AI_API_USERNAME",
-    "AI_API_PASSWORD",
-    "PYTHON_ALLOWED_LIBRARIES",
     "POSTGRES_USERNAME",
     "POSTGRES_PASSWORD",
     "POSTGRES_HOSTNAME",
     "POSTGRES_PORT",
     "POSTGRES_DATABASE",
-    "ENVIRONMENT_VARIABLES_ENCRYPTION_KEY",
-    "WORKSPACE_SECRETS_ENCRYPTION_KEY",
-    "DATASOURCES_ENCRYPTION_KEY",
+    "AI_API_URL",
+    "AI_API_USERNAME",
+    "AI_API_PASSWORD",
     "JUPYTER_HOST",
     "JUPYTER_PORT",
     "JUPYTER_TOKEN"
@@ -108,8 +99,7 @@ def start_or_run_container(client, container_name, image, detach):
     if ":" not in image and "/" in image:
         image += ":latest"
 
-    web_port = find_free_port(3000)
-    api_port = find_free_port(8080)
+    port = find_free_port(3000)
 
     if "/" in image and "latest" in image or not client.images.list(name=image):
         pull_image(client, image)
@@ -132,24 +122,18 @@ def start_or_run_container(client, container_name, image, detach):
         if var in os.environ:
             env[var] = os.environ[var]
 
-    if "API_URL" not in env:
-        env["API_URL"] = f"http://localhost:{api_port}"
-
-    if "FRONTEND_URL" not in env:
-        env["FRONTEND_URL"] = f"http://localhost:{web_port}"
-
     # Run a new container with the updated ports and environment
     container = client.containers.run(
         image,
         detach=True,
-        ports={f"3000/tcp": web_port, f"8080/tcp": api_port},
+        ports={f"3000/tcp": port},
         name=container_name,
         volumes=volumes,
         environment=env
     )
 
-    api_url = env["API_URL"]
-    web_url = env["FRONTEND_URL"]
+    api_url = f"http://localhost:{port}/api"
+    web_url = f"http://localhost:{port}"
 
     def check_reachability():
         while True:

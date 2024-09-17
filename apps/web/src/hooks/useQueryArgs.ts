@@ -12,7 +12,7 @@ function extractParamValue(
 
   const regex = new RegExp(regexPattern)
 
-  const match = path.match(regex)
+  const match = regex.exec(path)
 
   return match?.[1] ?? ''
 }

@@ -76,18 +76,8 @@ services:
     build:
       context: '.'
       dockerfile: 'apps/web/Dockerfile'
-      args:
-        NODE_ENV: 'production'
-        NEXT_PUBLIC_API_URL: 'https://api.${TLD:?error}'
-        NEXT_PUBLIC_API_WS_URL: 'wss://api.${TLD:?error}'
-        NEXT_PUBLIC_PUBLIC_URL: 'https://app.${TLD:?error}'
     environment:
       NODE_ENV: 'production'
-      NEXT_PUBLIC_API_URL: 'https://api.${TLD:?error}'
-      NEXT_PUBLIC_API_WS_URL: 'wss://api.${TLD:?error}'
-      NEXT_PUBLIC_PUBLIC_URL: 'https://app.${TLD:?error}'
-    ports:
-      - '3000:3000'
     depends_on:
       api:
         condition: service_healthy
@@ -97,14 +87,11 @@ services:
     build:
       context: '.'
       dockerfile: 'apps/api/Dockerfile'
-    ports:
-      - '8080:8080'
     environment:
       NODE_ENV: 'production'
-      LOG_LEVEL: 'info'
-      API_URL: 'https://api.${TLD:?error}'
-      FRONTEND_URL: 'https://app.${TLD:?error}'
-      TLD: ${TLD:?error}
+      LOG_LEVEL: 'debug'
+      API_URL: '/api'
+      FRONTEND_URL: '/'
       LOGIN_JWT_SECRET: ${LOGIN_JWT_SECRET:?error}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?error}
       AI_API_URL: 'http://ai:8000'
@@ -137,6 +124,17 @@ services:
         restart: true
       ai:
         condition: service_healthy
+
+  nginx:
+    image: nginx:1.27
+    depends_on:
+      - web
+      - api
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: always
 
 volumes:
   jupyter:

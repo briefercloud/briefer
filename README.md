@@ -73,20 +73,18 @@ Alternatively, you can also run Briefer using Docker directly:
 # Run Briefer using Docker
 docker run -d \
   -p 3000:3000 \
-  -p 8080:8080 \
   -v briefer_psql_data:/var/lib/postgresql/data \
   -v briefer_jupyter_data:/home/jupyteruser \
   -v briefer_briefer_data:/home/briefer \
   briefercloud/briefer
 ```
 
-When running on Windows' PowerShell, it might be necessary to add an extra ``` ` ``` to the end of each line instead of the `\`, like this:
+When running on Windows' PowerShell, it might be necessary to add an extra `` ` `` to the end of each line instead of the `\`, like this:
 
 ```bash
 # Run Briefer using Docker
 docker run -d `
   -p 3000:3000 `
-  -p 8080:8080 `
   -v briefer_psql_data:/var/lib/postgresql/data `
   -v briefer_jupyter_data:/home/jupyteruser `
   -v briefer_briefer_data:/home/briefer `
