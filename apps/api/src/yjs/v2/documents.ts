@@ -56,7 +56,7 @@ function duplicateYDoc(
           block,
           prevYDoc.blocks,
           true,
-          config.datasourceMap
+          { datasourceMap: config.datasourceMap }
         )
         newBlocksMap.set(newBlockId, clonedBlock)
       }

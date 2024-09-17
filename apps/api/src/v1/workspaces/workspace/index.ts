@@ -11,6 +11,7 @@ import { broadcastDocuments } from '../../../websocket/workspace/documents.js'
 import { UserWorkspaceRole, updateWorkspace } from '@briefer/database'
 import onboardingRouter from './onboarding.js'
 import filesRouter from './files.js'
+import componentsRouter from './components.js'
 import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
 import { WorkspaceEditFormValues } from '@briefer/types'
 import { encrypt } from '@briefer/database'
@@ -86,6 +87,7 @@ export default function workspaceRouter(socketServer: IOServer) {
     environmentVariablesRouter
   )
   router.use('/files', canUpdateWorkspace, filesRouter)
+  router.use('/components', canUpdateWorkspace, componentsRouter(socketServer))
 
   return router
 }

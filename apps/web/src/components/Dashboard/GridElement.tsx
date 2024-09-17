@@ -119,6 +119,7 @@ function GridElement(props: Props) {
             key={`${item.i}-${item.w}-${item.h}`}
             document={props.document}
             block={block}
+            blocks={blocks.value}
             isEditable={false}
             dragPreview={null}
             onRun={() => {}}

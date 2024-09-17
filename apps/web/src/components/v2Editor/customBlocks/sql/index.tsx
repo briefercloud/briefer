@@ -31,6 +31,7 @@ import {
   BlockType,
   addGroupedBlock,
   getSQLAttributes,
+  createComponentState,
 } from '@briefer/editor'
 import { DiffEditor, Editor } from '@monaco-editor/react'
 import SQLResult from './SQLResult'
@@ -62,6 +63,8 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import useProperties from '@/hooks/useProperties'
+import { SaveReusableComponentButton } from '@/components/ReusableComponents'
+import { useReusableComponents } from '@/hooks/useReusableComponents'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -157,7 +160,17 @@ function SQLBlock(props: Props) {
     aiSuggestions,
     dataSourceId,
     isFileDataSource,
+    componentId,
   } = getSQLAttributes(props.block, props.blocks)
+
+  const [
+    { data: components },
+    { create: createReusableComponent, update: updateReusableComponent },
+  ] = useReusableComponents(workspaceId)
+  const component = useMemo(
+    () => components.find((c) => c.id === componentId),
+    [components, componentId]
+  )
 
   const {
     editor,
@@ -363,6 +376,47 @@ function SQLBlock(props: Props) {
         .toArray(),
     [props.dataSources]
   )
+
+  const isComponentInstance =
+    component !== undefined && component.blockId !== blockId
+
+  const onSaveReusableComponent = useCallback(() => {
+    const component = components.find((c) => c.id === componentId)
+    if (!component) {
+      const { id: componentId, state } = createComponentState(
+        props.block,
+        props.blocks
+      )
+      createReusableComponent(
+        workspaceId,
+        {
+          id: componentId,
+          blockId,
+          documentId: props.document.id,
+          state,
+          title,
+          type: 'sql',
+        },
+        props.document.title
+      )
+    } else if (!isComponentInstance) {
+      // can only update component if it is not an instance
+      updateReusableComponent(workspaceId, component.id, {
+        state: createComponentState(props.block, props.blocks).state,
+        title,
+      })
+    }
+  }, [
+    createReusableComponent,
+    workspaceId,
+    blockId,
+    props.document.id,
+    title,
+    props.block,
+    components,
+    isComponentInstance,
+    props.document.title,
+  ])
 
   if (props.dashboardMode !== 'none') {
     if (!result) {
@@ -685,6 +739,13 @@ function SQLBlock(props: Props) {
             </span>
           </div>
         </button>
+
+        <SaveReusableComponentButton
+          isComponent={blockId === component?.blockId}
+          onSave={onSaveReusableComponent}
+          disabled={!props.isEditable || isComponentInstance}
+          isComponentInstance={isComponentInstance}
+        />
       </div>
     </div>
   )

@@ -34,6 +34,7 @@ model Document {
   comments           Comment[]
   Favorite           Favorite[]
   executionSchedules ExecutionSchedule[]
+  reusableComponents ReusableComponent[]
 }
 
 model YjsDocument {
@@ -417,4 +418,23 @@ model WorkspaceSecrets {
   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   openAiApiKey String?
   Workspace    Workspace?
+}
+
+enum ReusableComponentType {
+  sql
+  python
+}
+
+model ReusableComponent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  state      Bytes
+  type       ReusableComponentType
+  title      String
+  blockId    String   @db.Uuid @unique
+  documentId String   @db.Uuid
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }

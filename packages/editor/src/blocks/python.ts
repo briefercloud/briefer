@@ -37,6 +37,7 @@ export type PythonBlock = BaseBlock<BlockType.Python> & {
   editWithAIPrompt: Y.Text
   isEditWithAIPromptOpen: boolean
   aiSuggestions: Y.Text | null
+  componentId: string | null
 }
 export const isPythonBlock = (
   block: YBlock
@@ -63,6 +64,7 @@ export const makePythonBlock = (
     editWithAIPrompt: new Y.Text(''),
     isEditWithAIPromptOpen: false,
     aiSuggestions: null,
+    componentId: null,
   }
 
   for (const [key, value] of Object.entries(attrs)) {
@@ -88,29 +90,37 @@ export function getPythonAttributes(
     editWithAIPrompt: getPythonBlockEditWithAIPrompt(block),
     isEditWithAIPromptOpen: isPythonBlockEditWithAIPromptOpen(block),
     aiSuggestions: getPythonAISuggestions(block),
+    componentId: getAttributeOr(block, 'componentId', null),
   }
 }
 
 export function duplicatePythonBlock(
   newId: string,
-  block: Y.XmlElement<PythonBlock>
+  block: Y.XmlElement<PythonBlock>,
+  options?: { componentId?: string; noState?: boolean }
 ): Y.XmlElement<PythonBlock> {
   const prevAttributes = getPythonAttributes(block)
 
   const nextAttributes: PythonBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
     source: duplicateYText(prevAttributes.source),
-    status: prevAttributes.status,
-    result: clone(prevAttributes.result),
-    isResultHidden: prevAttributes.isResultHidden,
-    isCodeHidden: prevAttributes.isCodeHidden,
-    lastQuery: prevAttributes.lastQuery,
-    lastQueryTime: prevAttributes.lastQueryTime,
-    editWithAIPrompt: duplicateYText(prevAttributes.editWithAIPrompt),
-    isEditWithAIPromptOpen: prevAttributes.isEditWithAIPromptOpen,
-    aiSuggestions: prevAttributes.aiSuggestions
-      ? duplicateYText(prevAttributes.aiSuggestions)
-      : null,
+    status: options?.noState ? 'idle' : prevAttributes.status,
+    result: options?.noState ? [] : clone(prevAttributes.result),
+    isResultHidden: options?.noState ? false : prevAttributes.isResultHidden,
+    isCodeHidden: options?.noState ? false : prevAttributes.isCodeHidden,
+    lastQuery: options?.noState ? '' : prevAttributes.lastQuery,
+    lastQueryTime: options?.noState ? '' : prevAttributes.lastQueryTime,
+    editWithAIPrompt: options?.noState
+      ? new Y.Text()
+      : duplicateYText(prevAttributes.editWithAIPrompt),
+    isEditWithAIPromptOpen: options?.noState
+      ? false
+      : prevAttributes.isEditWithAIPromptOpen,
+    aiSuggestions:
+      prevAttributes.aiSuggestions && !options?.noState
+        ? duplicateYText(prevAttributes.aiSuggestions)
+        : null,
+    componentId: options?.componentId ?? prevAttributes.componentId,
   }
 
   const yBlock = new Y.XmlElement<PythonBlock>('block')
