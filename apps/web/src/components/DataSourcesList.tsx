@@ -2,10 +2,11 @@ import { APIDataSources } from '@/hooks/useDatasources'
 import type { DataSource, DataSourceType } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
+import axios from 'axios'
 import clsx from 'clsx'
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import Link from 'next/link'
-import { Fragment, useCallback, useMemo } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
@@ -355,12 +356,32 @@ export default function DataSourcesList(props: Props) {
 
 interface EmptyAPIDataSourcesProps {
   workspaceId: string
+  isLoading?: boolean
 }
 
 function EmptyAPIDataSources(props: EmptyAPIDataSourcesProps) {
+  const [onClick, setOnClick] = useState(false)
+
+  const handleLoading = async () => {
+    try {
+      axios
+        .get(`/workspaces/${props.workspaceId}/data-sources/new`)
+        .then((res) => {
+          setOnClick(true)
+        })
+    } catch (error) {
+      console.log(error)
+    } finally {
+      setOnClick(false)
+    }
+  }
+
   return (
     <div className="py-6">
-      <Link href={`/workspaces/${props.workspaceId}/data-sources/new`}>
+      <Link
+        href={`/workspaces/${props.workspaceId}/data-sources/new`}
+        onClick={handleLoading}
+      >
         <div className="text-center py-12 bg-ceramic-50/60 hover:bg-ceramic-50 rounded-xl">
           <svg
             className="mx-auto h-12 w-12 text-gray-400"
@@ -376,12 +397,18 @@ function EmptyAPIDataSources(props: EmptyAPIDataSourcesProps) {
               d="M8 14v20c0 4.418 7.163 8 16 8 1.381 0 2.721-.087 4-.252M8 14c0 4.418 7.163 8 16 8s16-3.582 16-8M8 14c0-4.418 7.163-8 16-8s16 3.582 16 8m0 0v14m0-4c0 4.418-7.163 8-16 8S8 28.418 8 24m32 10v6m0 0v6m0-6h6m-6 0h-6"
             />
           </svg>
-          <h3 className="mt-2 text-sm font-semibold text-gray-900">
-            No data sources
-          </h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Add a data source to start running analyses.
-          </p>
+          {onClick ? (
+            <div className="text-sm font-semibold text-gray-900">Connecting...</div>
+          ) : (
+            <>
+              <h3 className="mt-2 text-sm font-semibold text-gray-900">
+                No data sources
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Add a data source to start running analyses.
+              </p>
+            </>
+          )}
         </div>
       </Link>
     </div>
