@@ -82,7 +82,6 @@ export function PythonOutputs(props: Props) {
           key={i}
           className={clsx(
             ['plotly'].includes(output.type) ? 'flex-grow' : '',
-            !props.isDashboardView ? 'flex flex-col items-end' : '',
             'bg-white overflow-x-scroll'
           )}
         >
@@ -125,7 +124,7 @@ export function PythonOutput(props: ItemProps) {
       switch (props.output.format) {
         case 'png':
           return (
-            <>
+            <div className={clsx(!props.isDashboardView ? 'flex flex-col items-end' : '')}>
               <img
                 className="printable-block"
                 alt="generated image"
@@ -133,13 +132,13 @@ export function PythonOutput(props: ItemProps) {
               />
               {!props.isDashboardView && (
                 <button
-                  className="relative g-white rounded-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
+                  className="relative bg-white rounded-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
                   onClick={onExportToPNG}
                 >
                   PNG
                 </button>
               )}
-            </>
+            </div>
           )
       }
     case 'stdio':
