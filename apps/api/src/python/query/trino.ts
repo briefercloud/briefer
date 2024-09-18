@@ -35,6 +35,7 @@ export async function makeTrinoQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    'trino',
     jobId,
     query,
     queryId,

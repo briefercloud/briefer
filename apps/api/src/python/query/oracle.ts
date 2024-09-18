@@ -34,6 +34,7 @@ export async function makeOracleQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    'oracle',
     jobId,
     query,
     queryId,

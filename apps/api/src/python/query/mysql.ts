@@ -14,7 +14,7 @@ export async function makeMySQLQuery(
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const databaseUrl = await getDatabaseURL(
-    { type:'mysql', data: datasource },
+    { type: 'mysql', data: datasource },
     encryptionKey
   )
 
@@ -26,6 +26,7 @@ export async function makeMySQLQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    'mysql',
     jobId,
     query,
     queryId,
