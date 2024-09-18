@@ -424,8 +424,15 @@ function FileItem(props: FileItemProps) {
     props.onUseInSQL(props.file)
   }, [props.onUseInSQL, props.file])
 
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const onRemove = useCallback(() => {
     props.onDelete(props.file)
+      setIsDeleting(true)
+  
+      setTimeout(() => {
+        setIsDeleting(false)
+      }, 2000)
   }, [props.onDelete, props.file])
 
   return (
@@ -444,7 +451,7 @@ function FileItem(props: FileItemProps) {
               onClick={onRemove}
               disabled={props.isDeleting}
             >
-              {props.isDeleting ? <Spin /> : <TrashIcon className="w-4 h-4" />}
+              {isDeleting ? <Spin /> : <TrashIcon className="w-4 h-4" />}
             </button>
           </div>
         </div>
