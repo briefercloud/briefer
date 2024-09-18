@@ -151,7 +151,7 @@ file`
 
   const onRemove = useCallback(
     (file: BrieferFile) => {
-      del(file.relCwdPath)
+      return del(file.relCwdPath)
     },
     [del]
   )
@@ -411,7 +411,7 @@ interface FileItemProps {
   file: BrieferFile
   onUseInPython: (file: BrieferFile) => void
   onUseInSQL: (file: BrieferFile) => void
-  onDelete: (file: BrieferFile) => void
+  onDelete: (file: BrieferFile) => Promise<void>
   isDeleting: boolean
   canUse: boolean
 }
@@ -426,13 +426,10 @@ function FileItem(props: FileItemProps) {
 
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const onRemove = useCallback(() => {
-    props.onDelete(props.file)
-      setIsDeleting(true)
-  
-      setTimeout(() => {
-        setIsDeleting(false)
-      }, 2000)
+  const onRemove = useCallback(async () => {
+    setIsDeleting(true)
+    await props.onDelete(props.file)
+    setIsDeleting(false)
   }, [props.onDelete, props.file])
 
   return (
