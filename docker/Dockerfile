@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y \
     alien && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+#### ORACLE INSTANT CLIENT ####
 ARG TARGETARCH
 
 RUN if [ "$TARGETARCH" = "arm64" ]; then \
@@ -46,6 +47,7 @@ RUN if [ "$TARGETARCH" = "arm64" ]; then \
 # Set environment variables for Oracle Instant Client
 ENV LD_LIBRARY_PATH="/usr/lib/oracle/19.24/client64/lib:/usr/lib/oracle/23.4/client64/lib:${LD_LIBRARY_PATH}"
 ENV ORACLE_HOME="/usr/lib/oracle/19.24/client64:/usr/lib/oracle/23.4/client64"
+#### END OF ORACLE INSTANT CLIENT ####
 
 ENV TURBO_TELEMETRY_DISABLED=1
 
