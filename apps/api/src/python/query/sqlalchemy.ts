@@ -242,14 +242,15 @@ briefer_make_sqlalchemy_query()`
 }
 
 export async function pingSQLAlchemy(
-  workspaceId: string,
   ds: DataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  credentialsInfo: object | null
 ): Promise<null | Error> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
   const query = ds.type === 'oracle' ? 'SELECT 1 FROM DUAL' : 'SELECT 1'
 
-  const code = `from sqlalchemy import create_engine
+  const code = `import json
+from sqlalchemy import create_engine
 from sqlalchemy.sql.expression import text
 
 # if oracle, initialize the oracle client
@@ -257,14 +258,23 @@ if ${JSON.stringify(ds.type)} == "oracle":
     import oracledb
     oracledb.init_oracle_client()
 
-engine = create_engine(${JSON.stringify(databaseUrl)})
-connection = engine.connect()
 
+credentials_info = json.loads(${JSON.stringify(
+    JSON.stringify(credentialsInfo)
+  )})
+if credentials_info:
+    engine = create_engine(${JSON.stringify(
+      databaseUrl
+    )}, credentials_info=credentials_info)
+else:
+    engine = create_engine(${JSON.stringify(databaseUrl)})
+
+connection = engine.connect()
 connection.execute(text(${JSON.stringify(query)})).fetchall()`
 
   let pythonError: PythonErrorOutput | null = null
   return executeCode(
-    workspaceId,
+    ds.data.workspaceId,
     `ping-${ds.type}-${ds.data.id}`,
     code,
     (outputs) => {
@@ -293,7 +303,8 @@ connection.execute(text(${JSON.stringify(query)})).fetchall()`
 
 export async function getSQLAlchemySchema(
   ds: DataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  credentialsInfo: object | null
 ): Promise<DataSourceStructure> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
 
@@ -303,33 +314,52 @@ from sqlalchemy import create_engine
 from sqlalchemy import inspect
 
 
-def get_data_source_structure(data_source_id):
-    engine = create_engine(f"${databaseUrl}")
+def schema_from_tables(inspector, tables):
+    schemas = {}
+    for table in tables:
+        schema_name, table_name = table.split(".")
+        print(json.dumps({"log": f"Getting schema for table {table}"}))
+        columns = []
+        for column in inspector.get_columns(table_name, schema=schema_name):
+            columns.append({
+                "name": column["name"],
+                "type": str(column["type"])
+            })
+
+        if schema_name not in schemas:
+            schemas[schema_name] = {
+                "tables": {}
+            }
+
+        schemas[schema_name]["tables"][table_name] = {
+            "columns": columns
+        }
+
+    return schemas
+
+
+def get_data_source_structure(data_source_id, credentials_info=None):
+    if credentials_info:
+        engine = create_engine(f"${databaseUrl}", credentials_info=credentials_info)
+    else:
+        engine = create_engine(f"${databaseUrl}")
 
     # if oracle, initialize the oracle client
     if ${JSON.stringify(ds.type)} == "oracle":
         import oracledb
         oracledb.init_oracle_client()
 
-    schemas = {}
     inspector = inspect(engine)
-    for schema_name in inspector.get_schema_names():
-        print(json.dumps({"log": f"Getting tables for schema {schema_name}"}))
-        tables = {}
-        for table_name in inspector.get_table_names(schema=schema_name):
-            print(json.dumps({"log": f"Getting schema for table {table_name}"}))
-            columns = []
-            for column in inspector.get_columns(table_name, schema=schema_name):
-                columns.append({
-                    "name": column["name"],
-                    "type": str(column["type"])
-                })
-            tables[table_name] = {
-                "columns": columns
-            }
-        schemas[schema_name] = {
-            "tables": tables
-        }
+    if ${JSON.stringify(ds.type)} == "bigquery":
+        tables = inspector.get_table_names()
+        schemas = schema_from_tables(inspector, tables)
+    else:
+        tables = []
+        for schema_name in inspector.get_schema_names():
+            print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
+            schema_tables = inspector.get_table_names(schema=schema_name)
+            tables += [f"{schema_name}.{table}" for table in schema_tables]
+        schemas = schema_from_tables(inspector, tables)
 
     data_source_structure = {
         "dataSourceId": data_source_id,
@@ -340,7 +370,10 @@ def get_data_source_structure(data_source_id):
     return data_source_structure
 
 
-structure = get_data_source_structure("${ds.data.id}")
+credentials_info = json.loads(${JSON.stringify(
+    JSON.stringify(credentialsInfo)
+  )})
+structure = get_data_source_structure("${ds.data.id}", credentials_info)
 print(json.dumps(structure, default=str))`
 
   let pythonError: PythonErrorOutput | null = null
