@@ -33,7 +33,7 @@ export class WritebackObserver implements IWritebackObserver {
   public handleInitialBlockState(block: Y.XmlElement<WritebackBlock>) {
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -56,7 +56,7 @@ export class WritebackObserver implements IWritebackObserver {
     tr: Y.Transaction
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -69,7 +69,7 @@ export class WritebackObserver implements IWritebackObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -84,7 +84,7 @@ export class WritebackObserver implements IWritebackObserver {
       await this.handleBlockStatusChange(block, tr)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -101,7 +101,7 @@ export class WritebackObserver implements IWritebackObserver {
     const blockId = block.getAttribute('id')
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -129,7 +129,7 @@ export class WritebackObserver implements IWritebackObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -144,7 +144,7 @@ export class WritebackObserver implements IWritebackObserver {
       block.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

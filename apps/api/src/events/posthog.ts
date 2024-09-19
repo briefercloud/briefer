@@ -1,6 +1,6 @@
 import { ApiUser, ApiWorkspace } from '@briefer/database'
 import { PostHog } from 'posthog-node'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 
 const isJest = process.env['JEST_WORKER_ID'] !== undefined
 

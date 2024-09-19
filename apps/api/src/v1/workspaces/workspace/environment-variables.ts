@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { Router } from 'express'
 import prisma, { decrypt, encrypt } from '@briefer/database'
 import { uuidSchema } from '@briefer/types'
-import config from '../../../config/index.js'
+import { config } from '../../../config/index.js'
 import { getParam } from '../../../utils/express.js'
 import { getJupyterManager } from '../../../jupyter/index.js'
 

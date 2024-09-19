@@ -42,7 +42,7 @@ export class PivotTableObserver implements IPivotTableObserver {
     tr: Y.Transaction
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -55,7 +55,7 @@ export class PivotTableObserver implements IPivotTableObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -71,7 +71,7 @@ export class PivotTableObserver implements IPivotTableObserver {
         await this.handleBlockStatusChange(block, tr)
       }
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -84,7 +84,7 @@ export class PivotTableObserver implements IPivotTableObserver {
       )
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -103,7 +103,7 @@ export class PivotTableObserver implements IPivotTableObserver {
     const blockId = block.getAttribute('id')
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -144,7 +144,7 @@ export class PivotTableObserver implements IPivotTableObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -159,7 +159,7 @@ export class PivotTableObserver implements IPivotTableObserver {
       block.setAttribute('error', 'unknown')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

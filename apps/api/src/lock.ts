@@ -17,7 +17,7 @@ export async function acquireLock<T>(
   try {
     let attempt = 1
     while (true) {
-      logger.debug({ name, ownerId, attempt }, 'attempting to acquire lock')
+      logger().debug({ name, ownerId, attempt }, 'attempting to acquire lock')
       try {
         await prisma().lock.upsert({
           where: {
@@ -45,10 +45,10 @@ export async function acquireLock<T>(
             ownerId,
           },
         })
-        logger.debug({ name, ownerId }, 'lock acquired')
+        logger().debug({ name, ownerId }, 'lock acquired')
 
         interval = setInterval(async () => {
-          logger.debug({ name, ownerId }, 'incrementing lock expiration time')
+          logger().debug({ name, ownerId }, 'incrementing lock expiration time')
           await prisma().lock.update({
             where: {
               name,
@@ -66,14 +66,14 @@ export async function acquireLock<T>(
       } catch (err) {
         // catch unique constraint violation
         if (z.object({ code: z.literal('P2002') }).safeParse(err).success) {
-          logger.debug({ name, ownerId }, 'lock already acquired, retrying')
+          logger().debug({ name, ownerId }, 'lock already acquired, retrying')
           await new Promise((resolve) => setTimeout(resolve, 200))
           attempt++
           continue
         }
 
         if (!interval) {
-          logger.error(
+          logger().error(
             {
               name,
               ownerId,
@@ -86,7 +86,7 @@ export async function acquireLock<T>(
       }
     }
   } finally {
-    logger.debug({ name, ownerId }, 'releasing lock')
+    logger().debug({ name, ownerId }, 'releasing lock')
     if (interval) {
       clearInterval(interval)
     }
@@ -96,6 +96,6 @@ export async function acquireLock<T>(
         ownerId,
       },
     })
-    logger.debug({ name, ownerId }, 'lock released')
+    logger().debug({ name, ownerId }, 'lock released')
   }
 }

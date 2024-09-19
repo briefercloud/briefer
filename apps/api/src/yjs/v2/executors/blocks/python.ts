@@ -112,7 +112,7 @@ export class PythonExecutor implements IPythonExecutor {
     block.setAttribute('result', [])
 
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -124,7 +124,7 @@ export class PythonExecutor implements IPythonExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -166,7 +166,7 @@ export class PythonExecutor implements IPythonExecutor {
             block.getAttribute('source')!.toJSON()
           )
           block.setAttribute('lastQueryTime', new Date().toISOString())
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -187,7 +187,7 @@ export class PythonExecutor implements IPythonExecutor {
   }
 
   public async abort(block: Y.XmlElement<PythonBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -205,7 +205,7 @@ export class PythonExecutor implements IPythonExecutor {
     running.abortController.abort()
     await running.abort?.()
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

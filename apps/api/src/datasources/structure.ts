@@ -9,7 +9,7 @@ import * as oracle from './oracle.js'
 import { DataSourceStructure, jsonString } from '@briefer/types'
 import { logger } from '../logger.js'
 import { z } from 'zod'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 
 const emptyStructure = {
   dataSourceId: '',
@@ -207,7 +207,7 @@ async function fetchStructure(
       }
     }
   } catch (err) {
-    logger.error(
+    logger().error(
       {
         err,
         dataSourceId: ds.data.id,

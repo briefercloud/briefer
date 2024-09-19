@@ -2,7 +2,7 @@ import services from '@jupyterlab/services'
 import { Readable } from 'stream'
 import { ApiWorkspace } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import { BrieferFile } from '@briefer/types'
 import { JupyterManager } from './manager.js'
 

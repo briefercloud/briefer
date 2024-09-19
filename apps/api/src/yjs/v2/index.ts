@@ -11,7 +11,7 @@ import * as syncProtocol from 'y-protocols/sync.js'
 import * as awarenessProtocol from 'y-protocols/awareness.js'
 
 import { sessionFromCookies } from '../../auth/token.js'
-import config from '../../config/index.js'
+import { config } from '../../config/index.js'
 import prisma, {
   PrismaTransaction,
   UserWorkspaceRole,
@@ -87,7 +87,7 @@ async function getRequestData(req: http.IncomingMessage): Promise<{
     .safeParse({ docId, clock, isDataApp, userId })
 
   if (!args.success) {
-    logger.warn(
+    logger().warn(
       { query },
       'Got invalid query string for y-websocket connection'
     )
@@ -211,7 +211,7 @@ export function setupYJSSocketServerV2(
         wss.emit('connection', ws, req)
       })
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           documentId: document.id,
           workspaceId: document.workspaceId,
@@ -228,9 +228,12 @@ export function setupYJSSocketServerV2(
   return {
     async shutdown() {
       try {
-        logger.info('Shutting down YJS socket server')
+        logger().info('Shutting down YJS socket server')
         while (docs.size > 0) {
-          logger.info({ docsCount: docs.size }, 'Waiting for YJS docs to close')
+          logger().info(
+            { docsCount: docs.size },
+            'Waiting for YJS docs to close'
+          )
           await pAll(
             Array.from(docs.values()).map((doc) => async () => {
               await doc.persist(false)
@@ -248,9 +251,9 @@ export function setupYJSSocketServerV2(
           await new Promise((resolve) => setTimeout(resolve, 200))
         }
 
-        logger.info('All YJS docs closed')
+        logger().info('All YJS docs closed')
       } catch (err) {
-        logger.error({ err }, 'Failed to shutdown YJS socket server')
+        logger().error({ err }, 'Failed to shutdown YJS socket server')
         throw err
       }
     },
@@ -283,26 +286,26 @@ export const docsCache = new LRUCache<string, WSSharedDocV2>({
 async function collectDocs() {
   const start = Date.now()
   try {
-    logger.trace({ docsCount: docs.size }, 'Collecting docs')
+    logger().trace({ docsCount: docs.size }, 'Collecting docs')
     const queue = new PQueue({ concurrency: 6 })
     let collected = 0
     for (const [docId, doc] of docs) {
-      logger.trace({ docId }, 'Checking if doc can be collected')
+      logger().trace({ docId }, 'Checking if doc can be collected')
       if (doc.canCollect()) {
-        logger.trace({ docId }, 'Doc can be collected')
+        logger().trace({ docId }, 'Doc can be collected')
         queue.add(async () => {
           if (!doc.canCollect()) {
-            logger.trace(
+            logger().trace(
               { docId },
               'Doc was referenced again, collectiong aborted'
             )
             return
           }
 
-          logger.trace({ docId }, 'Persisting doc state')
+          logger().trace({ docId }, 'Persisting doc state')
           await doc.persist(false)
           if (!doc.canCollect()) {
-            logger.trace(
+            logger().trace(
               { docId },
               'Doc was referenced again while persisting, collection aborted'
             )
@@ -314,22 +317,25 @@ async function collectDocs() {
             // only destroy if the doc is not in cache
             doc.destroy()
           }
-          logger.trace({ docId }, 'Doc collected')
+          logger().trace({ docId }, 'Doc collected')
           collected++
         })
       }
     }
 
-    logger.trace(
+    logger().trace(
       {
         size: queue.size,
       },
       'Waiting for doc collection queue to drain'
     )
     await queue.onIdle()
-    logger.trace({ collected, timeMs: Date.now() - start }, 'Docs collected')
+    logger().trace({ collected, timeMs: Date.now() - start }, 'Docs collected')
   } catch (err) {
-    logger.error({ err, timeMs: Date.now() - start }, 'Failed to collect docs')
+    logger().error(
+      { err, timeMs: Date.now() - start },
+      'Failed to collect docs'
+    )
   }
 
   setTimeout(collectDocs, DOCUMENT_COLLECTION_INTERVAL)
@@ -555,7 +561,7 @@ export class WSSharedDocV2 {
           this.documentId
         )
       } catch (err) {
-        logger.error(
+        logger().error(
           { err, docId: this.documentId },
           'Failed to emit document to workspace after yjs title diff'
         )
@@ -564,7 +570,7 @@ export class WSSharedDocV2 {
   }
 
   public readSyncStep1(decoder: decoding.Decoder, encoder: encoding.Encoder) {
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -573,7 +579,7 @@ export class WSSharedDocV2 {
       'Reading sync step 1'
     )
     readSyncStep1(decoder, encoder, this.ydoc)
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -587,7 +593,7 @@ export class WSSharedDocV2 {
     decoder: decoding.Decoder,
     transactionOrigin: TransactionOrigin
   ) {
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -596,7 +602,7 @@ export class WSSharedDocV2 {
       'Reading sync step 2'
     )
     readSyncStep2(decoder, this.ydoc, transactionOrigin)
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -610,7 +616,7 @@ export class WSSharedDocV2 {
     decoder: decoding.Decoder,
     transactionOrigin: TransactionOrigin
   ) {
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -621,7 +627,7 @@ export class WSSharedDocV2 {
     if (this.canWrite(decoder, transactionOrigin)) {
       readUpdate(decoder, this.ydoc, transactionOrigin)
     } else {
-      logger.error(
+      logger().error(
         {
           id: this.id,
           documentId: this.documentId,
@@ -632,7 +638,7 @@ export class WSSharedDocV2 {
         'A Yjs update was unauthorized'
       )
     }
-    logger.trace(
+    logger().trace(
       {
         id: this.id,
         documentId: this.documentId,
@@ -649,7 +655,7 @@ export class WSSharedDocV2 {
       this.title = nextTitle
 
       try {
-        logger.trace({ docId: this.documentId }, 'Updating document title')
+        logger().trace({ docId: this.documentId }, 'Updating document title')
         await this.serialUpdatesQueue.add(async () => {
           await prisma().document.update({
             where: {
@@ -663,7 +669,7 @@ export class WSSharedDocV2 {
 
         return true
       } catch (err) {
-        logger.error(
+        logger().error(
           { err, docId: this.documentId },
           'Failed to update document title'
         )
@@ -703,7 +709,7 @@ async function getYDoc(
   persistor: Persistor,
   tx?: PrismaTransaction
 ): Promise<WSSharedDocV2> {
-  logger.trace(
+  logger().trace(
     {
       id,
       documentId,
@@ -718,7 +724,7 @@ async function getYDoc(
   if (!yDoc) {
     yDoc = docsCache.get(id)
     if (yDoc) {
-      logger.trace(
+      logger().trace(
         {
           id,
           documentId,
@@ -731,7 +737,7 @@ async function getYDoc(
       )
       docs.set(id, yDoc)
     } else {
-      logger.trace(
+      logger().trace(
         {
           id,
           documentId,
@@ -758,7 +764,7 @@ async function getYDoc(
     docsCache.set(id, yDoc)
   }
 
-  logger.trace(
+  logger().trace(
     {
       id,
       documentId,
@@ -781,7 +787,7 @@ export async function getYDocForUpdate<T>(
   persistor: Persistor,
   tx?: PrismaTransaction
 ): Promise<T> {
-  logger.trace(
+  logger().trace(
     {
       id,
       documentId,
@@ -796,7 +802,7 @@ export async function getYDocForUpdate<T>(
   if (!doc) {
     doc = docsCache.get(id)
     if (doc) {
-      logger.trace(
+      logger().trace(
         {
           id,
           documentId,
@@ -809,7 +815,7 @@ export async function getYDocForUpdate<T>(
       )
       docs.set(id, doc)
     } else {
-      logger.trace(
+      logger().trace(
         {
           id,
           documentId,
@@ -841,7 +847,7 @@ export async function getYDocForUpdate<T>(
     const r = await cb(doc)
     doc.updating--
 
-    logger.trace(
+    logger().trace(
       {
         id,
         documentId,
@@ -918,12 +924,15 @@ function messageListener(
       }
     }
   } catch (err) {
-    logger.error({ err, docId: doc.documentId }, 'Failed to handle yjs message')
+    logger().error(
+      { err, docId: doc.documentId },
+      'Failed to handle yjs message'
+    )
   }
 }
 
 function closeConn(doc: WSSharedDocV2, conn: WebSocket) {
-  logger.trace(
+  logger().trace(
     {
       id: doc.id,
       documentId: doc.documentId,
@@ -949,7 +958,7 @@ function send(doc: WSSharedDocV2, conn: WebSocket, m: Uint8Array) {
     conn.readyState !== wsReadyStateConnecting &&
     conn.readyState !== wsReadyStateOpen
   ) {
-    logger.trace(
+    logger().trace(
       {
         id: doc.id,
         documentId: doc.documentId,
@@ -965,7 +974,7 @@ function send(doc: WSSharedDocV2, conn: WebSocket, m: Uint8Array) {
   try {
     conn.send(m, (err) => {
       if (err) {
-        logger.error(
+        logger().error(
           { err, docId: doc.documentId },
           'Failed to send yjs message to client'
         )
@@ -974,7 +983,7 @@ function send(doc: WSSharedDocV2, conn: WebSocket, m: Uint8Array) {
     })
   } catch (err) {
     closeConn(doc, conn)
-    logger.error(
+    logger().error(
       { err, docId: doc.documentId },
       'Failed to send yjs message to client'
     )
@@ -1001,7 +1010,7 @@ const setupWSConnection =
       clock === undefined ||
       isDataApp === undefined
     ) {
-      logger.error(
+      logger().error(
         { briefer: { ...briefer, ydoc: Boolean(ydoc) } },
         'Missing required fields'
       )
@@ -1010,7 +1019,7 @@ const setupWSConnection =
     }
 
     if (ydoc.clock !== clock) {
-      logger.warn(
+      logger().warn(
         {
           id: ydoc.id,
           workspaceId: ydoc.workspaceId,
@@ -1057,7 +1066,7 @@ const setupWSConnection =
     // listen and reply to events
     conn.on('message', async (message: ArrayBuffer) => {
       if (clock !== ydoc.clock) {
-        logger.warn(
+        logger().warn(
           {
             docId: ydoc.documentId,
             userClock: clock,
@@ -1077,7 +1086,7 @@ const setupWSConnection =
     const pingInterval = setInterval(async () => {
       if (!pongReceived) {
         if (ydoc.conns.has(conn)) {
-          logger.warn(
+          logger().warn(
             {
               id: ydoc.id,
               workspaceId: ydoc.workspaceId,
@@ -1092,7 +1101,7 @@ const setupWSConnection =
       } else if (ydoc.conns.has(conn)) {
         pongReceived = false
         try {
-          logger.trace(
+          logger().trace(
             {
               id: ydoc.id,
               workspaceId: ydoc.workspaceId,
@@ -1104,7 +1113,7 @@ const setupWSConnection =
           )
           conn.ping()
         } catch (e) {
-          logger.error(
+          logger().error(
             { err: e, docId: ydoc.documentId },
             'Failed to ping client'
           )
@@ -1114,7 +1123,7 @@ const setupWSConnection =
       }
     }, pingTimeout)
     conn.on('close', async () => {
-      logger.trace(
+      logger().trace(
         {
           id: ydoc.id,
           workspaceId: ydoc.workspaceId,
@@ -1127,7 +1136,7 @@ const setupWSConnection =
       clearInterval(pingInterval)
     })
     conn.on('pong', () => {
-      logger.trace(
+      logger().trace(
         {
           id: ydoc.id,
           workspaceId: ydoc.workspaceId,
@@ -1144,7 +1153,7 @@ const setupWSConnection =
     // scope
     {
       // send sync step 1
-      logger.trace(
+      logger().trace(
         {
           id: ydoc.id,
           docId: ydoc.documentId,
@@ -1157,7 +1166,7 @@ const setupWSConnection =
       encoding.writeVarUint(encoder, messageSync)
       syncProtocol.writeSyncStep1(encoder, ydoc.ydoc)
       send(ydoc, conn, encoding.toUint8Array(encoder))
-      logger.trace(
+      logger().trace(
         {
           id: ydoc.id,
           docId: ydoc.documentId,

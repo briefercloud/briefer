@@ -365,7 +365,7 @@ print(json.dumps(structure, default=str))`
               .safeParse(line)
             if (parsedStructure.success) {
               if ('log' in parsedStructure.data) {
-                logger.trace(
+                logger().trace(
                   {
                     workspaceId: ds.data.workspaceId,
                     datasourceId: ds.data.id,
@@ -376,7 +376,7 @@ print(json.dumps(structure, default=str))`
                 structure = parsedStructure.data
               }
             } else {
-              logger.error(
+              logger().error(
                 {
                   workspaceId: ds.data.workspaceId,
                   datasourceId: ds.data.id,
@@ -390,7 +390,7 @@ print(json.dumps(structure, default=str))`
         } else if (output.type === 'error') {
           pythonError = output
         } else {
-          logger.warn(
+          logger().warn(
             {
               workspaceId: ds.data.workspaceId,
               datasourceId: ds.data.id,

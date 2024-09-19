@@ -1,4 +1,4 @@
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import prisma, {
   DataSource,
   MySQLDataSource,
@@ -68,10 +68,10 @@ async function pingMySQLFromConfig(
           await connection.query('SELECT 1')
           resolve(null)
         } catch (err) {
-          logger.info({ err }, 'Error pinging MySQL')
+          logger().info({ err }, 'Error pinging MySQL')
           const parsedError = DataSourceConnectionError.safeParse(err)
           if (!parsedError.success) {
-            logger.error(
+            logger().error(
               {
                 error: err,
               },
@@ -88,10 +88,10 @@ async function pingMySQLFromConfig(
       }),
     ])
   } catch (err) {
-    logger.info({ err }, 'Error pinging MySQL')
+    logger().info({ err }, 'Error pinging MySQL')
     const parsedError = DataSourceConnectionError.safeParse(err)
     if (!parsedError.success) {
-      logger.error(
+      logger().error(
         {
           error: err,
         },

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-import getSimpleConfig, { ISimpleConfig } from './simple.js'
+import { ISimpleConfig, simpleConfig } from './simple.js'
 import { IBaseConfig } from './base.js'
 
 dotenv.config()
@@ -25,8 +25,6 @@ export function parseIntOr(value: string, defaultValue: number): number {
   return Number.isNaN(parsed) ? defaultValue : parsed
 }
 
-function getConfig(): BrieferConfig {
-  return getSimpleConfig()
+export function config(): BrieferConfig {
+  return simpleConfig()
 }
-
-export default getConfig

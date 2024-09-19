@@ -53,7 +53,7 @@ export class DateInputExecutor implements IDateInputExecutor {
       return false
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -65,7 +65,7 @@ export class DateInputExecutor implements IDateInputExecutor {
     )
 
     const success = await this.executionQueue.add(async () => {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -88,7 +88,7 @@ export class DateInputExecutor implements IDateInputExecutor {
         block.setAttribute('status', 'unexpected-error')
         return false
       } finally {
-        logger.trace(
+        logger().trace(
           {
             workspaceId: this.workspaceId,
             documentId: this.documentId,

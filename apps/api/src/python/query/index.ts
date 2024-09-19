@@ -174,7 +174,7 @@ export async function makeQuery(
                   aborted = true
                   break
                 case 'log':
-                  logger.debug(
+                  logger().debug(
                     {
                       workspaceId,
                       sessionId,
@@ -449,7 +449,7 @@ del _briefer_list_dataframes`
                 )
                 .safeParse(line.trim())
               if (!parsed.success) {
-                logger.error(
+                logger().error(
                   {
                     workspaceId,
                     sessionId,
@@ -468,7 +468,7 @@ del _briefer_list_dataframes`
                   columns: [],
                 })
                 if (!parsed.success) {
-                  logger.error(
+                  logger().error(
                     {
                       workspaceId,
                       sessionId,
@@ -486,7 +486,7 @@ del _briefer_list_dataframes`
                 for (const rawColumn of rawDf.columns) {
                   let parsed = DataFrameColumn.safeParse(rawColumn)
                   if (!parsed.success) {
-                    logger.error(
+                    logger().error(
                       {
                         workspaceId,
                         sessionId,
@@ -501,7 +501,7 @@ del _briefer_list_dataframes`
                       type: 'string',
                     })
                     if (!parsed.success) {
-                      logger.error(
+                      logger().error(
                         {
                           workspaceId,
                           sessionId,

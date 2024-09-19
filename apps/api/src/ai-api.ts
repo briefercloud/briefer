@@ -1,6 +1,6 @@
 import axios from 'axios'
 import split2 from 'split2'
-import config from './config/index.js'
+import { config } from './config/index.js'
 import { z } from 'zod'
 import { DataFrame } from '@briefer/types'
 import { decrypt } from '@briefer/database'

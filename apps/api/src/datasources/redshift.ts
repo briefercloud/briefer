@@ -1,4 +1,4 @@
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import prisma, { DataSource, RedshiftDataSource } from '@briefer/database'
 import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'

@@ -277,7 +277,7 @@ export async function createPivotTable(
 
           if (result.success) {
             if ('log' in result.data) {
-              logger.error(
+              logger().error(
                 {
                   workspaceId,
                   sessionId,

@@ -22,7 +22,7 @@ export class SimpleConfig extends BaseConfig implements ISimpleConfig {
 
     this.JUPYTER_PROTOCOL = process.env['JUPYTER_PROTOCOL'] || 'http'
     if (this.JUPYTER_PROTOCOL !== 'http' && this.JUPYTER_PROTOCOL !== 'https') {
-      logger.warn(
+      logger().warn(
         {
           protocol: this.JUPYTER_PROTOCOL,
         },
@@ -41,7 +41,7 @@ export class SimpleConfig extends BaseConfig implements ISimpleConfig {
 }
 
 let config: SimpleConfig
-function getSimpleConfig() {
+export function simpleConfig() {
   if (config) {
     return config
   }
@@ -50,5 +50,3 @@ function getSimpleConfig() {
 
   return config
 }
-
-export default getSimpleConfig

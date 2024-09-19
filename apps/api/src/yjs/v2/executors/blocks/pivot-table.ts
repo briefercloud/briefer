@@ -63,7 +63,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -80,7 +80,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
       })
     )
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -114,7 +114,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
     this.running.set(block, runs)
 
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -126,7 +126,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -215,7 +215,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
           block.setAttribute('result', result.result)
           block.setAttribute('page', result.result.page)
 
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,

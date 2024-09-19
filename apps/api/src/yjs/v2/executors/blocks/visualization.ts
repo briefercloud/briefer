@@ -61,7 +61,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -78,7 +78,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       })
     )
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -99,7 +99,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
     block.removeAttribute('result')
 
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -111,7 +111,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -212,7 +212,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
           block.setAttribute('updatedAt', new Date().toISOString())
           block.setAttribute('error', null)
 
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,

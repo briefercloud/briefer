@@ -40,7 +40,7 @@ export class UserNotebookEvents implements NotebookEvents {
     logProps?: Record<string, any>
   ) {
     if (!ctx.user) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,

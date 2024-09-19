@@ -95,7 +95,7 @@ export class JupyterManager implements IJupyterManager {
             )
           }
         } catch (err) {
-          logger.error(
+          logger().error(
             {
               workspaceId: workspace.id,
               err,

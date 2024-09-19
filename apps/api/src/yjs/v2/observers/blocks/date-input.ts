@@ -33,7 +33,7 @@ export class DateInputObserver implements IDateInputObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<DateInputBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -55,7 +55,7 @@ export class DateInputObserver implements IDateInputObserver {
     key: string
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -68,7 +68,7 @@ export class DateInputObserver implements IDateInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -83,7 +83,7 @@ export class DateInputObserver implements IDateInputObserver {
       await this.handleBlockStatusChange(block)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -96,7 +96,7 @@ export class DateInputObserver implements IDateInputObserver {
   private async handleBlockStatusChange(block: Y.XmlElement<DateInputBlock>) {
     const attrs = getDateInputAttributes(block, this.blocks)
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -126,7 +126,7 @@ export class DateInputObserver implements IDateInputObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -139,7 +139,7 @@ export class DateInputObserver implements IDateInputObserver {
       block.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

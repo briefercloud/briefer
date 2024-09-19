@@ -6,7 +6,7 @@ import { logger } from '../../../../logger.js'
 import { EventContext, WritebackEvents } from '../../../../events/index.js'
 import { writeback } from '../../../../python/writeback/index.js'
 import { listDataSources } from '@briefer/database'
-import config from '../../../../config/index.js'
+import { config } from '../../../../config/index.js'
 
 export type WritebackEffects = {
   writeback: typeof writeback
@@ -58,7 +58,7 @@ export class WritebackExecutor implements IWritebackExecutor {
     block.setAttribute('result', null)
 
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -71,7 +71,7 @@ export class WritebackExecutor implements IWritebackExecutor {
       await this.executionQueue.add(
         async ({ signal }) => {
           const executedAt = new Date()
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -129,7 +129,7 @@ export class WritebackExecutor implements IWritebackExecutor {
 
           block.setAttribute('status', 'idle')
           block.setAttribute('result', result)
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -150,7 +150,7 @@ export class WritebackExecutor implements IWritebackExecutor {
   }
 
   public async abort(block: Y.XmlElement<WritebackBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -168,7 +168,7 @@ export class WritebackExecutor implements IWritebackExecutor {
     running.abortController.abort()
     await running.abort?.()
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

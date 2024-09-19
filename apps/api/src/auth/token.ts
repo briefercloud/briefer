@@ -12,7 +12,7 @@ import { validate } from 'uuid'
 import { logger } from '../logger.js'
 import { getParam } from '../utils/express.js'
 import { Session } from '../types.js'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 
 function signToken(data: object, secret: string, expiresIn: string | number) {
   return jwt.sign(data, secret, {
@@ -35,7 +35,7 @@ export function verifyToken<T>(
       if (err instanceof jwt.TokenExpiredError) {
         isExpired = true
       } else {
-        logger.error({ err }, 'Error verifying token')
+        logger().error({ err }, 'Error verifying token')
         throw err
       }
     }
@@ -46,7 +46,7 @@ export function verifyToken<T>(
 
     return { data: undefined, isExpired }
   } catch (err) {
-    logger.error({ err }, 'Error decoding token')
+    logger().error({ err }, 'Error decoding token')
     return { data: undefined, isExpired: false }
   }
 }

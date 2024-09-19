@@ -8,7 +8,7 @@ import cors from 'cors'
 import http from 'http'
 import { pinoHttp } from 'pino-http'
 
-import config from './config/index.js'
+import { config } from './config/index.js'
 import v1Router from './v1/index.js'
 import authRouter from './auth/index.js'
 import { createSocketServer } from './websocket/index.js'
@@ -63,7 +63,7 @@ async function main() {
 
   app.use(
     pinoHttp({
-      logger,
+      logger: logger(),
       useLevel: config().NODE_ENV !== 'development' ? 'trace' : 'silent',
       genReqId: function (req) {
         req.id = req.id ?? uuidv4()
@@ -123,7 +123,7 @@ async function main() {
   })
 
   server.listen(8080, () => {
-    logger.info('Server is running on port 8080')
+    logger().info('Server is running on port 8080')
   })
 
   const jupyterManager = getJupyterManager()
@@ -142,19 +142,19 @@ async function main() {
 
     shuttingDown = true
     shutdownPromise = new Promise(async (resolve) => {
-      logger.info('Handling shut down')
+      logger().info('Handling shut down')
       while (true) {
         try {
           await Promise.all(shutdownFunctions.map((fn) => fn()))
           break
         } catch (err) {
-          logger.error({ err }, 'Error while shutting down server')
+          logger().error({ err }, 'Error while shutting down server')
           await new Promise((resolve) => setTimeout(resolve, 200))
-          logger.info('Retrying shutdown handling')
+          logger().info('Retrying shutdown handling')
         }
       }
 
-      logger.info('Shut down complete')
+      logger().info('Shut down complete')
       resolve()
       process.exit(0)
     })
@@ -167,14 +167,14 @@ async function main() {
 }
 
 main().catch((err) => {
-  logger.error({ err }, 'Uncaught error while starting server')
+  logger().error({ err }, 'Uncaught error while starting server')
   process.exit(1)
 })
 
 process.on('unhandledRejection', (err) => {
-  logger.error({ err }, 'Unhandled rejection')
+  logger().error({ err }, 'Unhandled rejection')
 })
 
 process.on('uncaughtException', (err) => {
-  logger.error({ err }, 'Uncaught exception')
+  logger().error({ err }, 'Uncaught exception')
 })

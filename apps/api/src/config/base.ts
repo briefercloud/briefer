@@ -126,7 +126,7 @@ export class BaseConfig implements IBaseConfig {
       )
       return `v${fromFile}`
     } catch (err) {
-      logger.warn(
+      logger().warn(
         {
           err,
         },

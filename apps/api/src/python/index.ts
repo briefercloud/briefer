@@ -5,7 +5,7 @@ import PQueue from 'p-queue'
 import { logger } from '../logger.js'
 import { getJupyterManager } from '../jupyter/index.js'
 import prisma, { decrypt } from '@briefer/database'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 
 export class PythonExecutionError extends Error {
   constructor(
@@ -64,7 +64,7 @@ export async function executeCode(
 
   let aborted = false
   let executing = false
-  logger.debug(
+  logger().debug(
     { workspaceId, sessionId, queueSize: queue.size },
     'Adding code to execution queue'
   )
@@ -98,13 +98,13 @@ async function innerExecuteCode(
   onOutputs: (outputs: Output[]) => void,
   { storeHistory }: { storeHistory: boolean }
 ): Promise<void> {
-  logger.trace(
+  logger().trace(
     { workspaceId, sessionId },
     'Starting Jupyter for code execution.'
   )
   const jupyterManager = getJupyterManager()
   await jupyterManager.ensureRunning(workspaceId)
-  logger.trace({ workspaceId, sessionId }, 'Jupyter is up.')
+  logger().trace({ workspaceId, sessionId }, 'Jupyter is up.')
 
   const { kernel } = await getSession(workspaceId, sessionId)
   const future = kernel.requestExecute({
@@ -125,7 +125,7 @@ async function innerExecuteCode(
       case 'status':
         if ('execution_state' in message.content) {
           if (!['idle', 'busy'].includes(message.content.execution_state)) {
-            logger.warn(
+            logger().warn(
               {
                 message: {
                   header: { msg_type: message.header.msg_type },
@@ -136,7 +136,7 @@ async function innerExecuteCode(
             )
           }
         } else {
-          logger.warn({ message }, 'Got unsupported `status` message')
+          logger().warn({ message }, 'Got unsupported `status` message')
         }
         break
       case 'stream':
@@ -149,7 +149,7 @@ async function innerExecuteCode(
             },
           ])
         } else {
-          logger.warn({ message }, 'Got unsupported `stream` message')
+          logger().warn({ message }, 'Got unsupported `stream` message')
         }
         break
       case 'display_data':
@@ -209,7 +209,7 @@ async function innerExecuteCode(
             },
           ])
         } else {
-          logger.warn(
+          logger().warn(
             { message },
             `Got unsupported \`${message.header.msg_type}\` message`
           )
@@ -230,17 +230,17 @@ async function innerExecuteCode(
             },
           ])
         } else {
-          logger.warn({ message }, 'Got unsupported `error` message')
+          logger().warn({ message }, 'Got unsupported `error` message')
         }
         break
       case 'execute_input':
         break
       default:
-        logger.warn({ message }, 'Got unsupported message type')
+        logger().warn({ message }, 'Got unsupported message type')
     }
   }
 
-  logger.debug({ workspaceId, sessionId }, 'Waiting for code to execute')
+  logger().debug({ workspaceId, sessionId }, 'Waiting for code to execute')
   try {
     // For some reason, future.done not always resolves.
     // These fallbacks are here just to ensure the session won't
@@ -249,7 +249,7 @@ async function innerExecuteCode(
     let timeout: NodeJS.Timeout | null = null
     let done = false
     let status = kernel.status
-    logger.trace(
+    logger().trace(
       {
         workspaceId,
         sessionId,
@@ -266,7 +266,7 @@ async function innerExecuteCode(
           return
         }
 
-        logger.trace(
+        logger().trace(
           {
             workspaceId,
             sessionId,
@@ -280,7 +280,7 @@ async function innerExecuteCode(
         }
 
         if (timeout) {
-          logger.trace(
+          logger().trace(
             { workspaceId, sessionId, status, newStatus },
             'Clearing timeout'
           )
@@ -288,13 +288,13 @@ async function innerExecuteCode(
         }
 
         if (newStatus === 'idle') {
-          logger.trace(
+          logger().trace(
             { workspaceId, sessionId, status, newStatus },
             'Setting timeout'
           )
           timeout = setTimeout(() => {
             if (!done) {
-              logger.trace(
+              logger().trace(
                 { workspaceId, sessionId, status, newStatus },
                 'Timeout reached'
               )
@@ -310,7 +310,7 @@ async function innerExecuteCode(
 
       kernel.statusChanged.connect(onStatusChanged)
       if (status === 'idle') {
-        logger.trace(
+        logger().trace(
           { workspaceId, sessionId, status },
           'Initial idle status, setting timeout'
         )
@@ -341,7 +341,7 @@ async function innerExecuteCode(
     }
     throw err
   }
-  logger.debug({ workspaceId, sessionId }, 'Code finished executing')
+  logger().debug({ workspaceId, sessionId }, 'Code finished executing')
 }
 
 export async function cancelExecution(workspaceId: string, sessionId: string) {
@@ -465,7 +465,7 @@ async function withRetry<T>(
         throw err
       }
 
-      logger.warn({ attempt, err }, 'Retrying')
+      logger().warn({ attempt, err }, 'Retrying')
       attempt++
       // exponential backoff
       await new Promise((resolve) =>

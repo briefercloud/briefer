@@ -68,7 +68,7 @@ export async function writebackBigQuery(
               executedAt,
               step: 'unknown',
             }
-            logger.error(
+            logger().error(
               {
                 workspaceId,
                 sessionId,
@@ -90,7 +90,7 @@ export async function writebackBigQuery(
                     executedAt,
                     step: 'unknown',
                   }
-                  logger.error(
+                  logger().error(
                     {
                       workspaceId,
                       sessionId,
@@ -119,7 +119,7 @@ export async function writebackBigQuery(
                       step: 'unknown',
                     }
 
-                    logger.error(
+                    logger().error(
                       {
                         workspaceId,
                         sessionId,
@@ -148,7 +148,7 @@ export async function writebackBigQuery(
   return {
     promise: promise.then(() => {
       if (!result) {
-        logger.error(
+        logger().error(
           {
             workspaceId,
             sessionId,

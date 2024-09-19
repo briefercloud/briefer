@@ -1051,7 +1051,7 @@ export async function createVisualization(
       if (!result) {
         errors.push(new Error('Failed to create visualization, no result'))
         const err = new AggregateError(errors)
-        logger.error(
+        logger().error(
           { outputs, namespace, err },
           'Failed to create visualization'
         )

@@ -41,7 +41,7 @@ export class RunAllObserver implements IRunAllObserver {
   }
 
   public start() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -52,7 +52,7 @@ export class RunAllObserver implements IRunAllObserver {
     this.handleInitialState()
     this.state.observe(this.onStateChange)
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -62,7 +62,7 @@ export class RunAllObserver implements IRunAllObserver {
   }
 
   public stop() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -72,7 +72,7 @@ export class RunAllObserver implements IRunAllObserver {
 
     this.state.unobserve(this.onStateChange)
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -84,7 +84,7 @@ export class RunAllObserver implements IRunAllObserver {
   private handleInitialState() {
     const { status } = getRunAllAttributes(this.state)
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -107,7 +107,7 @@ export class RunAllObserver implements IRunAllObserver {
 
       event.changes.keys.forEach(({ action }, key) => {
         if (action !== 'update') {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -129,7 +129,7 @@ export class RunAllObserver implements IRunAllObserver {
   private async handleStatusChange(el: YRunAll, tr: Y.Transaction) {
     const { status } = getRunAllAttributes(el)
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -159,7 +159,7 @@ export class RunAllObserver implements IRunAllObserver {
         })
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -172,7 +172,7 @@ export class RunAllObserver implements IRunAllObserver {
       el.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

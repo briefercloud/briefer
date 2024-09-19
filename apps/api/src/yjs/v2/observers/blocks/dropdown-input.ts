@@ -40,7 +40,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<DropdownInputBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -73,7 +73,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
     key: string
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -86,7 +86,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -103,7 +103,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       await this.handleBlockVariableChange(block, oldValue)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -126,7 +126,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -142,7 +142,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       await this.saveDropdownInputValue(block)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -162,7 +162,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
         status: 'idle',
       })
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -191,7 +191,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -207,7 +207,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       await this.saveDropdownInputVariable(block)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -225,7 +225,7 @@ export class DropdownInputObserver implements IDropdownInputObserver {
       await this.executor.saveValue(block)
       updateDropdownInputValue(block, { status: 'idle' })
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
