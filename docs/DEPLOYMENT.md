@@ -174,7 +174,7 @@ If you're running Briefer from another machine - for example an external server,
 In case you can't enable HTTPS or just want to try it out, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
 
 ```sh
-user@server:~$ ALLOW_HTTP=true briefer
+ALLOW_HTTP=true briefer
 ```
 
 This will not set the session cookie as Secure, thus allowing you to sign-in using HTTP. Note this option should not be used in production given the [security risks](https://owasp.org/www-community/vulnerabilities/Insecure_Transport).
