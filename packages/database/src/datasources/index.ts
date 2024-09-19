@@ -207,7 +207,7 @@ export async function getDatabaseURL(
       return url
     }
     case 'bigquery':
-      return `bigquery://`
+      return `bigquery://${ds.data.projectId}`
     case 'athena': {
       const { accessKeyId, secretAccessKeyId } =
         await prisma().athenaDataSource.findFirstOrThrow({

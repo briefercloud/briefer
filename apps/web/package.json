@@ -16,7 +16,7 @@
     "@briefer/types": "*",
     "@cocalc/ansi-to-react": "^7.0.0",
     "@codemirror/autocomplete": "^6.16.2",
-    "@codemirror/lang-sql": "^6.6.4",
+    "@codemirror/lang-sql": "6.7.1",
     "@codemirror/state": "^6.4.1",
     "@date-fns/utc": "^1.2.0",
     "@google-cloud/bigquery": "^7.3.0",

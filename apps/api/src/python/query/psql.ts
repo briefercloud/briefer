@@ -52,7 +52,7 @@ export function pingPSQL(
   type: 'psql' | 'redshift',
   encryptionKey: string
 ): Promise<null | Error> {
-  return pingSQLAlchemy(ds.workspaceId, { type, data: ds }, encryptionKey)
+  return pingSQLAlchemy({ type, data: ds }, encryptionKey, null)
 }
 
 export function getPSQLSchema(
@@ -60,5 +60,5 @@ export function getPSQLSchema(
   type: 'psql' | 'redshift',
   encryptionKey: string
 ): Promise<DataSourceStructure> {
-  return getSQLAlchemySchema({ type, data: ds }, encryptionKey)
+  return getSQLAlchemySchema({ type, data: ds }, encryptionKey, null)
 }

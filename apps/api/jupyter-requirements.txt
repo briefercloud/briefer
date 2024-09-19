@@ -47,6 +47,7 @@ fastparquet==2024.2.0
 oracledb==2.2.0
 pymssql==2.3.1
 redshift-connector==2.0.917
+sqlalchemy-bigquery==1.11.0
 # sqlalchemy-redshift==0.8.14
 git+https://github.com/briefercloud/sqlalchemy-redshift.git#egg=sqlalchemy-redshift
 trino==0.329.0
