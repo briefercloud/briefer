@@ -177,5 +177,5 @@ In case you can't enable HTTPS or just want to try it out, you can run Briefer o
 ALLOW_HTTP=true briefer
 ```
 
-This will not set the session cookie as Secure, thus allowing you to sign-in using HTTP. Note this option should not be used in production given the [security risks](https://owasp.org/www-community/vulnerabilities/Insecure_Transport).
+Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
 </details>
