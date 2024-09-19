@@ -171,7 +171,7 @@ If you can't figure out what's happening, please [open an issue here](https://gi
 
 If you're running Briefer from another machine - for example an external server, Raspbery Pi etc - make sure you have enabled HTTPS for your current setup while accessing Briefer's application on port 3000.
 
-In case you can't enable HTTPS or just want to try it out, you can run Briefer in an insecure manner by setting the `ALLOW_HTTP` environment variable to `true`:
+In case you can't enable HTTPS or just want to try it out, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
 
 ```sh
 user@server:~$ ALLOW_HTTP=true briefer
