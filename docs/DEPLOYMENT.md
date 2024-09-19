@@ -165,3 +165,17 @@ Check if it complains about any missing environment variables or if there's any 
 If you can't figure out what's happening, please [open an issue here](https://github.com/briefercloud/briefer/issues).
 
 </details>
+
+<details>
+  <summary>I can access the web application, but the sign-in is not working</summary>
+
+If you're running Briefer in another machine, for example an external server, Raspbery Pi, etc - make sure you have enabled HTTPS for your current setup while accessing Briefer on port `3000`.
+
+In case you can't enable HTTPS or just want to try it out, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
+
+```sh
+ALLOW_HTTP=true briefer
+```
+
+Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
+</details>
