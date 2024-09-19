@@ -167,7 +167,7 @@ If you can't figure out what's happening, please [open an issue here](https://gi
 </details>
 
 <details>
-  <summary>I can access the web application, but sign-in is not working</summary>
+  <summary>I can access the web application, but the sign-in is not working</summary>
 
 If you're running Briefer from another machine - for example an external server, Raspbery Pi etc - make sure you have enabled HTTPS for your current setup while accessing Briefer's application on port 3000.
 
