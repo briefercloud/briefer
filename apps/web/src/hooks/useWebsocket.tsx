@@ -22,7 +22,6 @@ export function WebsocketProvider({ children }: Props) {
       const socket = io(withoutPathname, {
         withCredentials: true,
         path: url.pathname === '/' ? undefined : url.pathname + '/socket.io',
-        transports: ['websocket'],
       })
       setSocket(socket)
 

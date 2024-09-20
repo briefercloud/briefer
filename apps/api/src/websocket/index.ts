@@ -53,7 +53,6 @@ type Server = {
 export function createSocketServer(server: http.Server): Server {
   const io: IOServer = new BaseServer(server, {
     cors: { credentials: true, origin: config().FRONTEND_URL },
-    transports: ['websocket'],
   })
 
   io.use(async (socket: Socket, next) => {
