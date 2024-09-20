@@ -1,13 +1,10 @@
 {
   "name": "briefer",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "main": "index.js",
   "repository": "git@github.com:ergomake/nora.git",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "packageManager": "yarn@1.22.22",
   "scripts": {
     "build": "turbo run build",
