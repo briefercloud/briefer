@@ -268,8 +268,13 @@ function SQLBlock(props: Props) {
 
   const isAIEditing = isSQLBlockAIEditing(props.block)
 
-  const [, { setModelDataSourceStructure, removeModelDataSourceStructure }] =
-    useMonacoContext()
+  const [
+    ,
+    {
+      setModelDataSource,
+      removeModelDataSource: removeModelDataSourceStructure,
+    },
+  ] = useMonacoContext()
 
   useEffect(() => {
     const model = editor?.getModel()
@@ -283,7 +288,7 @@ function SQLBlock(props: Props) {
       return
     }
 
-    setModelDataSourceStructure(model.id, dataSource.structure)
+    setModelDataSource(model.id, dataSource)
 
     return () => {
       removeModelDataSourceStructure(model.id)
@@ -292,7 +297,7 @@ function SQLBlock(props: Props) {
     editor,
     props.dataSources,
     dataSourceId,
-    setModelDataSourceStructure,
+    setModelDataSource,
     removeModelDataSourceStructure,
   ])
 

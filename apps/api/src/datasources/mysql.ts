@@ -9,6 +9,7 @@ import mysql, { RowDataPacket } from 'mysql2/promise'
 import { logger } from '../logger.js'
 import { DataSourceConnectionError, DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
+import { OnTable } from './structure.js'
 
 async function getMySQLConfig(
   datasource: MySQLDataSource
@@ -113,7 +114,10 @@ interface InformationSchemaColumn extends RowDataPacket {
 
 export async function getMySQLSchemaFromConfig(
   datasourceId: string,
-  mySQLConfig: mysql.ConnectionOptions
+  mySQLConfig: mysql.ConnectionOptions,
+
+  // since we gather the whole thing at once, we don't need to call this
+  _onTable: OnTable
 ): Promise<DataSourceStructure> {
   const connection = await mysql.createConnection(mySQLConfig)
 
@@ -155,12 +159,13 @@ export async function getMySQLSchemaFromConfig(
   return info
 }
 
-export async function getSchema(
-  datasource: MySQLDataSource
+export async function getMySQLSchema(
+  datasource: MySQLDataSource,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const mySQLConfig = await getMySQLConfig(datasource)
 
-  return getMySQLSchemaFromConfig(datasource.id, mySQLConfig)
+  return getMySQLSchemaFromConfig(datasource.id, mySQLConfig, onTable)
 }
 
 export async function updateConnStatus(

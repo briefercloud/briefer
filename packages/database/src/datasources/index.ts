@@ -9,7 +9,11 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
-import { DataSourceStructure } from '@briefer/types'
+import {
+  DataSourceStructure,
+  DataSourceStructureState,
+  DataSourceStructureStateV2,
+} from '@briefer/types'
 
 export * from './bigquery.js'
 export * from './psql.js'
@@ -316,5 +320,5 @@ export async function getCredentialsInfo(
 
 export type APIDataSource = {
   config: DataSource
-  structure: DataSourceStructure
+  structure: DataSourceStructureStateV2
 }

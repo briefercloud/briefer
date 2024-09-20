@@ -785,7 +785,7 @@ export const DataSourceStructureStateV2 = z.union([
     status: z.literal('success'),
     updatedAt: z.number(),
     structure: DataSourceStructure,
-    refreshingSince: z.number().nullable(),
+    refreshPing: z.number().nullable(),
   }),
   z.object({
     status: z.literal('failed'),
@@ -800,10 +800,14 @@ export const DataSourceStructureStateV2 = z.union([
   z.object({
     status: z.literal('loading'),
     startedAt: z.number(),
+    loadingPing: z.number(),
+    structure: DataSourceStructure.nullable(),
   }),
 ])
 
-export type DataSourceStructureV2 = z.infer<typeof DataSourceStructureStateV2>
+export type DataSourceStructureStateV2 = z.infer<
+  typeof DataSourceStructureStateV2
+>
 
 export const DataSourceStructureState = z.union([
   DataSourceStructureStateV1,
@@ -814,7 +818,7 @@ export type DataSourceStructureState = z.infer<typeof DataSourceStructureState>
 
 export function dataSourceStructureStateToV2(
   state: DataSourceStructureState
-): DataSourceStructureV2 {
+): DataSourceStructureStateV2 {
   if ('status' in state) {
     return state
   }
@@ -834,7 +838,19 @@ export function dataSourceStructureStateToV2(
     status: 'success',
     structure: state.structure,
     updatedAt: new Date(state.updatedAt ?? 0).getTime(),
-    refreshingSince: null,
+    refreshPing: null,
+  }
+}
+
+export function getDataSourceStructureFromState(
+  state: DataSourceStructureStateV2
+): DataSourceStructure | null {
+  switch (state.status) {
+    case 'success':
+    case 'loading':
+      return state.structure
+    case 'failed':
+      return state.previousSuccess?.structure ?? null
   }
 }
 

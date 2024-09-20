@@ -55,7 +55,7 @@ export const useDataSources = (workspaceId: string): UseDataSources => {
   return useMemo(() => {
     const data = state.get(workspaceId)
     return [{ data: data ?? List(), isLoading: !data }, api]
-  }, [state, workspaceId])
+  }, [state, workspaceId, api])
 }
 
 interface Props {
@@ -72,9 +72,9 @@ export function DataSourcesProvider(props: Props) {
 
     const onDataSources = (data: {
       workspaceId: string
-      dataSources: APIDataSources
+      dataSources: APIDataSource[]
     }) => {
-      setState((state) => state.set(data.workspaceId, data.dataSources))
+      setState((state) => state.set(data.workspaceId, List(data.dataSources)))
     }
 
     socket.on('workspace-datasources', onDataSources)
@@ -88,12 +88,15 @@ export function DataSourcesProvider(props: Props) {
     }) => {
       setState((state) => {
         const datasources = state.get(workspaceId, List<APIDataSource>())
+        const index = datasources.findIndex(
+          (ds) => ds.config.data.id === dataSource.config.data.id
+        )
 
         return state.set(
           workspaceId,
-          datasources.map((ds) =>
-            ds.config.data.id === dataSource.config.data.id ? dataSource : ds
-          )
+          index === -1
+            ? datasources.push(dataSource)
+            : datasources.set(index, dataSource)
         )
       })
     }

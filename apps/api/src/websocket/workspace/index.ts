@@ -9,7 +9,7 @@ import { z } from 'zod'
 import { emitDataSources } from './data-sources.js'
 
 export const joinWorkspace =
-  (socket: Socket, session: Session) => async (data: unknown) => {
+  (io: IOServer, socket: Socket, session: Session) => async (data: unknown) => {
     const payload = z.object({ workspaceId: uuidSchema }).safeParse(data)
     if (!payload.success) {
       return
@@ -38,7 +38,7 @@ export const joinWorkspace =
         await socket.join(workspaceId)
       }
 
-      await emitInitialData(socket, workspaceId)
+      await emitInitialData(io, socket, workspaceId)
     } catch (err) {
       logger().error(
         { err, workspaceId, userId: session.user.id },
@@ -63,10 +63,10 @@ export const leaveWorkspace =
     }
   }
 
-async function emitInitialData(socket: Socket, workspaceId: string) {
+async function emitInitialData(io: IOServer, socket: Socket, workspaceId: string) {
   await Promise.all([
     emitDocuments(socket, workspaceId),
     emitEnvironmentStatus(socket, workspaceId),
-    emitDataSources(socket, workspaceId),
+    emitDataSources(io, socket, workspaceId),
   ])
 }

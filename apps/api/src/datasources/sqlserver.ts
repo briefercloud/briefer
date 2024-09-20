@@ -11,33 +11,38 @@ import { DataSourceConnectionError, DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 
 type ConnectionConfig = {
-  user: string;
-  password: string;
-  server: string;
-  database: string;
+  user: string
+  password: string
+  server: string
+  database: string
   ssl?: { ca: Buffer }
 }
 
 async function getSQLServerConfig(
   datasource: SQLServerDataSource
 ): Promise<ConnectionConfig> {
-  const password = await getSQLServerPassword(datasource, config().DATASOURCES_ENCRYPTION_KEY)
+  const password = await getSQLServerPassword(
+    datasource,
+    config().DATASOURCES_ENCRYPTION_KEY
+  )
 
   const cert = await getSQLServerCert(
     datasource,
     config().DATASOURCES_ENCRYPTION_KEY
   )
-  
+
   return {
     user: datasource.username,
     password,
     database: datasource.database,
     server: datasource.host,
-    ssl: cert ? { ca: cert } : undefined
+    ssl: cert ? { ca: cert } : undefined,
   }
 }
 
-export async function ping(datasource: SQLServerDataSource): Promise<DataSource> {
+export async function ping(
+  datasource: SQLServerDataSource
+): Promise<DataSource> {
   const lastConnection = new Date()
   const SQLServerConfig = await getSQLServerConfig(datasource)
 
@@ -53,8 +58,10 @@ export async function ping(datasource: SQLServerDataSource): Promise<DataSource>
   return updateConnStatus(datasource, { connStatus: 'offline', connError: err })
 }
 
-async function createConnection(config: ConnectionConfig): Promise<sql.ConnectionPool> {
-  const mustEncrypt = config.ssl ? true : false;
+async function createConnection(
+  config: ConnectionConfig
+): Promise<sql.ConnectionPool> {
+  const mustEncrypt = config.ssl ? true : false
   return sql.connect({
     user: config.user,
     password: config.password,
@@ -64,9 +71,9 @@ async function createConnection(config: ConnectionConfig): Promise<sql.Connectio
       trustServerCertificate: mustEncrypt ? false : true,
       encrypt: mustEncrypt,
       cryptoCredentialsDetails: {
-        ca: config.ssl?.ca
-      }
-    }
+        ca: config.ssl?.ca,
+      },
+    },
   })
 }
 
@@ -74,7 +81,7 @@ async function pingSQLServerFromConfig(
   config: ConnectionConfig
 ): Promise<DataSourceConnectionError | null> {
   try {
-    const connection = await createConnection(config);
+    const connection = await createConnection(config)
 
     return await Promise.race([
       new Promise<DataSourceConnectionError>((resolve) =>
@@ -132,7 +139,7 @@ export async function getSQLServerSchemaFromConfig(
   datasourceId: string,
   sqlServerConfig: ConnectionConfig
 ): Promise<DataSourceStructure> {
-  const connection = await createConnection(sqlServerConfig);
+  const connection = await createConnection(sqlServerConfig)
 
   // select all tables with their column names and types from all schemas
   const result = await connection.query(`
@@ -172,7 +179,7 @@ export async function getSQLServerSchemaFromConfig(
   return info
 }
 
-export async function getSchema(
+export async function getSqlServerSchema(
   datasource: SQLServerDataSource
 ): Promise<DataSourceStructure> {
   const SQLServerConfig = await getSQLServerConfig(datasource)

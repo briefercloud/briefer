@@ -8,6 +8,7 @@ import {
 import { makeQuery } from './index.js'
 import { renderJinja } from '../index.js'
 import { getSQLAlchemySchema, pingSQLAlchemy } from './sqlalchemy.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makeBigQueryQuery(
   workspaceId: string,
@@ -278,13 +279,15 @@ export async function pingBigQuery(
 
 export async function getBigQuerySchema(
   ds: BigQueryDataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const credentialsInfo = await getCredentials(ds, encryptionKey)
 
   return getSQLAlchemySchema(
     { type: 'bigquery', data: ds },
     encryptionKey,
-    credentialsInfo
+    credentialsInfo,
+    onTable
   )
 }

@@ -37,6 +37,8 @@ export default function DataSourcesPage() {
 
   const [{ data: dataSources }, { ping, remove }] = useDataSources(workspaceId)
 
+  console.log(dataSources)
+
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
   const closeInfo = useCallback(() => setShowMoreInfo(false), [setShowMoreInfo])
 
@@ -75,9 +77,7 @@ export default function DataSourcesPage() {
 
   const onPing = useCallback(
     (id: string, type: string) => {
-      const ds = dataSources.find(
-        (ds) => ds.config.data.id === id
-      )?.config
+      const ds = dataSources.find((ds) => ds.config.data.id === id)?.config
       if (!ds) {
         return
       }

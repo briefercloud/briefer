@@ -39,7 +39,7 @@ import * as mysql from '../../../../datasources/mysql.js'
 import * as sqlserver from '../../../../datasources/sqlserver.js'
 import * as trino from '../../../../datasources/trino.js'
 import { ping } from '../../../../datasources/index.js'
-import { getStructure } from '../../../../datasources/structure.js'
+import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import {
   broadcastDataSource,
   broadcastDataSources,
@@ -307,18 +307,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       return
     }
 
-    // fetch structure in the background
-    await Promise.race([
-      getStructure(ds, true).then(() => {}),
-      new Promise<void>((resolve) => setTimeout(() => resolve(), 1000)),
-    ])
-
-    await broadcastDataSource(
-      socketServer,
-      workspaceId,
-      dataSourceId,
-      data.type
-    )
+    await fetchDataSourceStructure(socketServer, ds, { forceRefresh: true })
 
     res.json(ds)
   })
@@ -464,18 +453,18 @@ const dataSourceRouter = (socketServer: IOServer) => {
         return
       }
 
-      const ds = await ping(dataSource)
+      const dsConfig = await ping(dataSource)
 
-      await broadcastDataSource(
-        socketServer,
-        workspaceId,
-        dataSourceId,
-        result.data.type
-      )
+      await broadcastDataSource(socketServer, {
+        config: dsConfig,
+        structure: await fetchDataSourceStructure(socketServer, dsConfig, {
+          forceRefresh: false,
+        }),
+      })
 
       res.json({
-        lastConnection: ds.data.lastConnection,
-        connStatus: ds.data.connStatus,
+        lastConnection: dsConfig.data.lastConnection,
+        connStatus: dsConfig.data.connStatus,
       })
     } catch (err) {
       req.log.error(
