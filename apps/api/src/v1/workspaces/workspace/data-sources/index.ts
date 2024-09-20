@@ -1,6 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express'
 import {
-  listDataSources,
   createBigQueryDataSource,
   createPSQLDataSource,
   createRedshiftDataSource,
@@ -17,8 +16,7 @@ import dataSourceRouter from './data-source.js'
 import { config } from '../../../../config/index.js'
 import { validate } from 'uuid'
 import { ping } from '../../../../datasources/index.js'
-import { DataSourceStructure } from '@briefer/types'
-import { getStructure } from '../../../../datasources/structure.js'
+import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import { canUpdateWorkspace } from '../../../../auth/token.js'
 import { captureDatasourceCreated } from '../../../../events/posthog.js'
 import { IOServer } from '../../../../websocket/index.js'
@@ -105,44 +103,18 @@ export type DataSourcePayload = z.infer<typeof dataSourcePayload>
 const dataSourcesRouter = (socketServer: IOServer) => {
   const router = Router({ mergeParams: true })
 
-  router.get('/', async (req, res) => {
-    const workspaceId = getParam(req, 'workspaceId')
-
-    try {
-      const result = {
-        dataSources: await listDataSources(workspaceId),
-        structures: {} as Record<string, DataSourceStructure>,
-      }
-      await Promise.all(
-        result.dataSources.map(async (d) => {
-          const structure = await Promise.race<DataSourceStructure | null>([
-            new Promise((resolve) => setTimeout(() => resolve(null), 2000)),
-            getStructure(d),
-          ])
-          if (structure) {
-            result.structures[d.data.id] = structure
-          }
-        })
-      )
-      res.json(result)
-    } catch (err) {
-      req.log.error(
-        {
-          err,
-          workspaceId,
-        },
-        'Failed to list data sources'
-      )
-      res.sendStatus(500)
-    }
-  })
-
   const neverPingedError = {
     name: 'NeverPingedError',
     message: 'The datasource has never been pinged',
   }
 
+  router.post('/test', (req, res) => {
+    console.log('test', req.body)
+    res.json({ test: 'test' })
+  })
+
   router.post('/', canUpdateWorkspace, async (req, res) => {
+    req.log.error('got request')
     const result = dataSourcePayload.safeParse(req.body)
     if (!result.success) {
       res.status(400).end()
@@ -306,7 +278,9 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         return
       }
 
+      req.log.error('will create')
       const datasource = await createDataSource(data).then(ping)
+      req.log.error('did create')
       captureDatasourceCreated(
         req.session.user,
         workspaceId,
@@ -314,11 +288,11 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         data.type
       )
 
-      // fetch structure in the background
-      await Promise.race([
-        getStructure(datasource, true).then(() => {}),
-        new Promise<void>((resolve) => setTimeout(() => resolve(), 1000)),
-      ])
+      req.log.error('will fetch structure')
+      await fetchDataSourceStructure(socketServer, datasource, {
+        forceRefresh: true,
+      })
+      req.log.error('did fetch structure')
 
       res.status(201).json(datasource)
     } catch (err) {
@@ -378,7 +352,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
     belongsToWorkspace,
     dataSourceRouter(socketServer)
   )
-  return dataSourceRouter
+
+  return router
 }
 
 export default dataSourcesRouter

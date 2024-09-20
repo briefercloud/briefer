@@ -10,6 +10,7 @@ import { executeCode, PythonExecutionError, renderJinja } from '../index.js'
 import { DataSource, getDatabaseURL } from '@briefer/database'
 import { z } from 'zod'
 import { logger } from '../../logger.js'
+import { OnTable, OnTableProgress } from '../../datasources/structure.js'
 
 export async function makeSQLAlchemyQuery(
   workspaceId: string,
@@ -304,7 +305,8 @@ connection.execute(text(${JSON.stringify(query)})).fetchall()`
 export async function getSQLAlchemySchema(
   ds: DataSource,
   encryptionKey: string,
-  credentialsInfo: object | null
+  credentialsInfo: object | null,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
 
@@ -330,6 +332,17 @@ def schema_from_tables(inspector, tables):
             schemas[schema_name] = {
                 "tables": {}
             }
+
+        progress = {
+            "type": "progress",
+            "schema": schema_name,
+            "tableName": table_name,
+            "table": {
+                "columns": columns
+            },
+            "defaultSchema": "public"
+        }
+        print(json.dumps(progress, default=str))
 
         schemas[schema_name]["tables"][table_name] = {
             "columns": columns
@@ -393,7 +406,11 @@ print(json.dumps(structure, default=str))`
 
             const parsedStructure = jsonString
               .pipe(
-                z.union([DataSourceStructure, z.object({ log: z.string() })])
+                z.union([
+                  DataSourceStructure,
+                  OnTableProgress,
+                  z.object({ log: z.string() }),
+                ])
               )
               .safeParse(line)
             if (parsedStructure.success) {
@@ -404,6 +421,13 @@ print(json.dumps(structure, default=str))`
                     datasourceId: ds.data.id,
                   },
                   parsedStructure.data.log
+                )
+              } else if ('type' in parsedStructure.data) {
+                onTable(
+                  parsedStructure.data.schema,
+                  parsedStructure.data.tableName,
+                  parsedStructure.data.table,
+                  parsedStructure.data.defaultSchema
                 )
               } else {
                 structure = parsedStructure.data

@@ -123,7 +123,7 @@ export function createSocketServer(server: http.Server): Server {
         }
       }
 
-    socket.on('join-workspace', trackWork(joinWorkspace(socket, session)))
+    socket.on('join-workspace', trackWork(joinWorkspace(io, socket, session)))
     socket.on('leave-workspace', trackWork(leaveWorkspace(socket, session)))
     socket.on(
       'get-environment-status',
@@ -136,7 +136,7 @@ export function createSocketServer(server: http.Server): Server {
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
     socket.on(
       'workspace-datasources-refresh',
-      trackWork(refreshDataSources(socket, session))
+      trackWork(refreshDataSources(io, socket, session))
     )
 
     socket.on('disconnect', (reason) => {

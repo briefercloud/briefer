@@ -35,7 +35,7 @@ import * as oracle from '../../../../datasources/oracle.js'
 import * as mysql from '../../../../datasources/mysql.js'
 import * as trino from '../../../../datasources/trino.js'
 import { ping } from '../../../../datasources/index.js'
-import { getStructure } from '../../../../datasources/structure.js'
+import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import {
   broadcastDataSource,
   broadcastDataSources,
@@ -127,46 +127,6 @@ const dataSourceRouter = (socketServer: IOServer) => {
       }),
     }),
   ])
-
-  router.get('/', async (req, res) => {
-    const workspaceId = getParam(req, 'workspaceId')
-    const id = getParam(req, 'dataSourceId')
-    try {
-      const dataSource = (
-        await Promise.all([
-          getDatasource(workspaceId, id, 'psql'),
-          getDatasource(workspaceId, id, 'bigquery'),
-          getDatasource(workspaceId, id, 'redshift'),
-          getDatasource(workspaceId, id, 'athena'),
-          getDatasource(workspaceId, id, 'oracle'),
-          getDatasource(workspaceId, id, 'mysql'),
-          getDatasource(workspaceId, id, 'trino'),
-        ])
-      ).find((e) => e !== null)
-
-      if (!dataSource) {
-        res.status(404).end()
-        return
-      }
-
-      const structure = await getStructure(dataSource)
-
-      res.json({
-        dataSource,
-        structure,
-      })
-    } catch (err) {
-      req.log.error(
-        {
-          workspaceId,
-          id,
-          err,
-        },
-        'Failed to get data source'
-      )
-      res.status(500).end()
-    }
-  })
 
   router.put('/', async (req, res) => {
     const result = dataSourceSchema.safeParse(req.body)
@@ -329,18 +289,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       return
     }
 
-    // fetch structure in the background
-    await Promise.race([
-      getStructure(ds, true).then(() => {}),
-      new Promise<void>((resolve) => setTimeout(() => resolve(), 1000)),
-    ])
-
-    await broadcastDataSource(
-      socketServer,
-      workspaceId,
-      dataSourceId,
-      data.type
-    )
+    await fetchDataSourceStructure(socketServer, ds, { forceRefresh: true })
 
     res.json(ds)
   })
@@ -486,18 +435,18 @@ const dataSourceRouter = (socketServer: IOServer) => {
         return
       }
 
-      const ds = await ping(dataSource)
+      const dsConfig = await ping(dataSource)
 
-      await broadcastDataSource(
-        socketServer,
-        workspaceId,
-        dataSourceId,
-        result.data.type
-      )
+      await broadcastDataSource(socketServer, {
+        config: dsConfig,
+        structure: await fetchDataSourceStructure(socketServer, dsConfig, {
+          forceRefresh: false,
+        }),
+      })
 
       res.json({
-        lastConnection: ds.data.lastConnection,
-        connStatus: ds.data.connStatus,
+        lastConnection: dsConfig.data.lastConnection,
+        connStatus: dsConfig.data.connStatus,
       })
     } catch (err) {
       req.log.error(

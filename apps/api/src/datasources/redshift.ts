@@ -1,8 +1,7 @@
 import { config } from '../config/index.js'
 import prisma, { DataSource, RedshiftDataSource } from '@briefer/database'
-import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
-import { getPSQLSchema, pingPSQL } from '../python/query/psql.js'
+import { pingPSQL } from '../python/query/psql.js'
 
 export async function ping(ds: RedshiftDataSource): Promise<DataSource> {
   const lastConnection = new Date()
@@ -20,12 +19,6 @@ export async function ping(ds: RedshiftDataSource): Promise<DataSource> {
   }
 
   return updateConnStatus(ds, { connStatus: 'offline', connError: err })
-}
-
-export async function getSchema(
-  ds: RedshiftDataSource
-): Promise<DataSourceStructure> {
-  return getPSQLSchema(ds, 'redshift', config().DATASOURCES_ENCRYPTION_KEY)
 }
 
 export async function updateConnStatus(

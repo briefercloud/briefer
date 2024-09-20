@@ -1,9 +1,10 @@
-import { APIDataSource } from '@/hooks/useDatasources'
 import ExplorerTitle from './ExplorerTitle'
 import { databaseImages } from '../DataSourcesList'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { ShapesIcon } from 'lucide-react'
+import { type APIDataSource } from '@briefer/database'
+import { useMemo } from 'react'
 
 interface Props {
   dataSource: APIDataSource
@@ -11,6 +12,18 @@ interface Props {
   onBack: () => void
 }
 export default function SchemaList(props: Props) {
+  const schemaNames: string[] = useMemo(() => {
+    switch (props.dataSource.structure.status) {
+      case 'success':
+        return Object.keys(props.dataSource.structure.structure.schemas)
+      case 'loading':
+        return Object.keys(props.dataSource.structure.structure?.schemas ?? {})
+      case 'failed':
+        return Object.keys(
+          props.dataSource.structure.previousSuccess?.structure.schemas ?? {}
+        )
+    }
+  }, [props.dataSource.structure])
   return (
     <div className="flex flex-col h-full">
       <ExplorerTitle
@@ -37,23 +50,21 @@ export default function SchemaList(props: Props) {
 
         <div className="flex-grow text-xs text-gray-500 font-sans font-medium overflow-y-auto">
           <ul className="h-full">
-            {Object.keys(props.dataSource.structure.schemas).map(
-              (schemaName) => {
-                return (
-                  <li
-                    key={schemaName}
-                    className="px-4 xl:px-6 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
-                    onClick={() => props.onSelectSchema(schemaName)}
-                  >
-                    <div className="flex gap-x-1.5 items-center font-mono">
-                      <ShapesIcon className="text-gray-400 h-4 w-4" />
-                      <h4>{schemaName}</h4>
-                    </div>
-                    <ChevronRightIcon className="h-3 w-3 text-gray-500" />
-                  </li>
-                )
-              }
-            )}
+            {schemaNames.map((schemaName) => {
+              return (
+                <li
+                  key={schemaName}
+                  className="px-4 xl:px-6 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
+                  onClick={() => props.onSelectSchema(schemaName)}
+                >
+                  <div className="flex gap-x-1.5 items-center font-mono">
+                    <ShapesIcon className="text-gray-400 h-4 w-4" />
+                    <h4>{schemaName}</h4>
+                  </div>
+                  <ChevronRightIcon className="h-3 w-3 text-gray-500" />
+                </li>
+              )
+            })}
           </ul>
         </div>
       </div>

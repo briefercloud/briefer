@@ -140,7 +140,7 @@ export async function ping(ds: AthenaDataSource): Promise<DataSource> {
   })
 }
 
-export async function getSchema(
+export async function getAthenaSchema(
   ds: AthenaDataSource
 ): Promise<DataSourceStructure> {
   const { glue } = await getAthenaClient(ds)

@@ -1,12 +1,12 @@
-import { APIDataSource } from '@/hooks/useDatasources'
 import ExplorerTitle from './ExplorerTitle'
 import { databaseImages } from '../DataSourcesList'
-import clsx from 'clsx'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { Grid3x3Icon } from 'lucide-react'
 import { useMemo } from 'react'
 import TableDetails from './TableDetails'
+import { APIDataSource } from '@briefer/database'
+import { DataSourceColumn, DataSourceStructure } from '@briefer/types'
 
 interface Props {
   dataSource: APIDataSource
@@ -16,37 +16,35 @@ interface Props {
   selectedTable: string | null
 }
 export default function TableList(props: Props) {
-  const tables = useMemo(() => {
-    const schema = props.dataSource.structure.schemas[props.schema]
-    if (!schema) {
-      return []
-    }
-
-    return Object.entries(schema.tables).map(([tableName, table]) => {
-      return {
-        name: tableName,
-        columns: table.columns,
+  const tables: { name: string; columns: DataSourceColumn[] }[] =
+    useMemo(() => {
+      let schemas: DataSourceStructure['schemas']
+      switch (props.dataSource.structure.status) {
+        case 'loading':
+        case 'success':
+          schemas = props.dataSource.structure.structure?.schemas ?? {}
+          break
+        case 'failed':
+          schemas =
+            props.dataSource.structure.previousSuccess?.structure.schemas ?? {}
+          break
       }
-    })
-  }, [props.dataSource.structure.schemas, props.schema])
 
-  const columns = useMemo(() => {
-    if (!props.selectedTable) {
-      return []
-    }
+      const schema = schemas[props.schema] ?? { tables: {} }
 
-    const schema = props.dataSource.structure.schemas[props.schema]
-    if (!schema) {
-      return []
-    }
+      return Object.entries(schema.tables).map(([tableName, table]) => {
+        return {
+          name: tableName,
+          columns: table.columns,
+        }
+      })
+    }, [props.dataSource.structure, props.schema])
 
-    const table = schema.tables[props.selectedTable]
-    if (!table) {
-      return []
-    }
-
-    return table.columns
-  }, [props.dataSource.structure.schemas, props.schema, props.selectedTable])
+  const columns = useMemo(
+    () =>
+      tables.find((table) => table.name === props.selectedTable)?.columns ?? [],
+    [props.selectedTable, tables]
+  )
 
   return (
     <div className="flex flex-col h-full">

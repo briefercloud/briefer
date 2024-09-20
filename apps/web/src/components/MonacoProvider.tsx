@@ -13,10 +13,12 @@ import { CompletionContext, CompletionSource } from '@codemirror/autocomplete'
 import { languages } from 'monaco-editor'
 import {
   DataSourceStructure,
+  getDataSourceStructureFromState,
   PythonCompletionMessage,
   PythonSuggestion,
 } from '@briefer/types'
 import useWebsocket from '@/hooks/useWebsocket'
+import { APIDataSource } from '@briefer/database'
 
 const keywordRanking = [
   'SELECT',
@@ -186,8 +188,12 @@ function getPythonKind(s: PythonSuggestion): languages.CompletionItemKind {
 }
 
 function getSchemaFromStructure(
-  structure: DataSourceStructure
+  structure: DataSourceStructure | null
 ): sql.SQLNamespace {
+  if (structure === null) {
+    return {}
+  }
+
   const namespace: sql.SQLNamespace = {}
   for (const [schemaName, schema] of Object.entries(structure.schemas)) {
     for (const [tableName, table] of Object.entries(schema.tables)) {
@@ -209,11 +215,8 @@ type MonacoContextAPI = {
   setEditorReadiness: React.Dispatch<
     React.SetStateAction<Record<string, boolean>>
   >
-  setModelDataSourceStructure: (
-    modelId: string,
-    dataSourceStructure: DataSourceStructure
-  ) => void
-  removeModelDataSourceStructure: (modelId: string) => void
+  setModelDataSource: (modelId: string, dataSource: APIDataSource) => void
+  removeModelDataSource: (modelId: string) => void
   setModelDocumentBlock: (
     modelId: string,
     documentId: string,
@@ -231,8 +234,8 @@ export const MonacoContext = React.createContext<UseMonacoContext>([
   },
   {
     setEditorReadiness: () => {},
-    setModelDataSourceStructure: () => {},
-    removeModelDataSourceStructure: () => {},
+    setModelDataSource: () => {},
+    removeModelDataSource: () => {},
     setModelDocumentBlock: () => {},
     removeModelDocumentBlock: () => {},
   },
@@ -505,20 +508,21 @@ function MonacoProvider({ children }: Props) {
     Record<string, CompletionSource>
   >({})
 
-  const setModelDataSourceStructure = useCallback(
-    async (modelId: string, dataSourceStructure: DataSourceStructure) => {
-      let completionSource = completionSources[dataSourceStructure.dataSourceId]
+  const setModelDataSource = useCallback(
+    async (modelId: string, dataSource: APIDataSource) => {
+      let completionSource = completionSources[dataSource.config.data.id]
       if (!completionSource) {
-        const schema = getSchemaFromStructure(dataSourceStructure)
+        const structure = getDataSourceStructureFromState(dataSource.structure)
+        const schema = getSchemaFromStructure(structure)
         completionSource = await sql.schemaCompletionSource({
           dialect: sql.StandardSQL,
           schema,
-          defaultSchema: dataSourceStructure.defaultSchema,
+          defaultSchema: structure?.defaultSchema ?? '',
         })
 
         setCompletionSources((prev) => ({
           ...prev,
-          [dataSourceStructure.dataSourceId]: completionSource,
+          [dataSource.config.data.id]: completionSource,
         }))
       }
       setModelDataSourceStructures((prev) => ({
@@ -529,7 +533,7 @@ function MonacoProvider({ children }: Props) {
     [completionSources]
   )
 
-  const removeModelDataSourceStructure = useCallback((modelId: string) => {
+  const removeModelDataSource = useCallback((modelId: string) => {
     setModelDataSourceStructures((prev) => {
       const { [modelId]: _, ...rest } = prev
       return rest
@@ -556,15 +560,15 @@ function MonacoProvider({ children }: Props) {
   const api = useMemo(
     () => ({
       setEditorReadiness,
-      setModelDataSourceStructure,
-      removeModelDataSourceStructure,
+      setModelDataSource,
+      removeModelDataSource,
       setModelDocumentBlock,
       removeModelDocumentBlock,
     }),
     [
       setEditorReadiness,
-      setModelDataSourceStructure,
-      removeModelDataSourceStructure,
+      setModelDataSource,
+      removeModelDataSource,
       setModelDocumentBlock,
       removeModelDocumentBlock,
     ]

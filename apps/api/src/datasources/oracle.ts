@@ -1,9 +1,8 @@
 import { config } from '../config/index.js'
 import prisma, { DataSource, OracleDataSource } from '@briefer/database'
 import { DataSourceStatus } from './index.js'
-import { getOracleSchema, pingOracle } from '../python/query/oracle.js'
+import { pingOracle } from '../python/query/oracle.js'
 import { logger } from '../logger.js'
-import { DataSourceStructure } from '@briefer/types'
 
 export async function ping(ds: OracleDataSource): Promise<DataSource> {
   const lastConnection = new Date()
@@ -19,12 +18,6 @@ export async function ping(ds: OracleDataSource): Promise<DataSource> {
   }
 
   return updateConnStatus(ds, { connStatus: 'offline', connError: err })
-}
-
-export async function getSchema(
-  ds: OracleDataSource
-): Promise<DataSourceStructure> {
-  return getOracleSchema(ds, config().DATASOURCES_ENCRYPTION_KEY)
 }
 
 export async function updateConnStatus(

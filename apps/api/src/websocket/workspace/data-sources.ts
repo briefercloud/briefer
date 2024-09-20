@@ -5,28 +5,12 @@ import {
   listDataSources,
 } from '@briefer/database'
 import { IOServer, Socket } from '../index.js'
-import { getStructure } from '../../datasources/structure.js'
-import { DataSourceStructure } from '@briefer/types'
 import { z } from 'zod'
 import { Session } from '../../types.js'
-
-const raceStructure = async (d: DataSource) =>
-  Promise.race<DataSourceStructure>([
-    new Promise((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            dataSourceId: d.data.id,
-            schemas: {},
-            defaultSchema: '',
-          }),
-        2000
-      )
-    ),
-    getStructure(d),
-  ])
+import { fetchDataSourceStructure } from '../../datasources/structure.js'
 
 export function refreshDataSources(
+  socketServer: IOServer,
   socket: Socket,
   { userWorkspaces }: Session
 ) {
@@ -43,16 +27,21 @@ export function refreshDataSources(
     }
 
     const { workspaceId } = payload.data
-    emitDataSources(socket, workspaceId)
+    emitDataSources(socketServer, socket, workspaceId)
   }
 }
 
-export async function emitDataSources(socket: Socket, workspaceId: string) {
+export async function emitDataSources(
+  socketServer: IOServer,
+  socket: Socket,
+  workspaceId: string
+) {
   const dataSources = await listDataSources(workspaceId)
   const result: APIDataSource[] = await Promise.all(
     dataSources.map(async (d) => {
-      const structure = await raceStructure(d)
-
+      const structure = await fetchDataSourceStructure(socketServer, d, {
+        forceRefresh: false,
+      })
       return { config: d, structure }
     })
   )
@@ -62,24 +51,14 @@ export async function emitDataSources(socket: Socket, workspaceId: string) {
 
 export async function broadcastDataSource(
   socket: IOServer,
-  workspaceId: string,
-  dataSourceId: string,
-  type: DataSource['type']
+  dataSource: APIDataSource
 ) {
-  const dataSource = await getDatasource(workspaceId, dataSourceId, type)
-  if (!dataSource) {
-    return
-  }
-
-  const result = {
-    config: dataSource,
-    structure: await raceStructure(dataSource),
-  }
-
-  socket.to(workspaceId).emit('workspace-datasource-update', {
-    workspaceId,
-    dataSource: result,
-  })
+  socket
+    .to(dataSource.config.data.workspaceId)
+    .emit('workspace-datasource-update', {
+      workspaceId: dataSource.config.data.workspaceId,
+      dataSource,
+    })
 }
 
 export async function broadcastDataSources(
@@ -89,7 +68,9 @@ export async function broadcastDataSources(
   const dataSources = await listDataSources(workspaceId)
   const result: APIDataSource[] = await Promise.all(
     dataSources.map(async (d) => {
-      const structure = await raceStructure(d)
+      const structure = await fetchDataSourceStructure(socket, d, {
+        forceRefresh: false,
+      })
 
       return { config: d, structure }
     })

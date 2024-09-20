@@ -14,6 +14,7 @@ import {
   makeSQLAlchemyQuery,
   pingSQLAlchemy,
 } from './sqlalchemy.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makePSQLQuery(
   workspaceId: string,
@@ -58,7 +59,8 @@ export function pingPSQL(
 export function getPSQLSchema(
   ds: PostgreSQLDataSource | RedshiftDataSource,
   type: 'psql' | 'redshift',
-  encryptionKey: string
+  encryptionKey: string,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
-  return getSQLAlchemySchema({ type, data: ds }, encryptionKey, null)
+  return getSQLAlchemySchema({ type, data: ds }, encryptionKey, null, onTable)
 }
