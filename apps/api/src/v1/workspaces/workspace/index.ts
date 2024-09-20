@@ -76,7 +76,7 @@ export default function workspaceRouter(socketServer: IOServer) {
   })
 
   router.use('/onboarding', onboardingRouter)
-  router.use('/data-sources', dataSourcesRouter)
+  router.use('/data-sources', dataSourcesRouter(socketServer))
   router.use('/documents', documentsRouter(socketServer))
   router.use('/users', usersRouter)
   router.use('/favorites', favoritesRouter)

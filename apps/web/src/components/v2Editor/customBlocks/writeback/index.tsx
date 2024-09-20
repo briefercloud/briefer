@@ -13,7 +13,7 @@ import {
   StopIcon,
 } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { ConnectDragPreview } from 'react-dnd'
 import * as Y from 'yjs'
 import WritebackControls from './WritebackControls'
@@ -138,6 +138,11 @@ function WritebackBlock(props: Props) {
     })
   }, [blockId, setInteractionState])
 
+  const dataSources = useMemo(
+    () => props.dataSources.map((d) => d.config).toArray(),
+    [props.dataSources]
+  )
+
   return (
     <div
       className="relative group/block"
@@ -218,7 +223,7 @@ function WritebackBlock(props: Props) {
             <WritebackResult
               status={execStatus}
               result={result}
-              dataSources={props.dataSources.map((d) => d.dataSource)}
+              dataSources={dataSources}
             />
           </div>
         </div>

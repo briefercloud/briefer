@@ -111,7 +111,8 @@ function NewTabButton(props: Props) {
             props.lastBlockId,
             {
               type: item.type,
-              dataSourceId: props.dataSources[0]?.dataSource.data.id,
+              dataSourceId:
+                props.dataSources.get(0)?.config.data.id ?? null,
               isFileDataSource: false,
             },
             'after'

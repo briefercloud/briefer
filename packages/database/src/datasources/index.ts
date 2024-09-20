@@ -9,6 +9,7 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
+import { DataSourceStructure } from '@briefer/types'
 
 export * from './bigquery.js'
 export * from './psql.js'
@@ -107,7 +108,7 @@ export async function getDatasource(
     case 'sqlserver':
       return sqlserver
         .getSQLServerDataSource(workspaceId, id)
-        .then((data): DataSource | null => 
+        .then((data): DataSource | null =>
           data ? { type: 'sqlserver', data } : null
         )
   }
@@ -161,7 +162,7 @@ export async function getDatasourcePassword(
           where: { id: datasource.data.id },
           select: { password: true },
         })
-        .then((row) => 
+        .then((row) =>
           row.password !== null ? decrypt(row.password, encryptionKey) : ''
         )
     case 'bigquery':
@@ -311,4 +312,9 @@ export async function getCredentialsInfo(
       }
     }
   }
+}
+
+export type APIDataSource = {
+  config: DataSource
+  structure: DataSourceStructure
 }

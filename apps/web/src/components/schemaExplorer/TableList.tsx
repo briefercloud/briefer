@@ -1,4 +1,4 @@
-import { APIDataSource } from '@/hooks/useDatasources'
+import { type APIDataSource } from '@briefer/database'
 import ExplorerTitle from './ExplorerTitle'
 import { databaseImages } from '../DataSourcesList'
 import clsx from 'clsx'
@@ -63,12 +63,12 @@ export default function TableList(props: Props) {
           <div className="flex gap-x-1.5 items-center">
             <ChevronLeftIcon className="h-3 w-3 text-gray-500 group-hover:text-gray-700" />
             <h4>
-              {props.dataSource.dataSource.data.name}.{props.schema}
+              {props.dataSource.config.data.name}.{props.schema}
             </h4>
           </div>
 
           <img
-            src={databaseImages(props.dataSource.dataSource.type)}
+            src={databaseImages(props.dataSource.config.type)}
             alt=""
             className="h-4 w-4 group-hover:grayscale-[50%]"
           />

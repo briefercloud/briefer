@@ -63,7 +63,7 @@ function Title(props: Props) {
         TitleExtension.configure({
           level: 1,
           HTMLAttributes: {
-            style: 'font-weight: bold; font-size: 4rem;' + props.style ?? '',
+            style: 'font-weight: bold; font-size: 4rem;' + (props.style ?? ''),
           },
         }),
         Placeholder.configure({

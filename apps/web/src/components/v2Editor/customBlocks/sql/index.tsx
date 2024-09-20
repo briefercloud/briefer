@@ -138,7 +138,7 @@ function SQLBlock(props: Props) {
 
   useEffect(() => {
     const currentSrc = getSQLSource(props.block)
-    if (!props.dataSources.length && currentSrc.length === 0) {
+    if (!props.dataSources.size && currentSrc.length === 0) {
       updateYText(getSQLSource(props.block), NO_DS_TEXT)
     }
   }, [props.dataSources, props.block])
@@ -277,7 +277,7 @@ function SQLBlock(props: Props) {
       return
     }
     const dataSource = props.dataSources.find(
-      (ds) => ds.dataSource.data.id === dataSourceId
+      (ds) => ds.config.data.id === dataSourceId
     )
     if (!dataSource) {
       return
@@ -342,6 +342,19 @@ function SQLBlock(props: Props) {
       mode: 'normal',
     })
   }, [blockId, setInteractionState])
+
+  const dataSourcesOptions = useMemo(
+    () =>
+      props.dataSources
+        .map((d) => ({
+          value: d.config.data.id,
+          label: d.config.data.name,
+          type: d.config.type,
+          isDemo: d.config.data.isDemo,
+        }))
+        .toArray(),
+    [props.dataSources]
+  )
 
   if (props.dashboardMode !== 'none') {
     if (!result) {
@@ -442,21 +455,14 @@ function SQLBlock(props: Props) {
                 <HeaderSelect
                   hidden={props.isPublicMode}
                   value={headerSelectValue ?? ''}
-                  options={props.dataSources.map((d) => ({
-                    value: d.dataSource.data.id,
-                    label: d.dataSource.data.name,
-                    type: d.dataSource.type,
-                    isDemo: d.dataSource.data.isDemo,
-                  }))}
+                  options={dataSourcesOptions}
                   onChange={onChangeDataSource}
                   disabled={!props.isEditable || statusIsDisabled}
                   onAdd={
-                    props.dataSources.length === 0 ? onAddDataSource : undefined
+                    props.dataSources.size === 0 ? onAddDataSource : undefined
                   }
                   onAddLabel={
-                    props.dataSources.length === 0
-                      ? 'New data source'
-                      : undefined
+                    props.dataSources.size === 0 ? 'New data source' : undefined
                   }
                 />
               </div>
@@ -643,7 +649,7 @@ function SQLBlock(props: Props) {
                 status={status}
               />
             </div>
-          ) : props.dataSources.length > 0 || headerSelectValue === 'duckdb' ? (
+          ) : props.dataSources.size > 0 || headerSelectValue === 'duckdb' ? (
             <RunQueryTooltip />
           ) : (
             <MissingDataSourceTooltip />
