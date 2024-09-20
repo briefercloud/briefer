@@ -20,19 +20,19 @@ export default function DatabaseList(props: Props) {
           {props.dataSources.map((dataSource) => {
             return (
               <li
-                key={dataSource.dataSource.data.id}
+                key={dataSource.config.data.id}
                 className="px-4 xl:px-6 py-2 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between"
                 onClick={() =>
-                  props.onSelectDataSource(dataSource.dataSource.data.id)
+                  props.onSelectDataSource(dataSource.config.data.id)
                 }
               >
                 <div className="flex gap-x-2.5 items-center font-mono text-xs">
                   <img
-                    src={databaseImages(dataSource.dataSource.type)}
+                    src={databaseImages(dataSource.config.type)}
                     alt=""
                     className="h-4 w-4 text-red-600"
                   />
-                  <h4>{dataSource.dataSource.data.name}</h4>
+                  <h4>{dataSource.config.data.name}</h4>
                 </div>
                 <ChevronRightIcon className="h-3 w-3 text-gray-500" />
               </li>

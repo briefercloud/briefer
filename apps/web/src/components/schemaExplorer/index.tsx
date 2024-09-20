@@ -24,7 +24,7 @@ export default function SchemaExplorer(props: Props) {
     }
   }, [props.visible])
 
-  const [dataSources] = useDataSources(workspaceId)
+  const [{ data: dataSources }] = useDataSources(workspaceId)
   const [state, setState] = useState<{
     initialDataSourceId: string | null
     dataSourceId: string | null
@@ -59,7 +59,7 @@ export default function SchemaExplorer(props: Props) {
     }
 
     return (
-      dataSources.find((ds) => ds.dataSource.data.id === state.dataSourceId) ??
+      dataSources.find((ds) => ds.config.data.id === state.dataSourceId) ??
       null
     )
   }, [state.dataSourceId, dataSources])

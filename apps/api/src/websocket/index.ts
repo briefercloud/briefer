@@ -3,7 +3,11 @@ import { config } from '../config/index.js'
 import { sessionFromCookies } from '../auth/token.js'
 import cookie from 'cookie'
 import { Socket as BaseSocket, Server as BaseServer } from 'socket.io'
-import { ApiDocument, EnvironmentStatus } from '@briefer/database'
+import {
+  APIDataSource,
+  ApiDocument,
+  EnvironmentStatus,
+} from '@briefer/database'
 import { PythonCompletionMessage } from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
@@ -14,6 +18,7 @@ import {
 } from './workspace/environment.js'
 import { Session } from '../types.js'
 import completePython from './complete-python.js'
+import { refreshDataSources } from './workspace/data-sources.js'
 
 interface EmitEvents {
   'environment-status-update': (msg: {
@@ -34,6 +39,15 @@ interface EmitEvents {
   'workspace-document-update': (msg: {
     workspaceId: string
     document: ApiDocument
+  }) => void
+
+  'workspace-datasources': (msg: {
+    workspaceId: string
+    dataSources: APIDataSource[]
+  }) => void
+  'workspace-datasource-update': (msg: {
+    workspaceId: string
+    dataSource: APIDataSource
   }) => void
 
   'python-completion': (msg: PythonCompletionMessage) => void
@@ -120,6 +134,10 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(handleRestartEnvironment(socket, session))
     )
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
+    socket.on(
+      'workspace-datasources-refresh',
+      trackWork(refreshDataSources(socket, session))
+    )
 
     socket.on('disconnect', (reason) => {
       logger().info(

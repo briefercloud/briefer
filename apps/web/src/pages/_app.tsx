@@ -17,6 +17,7 @@ import DndBackendProvider from '@/components/DndBackendProvider'
 import { SideBarProvider } from '@/hooks/useSideBar'
 import useProperties from '@/hooks/useProperties'
 import Telemetry from '@/components/Telemetry'
+import { DataSourcesProvider } from '@/hooks/useDatasources'
 const MonacoProvider = dynamic(() => import('@/components/MonacoProvider'), {
   ssr: false,
 })
@@ -43,13 +44,15 @@ function App({ Component, pageProps: { session, ...pageProps } }: Props) {
         <WebsocketProvider>
           <EnvironmentStatusProvider>
             <DocumentsProvider>
-              <SideBarProvider>
-                <Layout>
-                  <MonacoProvider>
-                    <Component {...pageProps} />
-                  </MonacoProvider>
-                </Layout>
-              </SideBarProvider>
+              <DataSourcesProvider>
+                <SideBarProvider>
+                  <Layout>
+                    <MonacoProvider>
+                      <Component {...pageProps} />
+                    </MonacoProvider>
+                  </Layout>
+                </SideBarProvider>
+              </DataSourcesProvider>
             </DocumentsProvider>
           </EnvironmentStatusProvider>
         </WebsocketProvider>

@@ -1213,12 +1213,12 @@ const V2Editor = (props: V2EditorProps) => {
       sortWith(
         [
           // put demo data source last
-          descend((d) => (d.dataSource.data.isDemo ? 0 : 1)),
+          descend((d) => (d.config.data.isDemo ? 0 : 1)),
           // put newer data sources first
-          descend((d) => d.dataSource.data.createdAt),
+          descend((d) => d.config.data.createdAt),
         ],
-        props.dataSources
-      )[0]?.dataSource.data.id,
+        props.dataSources.toArray()
+      )[0]?.config.data.id,
     [props.dataSources]
   )
 
@@ -1601,7 +1601,7 @@ const V2Editor = (props: V2EditorProps) => {
     () =>
       props.dataSources.some(
         (ds) =>
-          ds.dataSource.type === 'psql' || ds.dataSource.type === 'bigquery'
+          ds.config.type === 'psql' || ds.config.type === 'bigquery'
       ),
     [props.dataSources]
   )

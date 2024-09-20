@@ -127,15 +127,15 @@ function LastConnection(props: LastConnectionProps) {
   const lastConnText = props.dataSource.data.isDemo
     ? 'just now'
     : props.dataSource.data.lastConnection === null
-      ? 'never'
-      : differenceInSeconds(
-            new Date(),
-            new Date(props.dataSource.data.lastConnection)
-          ) < 30
-        ? 'just now'
-        : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
-            addSuffix: true,
-          })
+    ? 'never'
+    : differenceInSeconds(
+        new Date(),
+        new Date(props.dataSource.data.lastConnection)
+      ) < 30
+    ? 'just now'
+    : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
+        addSuffix: true,
+      })
 
   const [statusBallColor, statusBallRippleColor] = useMemo(() => {
     if (props.dataSource.data.isDemo) {
@@ -208,19 +208,19 @@ interface Props {
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
     return props.dataSources.sort((a, b) => {
-      if (a.dataSource.data.name < b.dataSource.data.name) return -1
-      if (a.dataSource.data.name > b.dataSource.data.name) return 1
+      if (a.config.data.name < b.config.data.name) return -1
+      if (a.config.data.name > b.config.data.name) return 1
       return 0
     })
   }, [props.dataSources])
 
-  if (props.dataSources.length === 0) {
+  if (props.dataSources.size === 0) {
     return <EmptyAPIDataSources workspaceId={props.workspaceId} />
   }
 
   return (
     <ul role="list" className="divide-y divide-gray-200 pt-1">
-      {orderedAPIDataSources.map(({ dataSource }) => (
+      {orderedAPIDataSources.map(({ config: dataSource }) => (
         <li
           key={dataSource.data.id}
           className="flex justify-between gap-x-6 py-5"

@@ -91,7 +91,7 @@ export const useDataSource = (
 }
 
 export const useNewDataSource = (workspaceId: string) => {
-  const [, , { refresh }] = useDataSources(workspaceId)
+  const [, { refresh }] = useDataSources(workspaceId)
   const create = useCallback(
     async (
       data: DataSourceInput,
@@ -139,7 +139,7 @@ export const useNewDataSource = (workspaceId: string) => {
       }
 
       const result = await res.json()
-      await refresh()
+      await refresh(workspaceId)
       return result
     },
     [workspaceId, refresh]

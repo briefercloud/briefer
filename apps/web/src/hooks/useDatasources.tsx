@@ -1,0 +1,163 @@
+import { Map, List } from 'immutable'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import useWebsocket from './useWebsocket'
+import { type APIDataSource } from '@briefer/database'
+
+export type APIDataSources = List<APIDataSource>
+
+type API = {
+  ping: (
+    workspaceId: string,
+    id: string,
+    type: string
+  ) => Promise<{
+    lastConnection: string | null
+    connStatus: 'online' | 'offline'
+  }>
+  remove: (workspaceId: string, id: string) => void
+  refresh: (workspaceId: string) => Promise<void>
+}
+
+type State = Map<string, APIDataSources>
+
+const Context = createContext<[State, API]>([
+  Map(),
+  {
+    ping: async () => {
+      throw new Error(
+        'Attempted to call data source ping without DataSourcesProvider'
+      )
+    },
+    remove: async () => {
+      throw new Error(
+        'Attempted to call data source remove without DataSourcesProvider'
+      )
+    },
+    refresh: async () => {
+      throw new Error(
+        'Attempted to call data source refresh without DataSourcesProvider'
+      )
+    },
+  },
+])
+
+type UseDataSources = [{ data: APIDataSources; isLoading: boolean }, API]
+export const useDataSources = (workspaceId: string): UseDataSources => {
+  const [state, api] = useContext(Context)
+  return useMemo(() => {
+    const data = state.get(workspaceId)
+    return [{ data: data ?? List(), isLoading: !data }, api]
+  }, [state, workspaceId])
+}
+
+interface Props {
+  children: React.ReactNode
+}
+export function DataSourcesProvider(props: Props) {
+  const socket = useWebsocket()
+  const [state, setState] = useState<State>(Map())
+
+  useEffect(() => {
+    if (!socket) {
+      return
+    }
+
+    const onDataSources = (data: {
+      workspaceId: string
+      dataSources: APIDataSources
+    }) => {
+      setState((state) => state.set(data.workspaceId, data.dataSources))
+    }
+
+    socket.on('workspace-datasources', onDataSources)
+
+    const onDataSourceUpdate = ({
+      workspaceId,
+      dataSource,
+    }: {
+      workspaceId: string
+      dataSource: APIDataSource
+    }) => {
+      setState((state) => {
+        const datasources = state.get(workspaceId, List<APIDataSource>())
+
+        return state.set(
+          workspaceId,
+          datasources.map((ds) =>
+            ds.config.data.id === dataSource.config.data.id ? dataSource : ds
+          )
+        )
+      })
+    }
+
+    socket.on('workspace-datasource-update', onDataSourceUpdate)
+
+    return () => {
+      socket.off('workspace-datasources', onDataSources)
+      socket.off('workspace-datasource-update', onDataSourceUpdate)
+    }
+  }, [socket])
+
+  const ping = useCallback(
+    async (workspaceId: string, id: string, type: string) => {
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${id}/ping`,
+        {
+          credentials: 'include',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: type }),
+        }
+      )
+
+      return res.json()
+    },
+    []
+  )
+
+  const remove = useCallback(async (workspaceId: string, id: string) => {
+    const res = await fetch(
+      `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${id}`,
+      {
+        credentials: 'include',
+        method: 'DELETE',
+      }
+    )
+
+    if (!res.ok) {
+      // TODO proper error handling
+      alert('Failed to remove data source')
+    }
+  }, [])
+
+  const refresh = useCallback(
+    async (workspaceId: string) => {
+      socket?.emit('workspace-datasources-refresh', workspaceId)
+    },
+    [socket]
+  )
+
+  const value: [State, API] = useMemo(
+    () => [
+      state,
+      {
+        ping,
+        remove,
+        refresh,
+      },
+    ],
+    [state, ping, remove, refresh]
+  )
+
+  return <Context.Provider value={value}>{props.children}</Context.Provider>
+}

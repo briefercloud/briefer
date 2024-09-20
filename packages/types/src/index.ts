@@ -771,6 +771,73 @@ export const DataSourceStructure = z.object({
 })
 export type DataSourceStructure = z.infer<typeof DataSourceStructure>
 
+export const DataSourceStructureStateV1 = z.object({
+  updatedAt: z.string().nullable(),
+  structure: DataSourceStructure,
+  failedAt: z.string().nullable(),
+})
+export type DataSourceStructureStateV1 = z.infer<
+  typeof DataSourceStructureStateV1
+>
+
+export const DataSourceStructureStateV2 = z.union([
+  z.object({
+    status: z.literal('success'),
+    updatedAt: z.number(),
+    structure: DataSourceStructure,
+    refreshingSince: z.number().nullable(),
+  }),
+  z.object({
+    status: z.literal('failed'),
+    failedAt: z.number(),
+    previousSuccess: z
+      .object({
+        structure: DataSourceStructure,
+        updatedAt: z.number(),
+      })
+      .nullable(),
+  }),
+  z.object({
+    status: z.literal('loading'),
+    startedAt: z.number(),
+  }),
+])
+
+export type DataSourceStructureV2 = z.infer<typeof DataSourceStructureStateV2>
+
+export const DataSourceStructureState = z.union([
+  DataSourceStructureStateV1,
+  DataSourceStructureStateV2,
+])
+
+export type DataSourceStructureState = z.infer<typeof DataSourceStructureState>
+
+export function dataSourceStructureStateToV2(
+  state: DataSourceStructureState
+): DataSourceStructureV2 {
+  if ('status' in state) {
+    return state
+  }
+
+  if (state.failedAt) {
+    return {
+      status: 'failed',
+      failedAt: new Date(state.failedAt).getTime(),
+      previousSuccess: {
+        structure: state.structure,
+        updatedAt: new Date(state.updatedAt ?? 0).getTime(),
+      },
+    }
+  }
+
+  return {
+    status: 'success',
+    structure: state.structure,
+    updatedAt: new Date(state.updatedAt ?? 0).getTime(),
+    refreshingSince: null,
+  }
+}
+
 export const PythonSuggestion = z.object({
   start: z.number(),
   end: z.number(),

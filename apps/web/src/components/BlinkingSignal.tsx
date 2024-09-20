@@ -28,12 +28,10 @@ function BlinkingSignal(props: Props) {
 
 export const DataSourceBlinkingSignal = () => {
   const workspaceId = useStringQuery('workspaceId') ?? ''
-  const [allDataSources, isLoading] = useDataSources(workspaceId)
-  const userDataSources = allDataSources.filter(
-    (ds) => !ds.dataSource.data.isDemo
-  )
+  const [{ data: allDataSources, isLoading }] = useDataSources(workspaceId)
+  const userDataSources = allDataSources.filter((ds) => !ds.config.data.isDemo)
 
-  if (isLoading || !userDataSources || userDataSources.length > 0) {
+  if (isLoading || !userDataSources || userDataSources.size > 0) {
     return null
   }
 
