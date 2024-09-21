@@ -297,14 +297,10 @@ function PivotTableBlock(props: Props) {
     [props.block, props.onRun]
   )
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
   const onClickWithin = useCallback(() => {
-    setInteractionState({
-      cursorBlockId: attrs.id,
-      scrollIntoView: false,
-      mode: 'insert',
-    })
-  }, [attrs.id, setInteractionState])
+    editorAPI.insert(attrs.id, { scrollIntoView: false })
+  }, [attrs.id, editorAPI.insert])
 
   if (props.dashboardMode !== 'none') {
     if (!attrs.result) {

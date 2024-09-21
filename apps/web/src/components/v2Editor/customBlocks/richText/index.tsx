@@ -126,7 +126,7 @@ const RichTextBlock = (props: Props) => {
     [props.block]
   )
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
 
   const { editor } = useBlockEditor({
     content,
@@ -144,21 +144,14 @@ const RichTextBlock = (props: Props) => {
     if (!editor) {
       return
     }
+
     const onFocus = () => {
-      setInteractionState({
-        cursorBlockId: id,
-        mode: 'insert',
-        scrollIntoView: false,
-      })
+      editorAPI.insert(id, { scrollIntoView: false })
     }
     editor.on('focus', onFocus)
 
     const onBlur = () => {
-      setInteractionState({
-        cursorBlockId: id,
-        mode: 'normal',
-        scrollIntoView: false,
-      })
+      editorAPI.blur()
     }
     editor.on('blur', onBlur)
 
@@ -166,7 +159,7 @@ const RichTextBlock = (props: Props) => {
       editor.off('focus', onFocus)
       editor.off('blur', onBlur)
     }
-  }, [editor, id, setInteractionState])
+  }, [editor, id, editorAPI.insert, editorAPI.blur])
 
   return (
     <div
