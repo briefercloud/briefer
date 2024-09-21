@@ -1,7 +1,12 @@
 import { Awareness } from 'y-protocols/awareness'
 import clsx from 'clsx'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DropTargetMonitor, useDrag, useDrop } from 'react-dnd'
+import {
+  ConnectDragPreview,
+  DropTargetMonitor,
+  useDrag,
+  useDrop,
+} from 'react-dnd'
 import { useLastUpdatedAt, useYDocState } from '@/hooks/useYDoc'
 import * as Y from 'yjs'
 import Title from './Title'
@@ -28,7 +33,7 @@ import {
   requestTrySuggestion,
   addBlockGroupAfterBlock,
   getBaseAttributes,
-  TabRef,
+  TabRef as TabRefT,
   YBlockGroup,
   canReorderTab,
   getCurrentTabId,
@@ -41,7 +46,6 @@ import {
   getBlockGroup,
   RemoveBlockGroupResult,
   RemoveBlockDashboardConflictResult,
-  getRelativeBlockId as internalGetRelativeBlockId,
   getNextBlockIdAfterDelete,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
@@ -85,7 +89,9 @@ import RemoveTabDashboardConflictDialog from './RemoveTabDashboardConflictDialog
 import PivotTableBlock from './customBlocks/pivotTable'
 import useHotkeys from '@/hooks/useHotkeys'
 import { HotkeysProvider } from 'react-hotkeys-hook'
-import useEditorAwareness from '@/hooks/useEditorAwareness'
+import useEditorAwareness, {
+  EditorAwarenessProvider,
+} from '@/hooks/useEditorAwareness'
 
 export enum ElementType {
   Block = 'BLOCK',
@@ -195,7 +201,7 @@ export function getTabIcon(
 }
 
 interface TabProps {
-  tabRef: TabRef
+  tabRef: TabRefT
   onSwitchActiveTab: (tabId: string) => void
   onReorderTab: (
     blockGroupId: string,
@@ -395,7 +401,6 @@ const DraggableTabbedBlock = (props: {
   yDoc: Y.Doc
   isPDF: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
-  selectBelow: () => void
   insertBelow: () => void
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
@@ -611,226 +616,59 @@ file`
     [layout, blocks, props.isApp]
   )
 
-  const { interactionState } = useEditorAwareness()
-
   const nodes = useMemo(() => {
     if (tabRefs.length === 0) {
       return <div>Block group is empty</div>
     }
 
-    return tabRefs.map((tab) => {
-      const block = blocks.value.get(tab.blockId)
-      if (!block) {
-        return <div>Block not found</div>
-      }
-
-      const isCursorWithin = interactionState.cursorBlockId === tab.blockId
-      const isCursorInserting = interactionState.mode === 'insert'
-
-      const jsx = switchBlockType(block, {
-        onRichText: (block) => (
-          <RichTextBlock
-            block={block}
-            isEditable={props.isEditable}
-            belongsToMultiTabGroup={hasMultipleTabs}
-            dragPreview={hasMultipleTabs ? null : dragPreview}
-            isDashboard={false}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onSQL: (block) => (
-          <SQLBlock
-            block={block}
-            layout={layout.value}
-            blocks={blocks.value}
-            isPublicMode={props.isPublicViewer}
-            isEditable={props.isEditable}
-            document={props.document}
-            dataSources={props.dataSources}
-            dragPreview={hasMultipleTabs ? null : dragPreview}
-            onRun={onRun}
-            onTry={onTry}
-            dashboardMode="none"
-            hasMultipleTabs={hasMultipleTabs}
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            onSchemaExplorer={props.onSchemaExplorer}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-            selectBelow={props.selectBelow}
-            insertBelow={props.insertBelow}
-          />
-        ),
-        onPython: (block) => (
-          <PythonBlock
-            isPublicMode={props.isPublicViewer}
-            block={block}
-            blocks={blocks.value}
-            isEditable={props.isEditable}
-            document={props.document}
-            dragPreview={hasMultipleTabs ? null : dragPreview}
-            onRun={onRun}
-            onTry={onTry}
-            isPDF={props.isPDF}
-            dashboardPlace={null}
-            hasMultipleTabs={hasMultipleTabs}
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-            selectBelow={props.selectBelow}
-            insertBelow={props.insertBelow}
-          />
-        ),
-        onVisualization: (block) => (
-          <VisualizationBlock
-            isPublicMode={props.isPublicViewer}
-            isEditable={props.isEditable}
-            document={props.document}
-            onAddGroupedBlock={addGroupedBlock}
-            block={block}
-            dataframes={props.dataframes}
-            dragPreview={hasMultipleTabs ? null : dragPreview}
-            onRun={onRun}
-            isDashboard={false}
-            hasMultipleTabs={hasMultipleTabs}
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onInput: (block) => (
-          <InputBlock
-            block={block}
-            blocks={blocks.value}
-            dragPreview={dragPreview}
-            belongsToMultiTabGroup={hasMultipleTabs}
-            isEditable={props.isEditable}
-            isApp={props.isApp}
-            onRun={onRun}
-            isDashboard={false}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onDropdownInput: (block) => (
-          <DropdownInputBlock
-            block={block}
-            blocks={blocks.value}
-            dragPreview={dragPreview}
-            belongsToMultiTabGroup={hasMultipleTabs}
-            isEditable={props.isEditable}
-            isApp={props.isApp}
-            dataframes={props.dataframes}
-            onRun={onRun}
-            isDashboard={false}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onDateInput: (block) => (
-          <DateInputBlock
-            block={block}
-            blocks={blocks.value}
-            dragPreview={dragPreview}
-            belongsToMultiTabGroup={hasMultipleTabs}
-            isEditable={props.isEditable}
-            isApp={props.isApp}
-            onRun={onRun}
-            isDashboard={false}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onFileUpload: (block) => (
-          <FileUploadBlock
-            block={block}
-            workspaceId={props.document.workspaceId}
-            documentId={props.document.id}
-            isEditable={props.isEditable}
-            isPublicViewer={props.isPublicViewer}
-            dragPreview={dragPreview}
-            hasMultipleTabs={hasMultipleTabs}
-            onPythonUsage={(filename, type) =>
-              onFileUploadBlockPythonUsage(block, filename, type)
-            }
-            onQueryUsage={(filename) =>
-              onFileUploadBlockQueryUsage(block, filename)
-            }
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onDashboardHeader: () => null,
-        onWriteback: (block) => (
-          <WritebackBlock
-            workspaceId={props.document.workspaceId}
-            block={block}
-            hasMultipleTabs={hasMultipleTabs}
-            isEditable={props.isEditable}
-            dragPreview={dragPreview}
-            dataSources={props.dataSources}
-            dataframes={props.dataframes}
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-        onPivotTable: (block) => (
-          <PivotTableBlock
-            workspaceId={props.document.workspaceId}
-            block={block}
-            blocks={blocks.value}
-            hasMultipleTabs={hasMultipleTabs}
-            isEditable={props.isEditable}
-            onRun={onRun}
-            onAddGroupedBlock={addGroupedBlock}
-            dragPreview={dragPreview}
-            dataframes={props.dataframes}
-            isBlockHiddenInPublished={tab.isHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            dashboardMode="none"
-            isCursorWithin={isCursorWithin}
-            isCursorInserting={isCursorInserting}
-          />
-        ),
-      })
-
-      return (
-        <div
-          key={tab.blockId}
-          className={
-            tab.blockId === currentBlockId || props.isPDF
-              ? ''
-              : 'h-0 overflow-hidden'
-          }
-        >
-          {jsx}
-        </div>
-      )
-    })
+    return tabRefs.map((tab) => (
+      <TabRef
+        key={tab.blockId}
+        blocks={blocks.value}
+        tab={tab}
+        isEditable={props.isEditable}
+        hasMultipleTabs={hasMultipleTabs}
+        layout={layout.value}
+        isPublicViewer={props.isPublicViewer}
+        document={props.document}
+        dataSources={props.dataSources}
+        onRun={onRun}
+        onTry={onTry}
+        onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+        onSchemaExplorer={props.onSchemaExplorer}
+        insertBelow={props.insertBelow}
+        isPDF={props.isPDF}
+        addGroupedBlock={addGroupedBlock}
+        dataframes={props.dataframes}
+        isApp={props.isApp}
+        onFileUploadBlockPythonUsage={onFileUploadBlockPythonUsage}
+        onFileUploadBlockQueryUsage={onFileUploadBlockQueryUsage}
+        currentBlockId={currentBlockId}
+        dragPreview={dragPreview}
+      />
+    ))
   }, [
-    props.id,
-    layout,
+    tabRefs,
     blocks,
     props.isEditable,
+    hasMultipleTabs,
+    layout,
+    props.isPublicViewer,
+    props.document,
     props.dataSources,
     onRun,
-    props.dataframes,
+    onTry,
+    onToggleIsBlockHiddenInPublished,
+    props.onSchemaExplorer,
+    props.insertBelow,
     props.isPDF,
+    addGroupedBlock,
+    props.dataframes,
+    props.isApp,
     onFileUploadBlockPythonUsage,
     onFileUploadBlockQueryUsage,
-    props.isApp,
-    tabRefs,
-    hasMultipleTabs,
     currentBlockId,
-    props.onSchemaExplorer,
-    interactionState,
+    dragPreview,
   ])
 
   const onSwitchActiveTab = useCallback(
@@ -1126,7 +964,6 @@ const V2EditorRow = (props: {
   isPDF: boolean
   writebackEnabled: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
-  selectBelow: () => void
   insertBelow: () => void
 }) => {
   return (
@@ -1159,7 +996,6 @@ const V2EditorRow = (props: {
         yDoc={props.yDoc}
         isPDF={props.isPDF}
         onSchemaExplorer={props.onSchemaExplorer}
-        selectBelow={props.selectBelow}
         insertBelow={props.insertBelow}
       />
       <Dropzone
@@ -1174,7 +1010,7 @@ const V2EditorRow = (props: {
   )
 }
 
-type V2EditorProps = {
+interface Props {
   isPublicViewer: boolean
   document: ApiDocument
   dataSources: APIDataSources
@@ -1191,9 +1027,9 @@ type V2EditorProps = {
   isSyncing: boolean
   onOpenFiles: () => void
   onSchemaExplorer: (dataSourceId: string | null) => void
+  scrollViewRef: React.RefObject<HTMLDivElement>
 }
-
-const V2Editor = (props: V2EditorProps) => {
+const Editor = (props: Props) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
     layoutGetter
@@ -1228,46 +1064,7 @@ const V2Editor = (props: V2EditorProps) => {
     [props.dataSources]
   )
 
-  const { interactionState, setInteractionState } = useEditorAwareness()
-
-  const scrollViewRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (interactionState.cursorBlockId && interactionState.scrollIntoView) {
-      // find where data-block-id is equal to the cursorBlockId
-      const el = document.querySelector(
-        `[data-block-id="${interactionState.cursorBlockId}"]`
-      )
-      if (!el || !scrollViewRef.current) {
-        return
-      }
-
-      // const scrollViewTop = scrollViewRef.current.getBoundingClientRect().top
-      const scrollRect = scrollViewRef.current.getBoundingClientRect()
-      const elRect = el.getBoundingClientRect()
-
-      // if el height is larger than scroll view visible height, scroll to the top of the el
-      if (elRect.height > scrollRect.height) {
-        scrollViewRef.current.scrollBy({
-          top: elRect.top - scrollRect.top - 48,
-          behavior: 'smooth',
-        })
-      } else {
-        // scroll el so that it's center is at the center of the scroll view
-        const top =
-          elRect.top -
-          scrollRect.top -
-          scrollRect.height / 2 +
-          elRect.height / 2
-
-        scrollViewRef.current.scrollBy({
-          top,
-          behavior: 'smooth',
-        })
-      }
-
-      setInteractionState((prev) => ({ ...prev, scrollIntoView: false }))
-    }
-  }, [interactionState, scrollViewRef])
+  const [editorState, editorAPI] = useEditorAwareness()
 
   const onAddBlock = useCallback(
     (type: BlockType, index: number) => {
@@ -1306,12 +1103,11 @@ const V2Editor = (props: V2EditorProps) => {
             break
         }
 
-        console.log('newBlockId', newBlockId)
-        setInteractionState({
-          cursorBlockId: newBlockId,
-          mode: 'insert',
-          scrollIntoView: true,
-        })
+        if (newBlockId) {
+          editorAPI.insert(newBlockId, {
+            scrollIntoView: true,
+          })
+        }
 
         return newBlockId
       })
@@ -1322,54 +1118,15 @@ const V2Editor = (props: V2EditorProps) => {
       blocks,
       props.dataSources,
       newSQLDatasourceId,
-      setInteractionState,
+      editorAPI.insert,
     ]
   )
-
-  const moveCursor = useCallback(
-    (pos: 'above' | 'below' | 'left' | 'right', mode: 'normal' | 'insert') => {
-      const result = internalGetRelativeBlockId(
-        layout.value,
-        blocks.value,
-        interactionState.cursorBlockId,
-        pos
-      )
-      if (!result) {
-        return
-      }
-
-      const {
-        blockGroupId: nextCursorBlockGroupId,
-        blockId: nextCursorBlockId,
-      } = result
-
-      if (nextCursorBlockId !== null) {
-        if (pos === 'left' || pos === 'right') {
-          switchActiveTab(
-            layout.value,
-            nextCursorBlockGroupId,
-            nextCursorBlockId
-          )
-        }
-        setInteractionState({
-          cursorBlockId: nextCursorBlockId,
-          mode,
-          scrollIntoView: true,
-        })
-      }
-    },
-    [layout, blocks, interactionState, setInteractionState]
-  )
-
-  const selectBelow = useCallback(() => {
-    moveCursor('below', 'insert')
-  }, [moveCursor])
 
   const addBlockShortcut = useCallback(
     (blockType: BlockType, pos: 'above' | 'below') => {
       const nextIndex = layout.value.toArray().findIndex((bg) => {
         const tabs = getTabsFromBlockGroup(bg, blocks.value)
-        return tabs.some((t) => t.blockId === interactionState.cursorBlockId)
+        return tabs.some((t) => t.blockId === editorState.cursorBlockId)
       })
 
       if (nextIndex === -1) {
@@ -1378,31 +1135,29 @@ const V2Editor = (props: V2EditorProps) => {
 
       onAddBlock(blockType, pos === 'above' ? nextIndex : nextIndex + 1)
     },
-    [layout, blocks, interactionState, onAddBlock]
+    [layout, blocks, editorState, onAddBlock]
   )
 
   const insertBelow = useCallback(() => {
-    if (!interactionState.cursorBlockId) {
+    if (!editorState.cursorBlockId) {
       return
     }
 
     const blockType = blocks.value
-      .get(interactionState.cursorBlockId)
+      .get(editorState.cursorBlockId)
       ?.getAttribute('type')
     if (!blockType) {
       return
     }
 
     addBlockShortcut(blockType, 'below')
-  }, [interactionState, blocks, addBlockShortcut])
+  }, [editorState, blocks, addBlockShortcut])
 
   const focusCursorBlock = useCallback(() => {
-    setInteractionState((prev) => ({
-      ...prev,
-      mode: 'insert',
-      scrollIntoView: true,
-    }))
-  }, [setInteractionState])
+    if (editorState.cursorBlockId) {
+      editorAPI.insert(editorState.cursorBlockId, { scrollIntoView: true })
+    }
+  }, [editorState.cursorBlockId, editorAPI.insert])
 
   const [removeBlockDialog, setRemoveBlockDialog] =
     useState<RemoveBlockDashboardConflictResult | null>(null)
@@ -1429,7 +1184,7 @@ const V2Editor = (props: V2EditorProps) => {
   )
 
   const deleteBlockShortcut = useCallback(() => {
-    if (!interactionState.cursorBlockId) {
+    if (!editorState.cursorBlockId) {
       return
     }
 
@@ -1437,7 +1192,7 @@ const V2Editor = (props: V2EditorProps) => {
       .toArray()
       .find((bg) => {
         const tabs = getTabsFromBlockGroup(bg, blocks.value)
-        return tabs.some((t) => t.blockId === interactionState.cursorBlockId)
+        return tabs.some((t) => t.blockId === editorState.cursorBlockId)
       }, null)
       ?.getAttribute('id')
 
@@ -1448,7 +1203,7 @@ const V2Editor = (props: V2EditorProps) => {
     const nextCursorBlockId = getNextBlockIdAfterDelete(
       layout.value,
       blocks.value,
-      interactionState.cursorBlockId
+      editorState.cursorBlockId
     )
 
     // If block has one tab, remove whole block group
@@ -1456,7 +1211,7 @@ const V2Editor = (props: V2EditorProps) => {
       getTabsFromBlockGroupId(layout.value, blocks.value, blockGroupId).length >
       1
     ) {
-      onRemoveBlock(blockGroupId, interactionState.cursorBlockId)
+      onRemoveBlock(blockGroupId, editorState.cursorBlockId)
 
       if (nextCursorBlockId) {
         switchActiveTab(layout.value, blockGroupId, nextCursorBlockId)
@@ -1465,22 +1220,20 @@ const V2Editor = (props: V2EditorProps) => {
       onRemoveBlockGroup(blockGroupId)
     }
 
-    setInteractionState({
-      cursorBlockId: nextCursorBlockId,
-      mode: 'normal',
-      scrollIntoView: true,
-    })
+    if (nextCursorBlockId) {
+      editorAPI.focus(nextCursorBlockId, { scrollIntoView: true })
+    }
   }, [
     layout,
     blocks,
-    interactionState,
+    editorState,
     onRemoveBlock,
     onRemoveBlockGroup,
-    setInteractionState,
+    editorAPI.focus,
   ])
 
   useHotkeys({
-    moveCursor,
+    moveCursor: editorAPI.move,
     addBlock: addBlockShortcut,
     deleteBlock: deleteBlockShortcut,
     focusCursorBlock,
@@ -1650,7 +1403,6 @@ const V2Editor = (props: V2EditorProps) => {
           isPDF={props.isPDF}
           writebackEnabled={true}
           onSchemaExplorer={props.onSchemaExplorer}
-          selectBelow={selectBelow}
           insertBelow={insertBelow}
         />
       )
@@ -1706,7 +1458,7 @@ const V2Editor = (props: V2EditorProps) => {
 
       <div
         id="editor-scrollview"
-        ref={scrollViewRef}
+        ref={props.scrollViewRef}
         className={clsx(
           'flex h-full justify-center',
           props.isFullScreen ? 'px-20' : 'sm:px-0 px-4',
@@ -1785,4 +1537,253 @@ const V2Editor = (props: V2EditorProps) => {
   )
 }
 
-export default V2Editor
+interface TabRefProps {
+  blocks: Y.Map<YBlock>
+  tab: TabRefT
+  isEditable: boolean
+  hasMultipleTabs: boolean
+  layout: Y.Array<YBlockGroup>
+  isPublicViewer: boolean
+  document: ApiDocument
+  dataSources: APIDataSources
+  onRun: (block: YBlock) => void
+  onTry: (block: YBlock) => void
+  onToggleIsBlockHiddenInPublished: (blockId: string) => void
+  onSchemaExplorer: (dataSourceId: string | null) => void
+  insertBelow: () => void
+  isPDF: boolean
+  addGroupedBlock: (
+    blockId: string,
+    blockType: BlockType,
+    position: 'before' | 'after'
+  ) => void
+  dataframes: Y.Map<DataFrame>
+  isApp: boolean
+  onFileUploadBlockPythonUsage: (
+    block: Y.XmlElement<FileUploadBlock>,
+    filename: string,
+    type: string
+  ) => void
+  onFileUploadBlockQueryUsage: (
+    block: Y.XmlElement<FileUploadBlock>,
+    filename: string
+  ) => void
+  currentBlockId: string | undefined
+  dragPreview: ConnectDragPreview | null
+}
+function TabRef(props: TabRefProps) {
+  const [editorState] = useEditorAwareness()
+
+  const block = props.blocks.get(props.tab.blockId)
+  if (!block) {
+    return <div>Block not found</div>
+  }
+  const isCursorWithin = editorState.cursorBlockId === props.tab.blockId
+  const isCursorInserting = editorState.mode === 'insert'
+
+  const jsx = switchBlockType(block, {
+    onRichText: (block) => (
+      <RichTextBlock
+        block={block}
+        isEditable={props.isEditable}
+        belongsToMultiTabGroup={props.hasMultipleTabs}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        isDashboard={false}
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onSQL: (block) => (
+      <SQLBlock
+        block={block}
+        layout={props.layout}
+        blocks={props.blocks}
+        isPublicMode={props.isPublicViewer}
+        isEditable={props.isEditable}
+        document={props.document}
+        dataSources={props.dataSources}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        onRun={props.onRun}
+        onTry={props.onTry}
+        dashboardMode="none"
+        hasMultipleTabs={props.hasMultipleTabs}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        onSchemaExplorer={props.onSchemaExplorer}
+        insertBelow={props.insertBelow}
+      />
+    ),
+    onPython: (block) => (
+      <PythonBlock
+        isPublicMode={props.isPublicViewer}
+        block={block}
+        blocks={props.blocks}
+        isEditable={props.isEditable}
+        document={props.document}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        onRun={props.onRun}
+        onTry={props.onTry}
+        isPDF={props.isPDF}
+        dashboardPlace={null}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        insertBelow={props.insertBelow}
+      />
+    ),
+    onVisualization: (block) => (
+      <VisualizationBlock
+        isPublicMode={props.isPublicViewer}
+        isEditable={props.isEditable}
+        document={props.document}
+        onAddGroupedBlock={props.addGroupedBlock}
+        block={block}
+        dataframes={props.dataframes}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        onRun={props.onRun}
+        isDashboard={false}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onInput: (block) => (
+      <InputBlock
+        block={block}
+        blocks={props.blocks}
+        dragPreview={props.dragPreview}
+        belongsToMultiTabGroup={props.hasMultipleTabs}
+        isEditable={props.isEditable}
+        isApp={props.isApp}
+        onRun={props.onRun}
+        isDashboard={false}
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onDropdownInput: (block) => (
+      <DropdownInputBlock
+        block={block}
+        blocks={props.blocks}
+        dragPreview={props.dragPreview}
+        belongsToMultiTabGroup={props.hasMultipleTabs}
+        isEditable={props.isEditable}
+        isApp={props.isApp}
+        dataframes={props.dataframes}
+        onRun={props.onRun}
+        isDashboard={false}
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onDateInput: (block) => (
+      <DateInputBlock
+        block={block}
+        blocks={props.blocks}
+        dragPreview={props.dragPreview}
+        belongsToMultiTabGroup={props.hasMultipleTabs}
+        isEditable={props.isEditable}
+        isApp={props.isApp}
+        onRun={props.onRun}
+        isDashboard={false}
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onFileUpload: (block) => (
+      <FileUploadBlock
+        block={block}
+        workspaceId={props.document.workspaceId}
+        documentId={props.document.id}
+        isEditable={props.isEditable}
+        isPublicViewer={props.isPublicViewer}
+        dragPreview={props.dragPreview}
+        hasMultipleTabs={props.hasMultipleTabs}
+        onPythonUsage={(filename, type) =>
+          props.onFileUploadBlockPythonUsage(block, filename, type)
+        }
+        onQueryUsage={(filename) =>
+          props.onFileUploadBlockQueryUsage(block, filename)
+        }
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onDashboardHeader: () => null,
+    onWriteback: (block) => (
+      <WritebackBlock
+        workspaceId={props.document.workspaceId}
+        block={block}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isEditable={props.isEditable}
+        dragPreview={props.dragPreview}
+        dataSources={props.dataSources}
+        dataframes={props.dataframes}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+    onPivotTable: (block) => (
+      <PivotTableBlock
+        workspaceId={props.document.workspaceId}
+        block={block}
+        blocks={props.blocks}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isEditable={props.isEditable}
+        onRun={props.onRun}
+        onAddGroupedBlock={props.addGroupedBlock}
+        dragPreview={props.dragPreview}
+        dataframes={props.dataframes}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        dashboardMode="none"
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+      />
+    ),
+  })
+
+  return (
+    <div
+      key={props.tab.blockId}
+      className={
+        props.tab.blockId === props.currentBlockId || props.isPDF
+          ? ''
+          : 'h-0 overflow-hidden'
+      }
+    >
+      {jsx}
+    </div>
+  )
+}
+
+export default function V2Editor(props: Omit<Props, 'scrollViewRef'>) {
+  const scrollViewRef = useRef<HTMLDivElement>(null)
+  return (
+    <EditorAwarenessProvider
+      awareness={props.provider.awareness}
+      scrollViewRef={scrollViewRef}
+      yDoc={props.yDoc}
+    >
+      <Editor {...props} scrollViewRef={scrollViewRef} />
+    </EditorAwarenessProvider>
+  )
+}

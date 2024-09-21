@@ -94,22 +94,24 @@ const useHotkeysHook = (actions: EditorActions) => {
 
   useHotkeys(
     ['p', 'q', 'm'],
-    (_e, hotkeys) => {
+    (e, hotkeys) => {
+      e.preventDefault()
       const hotkeyStr = hotkeys.keys?.join('+') ?? null
-      const aboveOrBelow =
-        chord === 'a' ? 'above' : chord === 'b' ? 'below' : null
+      const position = chord === 'a' ? 'above' : chord === 'b' ? 'below' : null
 
-      if (!hotkeyStr || !aboveOrBelow) return
+      if (!hotkeyStr || !position) {
+        return
+      }
 
       switch (hotkeyStr) {
         case 'p':
-          actions.addBlock(BlockType.Python, aboveOrBelow)
+          actions.addBlock(BlockType.Python, position)
           break
         case 'q':
-          actions.addBlock(BlockType.SQL, aboveOrBelow)
+          actions.addBlock(BlockType.SQL, position)
           break
         case 'm':
-          actions.addBlock(BlockType.RichText, aboveOrBelow)
+          actions.addBlock(BlockType.RichText, position)
           break
       }
     },
@@ -120,7 +122,6 @@ const useHotkeysHook = (actions: EditorActions) => {
     ['d', 'Backspace'],
     (_e, hotkeys) => {
       const hotkeyStr = hotkeys.keys?.join('+') ?? null
-      console.log(hotkeyStr, chord)
       if (hotkeyStr === 'Backspace' || (chord === 'd' && hotkeyStr === 'd')) {
         actions.deleteBlock()
       }

@@ -28,7 +28,6 @@ import Files from './Files'
 import { PublishBlinkingSignal } from './BlinkingSignal'
 import { Tooltip } from './Tooltips'
 import SchemaExplorer from './schemaExplorer'
-import { EditorAwarenessProvider } from '@/hooks/useEditorAwareness'
 import ShortcutsModal from './ShortcutsModal'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import ReusableComponents from './ReusableComponents'
@@ -330,26 +329,24 @@ function PrivateDocumentPageInner(
       topBarContent={topBarContent}
     >
       <div className="w-full relative flex">
-        <EditorAwarenessProvider awareness={provider.awareness}>
-          <V2Editor
-            document={props.document}
-            dataSources={dataSources}
-            isPublicViewer={false}
-            isDeleted={isDeleted}
-            onRestoreDocument={onRestoreDocument}
-            isEditable={!props.isApp}
-            isPDF={false}
-            isApp={props.isApp}
-            userId={props.user.id}
-            role={props.user.roles[props.workspaceId]}
-            isFullScreen={isFullScreen}
-            yDoc={yDoc}
-            provider={provider}
-            isSyncing={syncing}
-            onOpenFiles={onToggleFiles}
-            onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
-          />
-        </EditorAwarenessProvider>
+        <V2Editor
+          document={props.document}
+          dataSources={dataSources}
+          isPublicViewer={false}
+          isDeleted={isDeleted}
+          onRestoreDocument={onRestoreDocument}
+          isEditable={!props.isApp}
+          isPDF={false}
+          isApp={props.isApp}
+          userId={props.user.id}
+          role={props.user.roles[props.workspaceId]}
+          isFullScreen={isFullScreen}
+          yDoc={yDoc}
+          provider={provider}
+          isSyncing={syncing}
+          onOpenFiles={onToggleFiles}
+          onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
+        />
         {!isViewer && (
           <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
         )}
