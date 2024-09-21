@@ -117,9 +117,6 @@ function GridElement(props: Props) {
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
             onSchemaExplorer={() => {}}
-            isCursorWithin={false}
-            isCursorInserting={false}
-            selectBelow={() => {}}
             insertBelow={() => {}}
           />
         ),
@@ -139,8 +136,6 @@ function GridElement(props: Props) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
-            isCursorWithin={false}
-            isCursorInserting={false}
           />
         ),
         onVisualization: (block) => (

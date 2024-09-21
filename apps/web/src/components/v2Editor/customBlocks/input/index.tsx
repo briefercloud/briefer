@@ -66,8 +66,8 @@ interface Props {
   isCursorInserting: boolean
 }
 function InputBlock(props: Props) {
-  const blockId = props.block.getAttribute('id')
   const attrs = getInputAttributes(props.block, props.blocks)
+  const blockId = attrs.id
 
   const onChangeLabel = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,26 +129,18 @@ function InputBlock(props: Props) {
     }
   }, [props.isCursorWithin, props.isCursorInserting])
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
   const onFocus = useCallback(() => {
-    setInteractionState({
-      mode: 'insert',
-      cursorBlockId: blockId ?? '',
-      scrollIntoView: false,
-    })
-  }, [blockId, setInteractionState])
+    editorAPI.insert(blockId, { scrollIntoView: false })
+  }, [blockId, editorAPI.insert])
 
   const onBlur = useCallback(() => {
     if (attrs.value.newValue !== attrs.value.value) {
       props.onRun(props.block)
     }
 
-    setInteractionState((prev) => ({
-      ...prev,
-      mode: 'normal',
-      scrollIntoView: false,
-    }))
-  }, [props.block, props.onRun, attrs.value])
+    editorAPI.blur()
+  }, [props.block, props.onRun, attrs.value, editorAPI.blur])
 
   const unfocusOnEscape = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {

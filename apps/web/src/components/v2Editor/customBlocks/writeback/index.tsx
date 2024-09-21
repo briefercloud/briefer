@@ -13,7 +13,7 @@ import {
   StopIcon,
 } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { ConnectDragPreview } from 'react-dnd'
 import * as Y from 'yjs'
 import WritebackControls from './WritebackControls'
@@ -40,24 +40,12 @@ interface Props {
   isCursorInserting: boolean
 }
 function WritebackBlock(props: Props) {
-  const blockId = props.block.getAttribute('id')
   const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
     props.workspaceId
   )
 
-  useEffect(() => {
-    const onUpdate = () => {
-      console.log(JSON.stringify(getWritebackAttributes(props.block), null, 2))
-    }
-    props.block.observeDeep(onUpdate)
-
-    return () => {
-      props.block.unobserveDeep(onUpdate)
-    }
-  }, [props.block])
-
   const {
-    id,
+    id: blockId,
     title,
     status,
     tableName,
@@ -109,8 +97,8 @@ function WritebackBlock(props: Props) {
   )
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
-    props.onToggleIsBlockHiddenInPublished(id)
-  }, [props.onToggleIsBlockHiddenInPublished, id])
+    props.onToggleIsBlockHiddenInPublished(blockId)
+  }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
   const execStatus = getWritebackBlockExecStatus(props.block)
   const statusIsDisabled = execStatusIsDisabled(execStatus)
@@ -129,14 +117,10 @@ function WritebackBlock(props: Props) {
     [props.block]
   )
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
   const onClickWithin = useCallback(() => {
-    setInteractionState({
-      cursorBlockId: blockId ?? null,
-      scrollIntoView: false,
-      mode: 'insert',
-    })
-  }, [blockId, setInteractionState])
+    editorAPI.insert(blockId, { scrollIntoView: false })
+  }, [blockId, editorAPI])
 
   const dataSources = useMemo(
     () => props.dataSources.map((d) => d.config).toArray(),
