@@ -44,7 +44,7 @@ services:
       # Use passed value
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
     volumes:
-      - ./jupyterfiles:/home/alexandresenpai/.jupyter
+      - ./jupyterfiles:/home/jupyteruser
     restart: always
     healthcheck:
       test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
