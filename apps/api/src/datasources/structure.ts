@@ -5,6 +5,7 @@ import * as psql from './psql.js'
 import * as athena from './athena.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
+import * as sqlserver from './sqlserver.js'
 import * as oracle from './oracle.js'
 import { DataSourceStructure, jsonString } from '@briefer/types'
 import { logger } from '../logger.js'
@@ -169,6 +170,13 @@ export async function getRawCache(ds: DataSource): Promise<string | null> {
           select: { structure: true },
         })
         .then((row) => row?.structure ?? null)
+    case 'sqlserver':
+      return prisma()
+        .sQLServerDataSource.findUnique({
+          where: { id: ds.data.id },
+          select: { structure: true },
+        })
+        .then((row) => row?.structure ?? null)
     case 'trino':
       return prisma()
         .trinoDataSource.findUnique({
@@ -198,6 +206,9 @@ async function fetchStructure(
       }
       case 'mysql': {
         return await mysql.getSchema(ds.data)
+      }
+      case 'sqlserver': {
+        return await sqlserver.getSchema(ds.data)
       }
       case 'trino': {
         return await trino.getSchema(ds.data)
@@ -262,6 +273,13 @@ async function saveStructure(
     }
     case 'mysql': {
       await prisma().mySQLDataSource.update({
+        where: { id: ds.data.id },
+        data: { structure: encryptCache(cache) },
+      })
+      return null
+    }
+    case 'sqlserver': {
+      await prisma().sQLServerDataSource.update({
         where: { id: ds.data.id },
         data: { structure: encryptCache(cache) },
       })
