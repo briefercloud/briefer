@@ -22,6 +22,7 @@ import AthenaForm, { AthenaDataSourceInput } from '@/components/forms/athena'
 import OracleForm, { OracleDataSourceInput } from '@/components/forms/oracle'
 import MySQLForm, { MySQLDataSourceInput } from '@/components/forms/mysql'
 import TrinoForm, { TrinoDataSourceInput } from '@/components/forms/trino'
+import SQLServerForm from '@/components/forms/sqlserver'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -122,6 +123,12 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             mySQLDataSource={data.dataSource.data}
+          />
+        ) : data && data.dataSource.type === 'sqlserver' ? (
+          <SQLServerForm
+            workspaceId={workspaceId}
+            onSubmit={onSubmit}
+            SQLServerDataSource={data.dataSource.data}
           />
         ) : data && data.dataSource.type === 'trino' ? (
           <TrinoForm
