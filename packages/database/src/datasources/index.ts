@@ -8,6 +8,7 @@ import * as athena from './athena.js'
 import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
+import * as sqlserver from './sqlserver.js'
 
 export * from './bigquery.js'
 export * from './psql.js'
@@ -15,6 +16,7 @@ export * from './oracle.js'
 export * from './redshift.js'
 export * from './athena.js'
 export * from './mysql.js'
+export * from './sqlserver.js'
 export * from './crypto.js'
 export * from './trino.js'
 
@@ -25,6 +27,7 @@ export type AthenaDataSource = athena.AthenaDataSource
 export type OracleDataSource = oracle.OracleDataSource
 export type MySQLDataSource = mysql.MySQLDataSource
 export type TrinoDataSource = trino.TrinoDataSource
+export type SQLServerDataSource = sqlserver.SQLServerDataSource
 
 export type DataSource =
   | { type: 'psql'; data: PostgreSQLDataSource }
@@ -34,6 +37,7 @@ export type DataSource =
   | { type: 'oracle'; data: OracleDataSource }
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
+  | { type: 'sqlserver'; data: SQLServerDataSource }
 
 export async function listDataSources(
   workspaceId: string
@@ -45,6 +49,7 @@ export async function listDataSources(
     athena.listAthenaDataSources(workspaceId),
     oracle.listOracleDataSources(workspaceId),
     mysql.listMySQLDataSources(workspaceId),
+    sqlserver.listSQLServerDataSources(workspaceId),
     trino.listTrinoDataSources(workspaceId),
   ])
 
@@ -99,6 +104,12 @@ export async function getDatasource(
         .then((data): DataSource | null =>
           data ? { type: 'trino', data } : null
         )
+    case 'sqlserver':
+      return sqlserver
+        .getSQLServerDataSource(workspaceId, id)
+        .then((data): DataSource | null => 
+          data ? { type: 'sqlserver', data } : null
+        )
   }
 }
 
@@ -142,6 +153,15 @@ export async function getDatasourcePassword(
           select: { password: true },
         })
         .then((row) =>
+          row.password !== null ? decrypt(row.password, encryptionKey) : ''
+        )
+    case 'sqlserver':
+      return prisma()
+        .sQLServerDataSource.findFirstOrThrow({
+          where: { id: datasource.data.id },
+          select: { password: true },
+        })
+        .then((row) => 
           row.password !== null ? decrypt(row.password, encryptionKey) : ''
         )
     case 'bigquery':
@@ -230,6 +250,12 @@ export async function getDatabaseURL(
       )
       return `mysql+mysqldb://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}?ssl_mode=REQUIRED`
     }
+    case 'sqlserver': {
+      const password = encodeURIComponent(
+        await getDatasourcePassword(ds, encryptionKey)
+      )
+      return `mssql+pymssql://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
+    }
   }
 }
 
@@ -269,6 +295,7 @@ export async function getCredentialsInfo(
     }
     case 'athena':
     case 'oracle':
+    case 'sqlserver':
     case 'trino':
       return null
     case 'mysql': {
