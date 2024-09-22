@@ -64,15 +64,6 @@ services:
     volumes:
       - ecommerce_data:/var/lib/postgresql/data
 
-  new_source_db:
-    container_name: new_source_db
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    ports:
-      - '1433:1433'
-    environment:
-      ACCEPT_EULA: 'Y'
-      MSSQL_SA_PASSWORD: 'Allmito20@'
-
 volumes:
   postgres_dev_data:
   ecommerce_data:
