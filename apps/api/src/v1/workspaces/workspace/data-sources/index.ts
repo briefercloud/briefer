@@ -10,6 +10,7 @@ import {
   createOracleDataSource,
   createMySQLDataSource,
   createTrinoDataSource,
+  createSQLServerDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -38,7 +39,7 @@ const dataSourcePayload = z.union([
     }),
   }),
   z.object({
-    type: z.literal('mysql'),
+    type: z.union([z.literal('mysql'), z.literal('sqlserver')]),
     data: z.object({
       name: z.string().min(1),
       host: z.string().min(1),
@@ -206,6 +207,22 @@ dataSourcesRouter.post('/', canUpdateWorkspace, async (req, res) => {
           dsRes = { type: 'mysql', data: ds }
           break
         }
+        case 'sqlserver': {
+          const payload = {
+            workspaceId,
+            ...data.data,
+            cert: data.data.cert ?? null,
+            connStatus: 'offline' as const,
+            connError: JSON.stringify(neverPingedError),
+            lastConnection: null,
+          }
+          const ds = await createSQLServerDataSource(
+            payload,
+            config().DATASOURCES_ENCRYPTION_KEY
+          )
+          dsRes = { type: 'sqlserver', data: ds }
+          break
+        }
         case 'bigquery': {
           const payload = {
             workspaceId,
@@ -279,6 +296,7 @@ dataSourcesRouter.post('/', canUpdateWorkspace, async (req, res) => {
       switch (data.type) {
         case 'psql':
         case 'mysql':
+        case 'sqlserver':
         case 'redshift':
         case 'bigquery':
         case 'athena':
@@ -349,6 +367,7 @@ async function belongsToWorkspace(
       getDatasource(workspaceId, dataSourceId, 'athena'),
       getDatasource(workspaceId, dataSourceId, 'oracle'),
       getDatasource(workspaceId, dataSourceId, 'mysql'),
+      getDatasource(workspaceId, dataSourceId, 'sqlserver'),
       getDatasource(workspaceId, dataSourceId, 'trino'),
     ])
   ).find((e) => e !== null)

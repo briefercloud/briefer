@@ -23,6 +23,9 @@ import {
   getTrinoDataSource,
   updateTrinoDataSource,
   deleteTrinoDataSource,
+  deleteSQLServerDataSource,
+  getSQLServerDataSource,
+  updateSQLServerDataSource
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -33,6 +36,7 @@ import * as redshift from '../../../../datasources/redshift.js'
 import * as athena from '../../../../datasources/athena.js'
 import * as oracle from '../../../../datasources/oracle.js'
 import * as mysql from '../../../../datasources/mysql.js'
+import * as sqlserver from '../../../../datasources/sqlserver.js'
 import * as trino from '../../../../datasources/trino.js'
 import { ping } from '../../../../datasources/index.js'
 import { getStructure } from '../../../../datasources/structure.js'
@@ -56,7 +60,7 @@ const dataSourceSchema = z.union([
     }),
   }),
   z.object({
-    type: z.literal('mysql'),
+    type: z.union([z.literal('mysql'), z.literal('sqlserver')]),
     data: z.object({
       id: z.string().min(1),
       name: z.string().min(1),
@@ -134,6 +138,7 @@ dataSourceRouter.get('/', async (req, res) => {
         getDatasource(workspaceId, id, 'athena'),
         getDatasource(workspaceId, id, 'oracle'),
         getDatasource(workspaceId, id, 'mysql'),
+        getDatasource(workspaceId, id, 'sqlserver'),
         getDatasource(workspaceId, id, 'trino'),
       ])
     ).find((e) => e !== null)
@@ -180,6 +185,7 @@ dataSourceRouter.put('/', async (req, res) => {
       getAthenaDataSource(workspaceId, dataSourceId),
       getOracleDataSource(workspaceId, dataSourceId),
       getMySQLDataSource(workspaceId, dataSourceId),
+      getSQLServerDataSource(workspaceId, dataSourceId),
       getTrinoDataSource(workspaceId, dataSourceId),
     ])
   ).find((e) => e !== null)
@@ -218,6 +224,19 @@ dataSourceRouter.put('/', async (req, res) => {
       )
 
       await mysql.ping(mysqlDs)
+      break
+    }
+    case 'sqlserver': {
+      const sqlserverDS = await updateSQLServerDataSource(
+        {
+          ...data.data,
+          id: dataSourceId,
+          password: data.data.password === '' ? undefined : data.data.password,
+        },
+        config().DATASOURCES_ENCRYPTION_KEY
+      )
+
+      await sqlserver.ping(sqlserverDS)
       break
     }
     case 'redshift': {
@@ -397,6 +416,17 @@ dataSourceRouter.delete('/', async (req, res) => {
     return
   }
 
+  const targetSQLServerDb = await recoverFromNotFound(
+    deleteSQLServerDataSource(workspaceId, targetId)
+  )
+  if (targetSQLServerDb) {
+    res.status(200).json({
+      type: 'sqlserver',
+      data: targetSQLServerDb,
+    })
+    return
+  }
+
   const targetTrinoDb = await recoverFromNotFound(
     deleteTrinoDataSource(workspaceId, targetId)
   )
@@ -420,6 +450,7 @@ const typeSchema = z.object({
     z.literal('oracle'),
     z.literal('mysql'),
     z.literal('trino'),
+    z.literal('sqlserver')
   ]),
 })
 dataSourceRouter.post('/ping', async (req, res) => {
