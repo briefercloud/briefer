@@ -17,6 +17,7 @@ export type DataSourceType =
   | 'oracle'
   | 'mysql'
   | 'trino'
+  | 'sqlserver'
 
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
@@ -24,6 +25,8 @@ export const dataSourcePrettyName = (t: DataSourceType): string => {
       return 'PostgreSQL'
     case 'mysql':
       return 'MySQL'
+    case 'sqlserver':
+      return 'SQLServer'
     case 'bigquery':
       return 'BigQuery'
     case 'snowflake':
@@ -45,6 +48,8 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/postgres.png'
     case 'mysql':
       return '/icons/mysql.png'
+    case 'sqlserver':
+      return '/icons/sqlserver.png'
     case 'bigquery':
       return '/icons/bigquery.png'
     case 'snowflake':
@@ -75,6 +80,8 @@ const databaseUrl = (ds: DataSource): string => {
         return 'oracle://demodb'
       case 'mysql':
         return 'mysql://demodb'
+      case 'sqlserver':
+        return 'sqlserver://demodb'
       case 'trino':
         return 'trino://demodb'
     }
@@ -92,6 +99,8 @@ const databaseUrl = (ds: DataSource): string => {
         return `oracle://${ds.data.host}:${ds.data.port}/${ds.data.database}`
       case 'mysql':
         return `mysql://${ds.data.host}:${ds.data.port}/${ds.data.database}`
+      case 'sqlserver':
+        return `sqlserver://${ds.data.host}:${ds.data.port};databaseName=${ds.data.database};user=${ds.data.username};password=******;`
       case 'trino':
         return (
           `trino://${ds.data.host}:${ds.data.port}` +
@@ -207,6 +216,7 @@ interface Props {
 
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
+    console.log(props.dataSources)
     return props.dataSources.sort((a, b) => {
       if (a.dataSource.data.name < b.dataSource.data.name) return -1
       if (a.dataSource.data.name > b.dataSource.data.name) return 1

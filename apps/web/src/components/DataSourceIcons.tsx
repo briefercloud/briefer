@@ -28,6 +28,11 @@ export const DataSourceIcons = ({
   return (
     <div className="w-full flex gap-x-4 gap-y-4 flex-wrap">
       <DataSourceBlock
+        icon="/icons/sqlserver.png"
+        name="SQLServer"
+        href={`/workspaces/${workspaceId}/data-sources/new/sqlserver`}
+      />
+      <DataSourceBlock
         icon="/icons/athena.png"
         name="Athena"
         href={`/workspaces/${workspaceId}/data-sources/new/athena`}
