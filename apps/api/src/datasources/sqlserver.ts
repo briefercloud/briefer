@@ -53,19 +53,28 @@ export async function ping(datasource: SQLServerDataSource): Promise<DataSource>
   return updateConnStatus(datasource, { connStatus: 'offline', connError: err })
 }
 
+async function createConnection(config: ConnectionConfig): Promise<sql.ConnectionPool> {
+  const mustEncrypt = config.ssl ? true : false;
+  return sql.connect({
+    user: config.user,
+    password: config.password,
+    server: config.server,
+    database: config.database,
+    options: {
+      trustServerCertificate: mustEncrypt ? false : true,
+      encrypt: mustEncrypt,
+      cryptoCredentialsDetails: {
+        ca: config.ssl?.ca
+      }
+    }
+  })
+}
+
 async function pingSQLServerFromConfig(
   config: ConnectionConfig
 ): Promise<DataSourceConnectionError | null> {
   try {
-    const connection = await sql.connect({
-      user: config.user,
-      password: config.password,
-      server: config.server,
-      database: config.database,
-      options: {
-        trustServerCertificate: true
-      }
-    })
+    const connection = await createConnection(config);
 
     return await Promise.race([
       new Promise<DataSourceConnectionError>((resolve) =>
@@ -123,15 +132,7 @@ export async function getSQLServerSchemaFromConfig(
   datasourceId: string,
   sqlServerConfig: ConnectionConfig
 ): Promise<DataSourceStructure> {
-  const connection = await sql.connect({
-    user: sqlServerConfig.user,
-    password: sqlServerConfig.password,
-    server: sqlServerConfig.server,
-    database: sqlServerConfig.database,
-    options: {
-      trustServerCertificate: true
-    }
-  })
+  const connection = await createConnection(sqlServerConfig);
 
   // select all tables with their column names and types from all schemas
   const result = await connection.query(`
