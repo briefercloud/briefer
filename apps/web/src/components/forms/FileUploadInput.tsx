@@ -33,10 +33,14 @@ export default function FileUploadInput<T extends FieldValues>(
     [setFileName, controller]
   )
 
-  const removeFile = useCallback(() => {
-    setFileName('')
-    controller.field.onChange(null)
-  }, [setFileName, controller])
+  const removeFile: React.MouseEventHandler = useCallback(
+    (e) => {
+      e.stopPropagation()
+      setFileName('')
+      controller.field.onChange(null)
+    },
+    [setFileName, controller]
+  )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
