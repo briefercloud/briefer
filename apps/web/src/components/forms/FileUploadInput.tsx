@@ -81,6 +81,7 @@ export default function FileUploadInput<T extends FieldValues>(
             <div className="pt-4 flex items-center justify-center text-sm leading-6 text-gray-600">
               <label
                 htmlFor="file-upload"
+                onClick={(e) => e.preventDefault()}
                 className="relative cursor-pointer rounded-md font-semibold text-primary-600 focus-within:outline-none focus-within:ring-0 hover:text-primary-500"
               >
                 <span>{props.label}</span>
