@@ -53,13 +53,13 @@ export default function Files(props: Props) {
         file.mimeType === 'application/json'
           ? 'json'
           : file.mimeType === 'text/csv'
-          ? 'csv'
-          : file.mimeType === 'application/vnd.ms-excel'
-          ? 'xls'
-          : file.mimeType ===
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-          ? 'xlsx'
-          : ''
+            ? 'csv'
+            : file.mimeType === 'application/vnd.ms-excel'
+              ? 'xls'
+              : file.mimeType ===
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ? 'xlsx'
+                : ''
 
       const source =
         fileExtension !== ''
@@ -309,7 +309,7 @@ file`
                           onUseInPython={onUseInPython}
                           onUseInSQL={onUseInSQL}
                           onDelete={onRemove}
-                          isDeleting={deleting[file.path]}
+                          isDeleting={deleting[file.name]}
                           canUse={props.yDoc !== undefined}
                         />
                       </li>
