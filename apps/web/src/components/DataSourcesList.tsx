@@ -1,23 +1,11 @@
 import { APIDataSources } from '@/hooks/useDatasources'
-import type { DataSource } from '@briefer/database'
+import type { DataSource, DataSourceType } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import Link from 'next/link'
 import { Fragment, useCallback, useMemo } from 'react'
-
-export type DataSourceType =
-  | 'psql'
-  | 'mysql'
-  | 'bigquery'
-  | 'snowflake'
-  | 'athena'
-  | 'redshift'
-  | 'oracle'
-  | 'mysql'
-  | 'trino'
-  | 'sqlserver'
 
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
@@ -29,8 +17,6 @@ export const dataSourcePrettyName = (t: DataSourceType): string => {
       return 'SQLServer'
     case 'bigquery':
       return 'BigQuery'
-    case 'snowflake':
-      return 'Snowflake'
     case 'athena':
       return 'Athena'
     case 'redshift':
@@ -52,8 +38,6 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/sqlserver.png'
     case 'bigquery':
       return '/icons/bigquery.png'
-    case 'snowflake':
-      return '/icons/snowflake.png'
     case 'athena':
       return '/icons/athena.png'
     case 'redshift':

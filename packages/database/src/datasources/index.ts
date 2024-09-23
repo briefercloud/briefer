@@ -9,11 +9,8 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
-import {
-  DataSourceStructure,
-  DataSourceStructureState,
-  DataSourceStructureStateV2,
-} from '@briefer/types'
+import { DataSourceStructureStateV2 } from '@briefer/types'
+import { z } from 'zod'
 
 export * from './bigquery.js'
 export * from './psql.js'
@@ -43,6 +40,32 @@ export type DataSource =
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
   | { type: 'sqlserver'; data: SQLServerDataSource }
+
+export type DataSourceType = DataSource['type']
+
+export const DataSourceType = z.enum([
+  'psql',
+  'bigquery',
+  'redshift',
+  'athena',
+  'oracle',
+  'mysql',
+  'trino',
+] as const)
+
+// Ensure Zod enum stays in sync with `DataSourceType`
+// A type-level validation to ensure the Zod enum matches the `DataSourceType`
+// If `ValidateDataSourceTypes` is `never`, TypeScript will error, forcing you to update one of the definitions.
+type ValidateDataSourceTypes = z.infer<
+  typeof DataSourceType
+> extends DataSourceType
+  ? DataSourceType extends z.infer<typeof DataSourceType>
+    ? true
+    : never
+  : never
+const checkDataSourceTypes: ValidateDataSourceTypes = true
+// void to stop no unused variable error
+void checkDataSourceTypes
 
 export async function listDataSources(
   workspaceId: string

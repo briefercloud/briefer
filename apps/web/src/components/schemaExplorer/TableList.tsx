@@ -5,8 +5,9 @@ import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { Grid3x3Icon } from 'lucide-react'
 import { useMemo } from 'react'
 import TableDetails from './TableDetails'
-import { APIDataSource } from '@briefer/database'
+import type { APIDataSource, DataSource } from '@briefer/database'
 import { DataSourceColumn, DataSourceStructure } from '@briefer/types'
+import { SchemaInfo } from './SchemaInfo'
 
 interface Props {
   dataSource: APIDataSource
@@ -14,6 +15,8 @@ interface Props {
   onBack: () => void
   onSelectTable: (tableName: string | null) => void
   selectedTable: string | null
+  onRetrySchema: (dataSource: DataSource) => void
+  canRetrySchema: boolean
 }
 export default function TableList(props: Props) {
   const tables: { name: string; columns: DataSourceColumn[] }[] =
@@ -51,6 +54,9 @@ export default function TableList(props: Props) {
       <ExplorerTitle
         title="Schema explorer"
         description="Choose a table to see its columns."
+        dataSource={props.dataSource}
+        onRetrySchema={props.onRetrySchema}
+        canRetrySchema={props.canRetrySchema}
       />
 
       <div className="flex-1 h-1/3 pt-4 flex flex-col overflow-hidden">
@@ -73,6 +79,10 @@ export default function TableList(props: Props) {
         </button>
 
         <div className="text-xs text-gray-500 font-mono overflow-x-hidden overflow-y-scroll flex-grow">
+          <SchemaInfo
+            dataSource={props.dataSource}
+            onRetrySchema={props.onRetrySchema}
+          />
           <ul className="flex flex-col">
             {tables.map((table) => {
               return (

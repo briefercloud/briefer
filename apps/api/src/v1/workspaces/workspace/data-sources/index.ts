@@ -109,13 +109,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
     message: 'The datasource has never been pinged',
   }
 
-  router.post('/test', (req, res) => {
-    console.log('test', req.body)
-    res.json({ test: 'test' })
-  })
-
   router.post('/', canUpdateWorkspace, async (req, res) => {
-    req.log.error('got request')
     const result = dataSourcePayload.safeParse(req.body)
     if (!result.success) {
       res.status(400).end()
@@ -135,8 +129,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         switch (data.type) {
           case 'psql': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -151,8 +145,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'redshift': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -167,8 +161,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'mysql': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -199,8 +193,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'bigquery': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
@@ -214,8 +208,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'athena': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
@@ -229,8 +223,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'oracle': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
@@ -246,8 +240,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'trino': {
             const payload = {
-              workspaceId,
               ...data.data,
+              workspaceId,
               password: data.data.password !== '' ? data.data.password : null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -296,9 +290,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         return
       }
 
-      req.log.error('will create')
       const datasource = await createDataSource(data).then(ping)
-      req.log.error('did create')
       captureDatasourceCreated(
         req.session.user,
         workspaceId,
@@ -306,11 +298,9 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         data.type
       )
 
-      req.log.error('will fetch structure')
       await fetchDataSourceStructure(socketServer, datasource, {
         forceRefresh: true,
       })
-      req.log.error('did fetch structure')
 
       res.status(201).json(datasource)
     } catch (err) {

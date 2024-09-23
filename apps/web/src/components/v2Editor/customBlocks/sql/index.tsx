@@ -34,7 +34,11 @@ import {
 } from '@briefer/editor'
 import { DiffEditor, Editor } from '@monaco-editor/react'
 import SQLResult from './SQLResult'
-import type { ApiDocument, ApiWorkspace } from '@briefer/database'
+import type {
+  ApiDocument,
+  ApiWorkspace,
+  DataSourceType,
+} from '@briefer/database'
 import DataframeNameInput from './DataframeNameInput'
 import HeaderSelect from '@/components/v2Editor/customBlocks/sql/HeaderSelect'
 import clsx from 'clsx'
@@ -52,7 +56,6 @@ import { SQLExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import { useMonacoContext } from '@/components/MonacoProvider'
 import { APIDataSources } from '@/hooks/useDatasources'
-import { DataSourceType } from '@/components/DataSourcesList'
 import { useRouter } from 'next/router'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'

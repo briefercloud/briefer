@@ -352,6 +352,7 @@ function PrivateDocumentPageInner(
               ? selectedSidebar.dataSourceId
               : null
           }
+          canRetrySchema={!isViewer}
         />
 
         <ShortcutsModal

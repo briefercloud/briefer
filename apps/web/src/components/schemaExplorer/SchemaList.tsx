@@ -3,13 +3,16 @@ import { databaseImages } from '../DataSourcesList'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { ShapesIcon } from 'lucide-react'
-import { type APIDataSource } from '@briefer/database'
+import type { DataSource, APIDataSource } from '@briefer/database'
 import { useMemo } from 'react'
+import { SchemaInfo } from './SchemaInfo'
 
 interface Props {
   dataSource: APIDataSource
   onSelectSchema: (schemaName: string) => void
   onBack: () => void
+  onRetrySchema: (dataSource: DataSource) => void
+  canRetrySchema: boolean
 }
 export default function SchemaList(props: Props) {
   const schemaNames: string[] = useMemo(() => {
@@ -24,11 +27,15 @@ export default function SchemaList(props: Props) {
         )
     }
   }, [props.dataSource.structure])
+
   return (
     <div className="flex flex-col h-full">
       <ExplorerTitle
         title="Schema explorer"
         description="Choose a schema to explore its tables."
+        dataSource={props.dataSource}
+        onRetrySchema={props.onRetrySchema}
+        canRetrySchema={props.canRetrySchema}
       />
 
       <div className="pt-4 flex flex-col h-full">
@@ -49,6 +56,10 @@ export default function SchemaList(props: Props) {
         </button>
 
         <div className="flex-grow text-xs text-gray-500 font-sans font-medium overflow-y-auto">
+          <SchemaInfo
+            dataSource={props.dataSource}
+            onRetrySchema={props.onRetrySchema}
+          />
           <ul className="h-full">
             {schemaNames.map((schemaName) => {
               return (

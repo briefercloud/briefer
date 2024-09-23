@@ -780,6 +780,13 @@ export type DataSourceStructureStateV1 = z.infer<
   typeof DataSourceStructureStateV1
 >
 
+export const DataSourceStructureError = z.union([
+  PythonErrorOutput,
+  z.object({ type: z.literal('unknown'), message: z.string() }),
+])
+
+export type DataSourceStructureError = z.infer<typeof DataSourceStructureError>
+
 export const DataSourceStructureStateV2 = z.union([
   z.object({
     status: z.literal('success'),
@@ -796,6 +803,7 @@ export const DataSourceStructureStateV2 = z.union([
         updatedAt: z.number(),
       })
       .nullable(),
+    error: DataSourceStructureError,
   }),
   z.object({
     status: z.literal('loading'),
@@ -831,6 +839,7 @@ export function dataSourceStructureStateToV2(
         structure: state.structure,
         updatedAt: new Date(state.updatedAt ?? 0).getTime(),
       },
+      error: { type: 'unknown', message: 'Unknown error, try again.' },
     }
   }
 
@@ -851,6 +860,19 @@ export function getDataSourceStructureFromState(
       return state.structure
     case 'failed':
       return state.previousSuccess?.structure ?? null
+  }
+}
+
+export function isDataSourceStructureLoading(
+  state: DataSourceStructureStateV2
+): boolean {
+  switch (state.status) {
+    case 'loading':
+      return true
+    case 'success':
+      return state.refreshPing !== null
+    case 'failed':
+      return false
   }
 }
 
