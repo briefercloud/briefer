@@ -424,7 +424,7 @@ function FileItem(props: FileItemProps) {
     props.onUseInSQL(props.file)
   }, [props.onUseInSQL, props.file])
 
-  const onRemove = useCallback(async () => {
+  const onRemove = useCallback(() => {
     props.onDelete(props.file)
   }, [props.onDelete, props.file])
 
