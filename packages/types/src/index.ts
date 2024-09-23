@@ -49,8 +49,7 @@ export const dateSchema = z
     message: 'Invalid date format',
   })
 
-// all numpy number types
-export const NumpyNumberTypes = z.enum([
+export const NumpyIntegerTypes = z.enum([
   'byte',
   'ubyte',
 
@@ -78,27 +77,6 @@ export const NumpyNumberTypes = z.enum([
 
   'longlong',
 
-  'f2',
-  'f4',
-  'f8',
-  'f16',
-
-  'float16',
-  'float32',
-  'float64',
-  'float128',
-
-  'Float',
-  'Float16',
-  'Float32',
-  'Float64',
-
-  'float',
-  'longfloat',
-
-  'double',
-  'longdouble',
-
   'u1',
   'u2',
   'u4',
@@ -124,6 +102,31 @@ export const NumpyNumberTypes = z.enum([
 
   'ulonglong',
   'ULongLong',
+])
+
+// all numpy number types
+export const NumpyNumberTypes = z.enum([
+  ...NumpyIntegerTypes.options,
+  'f2',
+  'f4',
+  'f8',
+  'f16',
+
+  'float16',
+  'float32',
+  'float64',
+  'float128',
+
+  'Float',
+  'Float16',
+  'Float32',
+  'Float64',
+
+  'float',
+  'longfloat',
+
+  'double',
+  'longdouble',
 ])
 
 export type NumpyNumberTypes = z.infer<typeof NumpyNumberTypes>

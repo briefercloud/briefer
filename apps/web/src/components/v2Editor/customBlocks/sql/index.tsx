@@ -254,7 +254,7 @@ function SQLBlock(props: Props) {
   }, [props.block])
 
   const onFixWithAI = useCallback(() => {
-    if (hasOaiKey) {
+    if (!hasOaiKey) {
       return
     }
 
@@ -264,7 +264,7 @@ function SQLBlock(props: Props) {
     } else {
       requestSQLFixWithAI(props.block)
     }
-  }, [props.block])
+  }, [props.block, hasOaiKey])
 
   const isAIEditing = isSQLBlockAIEditing(props.block)
 

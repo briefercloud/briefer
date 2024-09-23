@@ -196,12 +196,13 @@ function getSchemaFromStructure(
       )
     }
   }
+
   return namespace
 }
 
 type MonacoContextState = {
   editorReadiness: Record<string, boolean>
-  modelDataSourceStructures: Record<string, DataSourceStructure>
+  modelDataSourceStructures: Record<string, CompletionSource>
 }
 
 type MonacoContextAPI = {
@@ -251,7 +252,7 @@ function MonacoProvider({ children }: Props) {
     Record<string, boolean>
   >({})
   const [modelDataSourceStructures, setModelDataSourceStructures] = useState<
-    Record<string, DataSourceStructure>
+    Record<string, CompletionSource>
   >({})
   const [modelsDocumentBlock, setModelsDocumentBlock] = useState<
     Record<string, { documentId: string; blockId: string }>
@@ -311,15 +312,9 @@ function MonacoProvider({ children }: Props) {
       monaco.languages.registerCompletionItemProvider('sql', {
         triggerCharacters: ['.', '', '"', "'", '`'],
         provideCompletionItems: async (model, position) => {
-          const structure = modelDataSourceStructures[model.id]
-          const schema = structure
-            ? getSchemaFromStructure(structure)
-            : undefined
-          const schemaCompletionSource = sql.schemaCompletionSource({
-            dialect: sql.StandardSQL,
-            schema,
-            defaultSchema: structure?.defaultSchema,
-          })
+          const schemaCompletionSource =
+            modelDataSourceStructures[model.id] ??
+            sql.schemaCompletionSource({ dialect: sql.StandardSQL })
 
           const keywordCompletionSource = sql.keywordCompletionSource(
             sql.StandardSQL,
@@ -506,14 +501,32 @@ function MonacoProvider({ children }: Props) {
     [editorReadiness, modelDataSourceStructures]
   )
 
+  const [completionSources, setCompletionSources] = useState<
+    Record<string, CompletionSource>
+  >({})
+
   const setModelDataSourceStructure = useCallback(
-    (modelId: string, dataSourceStructure: DataSourceStructure) => {
+    async (modelId: string, dataSourceStructure: DataSourceStructure) => {
+      let completionSource = completionSources[dataSourceStructure.dataSourceId]
+      if (!completionSource) {
+        const schema = getSchemaFromStructure(dataSourceStructure)
+        completionSource = await sql.schemaCompletionSource({
+          dialect: sql.StandardSQL,
+          schema,
+          defaultSchema: dataSourceStructure.defaultSchema,
+        })
+
+        setCompletionSources((prev) => ({
+          ...prev,
+          [dataSourceStructure.dataSourceId]: completionSource,
+        }))
+      }
       setModelDataSourceStructures((prev) => ({
         ...prev,
-        [modelId]: dataSourceStructure,
+        [modelId]: completionSource,
       }))
     },
-    []
+    [completionSources]
   )
 
   const removeModelDataSourceStructure = useCallback((modelId: string) => {

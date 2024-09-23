@@ -35,7 +35,7 @@ export class VisualizationObserver implements IVisualizationObserver {
   public handleInitialBlockState(block: Y.XmlElement<VisualizationBlock>) {
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -58,7 +58,7 @@ export class VisualizationObserver implements IVisualizationObserver {
     tr: Y.Transaction
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -71,7 +71,7 @@ export class VisualizationObserver implements IVisualizationObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -87,7 +87,7 @@ export class VisualizationObserver implements IVisualizationObserver {
         await this.handleBlockStatusChange(block, tr)
       }
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -100,7 +100,7 @@ export class VisualizationObserver implements IVisualizationObserver {
       )
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -119,7 +119,7 @@ export class VisualizationObserver implements IVisualizationObserver {
     const blockId = block.getAttribute('id')
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -150,7 +150,7 @@ export class VisualizationObserver implements IVisualizationObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -165,7 +165,7 @@ export class VisualizationObserver implements IVisualizationObserver {
       block.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

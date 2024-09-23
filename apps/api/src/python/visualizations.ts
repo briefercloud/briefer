@@ -20,6 +20,7 @@ import {
   HistogramBin,
   NumpyTimeDeltaTypes,
   YAxis,
+  NumpyIntegerTypes,
 } from '@briefer/types'
 import { executeCode } from './index.js'
 import { logger } from '../logger.js'
@@ -84,7 +85,14 @@ function getCode(
             }
           : null,
         colorBy: serie.colorBy
-          ? { ...serie.colorBy, type: dfTypeToAltairType(serie.colorBy.type) }
+          ? {
+              ...serie.colorBy,
+              type:
+                // integer types are treated as nominal for colorBy
+                NumpyIntegerTypes.safeParse(serie.colorBy.type).success
+                  ? 'N'
+                  : dfTypeToAltairType(serie.colorBy.type),
+            }
           : null,
       })),
     }))
@@ -1043,7 +1051,7 @@ export async function createVisualization(
       if (!result) {
         errors.push(new Error('Failed to create visualization, no result'))
         const err = new AggregateError(errors)
-        logger.error(
+        logger().error(
           { outputs, namespace, err },
           'Failed to create visualization'
         )

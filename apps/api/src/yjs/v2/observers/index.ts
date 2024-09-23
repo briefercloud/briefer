@@ -28,7 +28,7 @@ export class MainObserver {
   }
 
   public start() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -39,7 +39,7 @@ export class MainObserver {
     this.blocksObserver.start()
     this.runAllObserver.start()
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -49,7 +49,7 @@ export class MainObserver {
   }
 
   public stop() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -60,7 +60,7 @@ export class MainObserver {
     this.blocksObserver.stop()
     this.runAllObserver.stop()
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

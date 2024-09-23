@@ -19,7 +19,7 @@ import {
 } from './blocks/visualization.js'
 import { IInputExecutor, InputExecutor } from './blocks/input.js'
 import { DataFrame } from '@briefer/types'
-import config from '../../../config/index.js'
+import { config } from '../../../config/index.js'
 import {
   DropdownInputExecutor,
   IDropdownInputExecutor,
@@ -88,7 +88,7 @@ export class RunAllExecutor implements IRunAllExecutor {
 
     let currentBlock: YBlock | null = null
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -98,7 +98,7 @@ export class RunAllExecutor implements IRunAllExecutor {
       )
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -119,7 +119,7 @@ export class RunAllExecutor implements IRunAllExecutor {
             })
           })
 
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -131,7 +131,7 @@ export class RunAllExecutor implements IRunAllExecutor {
           currentBlock = queue.shift() ?? null
           while (currentBlock) {
             this.state.setAttribute('remaining', queue.length)
-            logger.trace(
+            logger().trace(
               {
                 workspaceId: this.workspaceId,
                 documentId: this.documentId,
@@ -142,7 +142,7 @@ export class RunAllExecutor implements IRunAllExecutor {
             )
 
             if (signal?.aborted) {
-              logger.trace(
+              logger().trace(
                 {
                   workspaceId: this.workspaceId,
                   documentId: this.documentId,
@@ -157,7 +157,7 @@ export class RunAllExecutor implements IRunAllExecutor {
 
             try {
               this.setBlockToRunAllRunning(currentBlock)
-              logger.trace(
+              logger().trace(
                 {
                   workspaceId: this.workspaceId,
                   documentId: this.documentId,
@@ -168,7 +168,7 @@ export class RunAllExecutor implements IRunAllExecutor {
               )
               await this.runBlock(currentBlock, tr)
               const resultStatus = getResultStatus(currentBlock, this.blocks)
-              logger.trace(
+              logger().trace(
                 {
                   workspaceId: this.workspaceId,
                   documentId: this.documentId,
@@ -199,7 +199,7 @@ export class RunAllExecutor implements IRunAllExecutor {
       return currentBlock
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
-        logger.trace(
+        logger().trace(
           {
             workspaceId: this.workspaceId,
             documentId: this.documentId,
@@ -211,7 +211,7 @@ export class RunAllExecutor implements IRunAllExecutor {
 
       throw e
     } finally {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,

@@ -35,7 +35,7 @@ export class FileUploadObserver implements IFileUploadObserver {
   }
 
   public handleInitialBlockState = (block: Y.XmlElement<FileUploadBlock>) => {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -70,7 +70,7 @@ export class FileUploadObserver implements IFileUploadObserver {
     key: string
   ): Promise<void> {
     if (key !== 'uploadedFiles' || action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -83,7 +83,7 @@ export class FileUploadObserver implements IFileUploadObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

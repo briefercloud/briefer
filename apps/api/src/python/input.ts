@@ -33,7 +33,7 @@ ${variable} = pytz.timezone('${value.timezone}').localize(datetime(${value.year}
     (outputs) => {
       for (const output of outputs) {
         if (output.type === 'error') {
-          logger.error(
+          logger().error(
             {
               pythonError: output,
               workspaceId,

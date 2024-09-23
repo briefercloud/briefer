@@ -41,7 +41,7 @@ export class InputObserver implements IInputObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<InputBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -74,7 +74,7 @@ export class InputObserver implements IInputObserver {
     key: string
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -87,7 +87,7 @@ export class InputObserver implements IInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -104,7 +104,7 @@ export class InputObserver implements IInputObserver {
       await this.handleBlockVariableChange(block, oldValue)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -127,7 +127,7 @@ export class InputObserver implements IInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -143,7 +143,7 @@ export class InputObserver implements IInputObserver {
       await this.saveInputValue(block)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -161,7 +161,7 @@ export class InputObserver implements IInputObserver {
         status: 'idle',
       })
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -190,7 +190,7 @@ export class InputObserver implements IInputObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -206,7 +206,7 @@ export class InputObserver implements IInputObserver {
       await this.saveInputVariable(block)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -222,7 +222,7 @@ export class InputObserver implements IInputObserver {
       await this.executor.saveValue(block)
       updateInputValue(block, { status: 'idle', error: null })
     } catch (error) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,

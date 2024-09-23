@@ -1,7 +1,15 @@
 import { v4 as uuidv4 } from 'uuid'
 import { OracleDataSource, getDatabaseURL } from '@briefer/database'
-import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
-import { makeSQLAlchemyQuery } from './sqlalchemy.js'
+import {
+  DataSourceStructure,
+  RunQueryResult,
+  SuccessRunQueryResult,
+} from '@briefer/types'
+import {
+  getSQLAlchemySchema,
+  makeSQLAlchemyQuery,
+  pingSQLAlchemy,
+} from './sqlalchemy.js'
 
 export async function makeOracleQuery(
   workspaceId: string,
@@ -26,9 +34,28 @@ export async function makeOracleQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    'oracle',
     jobId,
     query,
     queryId,
     onProgress
   )
+}
+
+export function pingOracle(
+  ds: OracleDataSource,
+  encryptionKey: string
+): Promise<null | Error> {
+  return pingSQLAlchemy(
+    ds.workspaceId,
+    { type: 'oracle', data: ds },
+    encryptionKey
+  )
+}
+
+export function getOracleSchema(
+  ds: OracleDataSource,
+  encryptionKey: string
+): Promise<DataSourceStructure> {
+  return getSQLAlchemySchema({ type: 'oracle', data: ds }, encryptionKey)
 }

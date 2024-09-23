@@ -24,7 +24,7 @@ import { updateDataframes } from '../index.js'
 import { logger } from '../../../../logger.js'
 import { DataFrame, RunQueryResult } from '@briefer/types'
 import { sqlEditStreamed } from '../../../../ai-api.js'
-import config from '../../../../config/index.js'
+import { config } from '../../../../config/index.js'
 import { EventContext, SQLEvents } from '../../../../events/index.js'
 import {
   IJupyterManager,
@@ -163,7 +163,7 @@ export class SQLExecutor implements ISQLExecutor {
     this.runningQueries.set(block, runningQuery)
 
     try {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -175,7 +175,7 @@ export class SQLExecutor implements ISQLExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -242,7 +242,7 @@ export class SQLExecutor implements ISQLExecutor {
             block.setAttribute('lastQuery', actualSource)
             block.setAttribute('lastQueryTime', new Date().toISOString())
             if (result.type === 'python-error') {
-              logger.error(
+              logger().error(
                 {
                   workspaceId: this.workspaceId,
                   documentId: this.documentId,
@@ -267,7 +267,7 @@ export class SQLExecutor implements ISQLExecutor {
               }
               this.dataframes.set(dataframeName.value, df)
             } else if (result.type === 'syntax-error') {
-              logger.warn(
+              logger().warn(
                 {
                   workspaceId: this.workspaceId,
                   documentId: this.documentId,
@@ -281,7 +281,7 @@ export class SQLExecutor implements ISQLExecutor {
             resultType = result.type
           }
 
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -307,7 +307,7 @@ export class SQLExecutor implements ISQLExecutor {
   }
 
   public async abortQuery(block: Y.XmlElement<SQLBlock>) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -324,7 +324,7 @@ export class SQLExecutor implements ISQLExecutor {
     query.abortController.abort()
     await query.abort?.()
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -349,7 +349,7 @@ export class SQLExecutor implements ISQLExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -377,7 +377,7 @@ export class SQLExecutor implements ISQLExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -389,7 +389,7 @@ export class SQLExecutor implements ISQLExecutor {
     )
 
     await this.executionQueue.add(async () => {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -421,7 +421,7 @@ export class SQLExecutor implements ISQLExecutor {
       })
     })
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

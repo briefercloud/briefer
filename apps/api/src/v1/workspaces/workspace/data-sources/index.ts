@@ -14,7 +14,7 @@ import {
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
 import dataSourceRouter from './data-source.js'
-import config from '../../../../config/index.js'
+import { config } from '../../../../config/index.js'
 import { validate } from 'uuid'
 import { ping } from '../../../../datasources/index.js'
 import { DataSourceStructure } from '@briefer/types'

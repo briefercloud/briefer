@@ -4,7 +4,7 @@ import prisma, {
   AthenaDataSource,
   decrypt,
 } from '@briefer/database'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import { logger } from '../logger.js'
 import {
   DataSourceColumn,
@@ -114,7 +114,7 @@ export async function ping(ds: AthenaDataSource): Promise<DataSource> {
     if (parsedErr.success) {
       err = parsedErr.data
     } else {
-      logger.error(
+      logger().error(
         {
           dataSourceId: ds.id,
           workspaceId: ds.workspaceId,

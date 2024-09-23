@@ -5,7 +5,7 @@ import { logger } from '../../../../logger.js'
 import { ISQLExecutor, SQLExecutor } from '../../executors/blocks/sql.js'
 import { DataFrame } from '@briefer/types'
 import PQueue from 'p-queue'
-import config from '../../../../config/index.js'
+import { config } from '../../../../config/index.js'
 import { SQLEvents } from '../../../../events/index.js'
 
 export interface ISQLObserver extends IBlockObserver<SQLBlock> {}
@@ -28,7 +28,7 @@ export class SQLObserver implements ISQLObserver {
   public handleInitialBlockState(block: Y.XmlElement<SQLBlock>) {
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -59,7 +59,7 @@ export class SQLObserver implements ISQLObserver {
     tr: Y.Transaction
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -72,7 +72,7 @@ export class SQLObserver implements ISQLObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -89,7 +89,7 @@ export class SQLObserver implements ISQLObserver {
         await this.handleSQLBlockDataframeNameChange(block, oldValue)
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -102,7 +102,7 @@ export class SQLObserver implements ISQLObserver {
       )
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -121,7 +121,7 @@ export class SQLObserver implements ISQLObserver {
     const blockId = block.getAttribute('id')
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -172,7 +172,7 @@ export class SQLObserver implements ISQLObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -186,7 +186,7 @@ export class SQLObserver implements ISQLObserver {
       block.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -210,7 +210,7 @@ export class SQLObserver implements ISQLObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -235,7 +235,7 @@ export class SQLObserver implements ISQLObserver {
         })
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -254,7 +254,7 @@ export class SQLObserver implements ISQLObserver {
       })
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

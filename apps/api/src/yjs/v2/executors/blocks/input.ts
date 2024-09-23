@@ -69,7 +69,7 @@ export class InputExecutor implements IInputExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -84,7 +84,7 @@ export class InputExecutor implements IInputExecutor {
     try {
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -107,7 +107,7 @@ export class InputExecutor implements IInputExecutor {
               value: newVariableName,
               error: null,
             })
-            logger.trace(
+            logger().trace(
               {
                 workspaceId: this.workspaceId,
                 documentId: this.documentId,
@@ -137,7 +137,7 @@ export class InputExecutor implements IInputExecutor {
     const { value: variableName } = attrs.variable
     const { newValue } = attrs.value
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -148,7 +148,7 @@ export class InputExecutor implements IInputExecutor {
     )
 
     await this.executionQueue.add(async () => {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -166,7 +166,7 @@ export class InputExecutor implements IInputExecutor {
         error: null,
       })
       updateInputBlockExecutedAt(block, new Date())
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,

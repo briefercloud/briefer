@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CookieOptions } from 'express'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import parseDuration from 'parse-duration'
 import { IOServer } from '../websocket/index.js'
 import getBaseRouter from './base.js'

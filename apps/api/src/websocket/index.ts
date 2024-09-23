@@ -1,5 +1,5 @@
 import http from 'http'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import { sessionFromCookies } from '../auth/token.js'
 import cookie from 'cookie'
 import { Socket as BaseSocket, Server as BaseServer } from 'socket.io'
@@ -68,6 +68,13 @@ export function createSocketServer(server: http.Server): Server {
         next(new Error('Unauthorized'))
       }
     } catch (err) {
+      logger().error(
+        {
+          err,
+          socketId: socket.id,
+        },
+        'Error authenticating socket connection'
+      )
       next(new Error('Internal Server Error'))
     }
   })
@@ -75,8 +82,17 @@ export function createSocketServer(server: http.Server): Server {
   let workInProgress: Map<string, Promise<void>> = new Map()
 
   io.on('connection', (socket: Socket) => {
+    logger().info({ socketId: socket.id }, 'Client connected to socket server')
+
     const session = socket.session
     if (!session) {
+      logger().error(
+        {
+          socketId: socket.id,
+        },
+        'Socket connection did not have a session'
+      )
+
       socket.disconnect(true)
       return
     }
@@ -104,15 +120,29 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(handleRestartEnvironment(socket, session))
     )
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
+
+    socket.on('disconnect', (reason) => {
+      logger().info(
+        { socketId: socket.id, reason },
+        'Client disconnected from socket server'
+      )
+    })
+
+    socket.on('error', (error) => {
+      logger().error(
+        { socketId: socket.id, error },
+        'Socket server error occurred'
+      )
+    })
   })
 
   return {
     io: io,
     shutdown: async () => {
       try {
-        logger.info('Shutting down socket server')
+        logger().info('Shutting down socket server')
         while (workInProgress.size > 0) {
-          logger.info(
+          logger().info(
             { workInProgress: workInProgress.size },
             'Waiting for work to finish'
           )
@@ -122,9 +152,9 @@ export function createSocketServer(server: http.Server): Server {
           }
         }
 
-        logger.info('All socket server work finished')
+        logger().info('All socket server work finished')
       } catch (err) {
-        logger.error({ err }, 'Error shutting down socket server')
+        logger().error({ err }, 'Error shutting down socket server')
         throw err
       }
     },

@@ -1,6 +1,6 @@
 import qs from 'querystring'
 import semver from 'semver'
-import config from './config/index.js'
+import { config } from './config/index.js'
 import { logger } from './logger.js'
 import { homedir } from 'os'
 import path from 'path'
@@ -43,7 +43,7 @@ export async function checkForUpdates() {
     const latestVersion = await fetchLatestVersion()
 
     if (semver.gt(latestVersion, version)) {
-      logger.warn(
+      logger().warn(
         {
           current: version,
           latest: latestVersion,
@@ -52,14 +52,14 @@ export async function checkForUpdates() {
       )
     }
   } catch (err) {
-    logger.error({ err }, 'Failed to check for updates')
+    logger().error({ err }, 'Failed to check for updates')
   }
 }
 
 const UPDATE_CHECK_INTERVAL = 1000 * 60 * 60 * 4 // 4 hours
 export async function initUpdateChecker() {
   if (config().DISABLE_UPDATE_CHECK) {
-    logger.warn('Automatic update checks are disabled')
+    logger().warn('Automatic update checks are disabled')
     return () => {}
   }
 

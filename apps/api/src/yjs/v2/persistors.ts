@@ -66,7 +66,7 @@ export class DocumentPersistor implements Persistor {
     try {
       return acquireLock(`document:${this.documentId}`, () => this._load(tx))
     } catch (err) {
-      logger.error(
+      logger().error(
         { documentId: this.documentId, err },
         'Failed to load Yjs document state'
       )
@@ -103,7 +103,7 @@ export class DocumentPersistor implements Persistor {
         this._persist(ydoc, tx)
       )
     } catch (err) {
-      logger.error(
+      logger().error(
         { documentId: this.documentId, err },
         'Failed to persist Yjs document'
       )
@@ -117,7 +117,7 @@ export class DocumentPersistor implements Persistor {
         where: { id: this.documentId },
       })
       if (!doc) {
-        logger.trace(
+        logger().trace(
           { documentId: this.documentId },
           'Document was deleted, not persisting state'
         )
@@ -234,7 +234,7 @@ export class AppPersistor implements Persistor {
     try {
       return acquireLock(`app:${this.yjsAppDocumentId}`, () => this._load(tx))
     } catch (err) {
-      logger.error(
+      logger().error(
         { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
         'Failed to load Yjs app document state'
       )
@@ -299,7 +299,7 @@ export class AppPersistor implements Persistor {
         this._persist(ydoc, tx)
       )
     } catch (err) {
-      logger.error(
+      logger().error(
         { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
         'Failed to persist Yjs app document'
       )

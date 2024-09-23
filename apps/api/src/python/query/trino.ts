@@ -35,6 +35,7 @@ export async function makeTrinoQuery(
     sessionId,
     dataframeName,
     databaseUrl,
+    'trino',
     jobId,
     query,
     queryId,
@@ -183,7 +184,7 @@ print(json.dumps(structure, default=str))`
               .safeParse(line)
             if (parsedStructure.success) {
               if ('log' in parsedStructure.data) {
-                logger.trace(
+                logger().trace(
                   {
                     workspaceId: ds.workspaceId,
                     datasourceId: ds.id,
@@ -194,7 +195,7 @@ print(json.dumps(structure, default=str))`
                 structure = parsedStructure.data
               }
             } else {
-              logger.error(
+              logger().error(
                 {
                   workspaceId: ds.workspaceId,
                   datasourceId: ds.id,
@@ -208,7 +209,7 @@ print(json.dumps(structure, default=str))`
         } else if (output.type === 'error') {
           pythonError = output
         } else {
-          logger.error(
+          logger().error(
             {
               workspaceId: ds.workspaceId,
               datasourceId: ds.id,

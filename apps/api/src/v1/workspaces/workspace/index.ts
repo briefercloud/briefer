@@ -14,7 +14,7 @@ import filesRouter from './files.js'
 import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
 import { WorkspaceEditFormValues } from '@briefer/types'
 import { encrypt } from '@briefer/database'
-import config from '../../../config/index.js'
+import { config } from '../../../config/index.js'
 
 const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 

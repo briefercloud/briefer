@@ -4,7 +4,7 @@ import prisma, {
   decrypt,
 } from '@briefer/database'
 import { BigQuery } from '@google-cloud/bigquery'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 import {
   DataSourceSchema,
   DataSourceColumn,
@@ -42,7 +42,7 @@ export async function ping(ds: BigQueryDataSource): Promise<DataSource> {
       })
       .safeParse(e)
     if (!parsedErr.success) {
-      logger.error(
+      logger().error(
         {
           dataSourceId: ds.id,
           workspaceId: ds.workspaceId,

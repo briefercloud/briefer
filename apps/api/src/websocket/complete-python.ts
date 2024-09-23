@@ -76,7 +76,7 @@ const completPython =
             return
           }
           if (completion.content.status === 'error') {
-            logger.error(
+            logger().error(
               {
                 documentId,
                 blockId,
@@ -109,7 +109,7 @@ const completPython =
                 suggestions.push(parsed.data)
                 matches.delete(parsed.data.text)
               } else {
-                logger.error(
+                logger().error(
                   {
                     documentId,
                     blockId,
@@ -145,7 +145,7 @@ const completPython =
         new DocumentPersistor(documentId)
       )
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           documentId,
           blockId,

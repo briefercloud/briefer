@@ -70,7 +70,7 @@ export async function runSchedule(socketServer: IOServer) {
             continue
           }
 
-          logger.info(
+          logger().info(
             {
               scheduleId: schedule.id,
               documentId: docId,
@@ -86,7 +86,7 @@ export async function runSchedule(socketServer: IOServer) {
           counters.created++
         }
 
-        logger.info(
+        logger().info(
           {
             scheduleId: schedule.id,
             documentId: docId,
@@ -100,7 +100,7 @@ export async function runSchedule(socketServer: IOServer) {
           cronTime: cron,
           onTick: function () {
             async function tick(documentId: string) {
-              logger.info(
+              logger().info(
                 { scheduleId: schedule.id, documentId, module: 'schedule' },
                 `Starting schedule tick for Document(${documentId})`
               )
@@ -110,14 +110,14 @@ export async function runSchedule(socketServer: IOServer) {
               })
 
               if (document.deletedAt !== null) {
-                logger.info(
+                logger().info(
                   { scheduleId: schedule.id, documentId, module: 'schedule' },
                   `Document(${documentId}) is soft deleted, skipping execution`
                 )
                 return
               }
 
-              logger.info(
+              logger().info(
                 { scheduleId: schedule.id, documentId, module: 'schedule' },
                 `Executing schedule for Document(${documentId})`
               )
@@ -125,7 +125,7 @@ export async function runSchedule(socketServer: IOServer) {
               try {
                 await executeDocument(schedule.id, document, socketServer)
               } catch (err) {
-                logger.error(
+                logger().error(
                   {
                     err,
                     scheduleId: schedule.id,
@@ -136,7 +136,7 @@ export async function runSchedule(socketServer: IOServer) {
                 )
               }
 
-              logger.info(
+              logger().info(
                 {
                   scheduleId: schedule.id,
                   documentId: documentId,
@@ -165,7 +165,7 @@ export async function runSchedule(socketServer: IOServer) {
 
         jobs.set(schedule.id, { job, cron })
       } catch (err) {
-        logger.error(
+        logger().error(
           {
             err,
             module: 'schedule',
@@ -178,7 +178,7 @@ export async function runSchedule(socketServer: IOServer) {
     }
 
     for (const scheduleId of schedulesToDelete) {
-      logger.info(
+      logger().info(
         { scheduleId, module: 'schedule' },
         `Removing Schedule(${scheduleId})`
       )
@@ -187,7 +187,7 @@ export async function runSchedule(socketServer: IOServer) {
       counters.deleted++
     }
 
-    logger.info(
+    logger().info(
       {
         created: counters.created,
         updated: counters.updated,
@@ -205,7 +205,7 @@ export async function runSchedule(socketServer: IOServer) {
       try {
         await updateSchedule()
       } catch (err) {
-        logger.error({ err, module: 'schedule' }, 'Failed to update schedule')
+        logger().error({ err, module: 'schedule' }, 'Failed to update schedule')
       }
 
       if (stop) {
@@ -219,7 +219,7 @@ export async function runSchedule(socketServer: IOServer) {
   })
 
   return async () => {
-    logger.info('Stopping schedule')
+    logger().info('Stopping schedule')
 
     stop = true
     await loop
@@ -229,7 +229,7 @@ export async function runSchedule(socketServer: IOServer) {
     }
 
     while (running.size > 0) {
-      logger.info(
+      logger().info(
         { running: running.size },
         'Waiting for running jobs to finish'
       )
@@ -238,7 +238,7 @@ export async function runSchedule(socketServer: IOServer) {
       }
     }
 
-    logger.info('All jobs finished')
+    logger().info('All jobs finished')
     return loop
   }
 }
@@ -260,7 +260,7 @@ async function executeDocument(
 
     await executeNotebook(scheduleId, socketServer, doc, yjsApp)
   } catch (err) {
-    logger.error(
+    logger().error(
       { err, documentId: doc.id, scheduleId, module: 'schedule' },
       `Failed to execute Document(${doc.id})`
     )
@@ -321,7 +321,7 @@ async function executeNotebook(
         : new DocumentPersistor(doc.id)
     )
     if (failedBlock === undefined) {
-      logger.error(
+      logger().error(
         {
           documentId: doc.id,
           yjsAppDocumentId: app?.id ?? null,

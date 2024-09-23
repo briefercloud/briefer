@@ -34,7 +34,7 @@ export class PythonObserver implements IPythonObserver {
   public handleInitialBlockState(block: Y.XmlElement<PythonBlock>) {
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -57,7 +57,7 @@ export class PythonObserver implements IPythonObserver {
     tr: Y.Transaction
   ) {
     if (action !== 'update') {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -70,7 +70,7 @@ export class PythonObserver implements IPythonObserver {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -85,7 +85,7 @@ export class PythonObserver implements IPythonObserver {
       await this.handleBlockStatusChange(block, tr)
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -102,7 +102,7 @@ export class PythonObserver implements IPythonObserver {
     const blockId = block.getAttribute('id')
     const status = block.getAttribute('status')
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -151,7 +151,7 @@ export class PythonObserver implements IPythonObserver {
           break
       }
     } catch (err) {
-      logger.error(
+      logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -166,7 +166,7 @@ export class PythonObserver implements IPythonObserver {
       block.setAttribute('status', 'idle')
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,

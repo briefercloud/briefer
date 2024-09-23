@@ -16,8 +16,12 @@ export function WebsocketProvider({ children }: Props) {
   const workspaceId = useStringQuery('workspaceId')
   useEffect(() => {
     if (session.data) {
-      const socket = io(NEXT_PUBLIC_API_URL(), {
+      const url = new URL(NEXT_PUBLIC_API_URL())
+      const withoutPathname = url.origin
+
+      const socket = io(withoutPathname, {
         withCredentials: true,
+        path: url.pathname === '/' ? undefined : url.pathname + '/socket.io',
       })
       setSocket(socket)
 

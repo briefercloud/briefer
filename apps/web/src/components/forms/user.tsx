@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import FormError from './formError'
 import Link from 'next/link'
+import Spin from '../Spin'
 
 export const UserFormValues = z.object({
   name: z.string(),
@@ -132,14 +133,26 @@ export default function UserForm({ workspaceId, onSubmit }: UserFormProps) {
         <Link
           href={`/workspaces/${workspaceId}/users`}
           className="text-sm font-semibold leading-6 text-gray-600 border border-gray-200 px-6 py-1.5 rounded-sm shadow-sm hover:bg-gray-50"
+          onClick={(e) => {
+            if (formState.isSubmitting) {
+              e.preventDefault()
+            }
+          }}
         >
           Cancel
         </Link>
         <button
           type="submit"
           className="flex items-center gap-x-2 rounded-sm shadow-sm bg-primary-200 px-6 py-2.5 text-sm font-semibold hover:bg-primary-300 border-stone-950 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          disabled={formState.isSubmitting}
         >
-          Save
+          {formState.isSubmitting ? (
+            <>
+              <Spin /> Saving
+            </>
+          ) : (
+            'Save'
+          )}
         </button>
       </div>
     </form>

@@ -69,7 +69,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -84,7 +84,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     try {
       await this.executionQueue.add(
         async ({ signal }) => {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
@@ -114,7 +114,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
               value: newVariableName,
               error: null,
             })
-            logger.trace(
+            logger().trace(
               {
                 workspaceId: this.workspaceId,
                 documentId: this.documentId,
@@ -151,7 +151,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       return
     }
 
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -163,7 +163,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     )
 
     await this.executionQueue.add(async () => {
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
@@ -182,7 +182,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
         error: null,
       })
       updateDropdownInputBlockExecutedAt(block, new Date())
-      logger.trace(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,

@@ -39,7 +39,7 @@ export const joinWorkspace =
 
       await emitInitialData(socket, workspaceId)
     } catch (err) {
-      logger.error(
+      logger().error(
         { err, workspaceId, userId: session.user.id },
         'Error joining workspace'
       )
@@ -54,7 +54,7 @@ export const leaveWorkspace =
     try {
       await socket.leave(workspaceId)
     } catch (err) {
-      logger.error(
+      logger().error(
         { err, workspaceId, userId: session.user.id },
         'Error leaving workspace'
       )

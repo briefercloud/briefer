@@ -5,6 +5,7 @@ import {
   useEffect,
   Dispatch,
   SetStateAction,
+  useMemo,
 } from 'react'
 import { useHotkeysContext } from 'react-hotkeys-hook'
 import { Awareness } from 'y-protocols/awareness.js'
@@ -16,19 +17,11 @@ export type InteractionState = {
 }
 
 export type InteractionStateDispatcher = Dispatch<
-  SetStateAction<{
-    mode: 'normal' | 'insert'
-    cursorBlockId: string | null
-    scrollIntoView: boolean
-  }>
+  SetStateAction<InteractionState>
 >
 
 const Context = createContext<{
-  interactionState: {
-    mode: 'normal' | 'insert'
-    cursorBlockId: string | null
-    scrollIntoView: boolean
-  }
+  interactionState: InteractionState
   setInteractionState: InteractionStateDispatcher
 }>({
   interactionState: {
@@ -61,13 +54,16 @@ export const EditorAwarenessProvider = (props: Props) => {
     }
   }, [interactionState.mode, enableScope, disableScope])
 
+  const contextValue = useMemo(
+    () => ({
+      interactionState,
+      setInteractionState,
+    }),
+    [interactionState, setInteractionState]
+  )
+
   return (
-    <Context.Provider
-      value={{
-        interactionState,
-        setInteractionState,
-      }}
-    >
+    <Context.Provider value={contextValue}>
       {props.children}
     </Context.Provider>
   )

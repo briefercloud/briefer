@@ -1,6 +1,5 @@
 services:
   postgres:
-    container_name: briefer_postgres_dev
     image: postgres
     ports:
       - '5432:5432'
@@ -16,8 +15,20 @@ services:
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
 
+  db_migration:
+    build:
+      context: '.'
+      dockerfile: 'apps/api/Dockerfile'
+    working_dir: '/app/packages/database'
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      NODE_ENV: 'development'
+      POSTGRES_PRISMA_URL: 'postgresql://postgres:password@postgres:5432/briefer?schema=public'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   jupyter_server:
-    container_name: briefer_jupyter_server_dev
     labels:
       'cloud.briefer.jupyter-container': 'true'
     build:

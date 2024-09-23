@@ -70,7 +70,7 @@ export async function writebackPSQL(
             console.log(`${output.ename}: ${output.evalue}`)
             console.log(output.traceback.join('\n'))
 
-            logger.error(
+            logger().error(
               {
                 workspaceId,
                 sessionId,
@@ -109,7 +109,7 @@ export async function writebackPSQL(
                       step: 'unknown',
                     }
 
-                    logger.error(
+                    logger().error(
                       {
                         workspaceId,
                         sessionId,
@@ -138,7 +138,7 @@ export async function writebackPSQL(
   return {
     promise: promise.then(() => {
       if (!result) {
-        logger.error(
+        logger().error(
           {
             workspaceId,
             sessionId,

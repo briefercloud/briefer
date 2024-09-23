@@ -26,7 +26,7 @@ import {
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
-import config from '../../../../config/index.js'
+import { config } from '../../../../config/index.js'
 import * as psql from '../../../../datasources/psql.js'
 import * as bq from '../../../../datasources/bigquery.js'
 import * as redshift from '../../../../datasources/redshift.js'

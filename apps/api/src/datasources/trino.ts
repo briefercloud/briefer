@@ -2,7 +2,7 @@ import prisma, { DataSource, TrinoDataSource } from '@briefer/database'
 import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { pingTrino, getTrinoSchema } from '../python/query/trino.js'
-import config from '../config/index.js'
+import { config } from '../config/index.js'
 
 export async function ping(ds: TrinoDataSource): Promise<DataSource> {
   const lastConnection = new Date()

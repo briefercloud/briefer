@@ -22,9 +22,32 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     libgdal-dev \
     curl \
-    supervisor && \
+    supervisor \
+    libaio1 \
+    alien && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+#### ORACLE INSTANT CLIENT ####
+ARG TARGETARCH
+
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+        # Download Oracle Instant Client RPM, convert to DEB, and install
+        curl -o /tmp/oracle-instantclient-basiclite.rpm https://download.oracle.com/otn_software/linux/instantclient/1924000/oracle-instantclient19.24-basiclite-19.24.0.0.0-1.aarch64.rpm && \
+        alien -i /tmp/oracle-instantclient-basiclite.rpm && \
+        rm /tmp/oracle-instantclient-basiclite.rpm; \
+    elif [ "$TARGETARCH" = "amd64" ]; then \
+        curl -o /tmp/oracle-instantclient-basiclite.rpm https://download.oracle.com/otn_software/linux/instantclient/2340000/oracle-instantclient-basic-23.4.0.24.05-1.el8.x86_64.rpm && \
+        alien -i /tmp/oracle-instantclient-basiclite.rpm && \
+        rm /tmp/oracle-instantclient-basiclite.rpm; \
+    else \
+        echo "Unsupported architecture: $TARGETARCH"; \
+        exit 1; \
+    fi
+
+# Set environment variables for Oracle Instant Client
+ENV LD_LIBRARY_PATH="/usr/lib/oracle/19.24/client64/lib:/usr/lib/oracle/23.4/client64/lib:${LD_LIBRARY_PATH}"
+ENV ORACLE_HOME="/usr/lib/oracle/19.24/client64:/usr/lib/oracle/23.4/client64"
+#### END OF ORACLE INSTANT CLIENT ####
 
 ENV TURBO_TELEMETRY_DISABLED=1
 
@@ -125,6 +148,7 @@ RUN groupadd -r briefer \
     && useradd -r -g jupyteruser jupyteruser \
     && mkdir -p /home/jupyteruser \
     && chown -R jupyteruser:jupyteruser /home/jupyteruser \
+    && chown -R jupyteruser:jupyteruser /app/jupyter/venv \
     && chmod 700 /home/jupyteruser
 
 
@@ -140,6 +164,13 @@ COPY --from=web-installer --chown=briefer:briefer /app/apps/web/.next/static ./a
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/public ./apps/web/public
 COPY --from=web-installer --chown=briefer:briefer /app/apps/web/start.sh ./apps/web/start.sh
 ##### END OF COPY API AND WEB BUILDS ####
+
+# NGINX
+RUN mkdir -p /var/log/nginx /etc/nginx /etc/nginx/conf.d
+COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/start-nginx.sh /app/start-nginx.sh
+RUN chmod +x /app/start-nginx.sh
+
 
 USER postgres
 RUN mkdir -p /var/lib/postgresql/data \

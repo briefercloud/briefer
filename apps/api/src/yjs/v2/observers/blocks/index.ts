@@ -103,7 +103,7 @@ export class BlocksObserver implements IBlocksObserver {
   }
 
   public start() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -116,7 +116,7 @@ export class BlocksObserver implements IBlocksObserver {
         block.observe(this.onBlockEvent)
         this.handleInitialBlockState(block)
       } catch (err) {
-        logger.error(
+        logger().error(
           {
             workspaceId: this.workspaceId,
             documentId: this.documentId,
@@ -129,7 +129,7 @@ export class BlocksObserver implements IBlocksObserver {
     })
 
     this.blocks.observe(this.onBlocksEvent)
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -139,7 +139,7 @@ export class BlocksObserver implements IBlocksObserver {
   }
 
   public stop() {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -152,7 +152,7 @@ export class BlocksObserver implements IBlocksObserver {
     })
 
     this.blocks.unobserve(this.onBlocksEvent)
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -162,7 +162,7 @@ export class BlocksObserver implements IBlocksObserver {
   }
 
   private handleInitialBlockState(block: YBlock) {
-    logger.trace(
+    logger().trace(
       {
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -199,7 +199,7 @@ export class BlocksObserver implements IBlocksObserver {
         const block = event.target
 
         if (block instanceof Y.XmlElement) {
-          logger.trace(
+          logger().trace(
             {
               workspaceId: this.workspaceId,
               documentId: this.documentId,
