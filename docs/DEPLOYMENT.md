@@ -22,6 +22,7 @@ Ideally, you should deploy it to a server that is accessible to all the people w
 
 Briefer deployments have the following components:
 
+- An [nginx](https://nginx.org) instance which routes traffic to the web and API services.
 - A web application that users will access in their browsers.
 - An API that the web application will talk to.
 - A database to store the data that users upload.
@@ -141,6 +142,21 @@ If you have any issues deploying Briefer, please have a look at these common iss
 In case you need assistance, please don't feel shy to open an issue. We're here to help.
 
 <details>
+  <summary>I can access the web application, but the sign-in is not working</summary>
+
+If you're running Briefer in another machine, for example an external server, Raspbery Pi, etc - make sure you have enabled HTTPS for your current setup while accessing Briefer on port `3000`.
+
+In case you can't enable HTTPS or just want to try it out, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
+
+```sh
+ALLOW_HTTP=true briefer
+```
+
+Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
+
+</details>
+
+<details>
   <summary>I can't access the web application</summary>
 
 If you're not able to access the web application, Briefer is either not running or not exposed to the internet (or within your local network). The latter is the most common issue.
@@ -164,18 +180,4 @@ Check if it complains about any missing environment variables or if there's any 
 
 If you can't figure out what's happening, please [open an issue here](https://github.com/briefercloud/briefer/issues).
 
-</details>
-
-<details>
-  <summary>I can access the web application, but the sign-in is not working</summary>
-
-If you're running Briefer in another machine, for example an external server, Raspbery Pi, etc - make sure you have enabled HTTPS for your current setup while accessing Briefer on port `3000`.
-
-In case you can't enable HTTPS or just want to try it out, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
-
-```sh
-ALLOW_HTTP=true briefer
-```
-
-Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
 </details>
