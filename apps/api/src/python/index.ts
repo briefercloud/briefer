@@ -18,6 +18,15 @@ export class PythonExecutionError extends Error {
     super(message ?? `${etype}: ${ename}: ${evalue}`)
     this.name = this.ename
   }
+
+  public toPythonErrorOutput(): PythonErrorOutput {
+    return {
+      type: 'error',
+      ename: this.ename,
+      evalue: this.evalue,
+      traceback: this.traceback,
+    }
+  }
 }
 
 export class PythonStderrError extends Error {

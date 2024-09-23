@@ -47,9 +47,9 @@ export default function EditDataSourcePostgresSQLPage() {
 
       try {
         const data = await update(input)
-        if (data && data.dataSource.data.connStatus === 'offline') {
+        if (data && data.config.data.connStatus === 'offline') {
           router.push(
-            `/workspaces/${workspaceId}/data-sources?offline=${data.dataSource.data.id}`
+            `/workspaces/${workspaceId}/data-sources?offline=${data.config.data.id}`
           )
         } else {
           router.push(`/workspaces/${workspaceId}/data-sources`)
@@ -72,11 +72,7 @@ export default function EditDataSourcePostgresSQLPage() {
     },
     {
       name: `Edit ${
-        data
-          ? data.dataSource.type === 'psql'
-            ? 'PostgreSQL'
-            : 'BigQuery'
-          : ''
+        data ? (data.config.type === 'psql' ? 'PostgreSQL' : 'BigQuery') : ''
       } data source`,
       icon: PlusCircleIcon,
       href: '#',
@@ -84,50 +80,52 @@ export default function EditDataSourcePostgresSQLPage() {
     },
   ]
 
+  console.log(data)
+
   return (
     <Layout pagePath={pagePath} hideOnboarding>
       <div className="w-full overflow-scroll">
-        {data && data.dataSource.type === 'psql' ? (
+        {data && data.config.type === 'psql' ? (
           <PostgreSQLForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
-            postgreSQLDataSource={data.dataSource.data}
+            postgreSQLDataSource={data.config.data}
           />
-        ) : data && data.dataSource.type === 'redshift' ? (
+        ) : data && data.config.type === 'redshift' ? (
           <RedshiftForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
-            redshiftDataSource={data.dataSource.data}
+            redshiftDataSource={data.config.data}
           />
-        ) : data && data.dataSource.type === 'athena' ? (
+        ) : data && data.config.type === 'athena' ? (
           <AthenaForm
             workspaceId={workspaceId}
-            athenaDataSource={data.dataSource.data}
+            athenaDataSource={data.config.data}
             onSubmit={onSubmit}
           />
-        ) : data && data.dataSource.type === 'oracle' ? (
+        ) : data && data.config.type === 'oracle' ? (
           <OracleForm
             workspaceId={workspaceId}
-            oracleDataSource={data.dataSource.data}
+            oracleDataSource={data.config.data}
             onSubmit={onSubmit}
           />
-        ) : data && data.dataSource.type === 'bigquery' ? (
+        ) : data && data.config.type === 'bigquery' ? (
           <BigQueryForm
             workspaceId={workspaceId}
-            bigQueryDataSource={data.dataSource.data}
+            bigQueryDataSource={data.config.data}
             onSubmit={onSubmit}
           />
-        ) : data && data.dataSource.type === 'mysql' ? (
+        ) : data && data.config.type === 'mysql' ? (
           <MySQLForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
-            mySQLDataSource={data.dataSource.data}
+            mySQLDataSource={data.config.data}
           />
-        ) : data && data.dataSource.type === 'trino' ? (
+        ) : data && data.config.type === 'trino' ? (
           <TrinoForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
-            trinoDataSource={data.dataSource.data}
+            trinoDataSource={data.config.data}
           />
         ) : null}
       </div>

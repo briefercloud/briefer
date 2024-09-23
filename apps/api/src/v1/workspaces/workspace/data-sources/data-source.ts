@@ -289,9 +289,14 @@ const dataSourceRouter = (socketServer: IOServer) => {
       return
     }
 
-    await fetchDataSourceStructure(socketServer, ds, { forceRefresh: true })
+    const structure = await fetchDataSourceStructure(socketServer, ds, {
+      forceRefresh: true,
+    })
 
-    res.json(ds)
+    res.json({
+      structure,
+      config: ds,
+    })
   })
 
   router.delete('/', async (req, res) => {

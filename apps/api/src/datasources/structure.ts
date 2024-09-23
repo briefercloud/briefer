@@ -3,11 +3,11 @@ import prisma, {
   DataSource,
   decrypt,
   encrypt,
-  getDatasource,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import {
   DataSourceStructure,
+  DataSourceStructureError,
   DataSourceStructureState,
   dataSourceStructureStateToV2,
   DataSourceStructureStateV2,
@@ -25,6 +25,7 @@ import { getTrinoSchema } from '../python/query/trino.js'
 import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
 import { z } from 'zod'
+import { PythonExecutionError } from '../python/index.js'
 
 function decryptDBData(
   dataSourceId: string,
@@ -307,6 +308,28 @@ async function _refreshDataSourceStructure(
       },
       'Failed to refresh datasource structure'
     )
+    let error: DataSourceStructureError
+    if (err instanceof PythonExecutionError) {
+      error = err.toPythonErrorOutput()
+    } else if (err instanceof Error) {
+      error = { type: 'unknown', message: err.message }
+    } else {
+      error = { type: 'unknown', message: String(err ?? 'Unknown error') }
+    }
+
+    dataSource = await persist({
+      config: dataSource.config,
+      structure: {
+        status: 'failed',
+        failedAt: Date.now(),
+        previousSuccess:
+          dataSource.structure.status === 'success'
+            ? dataSource.structure
+            : null,
+        error,
+      },
+    })
+    await broadcastDataSource(socketServer, dataSource)
   }
 }
 

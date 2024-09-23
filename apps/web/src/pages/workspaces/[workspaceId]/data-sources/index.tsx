@@ -37,8 +37,6 @@ export default function DataSourcesPage() {
 
   const [{ data: dataSources }, { ping, remove }] = useDataSources(workspaceId)
 
-  console.log(dataSources)
-
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
   const closeInfo = useCallback(() => setShowMoreInfo(false), [setShowMoreInfo])
 
@@ -152,6 +150,7 @@ export default function DataSourcesPage() {
         visible={schemaExplorerDataSourceId !== null}
         onHide={onHideSchemaExplorer}
         dataSourceId={schemaExplorerDataSourceId}
+        canRetrySchema={true}
       />
     </Layout>
   )

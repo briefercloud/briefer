@@ -6,7 +6,8 @@ import {
   PlusIcon,
 } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
-import { DataSourceType, databaseImages } from '@/components/DataSourcesList'
+import { databaseImages } from '@/components/DataSourcesList'
+import type { DataSourceType } from '@briefer/database'
 
 type Option = {
   value: string

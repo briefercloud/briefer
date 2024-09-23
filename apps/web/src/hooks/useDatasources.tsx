@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react'
 import useWebsocket from './useWebsocket'
-import { type APIDataSource } from '@briefer/database'
+import type { APIDataSource, DataSourceType } from '@briefer/database'
 
 export type APIDataSources = List<APIDataSource>
 
@@ -23,7 +23,12 @@ type API = {
     connStatus: 'online' | 'offline'
   }>
   remove: (workspaceId: string, id: string) => void
-  refresh: (workspaceId: string) => Promise<void>
+  refreshAll: (workspaceId: string) => Promise<void>
+  refreshOne: (
+    workspaceId: string,
+    dataSourceId: string,
+    dataSourceType: DataSourceType
+  ) => void
 }
 
 type State = Map<string, APIDataSources>
@@ -41,9 +46,14 @@ const Context = createContext<[State, API]>([
         'Attempted to call data source remove without DataSourcesProvider'
       )
     },
-    refresh: async () => {
+    refreshAll: async () => {
       throw new Error(
-        'Attempted to call data source refresh without DataSourcesProvider'
+        'Attempted to call data source refresh all without DataSourcesProvider'
+      )
+    },
+    refreshOne: async () => {
+      throw new Error(
+        'Attempted to call data source refresh one without DataSourcesProvider'
       )
     },
   },
@@ -143,9 +153,24 @@ export function DataSourcesProvider(props: Props) {
     }
   }, [])
 
-  const refresh = useCallback(
+  const refreshAll = useCallback(
     async (workspaceId: string) => {
-      socket?.emit('workspace-datasources-refresh', workspaceId)
+      socket?.emit('workspace-datasources-refresh-all', workspaceId)
+    },
+    [socket]
+  )
+
+  const refreshOne = useCallback(
+    async (
+      workspaceId: string,
+      dataSourceId: string,
+      dataSourceType: DataSourceType
+    ) => {
+      socket?.emit('workspace-datasources-refresh-one', {
+        workspaceId,
+        dataSourceId,
+        dataSourceType,
+      })
     },
     [socket]
   )
@@ -156,10 +181,11 @@ export function DataSourcesProvider(props: Props) {
       {
         ping,
         remove,
-        refresh,
+        refreshAll,
+        refreshOne,
       },
     ],
-    [state, ping, remove, refresh]
+    [state, ping, remove, refreshAll, refreshOne]
   )
 
   return <Context.Provider value={value}>{props.children}</Context.Provider>

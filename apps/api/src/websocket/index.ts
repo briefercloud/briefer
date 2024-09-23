@@ -18,7 +18,10 @@ import {
 } from './workspace/environment.js'
 import { Session } from '../types.js'
 import completePython from './complete-python.js'
-import { refreshDataSources } from './workspace/data-sources.js'
+import {
+  refreshDataSource,
+  refreshDataSources,
+} from './workspace/data-sources.js'
 
 interface EmitEvents {
   'environment-status-update': (msg: {
@@ -135,8 +138,12 @@ export function createSocketServer(server: http.Server): Server {
     )
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
     socket.on(
-      'workspace-datasources-refresh',
+      'workspace-datasources-refresh-all',
       trackWork(refreshDataSources(io, socket, session))
+    )
+    socket.on(
+      'workspace-datasources-refresh-one',
+      trackWork(refreshDataSource(io, socket, session))
     )
 
     socket.on('disconnect', (reason) => {

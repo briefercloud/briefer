@@ -1,6 +1,6 @@
 import {
   APIDataSource,
-  DataSource,
+  DataSourceType,
   getDatasource,
   listDataSources,
 } from '@briefer/database'
@@ -8,6 +8,7 @@ import { IOServer, Socket } from '../index.js'
 import { z } from 'zod'
 import { Session } from '../../types.js'
 import { fetchDataSourceStructure } from '../../datasources/structure.js'
+import { uuidSchema } from '@briefer/types'
 
 export function refreshDataSources(
   socketServer: IOServer,
@@ -28,6 +29,46 @@ export function refreshDataSources(
 
     const { workspaceId } = payload.data
     emitDataSources(socketServer, socket, workspaceId)
+  }
+}
+
+export function refreshDataSource(
+  socketServer: IOServer,
+  socket: Socket,
+  { userWorkspaces }: Session
+) {
+  return async (data: unknown) => {
+    const payload = z
+      .object({
+        workspaceId: uuidSchema,
+        dataSourceType: DataSourceType,
+        dataSourceId: uuidSchema,
+      })
+      .safeParse(data)
+    if (!payload.success) {
+      return
+    }
+
+    const role = userWorkspaces[payload.data.workspaceId]?.role
+    if (!role) {
+      socket.disconnect(true)
+      return
+    }
+
+    const { workspaceId, dataSourceType, dataSourceId } = payload.data
+    const config = await getDatasource(
+      workspaceId,
+      dataSourceId,
+      dataSourceType
+    )
+    if (!config) {
+      return
+    }
+
+    const structure = await fetchDataSourceStructure(socketServer, config, {
+      forceRefresh: true,
+    })
+    broadcastDataSource(socketServer, { config, structure })
   }
 }
 
