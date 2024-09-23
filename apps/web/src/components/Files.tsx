@@ -151,7 +151,7 @@ file`
 
   const onRemove = useCallback(
     (file: BrieferFile) => {
-      return del(file.relCwdPath)
+      del(file.relCwdPath)
     },
     [del]
   )
@@ -411,7 +411,7 @@ interface FileItemProps {
   file: BrieferFile
   onUseInPython: (file: BrieferFile) => void
   onUseInSQL: (file: BrieferFile) => void
-  onDelete: (file: BrieferFile) => Promise<void>
+  onDelete: (file: BrieferFile) => void
   isDeleting: boolean
   canUse: boolean
 }
@@ -424,12 +424,8 @@ function FileItem(props: FileItemProps) {
     props.onUseInSQL(props.file)
   }, [props.onUseInSQL, props.file])
 
-  const [isDeleting, setIsDeleting] = useState(false)
-
   const onRemove = useCallback(async () => {
-    setIsDeleting(true)
-    await props.onDelete(props.file)
-    setIsDeleting(false)
+    props.onDelete(props.file)
   }, [props.onDelete, props.file])
 
   return (
@@ -448,7 +444,7 @@ function FileItem(props: FileItemProps) {
               onClick={onRemove}
               disabled={props.isDeleting}
             >
-              {isDeleting ? <Spin /> : <TrashIcon className="w-4 h-4" />}
+              {props.isDeleting ? <Spin /> : <TrashIcon className="w-4 h-4" />}
             </button>
           </div>
         </div>
