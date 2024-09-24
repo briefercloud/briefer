@@ -47,7 +47,6 @@ import { PythonOutputs } from './PythonOutput'
 import ScrollBar from '@/components/ScrollBar'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
-import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
@@ -74,11 +73,10 @@ interface Props {
 }
 function PythonBlock(props: Props) {
   const properties = useProperties()
-  const workspaceId = useStringQuery('workspaceId')
   const [workspaces] = useWorkspaces()
   const currentWorkspace: ApiWorkspace | undefined = useMemo(
-    () => workspaces.data.find((w) => w.id === workspaceId),
-    [workspaces.data, workspaceId]
+    () => workspaces.data.find((w) => w.id === props.document.workspaceId),
+    [workspaces.data, props.document.workspaceId]
   )
 
   const hasOaiKey = useMemo(() => {
@@ -139,7 +137,7 @@ function PythonBlock(props: Props) {
   const [
     { data: components },
     { create: createReusableComponent, update: updateReusableComponent },
-  ] = useReusableComponents(workspaceId)
+  ] = useReusableComponents(props.document.workspaceId)
   const component = useMemo(
     () => components.find((c) => c.id === componentId),
     [components, componentId]
@@ -291,7 +289,7 @@ function PythonBlock(props: Props) {
         props.blocks
       )
       createReusableComponent(
-        workspaceId,
+        props.document.workspaceId,
         {
           id: componentId,
           blockId,
@@ -304,14 +302,14 @@ function PythonBlock(props: Props) {
       )
     } else if (!isComponentInstance) {
       // can only update component if it is not an instance
-      updateReusableComponent(workspaceId, component.id, {
+      updateReusableComponent(props.document.workspaceId, component.id, {
         state: createComponentState(props.block, props.blocks).state,
         title,
       })
     }
   }, [
     createReusableComponent,
-    workspaceId,
+    props.document.workspaceId,
     blockId,
     props.document.id,
     title,
