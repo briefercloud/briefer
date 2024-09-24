@@ -141,6 +141,28 @@ If you have any issues deploying Briefer, please have a look at these common iss
 
 In case you need assistance, please don't feel shy to open an issue. We're here to help.
 
+Additionally, please make sure to update Briefer to the latest version before starting to troubleshoot. We're constantly improving the project and fixing bugs, so it's possible that your issue has already been solved in newer versions.
+
+```sh
+# If you're using pip
+pip install --upgrade briefer
+
+# If you're using Docker:
+# 1. Remove the old container (find it with docker ps -a)
+# 2. Pull the latest image
+# 3. Run it again
+# You might also want to delete old volumes
+
+docker rm <your_container_id>
+docker pull briefercloud/briefer
+docker run -d \
+  -p 3000:3000 \
+  -v briefer_psql_data:/var/lib/postgresql/data \
+  -v briefer_jupyter_data:/home/jupyteruser \
+  -v briefer_briefer_data:/home/briefer \
+  briefercloud/briefer
+```
+
 <details>
   <summary>I can access the web application, but the sign-in is not working</summary>
 
@@ -153,6 +175,15 @@ ALLOW_HTTP=true briefer
 ```
 
 Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
+
+Furthermore, if you're using an older version of Briefer, you might need to delete older volumes which might contain conflicting data. You can do that by running:
+
+```sh
+# If you have data on disk (like files), you may want to back those files up before running these commands
+# Still, these commands do *not* delete the data in your database (notebooks, dashboards, users, etc)
+docker volume rm briefer_jupyter_data
+docker volume rm briefer_briefer_data
+```
 
 </details>
 
