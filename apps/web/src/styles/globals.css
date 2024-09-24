@@ -137,9 +137,8 @@ body {
 
 .python-html-output th,
 .python-html-output td {
-  max-width: 100px;
-  text-overflow: ellipsis;
-  overflow: hidden;
+  max-width: 250px;
+  overflow: scroll;
   padding: 0.3rem 0.5rem;
   border: 1px solid theme(colors.gray.200);
   white-space: nowrap;
