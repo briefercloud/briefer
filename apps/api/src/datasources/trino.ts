@@ -3,6 +3,7 @@ import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { pingTrino, getTrinoSchema } from '../python/query/trino.js'
 import { config } from '../config/index.js'
+import { OnTable } from './structure.js'
 
 export async function ping(ds: TrinoDataSource): Promise<DataSource> {
   const lastConnection = new Date()
@@ -19,9 +20,10 @@ export async function ping(ds: TrinoDataSource): Promise<DataSource> {
 }
 
 export async function getSchema(
-  ds: TrinoDataSource
+  ds: TrinoDataSource,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
-  return getTrinoSchema(ds, config().DATASOURCES_ENCRYPTION_KEY)
+  return getTrinoSchema(ds, config().DATASOURCES_ENCRYPTION_KEY, onTable)
 }
 
 export async function updateConnStatus(
