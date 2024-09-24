@@ -156,6 +156,7 @@ export async function getAthenaSchema(
       const tables: Record<string, DataSourceTable> = {}
 
       for (const table of tablesResponse.TableList ?? []) {
+        // Retrieve regular columns
         const columns: DataSourceColumn[] = (
           table.StorageDescriptor?.Columns ?? []
         ).map((column) => ({
@@ -163,7 +164,16 @@ export async function getAthenaSchema(
           type: column.Type ?? 'unknown',
         }))
 
-        tables[table.Name] = { columns }
+        // Retrieve partition columns (partition keys)
+        const partitionColumns: DataSourceColumn[] = (
+          table.PartitionKeys ?? []
+        ).map((partitionKey) => ({
+          name: partitionKey.Name,
+          type: partitionKey.Type ?? 'unknown',
+        }))
+
+        // Merge regular columns and partition columns
+        tables[table.Name] = { columns: [...columns, ...partitionColumns] }
       }
 
       schemas[databaseName] = { tables }
