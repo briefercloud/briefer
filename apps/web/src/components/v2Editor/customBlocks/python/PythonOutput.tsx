@@ -124,21 +124,23 @@ export function PythonOutput(props: ItemProps) {
       switch (props.output.format) {
         case 'png':
           return (
-            <div className={clsx(!props.isDashboardView ? 'flex flex-col items-end' : '')}>
+            <>
               <img
                 className="printable-block"
                 alt="generated image"
                 src={`data:image/${props.output.format};base64, ${props.output.data}`}
               />
               {!props.isDashboardView && (
-                <button
-                  className="relative bg-white rounded-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
-                  onClick={onExportToPNG}
-                >
-                  PNG
-                </button>
+                <div className="w-full flex flex-col items-end">
+                  <button
+                    className="bg-white rounded-md rounded-br-md border border-gray-200 p-1 hover:bg-gray-50 z-10 text-xs text-gray-400"
+                    onClick={onExportToPNG}
+                  >
+                    PNG
+                  </button>
+                </div>
               )}
-            </div>
+            </>
           )
       }
     case 'stdio':
