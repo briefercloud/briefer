@@ -1,14 +1,15 @@
-import prisma, { EnvironmentStatus } from '@briefer/database'
+import prisma from '@briefer/database'
 import { emitEnvironmentStatus } from './environment.js'
 import { emitDocuments } from './documents.js'
-import { Socket } from '../index.js'
+import { IOServer, Socket } from '../index.js'
 import { logger } from '../../logger.js'
 import { Session } from '../../types.js'
 import { uuidSchema } from '@briefer/types'
 import { z } from 'zod'
+import { emitDataSources } from './data-sources.js'
 
 export const joinWorkspace =
-  (socket: Socket, session: Session) => async (data: unknown) => {
+  (io: IOServer, socket: Socket, session: Session) => async (data: unknown) => {
     const payload = z.object({ workspaceId: uuidSchema }).safeParse(data)
     if (!payload.success) {
       return
@@ -37,7 +38,7 @@ export const joinWorkspace =
         await socket.join(workspaceId)
       }
 
-      await emitInitialData(socket, workspaceId)
+      await emitInitialData(io, socket, workspaceId)
     } catch (err) {
       logger().error(
         { err, workspaceId, userId: session.user.id },
@@ -62,17 +63,10 @@ export const leaveWorkspace =
     }
   }
 
-async function emitInitialData(socket: Socket, workspaceId: string) {
-  await emitDocuments(socket, workspaceId)
-
-  const env = await prisma().environment.findFirst({
-    where: { workspaceId },
-    select: { status: true, startedAt: true },
-  })
-  await emitEnvironmentStatus(
-    socket,
-    workspaceId,
-    (env?.status as EnvironmentStatus) ?? 'Stopped',
-    env?.startedAt?.toISOString() ?? null
-  )
+async function emitInitialData(io: IOServer, socket: Socket, workspaceId: string) {
+  await Promise.all([
+    emitDocuments(socket, workspaceId),
+    emitEnvironmentStatus(socket, workspaceId),
+    emitDataSources(io, socket, workspaceId),
+  ])
 }

@@ -7,10 +7,16 @@ import { getJupyterManager } from '../../jupyter/index.js'
 
 export async function emitEnvironmentStatus(
   socket: Socket,
-  workspaceId: string,
-  status: EnvironmentStatus,
-  startedAt: string | null
+  workspaceId: string
 ) {
+  const environment = await prisma().environment.findFirst({
+    where: { workspaceId },
+    select: { status: true, startedAt: true },
+  })
+
+  const status = environment?.status ?? 'Stopped'
+  const startedAt = environment?.startedAt?.toISOString() ?? null
+
   socket.emit('environment-status-update', {
     workspaceId,
     status,
@@ -55,17 +61,7 @@ export function handleGetEnvironmentStatus(socket: Socket, session: Session) {
       return
     }
 
-    const environment = await prisma().environment.findFirst({
-      where: { workspaceId },
-      select: { status: true, startedAt: true },
-    })
-
-    emitEnvironmentStatus(
-      socket,
-      workspaceId,
-      environment?.status ?? 'Stopped',
-      environment?.startedAt?.toISOString() ?? null
-    )
+    emitEnvironmentStatus(socket, workspaceId)
   }
 }
 

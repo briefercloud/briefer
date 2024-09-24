@@ -6,14 +6,15 @@ import { useDataSources } from '@/hooks/useDatasources'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import SchemaList from './SchemaList'
 import TableList from './TableList'
+import { DataSource } from '@briefer/database'
 
 interface Props {
   workspaceId: string
   visible: boolean
   onHide: () => void
   dataSourceId: string | null
+  canRetrySchema: boolean
 }
-
 export default function SchemaExplorer(props: Props) {
   const workspaceId = useStringQuery('workspaceId')
 
@@ -24,7 +25,7 @@ export default function SchemaExplorer(props: Props) {
     }
   }, [props.visible])
 
-  const [dataSources] = useDataSources(workspaceId)
+  const [{ data: dataSources }, { refreshOne }] = useDataSources(workspaceId)
   const [state, setState] = useState<{
     initialDataSourceId: string | null
     dataSourceId: string | null
@@ -59,8 +60,7 @@ export default function SchemaExplorer(props: Props) {
     }
 
     return (
-      dataSources.find((ds) => ds.dataSource.data.id === state.dataSourceId) ??
-      null
+      dataSources.find((ds) => ds.config.data.id === state.dataSourceId) ?? null
     )
   }, [state.dataSourceId, dataSources])
 
@@ -105,6 +105,17 @@ export default function SchemaExplorer(props: Props) {
     }))
   }, [])
 
+  const onRetrySchema = useCallback(
+    (dataSource: DataSource) => {
+      refreshOne(
+        dataSource.data.workspaceId,
+        dataSource.data.id,
+        dataSource.type
+      )
+    },
+    [refreshOne]
+  )
+
   return (
     <Transition
       show={props.visible}
@@ -135,12 +146,16 @@ export default function SchemaExplorer(props: Props) {
               onBack={onTableListBack}
               selectedTable={state.table}
               onSelectTable={onSelectTable}
+              onRetrySchema={onRetrySchema}
+              canRetrySchema={props.canRetrySchema}
             />
           ) : (
             <SchemaList
               dataSource={selectedDataSource}
               onSelectSchema={onSelectSchema}
               onBack={onSchemaListBack}
+              onRetrySchema={onRetrySchema}
+              canRetrySchema={props.canRetrySchema}
             />
           )
         ) : (

@@ -35,34 +35,38 @@ const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 
 usersRouter.post('/', isAdmin, async (req, res) => {
   const workspaceId = getParam(req, 'workspaceId')
+  try {
+    const result = userSchema.safeParse(req.body)
+    if (!result.success) {
+      res.status(400).end()
+      return
+    }
 
-  const result = userSchema.safeParse(req.body)
-  if (!result.success) {
-    res.status(400).end()
-    return
+    const email = result.data.email.trim()
+
+    const workspace = await getWorkspaceById(workspaceId)
+    if (!workspace) {
+      res.status(404).end()
+      return
+    }
+
+    const password = generatePassword(24)
+    let invitee = await getUserByEmail(email)
+    if (!invitee) {
+      const passwordDigest = await hashPassword(password)
+      invitee = await createUser(email, result.data.name, passwordDigest)
+    }
+
+    await addUserToWorkspace(invitee.id, workspaceId, result.data.role)
+
+    res.json({
+      ...invitee,
+      password,
+    })
+  } catch (err) {
+    req.log.error({ err, workspaceId }, 'Error creating user')
+    res.sendStatus(500)
   }
-
-  const email = result.data.email.trim()
-
-  const workspace = await getWorkspaceById(workspaceId)
-  if (!workspace) {
-    res.status(404).end()
-    return
-  }
-
-  const password = generatePassword(24)
-  let invitee = await getUserByEmail(email)
-  if (!invitee) {
-    const passwordDigest = await hashPassword(password)
-    invitee = await createUser(email, result.data.name, passwordDigest)
-  }
-
-  await addUserToWorkspace(invitee.id, workspaceId, result.data.role)
-
-  res.json({
-    ...invitee,
-    password,
-  })
 })
 
 async function belongsToWorkspace(

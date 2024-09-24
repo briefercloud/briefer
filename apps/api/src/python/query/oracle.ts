@@ -10,6 +10,7 @@ import {
   makeSQLAlchemyQuery,
   pingSQLAlchemy,
 } from './sqlalchemy.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makeOracleQuery(
   workspaceId: string,
@@ -46,16 +47,18 @@ export function pingOracle(
   ds: OracleDataSource,
   encryptionKey: string
 ): Promise<null | Error> {
-  return pingSQLAlchemy(
-    ds.workspaceId,
-    { type: 'oracle', data: ds },
-    encryptionKey
-  )
+  return pingSQLAlchemy({ type: 'oracle', data: ds }, encryptionKey, null)
 }
 
 export function getOracleSchema(
   ds: OracleDataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
-  return getSQLAlchemySchema({ type: 'oracle', data: ds }, encryptionKey)
+  return getSQLAlchemySchema(
+    { type: 'oracle', data: ds },
+    encryptionKey,
+    null,
+    onTable
+  )
 }

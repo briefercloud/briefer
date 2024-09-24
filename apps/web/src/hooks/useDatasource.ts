@@ -4,11 +4,8 @@ import { MySQLDataSourceInput } from '@/components/forms/mysql'
 import { OracleDataSourceInput } from '@/components/forms/oracle'
 import { PostgreSQLDataSourceInput } from '@/components/forms/postgresql'
 import { RedshiftDataSourceInput } from '@/components/forms/redshift'
-import fetcher from '@/utils/fetcher'
-import type { DataSource } from '@briefer/database'
-import { DataSourceStructure } from '@briefer/types'
+import type { APIDataSource, DataSource } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
-import useSWR, { SWRResponse } from 'swr'
 import { useDataSources } from './useDatasources'
 import { TrinoDataSourceInput } from '@/components/forms/trino'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
@@ -22,76 +19,69 @@ type DataSourceInput =
   | MySQLDataSourceInput
   | TrinoDataSourceInput
 
-type State = {
-  dataSource: DataSource
-  structure: DataSourceStructure
-}
 type API = {
-  update: (payload: DataSourceInput) => Promise<State | undefined>
+  update: (payload: DataSourceInput) => Promise<APIDataSource | null>
 }
-type UseDataSource = [SWRResponse<State>, API]
+type UseDataSource = [{ data: APIDataSource | null; isLoading: boolean }, API]
 export const useDataSource = (
   workspaceId: string,
   dataSourceId: string
 ): UseDataSource => {
-  const swrRes = useSWR<State>(
-    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
-    fetcher
+  const [{ data, isLoading }] = useDataSources(workspaceId)
+  const dataSource = useMemo(
+    () => data?.find((d) => d.config.data.id === dataSourceId) ?? null,
+    [data, dataSourceId]
   )
 
   const update = useCallback(
     async (payload: DataSourceInput) => {
-      return await swrRes.mutate(async (data) => {
-        if (!data) {
-          return data
-        }
+      if (!dataSource) {
+        return dataSource
+      }
 
-        const res = await fetch(
-          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
-          {
-            credentials: 'include',
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${dataSourceId}`,
+        {
+          credentials: 'include',
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: dataSource.config.type,
+            data: {
+              ...payload,
+              id: dataSourceId,
             },
-            body: JSON.stringify({
-              type: data.dataSource.type,
-              data: {
-                ...payload,
-                id: dataSourceId,
-              },
-            }),
-          }
-        )
-
-        let error: string | null = null
-        if (res.status === 400) {
-          try {
-            const body = await res.json()
-            error = body.error
-          } catch {}
-
-          if (error) {
-            throw new Error(error)
-          }
+          }),
         }
-        if (res.status > 299) {
-          throw new Error(`Unexpected status code ${res.status}`)
-        }
+      )
 
-        return {
-          dataSource: (await res.json()) as DataSource,
-          structure: data.structure,
+      let error: string | null = null
+      if (res.status === 400) {
+        try {
+          const body = await res.json()
+          error = body.error
+        } catch {}
+
+        if (error) {
+          throw new Error(error)
         }
-      })
+      }
+      if (res.status > 299) {
+        throw new Error(`Unexpected status code ${res.status}`)
+      }
+
+      return res.json() as Promise<APIDataSource>
     },
-    [swrRes]
+    [dataSource, dataSourceId, workspaceId]
   )
-  return useMemo(() => [swrRes, { update }], [swrRes, update])
+
+  return useMemo(() => [{ data: dataSource, isLoading }, { update }], [])
 }
 
 export const useNewDataSource = (workspaceId: string) => {
-  const [, , { refresh }] = useDataSources(workspaceId)
+  const [, { refreshAll }] = useDataSources(workspaceId)
   const create = useCallback(
     async (
       data: DataSourceInput,
@@ -139,10 +129,10 @@ export const useNewDataSource = (workspaceId: string) => {
       }
 
       const result = await res.json()
-      await refresh()
+      await refreshAll(workspaceId)
       return result
     },
-    [workspaceId, refresh]
+    [workspaceId, refreshAll]
   )
 
   return create

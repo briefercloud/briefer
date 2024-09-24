@@ -11,12 +11,12 @@ interface Props {
 }
 function WritebackTarget(props: Props) {
   const current = useMemo(() => {
-    const ds = props.options.find((ds) => ds.dataSource.data.id === props.value)
+    const ds = props.options.find((ds) => ds.config.data.id === props.value)
     if (ds) {
       return {
-        value: ds.dataSource.data.id,
-        label: ds.dataSource.data.name,
-        icon: databaseImages(ds.dataSource.type),
+        value: ds.config.data.id,
+        label: ds.config.data.name,
+        icon: databaseImages(ds.config.type),
       }
     }
 
@@ -25,12 +25,12 @@ function WritebackTarget(props: Props) {
 
   const icon = useCallback(
     (value: string) => {
-      const ds = props.options.find((ds) => ds.dataSource.data.id === value)
+      const ds = props.options.find((ds) => ds.config.data.id === value)
       if (ds) {
         return (
           <img
             className="min-h-4 min-w-4 h-4 w-4 flex-none"
-            src={databaseImages(ds.dataSource.type)}
+            src={databaseImages(ds.config.type)}
             alt="database icon"
           />
         )
@@ -44,20 +44,22 @@ function WritebackTarget(props: Props) {
   const onChange = useCallback(
     (value: string) => {
       const selected = props.options.find(
-        (ds) => ds.dataSource.data.id === value
+        (ds) => ds.config.data.id === value
       )
       if (selected) {
-        props.onChange(selected.dataSource.data.id)
+        props.onChange(selected.config.data.id)
       }
     },
     [props.options, props.onChange]
   )
   const options = useMemo(
     () =>
-      props.options.map(({ dataSource }) => ({
-        label: dataSource.data.name,
-        value: dataSource.data.id,
-      })),
+      props.options
+        .map(({ config: dataSource }) => ({
+          label: dataSource.data.name,
+          value: dataSource.data.id,
+        }))
+        .toArray(),
     [props.options]
   )
 

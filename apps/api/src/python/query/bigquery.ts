@@ -1,8 +1,14 @@
 import { v4 as uuidv4 } from 'uuid'
 import { BigQueryDataSource, getCredentials } from '@briefer/database'
-import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
+import {
+  DataSourceStructure,
+  RunQueryResult,
+  SuccessRunQueryResult,
+} from '@briefer/types'
 import { makeQuery } from './index.js'
 import { renderJinja } from '../index.js'
+import { getSQLAlchemySchema, pingSQLAlchemy } from './sqlalchemy.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makeBigQueryQuery(
   workspaceId: string,
@@ -256,5 +262,32 @@ del _briefer_make_bq_query`
     code,
     flagFilePath,
     onProgress
+  )
+}
+
+export async function pingBigQuery(
+  ds: BigQueryDataSource,
+  encryptionKey: string
+): Promise<null | Error> {
+  const credentialsInfo = await getCredentials(ds, encryptionKey)
+  return pingSQLAlchemy(
+    { type: 'bigquery', data: ds },
+    encryptionKey,
+    credentialsInfo
+  )
+}
+
+export async function getBigQuerySchema(
+  ds: BigQueryDataSource,
+  encryptionKey: string,
+  onTable: OnTable
+): Promise<DataSourceStructure> {
+  const credentialsInfo = await getCredentials(ds, encryptionKey)
+
+  return getSQLAlchemySchema(
+    { type: 'bigquery', data: ds },
+    encryptionKey,
+    credentialsInfo,
+    onTable
   )
 }

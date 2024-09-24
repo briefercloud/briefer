@@ -1,6 +1,7 @@
 import {
   DataSourceStructure,
   jsonString,
+  Output,
   PythonErrorOutput,
   RunQueryResult,
   SuccessRunQueryResult,
@@ -10,6 +11,7 @@ import { executeCode, PythonExecutionError, renderJinja } from '../index.js'
 import { DataSource, getDatabaseURL } from '@briefer/database'
 import { z } from 'zod'
 import { logger } from '../../logger.js'
+import { OnTable, OnTableProgress } from '../../datasources/structure.js'
 
 export async function makeSQLAlchemyQuery(
   workspaceId: string,
@@ -242,14 +244,15 @@ briefer_make_sqlalchemy_query()`
 }
 
 export async function pingSQLAlchemy(
-  workspaceId: string,
   ds: DataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  credentialsInfo: object | null
 ): Promise<null | Error> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
   const query = ds.type === 'oracle' ? 'SELECT 1 FROM DUAL' : 'SELECT 1'
 
-  const code = `from sqlalchemy import create_engine
+  const code = `import json
+from sqlalchemy import create_engine
 from sqlalchemy.sql.expression import text
 
 # if oracle, initialize the oracle client
@@ -257,14 +260,23 @@ if ${JSON.stringify(ds.type)} == "oracle":
     import oracledb
     oracledb.init_oracle_client()
 
-engine = create_engine(${JSON.stringify(databaseUrl)})
-connection = engine.connect()
 
+credentials_info = json.loads(${JSON.stringify(
+    JSON.stringify(credentialsInfo)
+  )})
+if credentials_info:
+    engine = create_engine(${JSON.stringify(
+      databaseUrl
+    )}, credentials_info=credentials_info)
+else:
+    engine = create_engine(${JSON.stringify(databaseUrl)})
+
+connection = engine.connect()
 connection.execute(text(${JSON.stringify(query)})).fetchall()`
 
   let pythonError: PythonErrorOutput | null = null
   return executeCode(
-    workspaceId,
+    ds.data.workspaceId,
     `ping-${ds.type}-${ds.data.id}`,
     code,
     (outputs) => {
@@ -293,7 +305,9 @@ connection.execute(text(${JSON.stringify(query)})).fetchall()`
 
 export async function getSQLAlchemySchema(
   ds: DataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  credentialsInfo: object | null,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
 
@@ -303,33 +317,63 @@ from sqlalchemy import create_engine
 from sqlalchemy import inspect
 
 
-def get_data_source_structure(data_source_id):
-    engine = create_engine(f"${databaseUrl}")
+def schema_from_tables(inspector, tables):
+    schemas = {}
+    for table in tables:
+        schema_name, table_name = table.split(".")
+        print(json.dumps({"log": f"Getting schema for table {table}"}))
+        columns = []
+        for column in inspector.get_columns(table_name, schema=schema_name):
+            columns.append({
+                "name": column["name"],
+                "type": str(column["type"])
+            })
+
+        if schema_name not in schemas:
+            schemas[schema_name] = {
+                "tables": {}
+            }
+
+        progress = {
+            "type": "progress",
+            "schema": schema_name,
+            "tableName": table_name,
+            "table": {
+                "columns": columns
+            },
+            "defaultSchema": "public"
+        }
+        print(json.dumps(progress, default=str))
+
+        schemas[schema_name]["tables"][table_name] = {
+            "columns": columns
+        }
+
+    return schemas
+
+
+def get_data_source_structure(data_source_id, credentials_info=None):
+    if credentials_info:
+        engine = create_engine(f"${databaseUrl}", credentials_info=credentials_info)
+    else:
+        engine = create_engine(f"${databaseUrl}")
 
     # if oracle, initialize the oracle client
     if ${JSON.stringify(ds.type)} == "oracle":
         import oracledb
         oracledb.init_oracle_client()
 
-    schemas = {}
     inspector = inspect(engine)
-    for schema_name in inspector.get_schema_names():
-        print(json.dumps({"log": f"Getting tables for schema {schema_name}"}))
-        tables = {}
-        for table_name in inspector.get_table_names(schema=schema_name):
-            print(json.dumps({"log": f"Getting schema for table {table_name}"}))
-            columns = []
-            for column in inspector.get_columns(table_name, schema=schema_name):
-                columns.append({
-                    "name": column["name"],
-                    "type": str(column["type"])
-                })
-            tables[table_name] = {
-                "columns": columns
-            }
-        schemas[schema_name] = {
-            "tables": tables
-        }
+    if ${JSON.stringify(ds.type)} == "bigquery":
+        tables = inspector.get_table_names()
+        schemas = schema_from_tables(inspector, tables)
+    else:
+        tables = []
+        for schema_name in inspector.get_schema_names():
+            print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
+            schema_tables = inspector.get_table_names(schema=schema_name)
+            tables += [f"{schema_name}.{table}" for table in schema_tables]
+        schemas = schema_from_tables(inspector, tables)
 
     data_source_structure = {
         "dataSourceId": data_source_id,
@@ -340,67 +384,27 @@ def get_data_source_structure(data_source_id):
     return data_source_structure
 
 
-structure = get_data_source_structure("${ds.data.id}")
+credentials_info = json.loads(${JSON.stringify(
+    JSON.stringify(credentialsInfo)
+  )})
+structure = get_data_source_structure("${ds.data.id}", credentials_info)
 print(json.dumps(structure, default=str))`
 
   let pythonError: PythonErrorOutput | null = null
+  const onError = (output: PythonErrorOutput) => {
+    pythonError = output
+  }
+
   let structure: DataSourceStructure | null = null
+  const onStructure = (schema: DataSourceStructure) => {
+    structure = schema
+  }
+
   return executeCode(
     ds.data.workspaceId,
     `schema-${ds.type}-${ds.data.id}`,
     code,
-    (outputs) => {
-      for (const output of outputs) {
-        if (output.type === 'stdio' && output.name === 'stdout') {
-          const lines = output.text.split('\n')
-          for (const line of lines) {
-            if (line === '') {
-              continue
-            }
-
-            const parsedStructure = jsonString
-              .pipe(
-                z.union([DataSourceStructure, z.object({ log: z.string() })])
-              )
-              .safeParse(line)
-            if (parsedStructure.success) {
-              if ('log' in parsedStructure.data) {
-                logger().trace(
-                  {
-                    workspaceId: ds.data.workspaceId,
-                    datasourceId: ds.data.id,
-                  },
-                  parsedStructure.data.log
-                )
-              } else {
-                structure = parsedStructure.data
-              }
-            } else {
-              logger().error(
-                {
-                  workspaceId: ds.data.workspaceId,
-                  datasourceId: ds.data.id,
-                  err: parsedStructure.error,
-                  line,
-                },
-                'Failed to parse line from SQLAlchemy schema output'
-              )
-            }
-          }
-        } else if (output.type === 'error') {
-          pythonError = output
-        } else {
-          logger().warn(
-            {
-              workspaceId: ds.data.workspaceId,
-              datasourceId: ds.data.id,
-              output,
-            },
-            'Unexpected output type from SQLAlchemy schema query'
-          )
-        }
-      }
-    },
+    (outputs) => onSchemaOutputs(ds, outputs, onError, onStructure, onTable),
     { storeHistory: false }
   )
     .then(({ promise }) => promise)
@@ -422,4 +426,74 @@ print(json.dumps(structure, default=str))`
         `Failed to get schema for datasource ${ds.data.id}. Got no output.`
       )
     })
+}
+
+export function onSchemaOutputs(
+  ds: DataSource,
+  outputs: Output[],
+  onError: (output: PythonErrorOutput) => void,
+  onStructure: (schema: DataSourceStructure) => void,
+  onTable: OnTable
+) {
+  for (const output of outputs) {
+    if (output.type === 'stdio' && output.name === 'stdout') {
+      const lines = output.text.split('\n')
+      for (const line of lines) {
+        if (line === '') {
+          continue
+        }
+
+        const parsedStructure = jsonString
+          .pipe(
+            z.union([
+              DataSourceStructure,
+              OnTableProgress,
+              z.object({ log: z.string() }),
+            ])
+          )
+          .safeParse(line)
+        if (parsedStructure.success) {
+          if ('log' in parsedStructure.data) {
+            logger().trace(
+              {
+                workspaceId: ds.data.workspaceId,
+                datasourceId: ds.data.id,
+              },
+              parsedStructure.data.log
+            )
+          } else if ('type' in parsedStructure.data) {
+            onTable(
+              parsedStructure.data.schema,
+              parsedStructure.data.tableName,
+              parsedStructure.data.table,
+              parsedStructure.data.defaultSchema
+            )
+          } else {
+            onStructure(parsedStructure.data)
+          }
+        } else {
+          logger().error(
+            {
+              workspaceId: ds.data.workspaceId,
+              datasourceId: ds.data.id,
+              err: parsedStructure.error,
+              line,
+            },
+            'Failed to parse line from SQLAlchemy schema output'
+          )
+        }
+      }
+    } else if (output.type === 'error') {
+      onError(output)
+    } else {
+      logger().warn(
+        {
+          workspaceId: ds.data.workspaceId,
+          datasourceId: ds.data.id,
+          output,
+        },
+        'Unexpected output type from SQLAlchemy schema query'
+      )
+    }
+  }
 }

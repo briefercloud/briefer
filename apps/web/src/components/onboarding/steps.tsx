@@ -55,9 +55,9 @@ export const DataSourceStep = () => {
   const workspaceId = useStringQuery('workspaceId') ?? ''
   const [isUsingCsv, setIsUsingCsv] = useState(false)
 
-  const [dataSources] = useDataSources(workspaceId)
+  const [{ data: dataSources }] = useDataSources(workspaceId)
 
-  if (dataSources.length > 0) {
+  if (dataSources.size > 0) {
     return (
       <div className="flex flex-col gap-y-2">
         <Dialog.Title

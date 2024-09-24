@@ -1,22 +1,11 @@
 import { APIDataSources } from '@/hooks/useDatasources'
-import type { DataSource } from '@briefer/database'
+import type { DataSource, DataSourceType } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import Link from 'next/link'
 import { Fragment, useCallback, useMemo } from 'react'
-
-export type DataSourceType =
-  | 'psql'
-  | 'mysql'
-  | 'bigquery'
-  | 'snowflake'
-  | 'athena'
-  | 'redshift'
-  | 'oracle'
-  | 'mysql'
-  | 'trino'
 
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
@@ -26,8 +15,6 @@ export const dataSourcePrettyName = (t: DataSourceType): string => {
       return 'MySQL'
     case 'bigquery':
       return 'BigQuery'
-    case 'snowflake':
-      return 'Snowflake'
     case 'athena':
       return 'Athena'
     case 'redshift':
@@ -47,8 +34,6 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/mysql.png'
     case 'bigquery':
       return '/icons/bigquery.png'
-    case 'snowflake':
-      return '/icons/snowflake.png'
     case 'athena':
       return '/icons/athena.png'
     case 'redshift':
@@ -208,19 +193,19 @@ interface Props {
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
     return props.dataSources.sort((a, b) => {
-      if (a.dataSource.data.name < b.dataSource.data.name) return -1
-      if (a.dataSource.data.name > b.dataSource.data.name) return 1
+      if (a.config.data.name < b.config.data.name) return -1
+      if (a.config.data.name > b.config.data.name) return 1
       return 0
     })
   }, [props.dataSources])
 
-  if (props.dataSources.length === 0) {
+  if (props.dataSources.size === 0) {
     return <EmptyAPIDataSources workspaceId={props.workspaceId} />
   }
 
   return (
     <ul role="list" className="divide-y divide-gray-200 pt-1">
-      {orderedAPIDataSources.map(({ dataSource }) => (
+      {orderedAPIDataSources.map(({ config: dataSource }) => (
         <li
           key={dataSource.data.id}
           className="flex justify-between gap-x-6 py-5"

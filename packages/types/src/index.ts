@@ -771,6 +771,111 @@ export const DataSourceStructure = z.object({
 })
 export type DataSourceStructure = z.infer<typeof DataSourceStructure>
 
+export const DataSourceStructureStateV1 = z.object({
+  updatedAt: z.string().nullable(),
+  structure: DataSourceStructure,
+  failedAt: z.string().nullable(),
+})
+export type DataSourceStructureStateV1 = z.infer<
+  typeof DataSourceStructureStateV1
+>
+
+export const DataSourceStructureError = z.union([
+  PythonErrorOutput,
+  z.object({ type: z.literal('unknown'), message: z.string() }),
+])
+
+export type DataSourceStructureError = z.infer<typeof DataSourceStructureError>
+
+export const DataSourceStructureStateV2 = z.union([
+  z.object({
+    status: z.literal('success'),
+    updatedAt: z.number(),
+    structure: DataSourceStructure,
+    refreshPing: z.number().nullable(),
+  }),
+  z.object({
+    status: z.literal('failed'),
+    failedAt: z.number(),
+    previousSuccess: z
+      .object({
+        structure: DataSourceStructure,
+        updatedAt: z.number(),
+      })
+      .nullable(),
+    error: DataSourceStructureError,
+  }),
+  z.object({
+    status: z.literal('loading'),
+    startedAt: z.number(),
+    loadingPing: z.number(),
+    structure: DataSourceStructure.nullable(),
+  }),
+])
+
+export type DataSourceStructureStateV2 = z.infer<
+  typeof DataSourceStructureStateV2
+>
+
+export const DataSourceStructureState = z.union([
+  DataSourceStructureStateV1,
+  DataSourceStructureStateV2,
+])
+
+export type DataSourceStructureState = z.infer<typeof DataSourceStructureState>
+
+export function dataSourceStructureStateToV2(
+  state: DataSourceStructureState
+): DataSourceStructureStateV2 {
+  if ('status' in state) {
+    return state
+  }
+
+  if (state.failedAt) {
+    return {
+      status: 'failed',
+      failedAt: new Date(state.failedAt).getTime(),
+      previousSuccess: {
+        structure: state.structure,
+        updatedAt: new Date(state.updatedAt ?? 0).getTime(),
+      },
+      error: { type: 'unknown', message: 'Unknown error, try again.' },
+    }
+  }
+
+  return {
+    status: 'success',
+    structure: state.structure,
+    updatedAt: new Date(state.updatedAt ?? 0).getTime(),
+    refreshPing: null,
+  }
+}
+
+export function getDataSourceStructureFromState(
+  state: DataSourceStructureStateV2
+): DataSourceStructure | null {
+  switch (state.status) {
+    case 'success':
+    case 'loading':
+      return state.structure
+    case 'failed':
+      return state.previousSuccess?.structure ?? null
+  }
+}
+
+export function isDataSourceStructureLoading(
+  state: DataSourceStructureStateV2
+): boolean {
+  switch (state.status) {
+    case 'loading':
+      return true
+    case 'success':
+      return state.refreshPing !== null
+    case 'failed':
+      return false
+  }
+}
+
 export const PythonSuggestion = z.object({
   start: z.number(),
   end: z.number(),

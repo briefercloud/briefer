@@ -1,12 +1,13 @@
-import { APIDataSource } from '@/hooks/useDatasources'
 import ExplorerTitle from './ExplorerTitle'
 import { databaseImages } from '../DataSourcesList'
-import clsx from 'clsx'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { Grid3x3Icon } from 'lucide-react'
 import { useMemo } from 'react'
 import TableDetails from './TableDetails'
+import type { APIDataSource, DataSource } from '@briefer/database'
+import { DataSourceColumn, DataSourceStructure } from '@briefer/types'
+import { SchemaInfo } from './SchemaInfo'
 
 interface Props {
   dataSource: APIDataSource
@@ -14,45 +15,48 @@ interface Props {
   onBack: () => void
   onSelectTable: (tableName: string | null) => void
   selectedTable: string | null
+  onRetrySchema: (dataSource: DataSource) => void
+  canRetrySchema: boolean
 }
 export default function TableList(props: Props) {
-  const tables = useMemo(() => {
-    const schema = props.dataSource.structure.schemas[props.schema]
-    if (!schema) {
-      return []
-    }
-
-    return Object.entries(schema.tables).map(([tableName, table]) => {
-      return {
-        name: tableName,
-        columns: table.columns,
+  const tables: { name: string; columns: DataSourceColumn[] }[] =
+    useMemo(() => {
+      let schemas: DataSourceStructure['schemas']
+      switch (props.dataSource.structure.status) {
+        case 'loading':
+        case 'success':
+          schemas = props.dataSource.structure.structure?.schemas ?? {}
+          break
+        case 'failed':
+          schemas =
+            props.dataSource.structure.previousSuccess?.structure.schemas ?? {}
+          break
       }
-    })
-  }, [props.dataSource.structure.schemas, props.schema])
 
-  const columns = useMemo(() => {
-    if (!props.selectedTable) {
-      return []
-    }
+      const schema = schemas[props.schema] ?? { tables: {} }
 
-    const schema = props.dataSource.structure.schemas[props.schema]
-    if (!schema) {
-      return []
-    }
+      return Object.entries(schema.tables).map(([tableName, table]) => {
+        return {
+          name: tableName,
+          columns: table.columns,
+        }
+      })
+    }, [props.dataSource.structure, props.schema])
 
-    const table = schema.tables[props.selectedTable]
-    if (!table) {
-      return []
-    }
-
-    return table.columns
-  }, [props.dataSource.structure.schemas, props.schema, props.selectedTable])
+  const columns = useMemo(
+    () =>
+      tables.find((table) => table.name === props.selectedTable)?.columns ?? [],
+    [props.selectedTable, tables]
+  )
 
   return (
     <div className="flex flex-col h-full">
       <ExplorerTitle
         title="Schema explorer"
         description="Choose a table to see its columns."
+        dataSource={props.dataSource}
+        onRetrySchema={props.onRetrySchema}
+        canRetrySchema={props.canRetrySchema}
       />
 
       <div className="flex-1 h-1/3 pt-4 flex flex-col overflow-hidden">
@@ -63,18 +67,22 @@ export default function TableList(props: Props) {
           <div className="flex gap-x-1.5 items-center">
             <ChevronLeftIcon className="h-3 w-3 text-gray-500 group-hover:text-gray-700" />
             <h4>
-              {props.dataSource.dataSource.data.name}.{props.schema}
+              {props.dataSource.config.data.name}.{props.schema}
             </h4>
           </div>
 
           <img
-            src={databaseImages(props.dataSource.dataSource.type)}
+            src={databaseImages(props.dataSource.config.type)}
             alt=""
             className="h-4 w-4 group-hover:grayscale-[50%]"
           />
         </button>
 
         <div className="text-xs text-gray-500 font-mono overflow-x-hidden overflow-y-scroll flex-grow">
+          <SchemaInfo
+            dataSource={props.dataSource}
+            onRetrySchema={props.onRetrySchema}
+          />
           <ul className="flex flex-col">
             {tables.map((table) => {
               return (

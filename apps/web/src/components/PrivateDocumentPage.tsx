@@ -94,7 +94,7 @@ function PrivateDocumentPageInner(
     | null
   >(null)
 
-  const [dataSources] = useDataSources(props.workspaceId)
+  const [{ data: dataSources }] = useDataSources(props.workspaceId)
 
   const onHideSidebar = useCallback(() => {
     setSelectedSidebar(null)
@@ -352,6 +352,7 @@ function PrivateDocumentPageInner(
               ? selectedSidebar.dataSourceId
               : null
           }
+          canRetrySchema={!isViewer}
         />
 
         <ShortcutsModal

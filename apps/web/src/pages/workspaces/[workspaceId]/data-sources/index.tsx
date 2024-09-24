@@ -35,8 +35,7 @@ export default function DataSourcesPage() {
   const [showMoreInfo, setShowMoreInfo] = useState(false)
   const workspaceId = useStringQuery('workspaceId')
 
-  const [dataSources, _isLoading, { ping, remove }] =
-    useDataSources(workspaceId)
+  const [{ data: dataSources }, { ping, remove }] = useDataSources(workspaceId)
 
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
   const closeInfo = useCallback(() => setShowMoreInfo(false), [setShowMoreInfo])
@@ -47,9 +46,9 @@ export default function DataSourcesPage() {
     () =>
       dataSources.find(
         (ds) =>
-          ds.dataSource.data.id === offline &&
-          ds.dataSource.data.connStatus === 'offline'
-      )?.dataSource ?? null,
+          ds.config.data.id === offline &&
+          ds.config.data.connStatus === 'offline'
+      )?.config ?? null,
     [offline, dataSources]
   )
 
@@ -76,20 +75,23 @@ export default function DataSourcesPage() {
 
   const onPing = useCallback(
     (id: string, type: string) => {
-      const ds = dataSources.find(
-        (ds) => ds.dataSource.data.id === id
-      )?.dataSource
+      const ds = dataSources.find((ds) => ds.config.data.id === id)?.config
       if (!ds) {
         return
       }
 
-      ping(id, type).then(({ connStatus }) => {
+      ping(workspaceId, id, type).then(({ connStatus }) => {
         if (connStatus === 'offline') {
           router.query.offline = id
         }
       })
     },
-    [ping, dataSources, router]
+    [workspaceId, ping, dataSources, router]
+  )
+
+  const onRemove = useCallback(
+    (id: string) => remove(workspaceId, id),
+    [workspaceId, remove]
   )
 
   const [schemaExplorerDataSourceId, setSchemaExplorer] = useState<
@@ -136,7 +138,7 @@ export default function DataSourcesPage() {
           <DataSourcesList
             workspaceId={workspaceId}
             dataSources={dataSources}
-            onRemoveDataSource={remove}
+            onRemoveDataSource={onRemove}
             onPingDataSource={onPing}
             onOpenOfflineDialog={onOpenOfflineDialog}
             onSchemaExplorer={onSchemaExplorer}
@@ -148,6 +150,7 @@ export default function DataSourcesPage() {
         visible={schemaExplorerDataSourceId !== null}
         onHide={onHideSchemaExplorer}
         dataSourceId={schemaExplorerDataSourceId}
+        canRetrySchema={true}
       />
     </Layout>
   )

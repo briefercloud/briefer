@@ -8,6 +8,8 @@ import * as athena from './athena.js'
 import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
+import { DataSourceStructureStateV2 } from '@briefer/types'
+import { z } from 'zod'
 
 export * from './bigquery.js'
 export * from './psql.js'
@@ -34,6 +36,31 @@ export type DataSource =
   | { type: 'oracle'; data: OracleDataSource }
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
+
+export type DataSourceType = DataSource['type']
+
+export const DataSourceType = z.enum([
+  'psql',
+  'bigquery',
+  'redshift',
+  'athena',
+  'oracle',
+  'mysql',
+  'trino',
+] as const)
+
+// Ensure Zod enum stays in sync with `DataSourceType`
+// A type-level validation to ensure the Zod enum matches the `DataSourceType`
+// If `ValidateDataSourceTypes` is `never`, TypeScript will error, forcing you to update one of the definitions.
+type ValidateDataSourceTypes =
+  z.infer<typeof DataSourceType> extends DataSourceType
+    ? DataSourceType extends z.infer<typeof DataSourceType>
+      ? true
+      : never
+    : never
+const checkDataSourceTypes: ValidateDataSourceTypes = true
+// void to stop no unused variable error
+void checkDataSourceTypes
 
 export async function listDataSources(
   workspaceId: string
@@ -187,7 +214,7 @@ export async function getDatabaseURL(
       return url
     }
     case 'bigquery':
-      return `bigquery://`
+      return `bigquery://${ds.data.projectId}`
     case 'athena': {
       const { accessKeyId, secretAccessKeyId } =
         await prisma().athenaDataSource.findFirstOrThrow({
@@ -284,4 +311,9 @@ export async function getCredentialsInfo(
       }
     }
   }
+}
+
+export type APIDataSource = {
+  config: DataSource
+  structure: DataSourceStructureStateV2
 }

@@ -13,7 +13,6 @@
     "@briefer/database": "*",
     "@briefer/editor": "*",
     "@briefer/types": "*",
-    "@google-cloud/bigquery": "^7.7.0",
     "@grpc/grpc-js": "^1.11.1",
     "@jupyterlab/services": "^7.1.1",
     "@kubernetes/client-node": "^0.20.0",
