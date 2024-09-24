@@ -47,6 +47,9 @@ export type SQLBlock = BaseBlock<BlockType.SQL> & {
   editWithAIPrompt: Y.Text
   isEditWithAIPromptOpen: boolean
   aiSuggestions: Y.Text | null
+
+  // wether the block originated from a reusable component and the id of the component
+  componentId: string | null
 }
 
 export const isSQLBlock = (block: YBlock): block is Y.XmlElement<SQLBlock> => {
@@ -81,6 +84,7 @@ export const makeSQLBlock = (
     editWithAIPrompt: new Y.Text(''),
     isEditWithAIPromptOpen: false,
     aiSuggestions: null,
+    componentId: null,
   }
 
   for (const [key, value] of Object.entries(attrs)) {
@@ -118,6 +122,7 @@ export function getSQLAttributes(
       false
     ),
     aiSuggestions: getSQLAISuggestions(block),
+    componentId: getAttributeOr(block, 'componentId', null),
   }
 }
 
@@ -125,30 +130,40 @@ export function duplicateSQLBlock(
   newId: string,
   block: Y.XmlElement<SQLBlock>,
   blocks: Y.Map<YBlock>,
-  datasourceMap?: Map<string, string>
+  options?: {
+    datasourceMap?: Map<string, string>
+    componentId?: string
+    noState?: boolean
+  }
 ): Y.XmlElement<SQLBlock> {
   const prevAttributes = getSQLAttributes(block, blocks)
 
   const nextAttributes: SQLBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
     source: duplicateYText(prevAttributes.source),
-    status: prevAttributes.status,
+    status: options?.noState ? 'idle' : prevAttributes.status,
     dataframeName: clone(prevAttributes.dataframeName),
     dataSourceId: prevAttributes.dataSourceId
-      ? datasourceMap?.get(prevAttributes.dataSourceId) ??
+      ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
         prevAttributes.dataSourceId
       : null,
     isFileDataSource: prevAttributes.isFileDataSource,
-    result: clone(prevAttributes.result),
-    lastQuery: prevAttributes.lastQuery,
-    lastQueryTime: prevAttributes.lastQueryTime,
-    isCodeHidden: prevAttributes.isCodeHidden,
-    isResultHidden: prevAttributes.isResultHidden,
-    editWithAIPrompt: duplicateYText(prevAttributes.editWithAIPrompt),
-    isEditWithAIPromptOpen: prevAttributes.isEditWithAIPromptOpen,
-    aiSuggestions: prevAttributes.aiSuggestions
-      ? duplicateYText(prevAttributes.aiSuggestions)
-      : null,
+    result: options?.noState ? null : clone(prevAttributes.result),
+    lastQuery: options?.noState ? null : prevAttributes.lastQuery,
+    lastQueryTime: options?.noState ? null : prevAttributes.lastQueryTime,
+    isCodeHidden: options?.noState ? false : prevAttributes.isCodeHidden,
+    isResultHidden: options?.noState ? false : prevAttributes.isResultHidden,
+    editWithAIPrompt: options?.noState
+      ? new Y.Text()
+      : duplicateYText(prevAttributes.editWithAIPrompt),
+    isEditWithAIPromptOpen: options?.noState
+      ? false
+      : prevAttributes.isEditWithAIPromptOpen,
+    aiSuggestions:
+      prevAttributes.aiSuggestions && !options?.noState
+        ? duplicateYText(prevAttributes.aiSuggestions)
+        : null,
+    componentId: options?.componentId ?? prevAttributes.componentId,
   }
 
   const yBlock = new Y.XmlElement<SQLBlock>('block')

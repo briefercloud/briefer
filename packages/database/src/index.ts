@@ -22,6 +22,7 @@ export * from './datasources/index.js'
 export * from './users.js'
 export * from './workspaces.js'
 export * from './environments.js'
+export * from './components.js'
 
 export type PrismaTransaction = Omit<PrismaClient, ITXClientDenyList>
 

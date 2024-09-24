@@ -6,6 +6,7 @@ import { Socket as BaseSocket, Server as BaseServer } from 'socket.io'
 import {
   APIDataSource,
   ApiDocument,
+  APIReusableComponent,
   EnvironmentStatus,
 } from '@briefer/database'
 import { PythonCompletionMessage } from '@briefer/types'
@@ -51,6 +52,19 @@ interface EmitEvents {
   'workspace-datasource-update': (msg: {
     workspaceId: string
     dataSource: APIDataSource
+  }) => void
+
+  'workspace-components': (msg: {
+    workspaceId: string
+    components: APIReusableComponent[]
+  }) => void
+  'workspace-component-update': (msg: {
+    workspaceId: string
+    component: APIReusableComponent
+  }) => void
+  'workspace-component-removed': (msg: {
+    workspaceId: string
+    componentId: string
   }) => void
 
   'python-completion': (msg: PythonCompletionMessage) => void

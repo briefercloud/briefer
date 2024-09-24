@@ -321,6 +321,7 @@ function BlockListItem(props: BlockListItemProps) {
           <PythonBlock
             document={props.document}
             block={block}
+            blocks={props.blocks}
             isEditable={false}
             dragPreview={null}
             onTry={() => {}}

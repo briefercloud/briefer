@@ -80,7 +80,7 @@ export function getWritebackAttributes(
 export function duplicateWritebackBlock(
   newId: string,
   block: Y.XmlElement<WritebackBlock>,
-  datasourceMap?: Map<string, string>
+  options?: { datasourceMap?: Map<string, string> }
 ): Y.XmlElement<WritebackBlock> {
   const prevAttributes = getWritebackAttributes(block)
 
@@ -89,7 +89,7 @@ export function duplicateWritebackBlock(
     status: 'idle',
     dataframeName: prevAttributes.dataframeName,
     dataSourceId: prevAttributes.dataSourceId
-      ? datasourceMap?.get(prevAttributes.dataSourceId) ??
+      ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
         prevAttributes.dataSourceId
       : null,
     tableName: duplicateYText(prevAttributes.tableName),

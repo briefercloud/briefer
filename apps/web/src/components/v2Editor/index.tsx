@@ -661,6 +661,7 @@ file`
           <PythonBlock
             isPublicMode={props.isPublicViewer}
             block={block}
+            blocks={blocks.value}
             isEditable={props.isEditable}
             document={props.document}
             dragPreview={hasMultipleTabs ? null : dragPreview}
@@ -1600,8 +1601,7 @@ const V2Editor = (props: V2EditorProps) => {
   const hasWriteback = useMemo(
     () =>
       props.dataSources.some(
-        (ds) =>
-          ds.config.type === 'psql' || ds.config.type === 'bigquery'
+        (ds) => ds.config.type === 'psql' || ds.config.type === 'bigquery'
       ),
     [props.dataSources]
   )

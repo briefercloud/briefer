@@ -7,6 +7,7 @@ import { Session } from '../../types.js'
 import { uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { emitDataSources } from './data-sources.js'
+import { emitComponents } from './components.js'
 
 export const joinWorkspace =
   (io: IOServer, socket: Socket, session: Session) => async (data: unknown) => {
@@ -63,10 +64,15 @@ export const leaveWorkspace =
     }
   }
 
-async function emitInitialData(io: IOServer, socket: Socket, workspaceId: string) {
+async function emitInitialData(
+  io: IOServer,
+  socket: Socket,
+  workspaceId: string
+) {
   await Promise.all([
     emitDocuments(socket, workspaceId),
     emitEnvironmentStatus(socket, workspaceId),
     emitDataSources(io, socket, workspaceId),
+    emitComponents(socket, workspaceId),
   ])
 }

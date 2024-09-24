@@ -23,6 +23,9 @@ import {
   isFixingPythonWithAI,
   togglePythonEditWithAIPromptOpen,
   getBaseAttributes,
+  getPythonAttributes,
+  createComponentState,
+  YBlock,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
@@ -47,10 +50,13 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
+import { SaveReusableComponentButton } from '@/components/ReusableComponents'
+import { useReusableComponents } from '@/hooks/useReusableComponents'
 
 interface Props {
   document: ApiDocument
   block: Y.XmlElement<PythonBlock>
+  blocks: Y.Map<YBlock>
   isEditable: boolean
   dragPreview: ConnectDragPreview | null
   onRun: (block: Y.XmlElement<PythonBlock>) => void
@@ -129,7 +135,15 @@ function PythonBlock(props: Props) {
     togglePythonEditWithAIPromptOpen(props.block)
   }, [props.block, hasOaiKey])
 
-  const blockId = getBaseAttributes(props.block).id
+  const { id: blockId, componentId } = getPythonAttributes(props.block)
+  const [
+    { data: components },
+    { create: createReusableComponent, update: updateReusableComponent },
+  ] = useReusableComponents(workspaceId)
+  const component = useMemo(
+    () => components.find((c) => c.id === componentId),
+    [components, componentId]
+  )
 
   const {
     editor,
@@ -265,6 +279,47 @@ function PythonBlock(props: Props) {
       mode: 'normal',
     })
   }, [blockId, setInteractionState])
+
+  const isComponentInstance =
+    component !== undefined && component.blockId !== blockId
+
+  const onSaveReusableComponent = useCallback(() => {
+    const component = components.find((c) => c.id === componentId)
+    if (!component) {
+      const { id: componentId, state } = createComponentState(
+        props.block,
+        props.blocks
+      )
+      createReusableComponent(
+        workspaceId,
+        {
+          id: componentId,
+          blockId,
+          documentId: props.document.id,
+          state,
+          title,
+          type: 'python',
+        },
+        props.document.title
+      )
+    } else if (!isComponentInstance) {
+      // can only update component if it is not an instance
+      updateReusableComponent(workspaceId, component.id, {
+        state: createComponentState(props.block, props.blocks).state,
+        title,
+      })
+    }
+  }, [
+    createReusableComponent,
+    workspaceId,
+    blockId,
+    props.document.id,
+    title,
+    props.block,
+    components,
+    isComponentInstance,
+    props.document.title,
+  ])
 
   if (props.dashboardPlace) {
     return (
@@ -513,6 +568,12 @@ function PythonBlock(props: Props) {
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
+        />
+        <SaveReusableComponentButton
+          isComponent={blockId === component?.blockId}
+          onSave={onSaveReusableComponent}
+          disabled={!props.isEditable || isComponentInstance}
+          isComponentInstance={isComponentInstance}
         />
       </div>
     </div>

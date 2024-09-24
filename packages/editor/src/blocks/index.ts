@@ -350,12 +350,15 @@ export function duplicateBlock(
   block: YBlock,
   blocks: Y.Map<YBlock>,
   duplicatingDocument: boolean,
-  datasourceMap?: Map<string, string>
+  options?: {
+    datasourceMap?: Map<string, string>
+    componentId?: string
+    noState?: boolean
+  }
 ): YBlock {
   return switchBlockType<YBlock>(block, {
-    onSQL: (block) =>
-      duplicateSQLBlock(newBlockId, block, blocks, datasourceMap),
-    onPython: (block) => duplicatePythonBlock(newBlockId, block),
+    onSQL: (block) => duplicateSQLBlock(newBlockId, block, blocks, options),
+    onPython: (block) => duplicatePythonBlock(newBlockId, block, options),
     onVisualization: (block) => duplicateVisualizationBlock(newBlockId, block),
     onInput: (block) => duplicateInputBlock(newBlockId, block, blocks),
     onDropdownInput: (block) =>
@@ -365,8 +368,7 @@ export function duplicateBlock(
     onFileUpload: (block) => duplicateFileUploadBlock(newBlockId, block),
     onDashboardHeader: (block) =>
       duplicateDashboardHeaderBlock(newBlockId, block),
-    onWriteback: (block) =>
-      duplicateWritebackBlock(newBlockId, block, datasourceMap),
+    onWriteback: (block) => duplicateWritebackBlock(newBlockId, block, options),
     onPivotTable: (block) =>
       duplicatePivotTableBlock(newBlockId, block, blocks, !duplicatingDocument),
   })
