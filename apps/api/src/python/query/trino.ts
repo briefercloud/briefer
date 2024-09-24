@@ -5,12 +5,10 @@ import {
   PythonErrorOutput,
   RunQueryResult,
   SuccessRunQueryResult,
-  jsonString,
 } from '@briefer/types'
-import { makeSQLAlchemyQuery } from './sqlalchemy.js'
+import { makeSQLAlchemyQuery, onSchemaOutputs } from './sqlalchemy.js'
 import { PythonExecutionError, executeCode } from '../index.js'
-import { z } from 'zod'
-import { logger } from '../../logger.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makeTrinoQuery(
   workspaceId: string,
@@ -91,7 +89,8 @@ connection.execute(text("SELECT 1")).fetchall()`
 
 export async function getTrinoSchema(
   ds: TrinoDataSource,
-  encryptionKey: string
+  encryptionKey: string,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const databaseUrl = await getDatabaseURL(
     { type: 'trino', data: ds },
@@ -104,7 +103,7 @@ export async function getTrinoSchema(
 import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
-
+from sqlalchemy.sql.expression import text
 
 def get_catalog_structure(catalog):
     if catalog:
@@ -115,7 +114,9 @@ def get_catalog_structure(catalog):
     schemas = {}
     inspector = inspect(engine)
     for schema_name in inspector.get_schema_names():
-        print(json.dumps({"log": f"Getting tables for schema {schema_name}"}))
+        actual_schema_name = schema_name if catalog is None else f"{catalog}.{schema_name}"
+
+        print(json.dumps({"log": f"Getting tables for schema {actual_schema_name}"}))
         tables = {}
         for table_name in inspector.get_table_names(schema=schema_name):
             print(json.dumps({"log": f"Getting schema for table {table_name}"}))
@@ -128,23 +129,38 @@ def get_catalog_structure(catalog):
             tables[table_name] = {
                 "columns": columns
             }
-        schemas[schema_name if catalog is None else f"{catalog}.{schema_name}"] = {
+
+            progress = {
+                "type": "progress",
+                "schema": actual_schema_name,
+                "tableName": table_name,
+                "table": {
+                    "columns": columns
+                },
+                "defaultSchema": ""
+            }
+            print(json.dumps(progress, default=str))
+
+        schemas[actual_schema_name] = {
             "tables": tables
         }
 
     return schemas
 
 
+catalogs_to_ignore = set(['jmx', 'system', 'memory'])
 def get_data_source_structure(data_source_id, single_catalog):
     if single_catalog:
         schemas = get_catalog_structure(None)
     else:
         engine = create_engine("${databaseUrl}")
         conn = engine.connect()
-        catalogs = [row[0] for row in conn.execute("SHOW CATALOGS").fetchall()]
+        catalogs = [row[0] for row in conn.execute(text("SHOW CATALOGS")).fetchall()]
         schemas = {}
 
         for catalog in catalogs:
+            if catalog in catalogs_to_ignore:
+                continue
             print(json.dumps({"log": f"Getting schema for catalog {catalog}"}))
             try:
                 catalog_schema = get_catalog_structure(catalog)
@@ -167,59 +183,26 @@ structure = get_data_source_structure("${ds.id}", ${
 print(json.dumps(structure, default=str))`
 
   let pythonError: PythonErrorOutput | null = null
+  const onError = (output: PythonErrorOutput) => {
+    pythonError = output
+  }
+
   let structure: DataSourceStructure | null = null
+  const onStructure = (schema: DataSourceStructure) => {
+    structure = schema
+  }
   return executeCode(
     ds.workspaceId,
     `schema-trino-${ds.id}`,
     code,
-    (outputs) => {
-      for (const output of outputs) {
-        if (output.type === 'stdio') {
-          const lines = output.text.split('\n')
-          for (const line of lines) {
-            const parsedStructure = jsonString
-              .pipe(
-                z.union([DataSourceStructure, z.object({ log: z.string() })])
-              )
-              .safeParse(line)
-            if (parsedStructure.success) {
-              if ('log' in parsedStructure.data) {
-                logger().trace(
-                  {
-                    workspaceId: ds.workspaceId,
-                    datasourceId: ds.id,
-                  },
-                  parsedStructure.data.log
-                )
-              } else {
-                structure = parsedStructure.data
-              }
-            } else {
-              logger().error(
-                {
-                  workspaceId: ds.workspaceId,
-                  datasourceId: ds.id,
-                  err: parsedStructure.error,
-                  line,
-                },
-                'Failed to parse line from Trino schema output'
-              )
-            }
-          }
-        } else if (output.type === 'error') {
-          pythonError = output
-        } else {
-          logger().error(
-            {
-              workspaceId: ds.workspaceId,
-              datasourceId: ds.id,
-              output,
-            },
-            'Unexpected output type from Trino schema query'
-          )
-        }
-      }
-    },
+    (outputs) =>
+      onSchemaOutputs(
+        { type: 'trino', data: ds },
+        outputs,
+        onError,
+        onStructure,
+        onTable
+      ),
     { storeHistory: false }
   )
     .then(({ promise }) => promise)

@@ -260,17 +260,13 @@ async function _refreshDataSourceStructure(
         )
         break
       case 'athena':
-        finalStructure = await getAthenaSchema(
-          dataSource.config.data
-          // config().DATASOURCES_ENCRYPTION_KEY,
-          // onTable
-        )
+        finalStructure = await getAthenaSchema(dataSource.config.data)
         break
       case 'trino':
         finalStructure = await getTrinoSchema(
           dataSource.config.data,
-          config().DATASOURCES_ENCRYPTION_KEY
-          // onTable
+          config().DATASOURCES_ENCRYPTION_KEY,
+          onTable
         )
         break
       case 'bigquery':
@@ -287,7 +283,7 @@ async function _refreshDataSourceStructure(
 
     await updateQueue.onIdle()
     clearInterval(interval)
-    await persist({
+    dataSource = await persist({
       config: dataSource.config,
       structure: {
         status: 'success',
