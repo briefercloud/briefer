@@ -262,7 +262,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {properties.data?.requiresOpenAiKey && (
+            {!properties.data?.disableCustomOpenAiKey && (
               <div className="space-y-8 border-b border-gray-900/10 pb-0 sm:space-y-0 sm:divide-y sm:divide-gray-900/10 ">
                 <div className="flex items-center justify-between sm:gap-4 sm:py-6">
                   <div className="flex flex-col gap-y-2 justify-left">

@@ -27,7 +27,7 @@ export interface IBaseConfig {
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
   WORKSPACE_SECRETS_ENCRYPTION_KEY: string
-  ENABLE_CUSTOM_OAI_KEY: boolean
+  DISABLE_CUSTOM_OAI_KEY: boolean
   YJS_DOCS_CACHE_SIZE_MB: number
   DISABLE_ANONYMOUS_TELEMETRY: boolean
   DISABLE_UPDATE_CHECK: boolean
@@ -59,7 +59,7 @@ export class BaseConfig implements IBaseConfig {
   public readonly DATASOURCES_ENCRYPTION_KEY: string
   public readonly WORKSPACE_SECRETS_ENCRYPTION_KEY: string
   public readonly YJS_DOCS_CACHE_SIZE_MB: number
-  public readonly ENABLE_CUSTOM_OAI_KEY: boolean
+  public readonly DISABLE_CUSTOM_OAI_KEY: boolean
   public readonly DISABLE_ANONYMOUS_TELEMETRY: boolean
   public readonly DISABLE_UPDATE_CHECK: boolean
 
@@ -104,9 +104,9 @@ export class BaseConfig implements IBaseConfig {
       // can't be 0 because LRUCache doesn't allow that
       1 / 1024 / 1024
     )
-    this.ENABLE_CUSTOM_OAI_KEY = this.getBooleanVar(
-      'ENABLE_CUSTOM_OAI_KEY',
-      true
+    this.DISABLE_CUSTOM_OAI_KEY = this.getBooleanVar(
+      'DISABLE_CUSTOM_OAI_KEY',
+      false
     )
     this.DISABLE_ANONYMOUS_TELEMETRY = this.getBooleanVar(
       'DISABLE_ANONYMOUS_TELEMETRY'
