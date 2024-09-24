@@ -186,7 +186,7 @@ const RichTextBlock = (props: Props) => {
       data-block-id={id}
     >
       <div className={editor?.isFocused ? 'block' : 'hidden'}>
-        {editor && <FormattingToolbar editor={editor} />}
+        <div>{editor && <FormattingToolbar editor={editor} />}</div>
       </div>
       <EditorContent editor={editor} />
     </div>
