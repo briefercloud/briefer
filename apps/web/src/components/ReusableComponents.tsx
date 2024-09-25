@@ -41,10 +41,6 @@ export default function ReusableComponents(props: Props) {
     [api, props.workspaceId]
   )
 
-  const onSeeUsage = useCallback((_component: APIReusableComponent) => {
-    // TODO:
-  }, [])
-
   return (
     <>
       <Transition
@@ -94,7 +90,6 @@ export default function ReusableComponents(props: Props) {
                         component={component}
                         onUse={onUse}
                         onRemove={onRemove}
-                        seeUsage={onSeeUsage}
                         canUse={props.yDoc !== undefined}
                       />
                     </li>
@@ -129,7 +124,6 @@ interface ReusableComponentItemProps {
   component: APIReusableComponent
   onUse: (component: APIReusableComponent) => void
   onRemove: (component: APIReusableComponent) => void
-  seeUsage: (component: APIReusableComponent) => void
   canUse: boolean
 }
 function ReusableComponentItem(props: ReusableComponentItemProps) {
@@ -140,10 +134,6 @@ function ReusableComponentItem(props: ReusableComponentItemProps) {
   const onRemove = useCallback(() => {
     props.onRemove(props.component)
   }, [props.onRemove, props.component])
-
-  const onSeeUsage = useCallback(() => {
-    props.seeUsage(props.component)
-  }, [props.seeUsage, props.component])
 
   return (
     <div className="px-4 py-3 font-sans block w-full">
@@ -199,19 +189,6 @@ function ReusableComponentItem(props: ReusableComponentItemProps) {
             </button>
           </Tooltip>
           <span className="text-gray-300 px-1">/</span>
-          <Tooltip
-            title=""
-            message="You must be in a notebook to use this file."
-            active={!props.canUse}
-            tooltipClassname="w-44"
-          >
-            <button
-              className="text-gray-500 hover:text-gray-400 disabled:hover:text-gray-500 disabled:cursor-not-allowed"
-              onClick={onSeeUsage}
-            >
-              See usage
-            </button>
-          </Tooltip>
         </div>
       </div>
     </div>
