@@ -52,6 +52,11 @@ export const DataSourceIcons = ({
         name="Oracle"
         href={`/workspaces/${workspaceId}/data-sources/new/oracle`}
       />
+      <DataSourceBlock
+        icon="/icons/snowflake.png"
+        name="Snowflake"
+        href={`/workspaces/${workspaceId}/data-sources/new/snowflake`}
+      />
       <button
         onClick={onCSV}
         className="h-24 w-24 py-3 px-6 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
