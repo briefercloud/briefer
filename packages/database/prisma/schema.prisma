@@ -370,6 +370,7 @@ model Workspace {
   oracleDataSources    OracleDataSource[]
   mySQLDataSources     MySQLDataSource[]
   trinoDataSources     TrinoDataSource[]
+  snowflakeDataSources SnowflakeDataSource[]
   environmentVariables EnvironmentVariable[]
 }
 
