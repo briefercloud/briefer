@@ -112,75 +112,66 @@ export default function componentsRouter(socketServer: IOServer) {
       }
 
       // this is very inneficient
-      const component = await prisma().$transaction(async (tx) => {
-        const component = await updateReusableComponent(
-          componentId,
-          payload.data,
-          tx
-        )
-        const docs = await tx.document.findMany({
-          where: { workspaceId },
-          select: { id: true },
-        })
-
-        const queue = new PQueue({ concurrency: 3 })
-        const componentBlock = decodeComponentState(component.state)
-        for (const doc of docs) {
-          queue.add(async () => {
-            await getYDocForUpdate(
-              getDocId(doc.id, null),
-              socketServer,
-              doc.id,
-              workspaceId,
-              async (ydoc) => {
-                const blocks = Array.from(ydoc.blocks.values()).filter((b) =>
-                  switchBlockType(b, {
-                    onSQL: (block) =>
-                      block.getAttribute('componentId') === component.id,
-                    onPython: (block) =>
-                      block.getAttribute('componentId') === component.id,
-                    onRichText: () => false,
-                    onVisualization: () => false,
-                    onInput: () => false,
-                    onDropdownInput: () => false,
-                    onDateInput: () => false,
-                    onFileUpload: () => false,
-                    onDashboardHeader: () => false,
-                    onWriteback: () => false,
-                    onPivotTable: () => false,
-                  })
-                )
-
-                for (const block of blocks) {
-                  const success = updateBlockFromComponent(
-                    componentBlock,
-                    block,
-                    ydoc.blocks
-                  )
-                  if (!success) {
-                    logger().error(
-                      {
-                        workspaceId,
-                        blockId: block.getAttribute('id'),
-                        blockType: block.getAttribute('type'),
-                        componentId,
-                        componentType: component.type,
-                      },
-                      'Could not update block from component'
-                    )
-                  }
-                }
-              },
-              new DocumentPersistor(doc.id),
-              tx
-            )
-          })
-        }
-
-        await queue.onIdle()
-
-        return component
+      const component = await updateReusableComponent(componentId, payload.data)
+      const docs = await prisma().document.findMany({
+        where: { workspaceId },
+        select: { id: true },
       })
+
+      const queue = new PQueue({ concurrency: 3 })
+      const componentBlock = decodeComponentState(component.state)
+      for (const doc of docs) {
+        queue.add(async () => {
+          await getYDocForUpdate(
+            getDocId(doc.id, null),
+            socketServer,
+            doc.id,
+            workspaceId,
+            async (ydoc) => {
+              const blocks = Array.from(ydoc.blocks.values()).filter((b) =>
+                switchBlockType(b, {
+                  onSQL: (block) =>
+                    block.getAttribute('componentId') === component.id,
+                  onPython: (block) =>
+                    block.getAttribute('componentId') === component.id,
+                  onRichText: () => false,
+                  onVisualization: () => false,
+                  onInput: () => false,
+                  onDropdownInput: () => false,
+                  onDateInput: () => false,
+                  onFileUpload: () => false,
+                  onDashboardHeader: () => false,
+                  onWriteback: () => false,
+                  onPivotTable: () => false,
+                })
+              )
+
+              for (const block of blocks) {
+                const success = updateBlockFromComponent(
+                  componentBlock,
+                  block,
+                  ydoc.blocks
+                )
+                if (!success) {
+                  logger().error(
+                    {
+                      workspaceId,
+                      blockId: block.getAttribute('id'),
+                      blockType: block.getAttribute('type'),
+                      componentId,
+                      componentType: component.type,
+                    },
+                    'Could not update block from component'
+                  )
+                }
+              }
+            },
+            new DocumentPersistor(doc.id)
+          )
+        })
+      }
+
+      await queue.onIdle()
 
       await broadcastComponent(socketServer, component)
       res.json(component)
