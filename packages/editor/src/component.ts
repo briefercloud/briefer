@@ -5,6 +5,7 @@ import {
   appendBlock,
   duplicateBlock,
   duplicateYText,
+  getBaseAttributes,
   getBlocks,
   getLayout,
   getPythonAttributes,
@@ -22,11 +23,16 @@ export function createComponentState(
 ): { id: string; state: string } {
   const ydoc = new Y.Doc()
   const map = ydoc.getMap<YBlock>(MAP_KEY)
-  const id = uuidv4()
-  map.set('component', duplicateBlock(id, component, blocks, false))
+  const blockId = getBaseAttributes(component).id
+  let componentId = component.getAttribute('componentId')
+  if (!componentId) {
+    componentId = uuidv4()
+    component.setAttribute('componentId', componentId)
+  }
+  map.set('component', duplicateBlock(blockId, component, blocks, false))
 
   return {
-    id,
+    id: componentId,
     state: Buffer.from(Y.encodeStateAsUpdate(ydoc)).toString('base64'),
   }
 }
