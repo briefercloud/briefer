@@ -385,6 +385,7 @@ const FormattingToolbar = ({ editor }: { editor: Editor }) => {
     <BubbleMenu
       editor={editor}
       tippyOptions={{
+        hideOnClick: true,
         placement: 'top-start',
         popperOptions: {
           strategy: 'fixed',
