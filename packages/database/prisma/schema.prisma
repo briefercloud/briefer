@@ -392,6 +392,7 @@ model Workspace {
   mySQLDataSources     MySQLDataSource[]
   sqlServerDataSources SQLServerDataSource[]
   trinoDataSources     TrinoDataSource[]
+  snowflakeDataSources SnowflakeDataSource[]
   environmentVariables EnvironmentVariable[]
 }
 
