@@ -314,5 +314,9 @@ export const isAuthorizedForDataSource = async (
       const result = await prisma().trinoDataSource.findFirst(query)
       return result !== null
     }
+    case 'snowflake': {
+      const result = await prisma().snowflakeDataSource.findFirst(query)
+      return result !== null
+    }
   }
 }

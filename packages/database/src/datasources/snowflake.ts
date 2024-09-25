@@ -4,15 +4,6 @@ import { DataSource } from './index.js'
 import prisma from '../index.js'
 import { encrypt } from './crypto.js'
 
-// account           String
-// password          String
-
-// user              String
-// warehouse         String
-// database          String
-// region            String?    @default("us-west")
-// host              String?
-
 export type SnowflakeDataSource = Omit<
   PrismaSnowflakeDataSource,
   | 'createdAt'
