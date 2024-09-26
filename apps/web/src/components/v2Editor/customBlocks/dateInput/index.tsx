@@ -214,7 +214,7 @@ function DateInput(props: Props) {
             }
             isSaving={execStatus === 'loading'}
             isEnqueued={execStatus === 'enqueued'}
-            isEditable={props.isEditable}
+            isEditable={props.isEditable || props.isApp}
             belongsToMultiTabGroup={props.belongsToMultiTabGroup}
             isCursorWithin={props.isCursorWithin}
             isCursorInserting={props.isCursorInserting}
