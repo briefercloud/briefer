@@ -1,3 +1,4 @@
+import ReactDOM from 'react-dom'
 import * as Y from 'yjs'
 import ReactInputMask from 'react-input-mask'
 import useYTextInput from '@/hooks/useYTextInput'
@@ -185,20 +186,27 @@ function DateInputBlockInput(props: Props) {
         }
       </ReactInputMask>
 
-      <div
-        className={clsx(
-          'absolute bg-white -bottom-1.5 translate-y-full border border-gray-200 rounded-md z-40 px-3 pt-1 pb-2 shadow-lg',
-          isPickerOpen ? 'block' : 'hidden'
-        )}
-        ref={pickerContainer}
-      >
-        <DatePicker
-          value={newValue}
-          dateType={props.dateType}
-          disabled={isLoading || !props.isEditable}
-          onChange={onDatePicked}
-        />
-      </div>
+      {ReactDOM.createPortal(
+        <div
+          className={clsx(
+            'absolute bg-white mt-1.5 border border-gray-200 rounded-md z-[2000] px-3 pt-1 pb-2 shadow-lg',
+            isPickerOpen ? 'block' : 'hidden'
+          )}
+          ref={pickerContainer}
+          style={{
+            top: innerRef.current?.getBoundingClientRect().bottom,
+            left: innerRef.current?.getBoundingClientRect().left,
+          }}
+        >
+          <DatePicker
+            value={newValue}
+            dateType={props.dateType}
+            disabled={isLoading || !props.isEditable}
+            onChange={onDatePicked}
+          />
+        </div>,
+        document.body
+      )}
       <div className="absolute inset-y-0 right-0 flex items-center pr-2 group">
         {props.isSaving ? (
           <Spin />
