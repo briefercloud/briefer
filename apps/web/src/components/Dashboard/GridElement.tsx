@@ -1,10 +1,12 @@
 import * as Y from 'yjs'
 import {
   BlockType,
+  DateInputBlock as DateInputBlockT,
   YBlock,
   getBlocks,
   getDataframes,
   getLayout,
+  requestDateInputRun,
   requestRun,
   switchBlockType,
 } from '@briefer/editor'
@@ -75,6 +77,13 @@ function GridElement(props: Props) {
       )
     },
     [blocks.value, layout.value, environmentStartedAt]
+  )
+
+  const onSaveDateInput = useCallback(
+    (block: Y.XmlElement<DateInputBlockT>) => {
+      requestDateInputRun(block, blocks.value)
+    },
+    [blocks.value]
   )
 
   const renderItem = useCallback(
@@ -207,7 +216,7 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={() => {}}
+            onRun={onSaveDateInput}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
