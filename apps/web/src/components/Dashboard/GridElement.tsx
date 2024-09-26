@@ -241,6 +241,7 @@ function GridElement(props: Props) {
       props.isEditingDashboard,
       isEditingBlock,
       onRun,
+      onSaveDateInput,
     ]
   )
 
