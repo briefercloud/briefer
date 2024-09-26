@@ -1047,7 +1047,7 @@ export class AppPersistor implements Persistor {
       | 'variable'
       | 'newVariable'
 
-      // value is checked above
+      // value is allowed to change
       | 'value'
       // newValue is allowed to change
       | 'newValue'
