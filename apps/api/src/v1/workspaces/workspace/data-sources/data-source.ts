@@ -26,6 +26,9 @@ import {
   deleteSQLServerDataSource,
   getSQLServerDataSource,
   updateSQLServerDataSource,
+  getSnowflakeDataSource,
+  updateSnowflakeDataSource,
+  deleteSnowflakeDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -38,6 +41,7 @@ import * as oracle from '../../../../datasources/oracle.js'
 import * as mysql from '../../../../datasources/mysql.js'
 import * as sqlserver from '../../../../datasources/sqlserver.js'
 import * as trino from '../../../../datasources/trino.js'
+import * as snowflake from '../../../../datasources/snowflake.js'
 import { ping } from '../../../../datasources/index.js'
 import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import {
@@ -130,6 +134,21 @@ const dataSourceRouter = (socketServer: IOServer) => {
         readOnly: z.boolean(),
       }),
     }),
+    z.object({
+      type: z.literal('snowflake'),
+      data: z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        account: z.string().min(1),
+        user: z.string().min(1),
+        password: z.string(),
+        warehouse: z.string().min(1),
+        database: z.string().min(1),
+        region: z.string().optional(),
+        host: z.string().optional(),
+        notes: z.string(),
+      }),
+    }),
   ])
 
   router.put('/', async (req, res) => {
@@ -152,6 +171,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         getMySQLDataSource(workspaceId, dataSourceId),
         getSQLServerDataSource(workspaceId, dataSourceId),
         getTrinoDataSource(workspaceId, dataSourceId),
+        getSnowflakeDataSource(workspaceId, dataSourceId),
       ])
     ).find((e) => e !== null)
     if (!existingDb) {
@@ -292,6 +312,20 @@ const dataSourceRouter = (socketServer: IOServer) => {
         await trino.ping(trinoDs)
         break
       }
+      case 'snowflake': {
+        const snowflakeDs = await updateSnowflakeDataSource(
+          {
+            ...data.data,
+            id: dataSourceId,
+            password:
+              data.data.password === '' ? undefined : data.data.password,
+          },
+          config().DATASOURCES_ENCRYPTION_KEY
+        )
+
+        await snowflake.ping(snowflakeDs)
+        break
+      }
     }
 
     const ds = await getDatasource(workspaceId, dataSourceId, data.type)
@@ -427,6 +461,19 @@ const dataSourceRouter = (socketServer: IOServer) => {
         }
       }
 
+      const targetSnowflakeDb = await recoverFromNotFound(
+        deleteSnowflakeDataSource(workspaceId, targetId)
+      )
+      if (targetSnowflakeDb) {
+        return {
+          status: 200,
+          payload: {
+            type: 'snowflake',
+            data: targetSnowflakeDb,
+          },
+        }
+      }
+
       return { status: 404 }
     }
 
@@ -450,6 +497,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       z.literal('mysql'),
       z.literal('trino'),
       z.literal('sqlserver'),
+      z.literal('snowflake'),
     ]),
   })
   router.post('/ping', async (req, res) => {

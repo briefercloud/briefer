@@ -55,5 +55,6 @@ export async function writeback(
     case 'athena':
     case 'trino':
       throw new Error(`${datasource.type} writeback not implemented`)
+    case 'snowflake':
   }
 }
