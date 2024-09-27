@@ -9,7 +9,6 @@ export type SnowflakeDataSource = Omit<
   | 'createdAt'
   | 'updatedAt'
   | 'lastConnection'
-  | 'account'
   | 'password'
   | 'structure'
 > & {
@@ -27,6 +26,7 @@ function toSnowflakeDataSource(
     user: pdataSource.user,
     warehouse: pdataSource.warehouse,
     database: pdataSource.database,
+    account: pdataSource.account,
     region: pdataSource.isDemo ? '' : pdataSource.region,
     host: pdataSource.isDemo ? '' : pdataSource.host,
     notes: pdataSource.notes,
@@ -61,9 +61,6 @@ export async function updateSnowflakeDataSource(
       where: { id: data.id },
       data: {
         ...data,
-        account: data.account
-          ? encrypt(data.account, encryptionKey)
-          : undefined,
         password: data.password
           ? encrypt(data.password, encryptionKey)
           : undefined,
@@ -83,7 +80,6 @@ export async function createSnowflakeDataSource(
     .snowflakeDataSource.create({
       data: {
         ...data,
-        account: encrypt(data.account, encryptionKey),
         password: encrypt(data.password, encryptionKey),
       },
     })

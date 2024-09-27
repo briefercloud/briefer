@@ -278,6 +278,7 @@ export async function getDatabaseURL(
     }
     case 'snowflake': {
       // TODO-SNOWFLAKE: ADD THE DATABASE URL FOR THE SNOWFLAKE CONNECTION
+      return 'snowflake://'
     }
   }
 }
