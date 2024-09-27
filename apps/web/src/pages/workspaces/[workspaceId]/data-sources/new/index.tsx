@@ -98,6 +98,11 @@ export default function DataSourcesPage() {
               name="Trino"
               href={`/workspaces/${workspaceId}/data-sources/new/trino`}
             />
+            <DataSourceBlock
+              icon="/icons/snowflake.png"
+              name="Snowflake"
+              href={`/workspaces/${workspaceId}/data-sources/new/snowflake`}
+            />
 
             <button
               onClick={onToggleFiles}
