@@ -305,8 +305,10 @@ export async function getDatabaseURL(
       return `mssql+pymssql://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
     }
     case 'snowflake': {
-      // TODO-SNOWFLAKE: ADD THE DATABASE URL FOR THE SNOWFLAKE CONNECTION
-      return 'snowflake://'
+      const password = encodeURIComponent(
+        await getDatasourcePassword(ds, encryptionKey)
+      )
+      return `snowflake://${ds.data.user}:${password}@${ds.data.account}/${ds.data.database}?warehouse=${ds.data.warehouse}`
     }
   }
 }
