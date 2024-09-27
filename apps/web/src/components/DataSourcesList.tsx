@@ -89,8 +89,7 @@ const databaseUrl = (ds: DataSource): string => {
           (ds.data.catalog ? `/${ds.data.catalog}` : '')
         )
       case 'snowflake':
-        // TODO-SNOWFLAKE: Add the snowflake database url
-        return ""
+        return `snowflake://${ds.data.account}/${ds.data.database}?warehouse=${ds.data.warehouse}`
     }
   }
 }

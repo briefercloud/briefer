@@ -17,5 +17,4 @@ sqlalchemy-redshift==0.8.14
 redshift-connector==2.0.917
 mysqlclient==2.2.4
 trino==0.329.0
-# TODO-SNOWFLAKE: add the version for the sqlalchemy-snowflake
-sqlalchemy-snowflake
+snowflake-sqlalchemy==1.6.1
