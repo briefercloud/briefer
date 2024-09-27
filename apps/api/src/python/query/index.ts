@@ -17,6 +17,7 @@ import { makeOracleQuery } from './oracle.js'
 import { makeDuckDBQuery } from './duckdb.js'
 import { makeMySQLQuery } from './mysql.js'
 import { makeTrinoQuery } from './trino.js'
+import { makeSnowflakeQuery } from './snowflake.js'
 import { updateConnStatus } from '../../datasources/index.js'
 import { getJupyterManager } from '../../jupyter/index.js'
 
@@ -108,6 +109,18 @@ export async function makeSQLQuery(
     }
     case 'trino':
       result = await makeTrinoQuery(
+        workspaceId,
+        sessionId,
+        queryId,
+        dataframeName,
+        datasource.data,
+        encryptionKey,
+        sql,
+        onProgress
+      )
+      break
+    case 'snowflake':
+      result = await makeSnowflakeQuery(
         workspaceId,
         sessionId,
         queryId,

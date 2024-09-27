@@ -22,6 +22,7 @@ import PQueue from 'p-queue'
 import { getOracleSchema } from '../python/query/oracle.js'
 import { getBigQuerySchema } from '../python/query/bigquery.js'
 import { getTrinoSchema } from '../python/query/trino.js'
+import { getSnowflakeSchema } from '../python/query/snowflake.js'
 import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
 import { z } from 'zod'
@@ -104,6 +105,14 @@ async function getFromCache(
     case 'bigquery':
       encrypted = (
         await prisma().bigQueryDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select: { structure: true },
+        })
+      ).structure
+      break
+    case 'snowflake':
+      encrypted = (
+        await prisma().snowflakeDataSource.findUniqueOrThrow({
           where: { id: dataSourceId },
           select: { structure: true },
         })
@@ -279,6 +288,13 @@ async function _refreshDataSourceStructure(
       case 'mysql':
         finalStructure = await getMySQLSchema(dataSource.config.data, onTable)
         break
+      case 'snowflake':
+        finalStructure = await getSnowflakeSchema(
+          dataSource.config.data,
+          config().DATASOURCES_ENCRYPTION_KEY,
+          onTable
+        )
+        break
     }
 
     await updateQueue.onIdle()
@@ -416,6 +432,12 @@ async function persist(ds: APIDataSource): Promise<APIDataSource> {
         return ds
       case 'mysql':
         await prisma().mySQLDataSource.update({
+          where: { id: ds.config.data.id },
+          data: { structure },
+        })
+        return ds
+      case 'snowflake':
+        await prisma().snowflakeDataSource.update({
           where: { id: ds.config.data.id },
           data: { structure },
         })

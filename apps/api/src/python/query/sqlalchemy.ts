@@ -18,7 +18,7 @@ export async function makeSQLAlchemyQuery(
   sessionId: string,
   dataframeName: string,
   databaseUrl: string,
-  dataSourceType: 'mysql' | 'oracle' | 'psql' | 'redshift' | 'trino',
+  dataSourceType: 'mysql' | 'oracle' | 'psql' | 'redshift' | 'trino' | 'snowflake',
   jobId: string,
   query: string,
   queryId: string,
@@ -66,9 +66,12 @@ def briefer_make_sqlalchemy_query():
         df.columns = new_cols
         return df
 
-    def _briefer_cancel_sqlalchemy_query(engine, job_id):
+    def _briefer_cancel_sqlalchemy_query(engine, job_id, datasource_type):
         with engine.connect() as conn:
-            conn.execute(text(f"SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE query LIKE '%{job_id}%';"))
+            if datasource_type == "snowflake":
+                conn.execute(text(f"SELECT SYSTEM$CANCEL_QUERY('{job_id}');"))
+            else:
+                conn.execute(text(f"SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE query LIKE '%{job_id}%';"))
 
     aborted = False
     dump_file_base = f'/home/jupyteruser/.briefer/query-${queryId}'
@@ -136,7 +139,7 @@ def briefer_make_sqlalchemy_query():
             print(json.dumps({"type": "log", "message": "Iterating over chunks"}))
             for chunk in chunks:
                 if not os.path.exists(flag_file_path):
-                    _briefer_cancel_sqlalchemy_query(engine, job_id)
+                    _briefer_cancel_sqlalchemy_query(engine, job_id, ${JSON.stringify(dataSourceType)})
                     aborted = True
                     break
 
