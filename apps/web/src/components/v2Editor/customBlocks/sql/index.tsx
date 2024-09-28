@@ -94,7 +94,7 @@ function SQLBlock(props: Props) {
 
   const hasOaiKey = useMemo(() => {
     return (
-      !properties.data?.disableCustomOpenAiKey ||
+      !properties.data?.disableCustomOpenAiKey &&
       (currentWorkspace?.secrets.hasOpenAiApiKey ?? false)
     )
   }, [currentWorkspace, properties.data])
@@ -232,10 +232,12 @@ function SQLBlock(props: Props) {
   }, [props.block])
 
   const onAcceptAISuggestion = useCallback(() => {
-    // TODO:
-    // acceptDiffEditor()
+    if (aiSuggestions) {
+      updateYText(source, aiSuggestions.toString())
+    }
+
     props.block.setAttribute('aiSuggestions', null)
-  }, [props.block])
+  }, [props.block, aiSuggestions, source])
 
   const onRejectAISuggestion = useCallback(() => {
     props.block.setAttribute('aiSuggestions', null)
@@ -491,32 +493,16 @@ function SQLBlock(props: Props) {
               isCodeHidden ? 'invisible h-0 overflow-hidden' : 'py-5'
             )}
           >
-            <div
-              className={clsx(
-                aiSuggestions === null && 'invisible h-0 overflow-hidden'
-              )}
-            >
-              {/* TODO: */}
-              {/* <DiffEditor */}
-              {/*   key={editorKey} */}
-              {/*   language="sql" */}
-              {/*   onMount={onMountDiffEditor} */}
-              {/*   options={diffEditorOptions} */}
-              {/* /> */}
-            </div>
-            <div
-              className={clsx(
-                aiSuggestions !== null && 'invisible h-0 overflow-hidden'
-              )}
-            >
+            <div>
               <CodeEditor
-                language="sql"
+                blockId={blockId}
                 source={source}
+                language="sql"
                 readOnly={!props.isEditable || statusIsDisabled}
                 onEditWithAI={onToggleEditWithAIPromptOpen}
                 onRun={onRun}
                 onInsertBlock={props.insertBelow}
-                blockId={blockId}
+                diff={aiSuggestions ?? undefined}
               />
             </div>
           </div>
