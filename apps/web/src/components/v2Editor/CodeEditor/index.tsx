@@ -6,6 +6,7 @@ import {
   EditorState,
   StateField,
 } from '@codemirror/state'
+import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { python } from '@codemirror/lang-python'
 import { sql } from '@codemirror/lang-sql'
@@ -59,6 +60,7 @@ export function getExtensions(language: 'python' | 'sql') {
   ]
 }
 
+// FIXME: This is buggy
 export function createTextSync(source: Y.Text) {
   return StateField.define({
     create() {
@@ -155,8 +157,9 @@ interface Props {
   onEditWithAI: () => void
   onRun: () => void
   onInsertBlock: () => void
+  diff?: Y.Text
 }
-export const CodeEditor = (props: Props) => {
+export function CodeEditor(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
   const onRunInsertBlock = useCallback(() => {
     props.onRun()
@@ -170,6 +173,7 @@ export const CodeEditor = (props: Props) => {
 
   const editorRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
+  const mergeViewRef = useRef<MergeView | null>(null)
 
   useEffect(() => {
     if (!editorRef.current) {
@@ -178,30 +182,62 @@ export const CodeEditor = (props: Props) => {
 
     const yTextSync = createTextSync(props.source)
 
-    const editorView = new EditorView({
-      state: EditorState.create({
-        extensions: [
-          brieferKeyMaps({
-            onBlur: editorAPI.blur,
-            onEditWithAI: props.onEditWithAI,
-            onRun: props.onRun,
-            onRunSelectNext,
-            onRunInsertBlock,
-          }),
-          ...getExtensions(props.language),
-          EditorState.readOnly.of(props.readOnly),
-          yTextSync,
-        ],
-        doc: props.source.toString(),
-      }),
-      parent: editorRef.current,
+    const state = EditorState.create({
+      extensions: [
+        brieferKeyMaps({
+          onBlur: editorAPI.blur,
+          onEditWithAI: props.onEditWithAI,
+          onRun: props.onRun,
+          onRunSelectNext,
+          onRunInsertBlock,
+        }),
+        ...getExtensions(props.language),
+        EditorState.readOnly.of(props.readOnly),
+        yTextSync,
+      ],
+      doc: props.source.toString(),
     })
 
+    if (props.diff) {
+      const b = EditorState.create({
+        extensions: [
+          ...getExtensions(props.language),
+          EditorState.readOnly.of(props.readOnly),
+          createTextSync(props.diff),
+        ],
+        doc: props.diff.toString(),
+      })
+      const mergeView = new MergeView({
+        a: state,
+        b,
+        parent: editorRef.current,
+      })
+      mergeViewRef.current = mergeView
+      return () => {
+        mergeView.destroy()
+      }
+    }
+
+    const editorView = new EditorView({
+      state,
+      parent: editorRef.current,
+    })
     editorViewRef.current = editorView
     return () => {
       editorView.destroy()
     }
-  }, [props.blockId])
+  }, [
+    editorRef,
+    props.source,
+    editorAPI.blur,
+    props.onEditWithAI,
+    props.onRun,
+    onRunSelectNext,
+    onRunInsertBlock,
+    props.language,
+    props.readOnly,
+    props.diff,
+  ])
 
   useEffect(() => {
     if (!editorViewRef.current) {
