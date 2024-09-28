@@ -133,22 +133,30 @@ const RichTextBlock = (props: Props) => {
   }, [editor, props.isCursorInserting, props.isCursorWithin])
 
   useEffect(() => {
-    if (editor) {
-      editor.on('focus', () => {
-        setInteractionState({
-          cursorBlockId: id,
-          mode: 'insert',
-          scrollIntoView: false,
-        })
+    if (!editor) {
+      return
+    }
+    const onFocus = () => {
+      setInteractionState({
+        cursorBlockId: id,
+        mode: 'insert',
+        scrollIntoView: false,
       })
+    }
+    editor.on('focus', onFocus)
 
-      editor.on('blur', () => {
-        setInteractionState({
-          cursorBlockId: id,
-          mode: 'normal',
-          scrollIntoView: false,
-        })
+    const onBlur = () => {
+      setInteractionState({
+        cursorBlockId: id,
+        mode: 'normal',
+        scrollIntoView: false,
       })
+    }
+    editor.on('blur', onBlur)
+
+    return () => {
+      editor.off('focus', onFocus)
+      editor.off('blur', onBlur)
     }
   }, [editor, id, setInteractionState])
 
