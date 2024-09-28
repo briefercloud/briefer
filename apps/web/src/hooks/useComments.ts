@@ -1,69 +1,45 @@
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
-import fetcher from '@/utils/fetcher'
-import { useCallback, useEffect, useMemo } from 'react'
-import useSWR from 'swr'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import useWebsocket from './useWebsocket'
 import { Comment, CommentAck } from '@briefer/types'
 
 type API = {
-  createComment: (content: string, documentId: string) => Promise<Comment>
+  createComment: (content: string, documentId: string) => void
   deleteComment: (id: string) => Promise<void>
 }
-type UseComments = [Comment[], API]
+type Error = string | null
+type UseComments = [Comment[], Error, API]
 export const useComments = (
   workspaceId: string,
   docId: string
 ): UseComments => {
-
+  const [comments, setComments] = useState<Comment[]>([])
+  const [error, setError] = useState<Error>(null)
   const socket = useWebsocket()
 
   useEffect(() => {
-    socket?.emit("join-workspace-document", docId)
+    socket?.emit("join-workspace-document", {docId}, (ack: CommentAck) => {
+      if(ack.status === 'error'){
+        console.log({ack})
+        setError("Failed to load comments")
+      } 
+    })
 
-    socket?.on("workspace-comment", (comment: Comment) => {
-      console.log({comment})
+    socket?.on("workspace-comment", (comment: Comment[]) => {
+      setComments((comments) => [...comments, ...comment])
     })
 
     return () => {
-      socket?.emit("leave-workspace-document", docId)
+      socket?.emit("leave-workspace-document", {docId})
     }
-  }, [])
+  }, [workspaceId, docId])
 
-  const getWorkspaceDocumentRoomId = (docId: string) => {
-    return `document-room-${docId}`
-  }
-
-  const { data, mutate } = useSWR<Comment[]>(
-    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
-    fetcher,
-    { refreshInterval: 5000 }
-  )
-
-  const comments = useMemo(() => data ?? [], [data])
-
-  const createComment = useCallback(
-    async (content: string) => {
-      
+  const createComment = useCallback((content: string) => {
       socket?.emit("workspace-comment", {documentId: docId, content: content}, (response : CommentAck) => {
-        console.log({response})
+        if(response.status === 'error') console.error(response.errorMsg)
       })
-
-      const res = await fetch(
-        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${docId}/comments`,
-        {
-          credentials: 'include',
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content }),
-        }
-      )
-      const comment: Comment = await res.json()
-
-      mutate((comments ?? []).concat([comment]))
-
-      return comment
     },
-    [mutate, comments, docId, workspaceId]
+    [comments, docId, workspaceId]
   )
 
   const deleteComment = useCallback(
@@ -76,13 +52,13 @@ export const useComments = (
         }
       )
 
-      mutate(comments.filter((d) => d.id !== id))
+      setComments((comments) => comments.filter(comment => comment.id !== id))
     },
-    [mutate, comments, workspaceId, docId]
+    [comments, workspaceId, docId]
   )
 
   return useMemo(
-    () => [comments, { createComment, deleteComment }],
-    [comments, createComment, deleteComment]
+    () => [comments, error, { createComment, deleteComment }],
+    [comments, error, createComment, deleteComment]
   )
 }

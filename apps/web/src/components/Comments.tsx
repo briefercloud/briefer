@@ -20,7 +20,7 @@ interface Props {
 }
 export default function Comments(props: Props) {
   const session = useSession()
-  const [comments, { createComment }] = useComments(
+  const [comments, error, { createComment }] = useComments(
     props.workspaceId,
     props.documentId
   )
@@ -36,7 +36,7 @@ export default function Comments(props: Props) {
   const onComment = useCallback(
     async (e?: FormEvent<HTMLFormElement>) => {
       e?.preventDefault()
-      await createComment(content, props.documentId)
+      createComment(content, props.documentId)
       setContent('')
     },
     [createComment, content, props.documentId]
@@ -85,49 +85,55 @@ export default function Comments(props: Props) {
         <h3 className="text-lg font-medium leading-6 text-gray-900 px-2 px-4 pt-6 xl:px-6">
           Comments
         </h3>
-        <ul
-          role="list"
-          className="flex-1 space-y-6 pb-6 pt-4 px-2 px-4 pt-6 xl:px-6"
-        >
-          {comments.map((comment) => {
-            return (
-              <li key={comment.id} className="relative flex gap-x-4">
-                <>
-                  <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
-                    <div className="flex justify-between gap-x-4">
-                      <div className="flex gap-x-1 py-0.5 leading-5 text-gray-500">
-                        {comment.user.picture ? (
-                          <img
-                            src={comment.user.picture}
-                            alt=""
-                            className="relative h-5 w-5 flex-none rounded-full bg-gray-50"
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center relative h-5 w-5 flex-none bg-gray-50 rounded-full">
-                            <UserIcon className="h-4 w-4" />
-                          </div>
-                        )}
-                        <span className="text-xs font-medium text-gray-900">
-                          {comment.user.name}
-                        </span>{' '}
+        {error ? (
+          <div className='flex-1 flex items-center justify-center pb-6 pt-4 px-2 px-4 pt-6 xl:px-6'>
+            <p className="text-center text-sm font-semibold text-red-600">{error}</p>
+          </div>
+        ) : (
+          <ul
+            role="list"
+            className="flex-1 space-y-6 pb-6 pt-4 px-2 px-4 pt-6 xl:px-6"
+          >
+            {comments.map((comment) => {
+              return (
+                <li key={comment.id} className="relative flex gap-x-4">
+                  <>
+                    <div className="flex-auto rounded-md p-3 ring-1 ring-inset ring-gray-200">
+                      <div className="flex justify-between gap-x-4">
+                        <div className="flex gap-x-1 py-0.5 leading-5 text-gray-500">
+                          {comment.user.picture ? (
+                            <img
+                              src={comment.user.picture}
+                              alt=""
+                              className="relative h-5 w-5 flex-none rounded-full bg-gray-50"
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center relative h-5 w-5 flex-none bg-gray-50 rounded-full">
+                              <UserIcon className="h-4 w-4" />
+                            </div>
+                          )}
+                          <span className="text-xs font-medium text-gray-900">
+                            {comment.user.name}
+                          </span>{' '}
+                        </div>
+                        <time
+                          dateTime={comment.createdAt}
+                          className="flex-none py-0.5 text-xs leading-5 text-gray-300"
+                        >
+                          {timeAgo(new Date(comment.createdAt))}
+                        </time>
                       </div>
-                      <time
-                        dateTime={comment.createdAt}
-                        className="flex-none py-0.5 text-xs leading-5 text-gray-300"
-                      >
-                        {timeAgo(new Date(comment.createdAt))}
-                      </time>
+                      <p className="text-sm leading-6 text-gray-600 pt-2">
+                        {comment.content}
+                      </p>
                     </div>
-                    <p className="text-sm leading-6 text-gray-600 pt-2">
-                      {comment.content}
-                    </p>
-                  </div>
-                </>
-              </li>
-            )
-          })}
-        </ul>
+                  </>
+                </li>
+              )
+            })}
+          </ul>
+        )}
 
         <form className="sticky bottom-0 bg-white" onSubmit={onComment}>
           <div className="border-t border-gray-200 px-2 px-4 xl:px-6">

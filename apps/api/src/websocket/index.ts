@@ -23,8 +23,7 @@ import {
   refreshDataSource,
   refreshDataSources,
 } from './workspace/data-sources.js'
-import { onComment } from './workspace/comments.js'
-
+import { joinWorkspaceDocument, leaveWorkspaceDocument, onComment } from './workspace/comments.js'
 
 interface EmitEvents {
   'environment-status-update': (msg: {
@@ -69,7 +68,7 @@ interface EmitEvents {
     componentId: string
   }) => void
 
-  "workspace-comment": (comment: Comment) => void
+  "workspace-comment": (comment: Comment[]) => void
   'python-completion': (msg: PythonCompletionMessage) => void
 }
 
@@ -146,21 +145,8 @@ export function createSocketServer(server: http.Server): Server {
     socket.on('join-workspace', trackWork(joinWorkspace(io, socket, session)))
     socket.on('leave-workspace', trackWork(leaveWorkspace(socket, session)))
 
-    socket.on("join-workspace-document", async (docId: string) => {
-      const roomId = getDocumentRoomId(docId)
-      if(!socket.rooms.has(roomId)){
-        logger().info("subscribe")
-        await socket.join(roomId)
-      }
-    })
-
-    socket.on("leave-workspace-document", async (docId: string) => {
-      const roomId = getDocumentRoomId(docId)
-      if(socket.rooms.has(roomId)){
-        logger().info("unsubscribe")
-        await socket.leave(roomId)
-      }
-    })
+    socket.on("join-workspace-document", trackWork(joinWorkspaceDocument(socket)))
+    socket.on("leave-workspace-document", trackWork(leaveWorkspaceDocument(socket)))
 
     socket.on(
       'get-environment-status',
@@ -182,7 +168,7 @@ export function createSocketServer(server: http.Server): Server {
     )
 
     // expecting a workspace id and comment
-    socket.on("workspace-comment", trackWork(onComment(io, socket, session)))
+    socket.on("workspace-comment", trackWork(onComment(io, session)))
 
     socket.on('disconnect', (reason) => {
       logger().info(
@@ -224,6 +210,3 @@ export function createSocketServer(server: http.Server): Server {
   }
 }
 
-export const getDocumentRoomId = (doc_id: string) => {
-  return `document-room-${doc_id}`
-}
