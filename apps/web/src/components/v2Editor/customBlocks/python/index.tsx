@@ -25,6 +25,7 @@ import {
   getPythonAttributes,
   createComponentState,
   YBlock,
+  updateYText,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
@@ -186,10 +187,12 @@ function PythonBlock(props: Props) {
   }, [props.block])
 
   const onAcceptAISuggestion = useCallback(() => {
-    // TODO:
-    // acceptDiffEditor()
+    if (aiSuggestions) {
+      updateYText(source, aiSuggestions.toString())
+    }
+
     props.block.setAttribute('aiSuggestions', null)
-  }, [props.block])
+  }, [props.block, aiSuggestions, source])
 
   const onRejectAISuggestion = useCallback(() => {
     props.block.setAttribute('aiSuggestions', null)
@@ -332,24 +335,7 @@ function PythonBlock(props: Props) {
               isCodeHidden ? 'invisible h-0 overflow-hidden' : 'py-5'
             )}
           >
-            <div
-              className={clsx(
-                aiSuggestions === null && 'invisible h-0 overflow-hidden'
-              )}
-            >
-              {/* TODO: */}
-              {/* <DiffEditor */}
-              {/*   key={editorKey} */}
-              {/*   language="sql" */}
-              {/*   onMount={onMountDiffEditor} */}
-              {/*   options={diffEditorOptions} */}
-              {/* /> */}
-            </div>
-            <div
-              className={clsx(
-                aiSuggestions !== null && 'invisible h-0 overflow-hidden'
-              )}
-            >
+            <div>
               <CodeEditor
                 blockId={blockId}
                 source={source}
@@ -358,6 +344,7 @@ function PythonBlock(props: Props) {
                 onEditWithAI={onToggleEditWithAIPromptOpen}
                 onRun={onRun}
                 onInsertBlock={props.insertBelow ?? (() => {})}
+                diff={aiSuggestions ?? undefined}
               />
             </div>
           </div>
