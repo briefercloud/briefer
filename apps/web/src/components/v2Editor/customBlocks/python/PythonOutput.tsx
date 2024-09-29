@@ -51,7 +51,6 @@ export function PythonOutputs(props: Props) {
   )
 
   useEffect(() => {
-    console.log('outputs', props.outputs)
     if (!props.lazyRender || rendered === props.outputs.length) {
       return
     }
