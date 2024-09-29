@@ -29,7 +29,6 @@ export default function SnowflakeForm({
   const { register, handleSubmit, formState, reset } =
     useForm<SnowflakeDataSourceFormValues>({
       mode: 'onChange',
-      defaultValues: { readOnly: true },
     })
 
   useEffect(() => {
@@ -84,25 +83,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-4">
-              <label
-                htmlFor="database"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Catalog (optional)
-              </label>
-              <div className="mt-2">
-                <input
-                  {...register('catalog')}
-                  type="text"
-                  name="catalog"
-                  placeholder="catalog"
-                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                />
-              </div>
-            </div>
-
-            <div className="col-span-3">
+            <div className="col-span-5">
               <label
                 htmlFor="warehouse"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -127,7 +108,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-3">
+            <div className="col-span-5">
               <label
                 htmlFor="database"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -152,7 +133,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-3">
+            <div className="col-span-4">
               <label
                 htmlFor="account"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -225,7 +206,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-7">
+            <div className="col-span-5">
               <label
                 htmlFor="host"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -247,7 +228,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-7">
+            <div className="col-span-5">
               <label
                 htmlFor="region"
                 className="block text-sm font-medium leading-6 text-gray-900"

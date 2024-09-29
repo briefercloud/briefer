@@ -257,6 +257,8 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             const payload = {
               ...data.data,
               workspaceId,
+              region: data.data.region ?? null,
+              host: data.data.host ?? null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
@@ -281,9 +283,9 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           case 'redshift':
           case 'bigquery':
           case 'athena':
+          case 'snowflake':
           case 'trino':
             return null
-          case 'snowflake':
           case 'oracle': {
             if (
               !data.data.sid &&
