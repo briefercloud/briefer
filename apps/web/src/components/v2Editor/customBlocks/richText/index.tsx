@@ -8,6 +8,9 @@ import FormattingToolbar from './FormattingToolbar'
 import Link from '@tiptap/extension-link'
 import Highlight from '@tiptap/extension-highlight'
 import TextStyle from '@tiptap/extension-text-style'
+import Paragraph from '@tiptap/extension-paragraph'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
 import Color from '@tiptap/extension-color'
 import MathExtension from '@aarkue/tiptap-math-extension'
 import type { RichTextBlock } from '@briefer/editor'
@@ -33,6 +36,11 @@ const useBlockEditor = ({
       autofocus: false,
       editable: isEditable,
       extensions: [
+        Paragraph,
+        TaskList,
+        TaskItem.configure({
+          nested: true,
+        }),
         StarterKit.configure({
           history: false,
           dropcursor: false,

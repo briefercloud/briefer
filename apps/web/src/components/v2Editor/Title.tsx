@@ -4,6 +4,9 @@ import Collaboration from '@tiptap/extension-collaboration'
 import Document from '@tiptap/extension-document'
 import Placeholder from '@tiptap/extension-placeholder'
 import Text from '@tiptap/extension-text'
+import Paragraph from '@tiptap/extension-paragraph'
+import TaskList from '@tiptap/extension-task-list'
+import TaskItem from '@tiptap/extension-task-item'
 import { mergeAttributes, Node } from '@tiptap/core'
 import clsx from 'clsx'
 import { TitleSkeleton } from './ContentSkeleton'
@@ -59,7 +62,12 @@ function Title(props: Props) {
       editable: props.isEditable,
       extensions: [
         Document,
+        Paragraph,
         Text,
+        TaskList,
+        TaskItem.configure({
+          nested: true,
+        }),
         TitleExtension.configure({
           level: 1,
           HTMLAttributes: {
