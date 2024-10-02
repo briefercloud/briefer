@@ -22,7 +22,8 @@ ENV_VARS = [
     "AI_API_PASSWORD",
     "JUPYTER_HOST",
     "JUPYTER_PORT",
-    "JUPYTER_TOKEN"
+    "JUPYTER_TOKEN",
+    "DISABLE_CUSTOM_OAI_KEY",
 ]
 
 def check_docker_running():
@@ -197,7 +198,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run and manage Briefer.")
     parser.add_argument("-d", "--detach", action="store_true", help="Run Briefer in detached mode")
     parser.add_argument("--image", type=str, default="briefercloud/briefer", help=argparse.SUPPRESS)
-    
+
     args = parser.parse_args()
 
     # initialize docker client and check if Docker is running

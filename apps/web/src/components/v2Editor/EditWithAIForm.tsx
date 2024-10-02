@@ -94,14 +94,14 @@ function EditWithAIForm(props: Props) {
   )
 
   return (
-    <div className="print:hidden pt-2 h-full w-full">
+    <div className="print:hidden h-full w-full">
       <form
         onSubmit={onSubmit}
         className={clsx(
           props.loading
             ? 'bg-gray-300 border-gray-400'
             : 'bg-primary-50 border-primary-400 focus-within:bg-primary-100 focus-within:border-primary-500',
-          'w-full h-full border-t flex items-center px-3 py-1 gap-x-2'
+          'w-full h-full mt-[-1px] border-t flex items-center px-3 py-1 gap-x-2 rounded-b-md'
         )}
       >
         <button

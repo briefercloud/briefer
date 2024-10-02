@@ -81,7 +81,7 @@ function PythonBlock(props: Props) {
 
   const hasOaiKey = useMemo(() => {
     return (
-      !properties.data?.requiresOpenAiKey ||
+      !properties.data?.disableCustomOpenAiKey &&
       (currentWorkspace?.secrets.hasOpenAiApiKey ?? false)
     )
   }, [currentWorkspace, properties.data])
