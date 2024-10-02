@@ -91,7 +91,7 @@ export default function TableList(props: Props) {
                   className="px-4 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between gap-x-1.5"
                   onClick={() => props.onSelectTable(table.name)}
                 >
-                  <Grid3x3Icon className="text-gray-400 h-4 w-4" />
+                  <Grid3x3Icon className="text-gray-400 min-h-4 min-w-4 h-4 w-4" />
                   <div className="pr-2 flex-grow overflow-x-hidden">
                     <h4 className="overflow-x-scroll" title={table.name}>
                       {table.name}
