@@ -21,6 +21,7 @@ type NodeType =
   | 'heading-3'
   | 'bullet-list'
   | 'numbered-list'
+  | 'task-list'
 
 const items: Record<NodeType, { name: string; type: NodeType }> = {
   paragraph: { name: 'Paragraph', type: 'paragraph' },
@@ -29,6 +30,7 @@ const items: Record<NodeType, { name: string; type: NodeType }> = {
   'heading-3': { name: 'Heading 3', type: 'heading-3' },
   'bullet-list': { name: 'Bullet list', type: 'bullet-list' },
   'numbered-list': { name: 'Numbered list', type: 'numbered-list' },
+  'task-list': { name: 'Task list', type: 'task-list' },
 }
 
 const getCurrentType = (editor: Editor): NodeType => {
@@ -50,6 +52,9 @@ const getCurrentType = (editor: Editor): NodeType => {
 
   const isOrderedList = editor.isActive('orderedList')
   if (isOrderedList) return 'numbered-list'
+
+  const isTaskList = editor.isActive('taskList')
+  if (isTaskList) return 'task-list'
 
   return 'paragraph'
 }
@@ -77,6 +82,9 @@ const NodeTypeDropdown = ({ editor }: { editor: Editor }) => {
           break
         case 'numbered-list':
           editor.chain().focus().toggleOrderedList().run()
+          break
+        case 'task-list':
+          editor.chain().focus().toggleTaskList().run()
           break
       }
     },

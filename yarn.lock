@@ -2902,6 +2902,16 @@
   resolved "https://registry.yarnpkg.com/@tiptap/extension-strike/-/extension-strike-2.8.0.tgz#2b2a90f9b9addc36bdf60ff81f3cbc45720ab94e"
   integrity sha512-ezkDiXxQ3ME/dDMMM7tAMkKRi6UWw7tIu+Mx7Os0z8HCGpVBk1gFhLlhEd8I5rJaPZr4tK1wtSehMA9bscFGQw==
 
+"@tiptap/extension-task-item@^2.7.4":
+  version "2.7.4"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-task-item/-/extension-task-item-2.7.4.tgz#291ac04b1811e2d6ec625aa089d54f0a6ac48b11"
+  integrity sha512-f30KZnIcwxpro/psOhBoQ4JqgHx7Dh24P1qjHWuWp4bnqHHSniYgrbMWjsDXcvKnNe6RF3oRBU3wWpB/glZSkw==
+
+"@tiptap/extension-task-list@^2.7.4":
+  version "2.7.4"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-task-list/-/extension-task-list-2.7.4.tgz#c3e8e9155a08bdcf7af8e3c209044828cd33497b"
+  integrity sha512-VlF2/xhpkrNZjdi9R5Bex2OjKujkwg27GoMSlJJ67TetBs/fPNUFjbf2k6A26oAK0lMYyt1iYaKwql2O80xGsw==
+
 "@tiptap/extension-text-style@^2.3.0":
   version "2.8.0"
   resolved "https://registry.yarnpkg.com/@tiptap/extension-text-style/-/extension-text-style-2.8.0.tgz#32e30ccf3853202eba2169ba5db30b9470df9644"
