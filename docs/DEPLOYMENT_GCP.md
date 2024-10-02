@@ -1,7 +1,8 @@
+# Recommendations for deploying Briefer on GCP
 
-# Briefer on GCP: A Complete Technical Guide
+This document describes how to set up Briefer on a Google Cloud Platform (GCP) instance using Compute Engine, Docker, and, optionally, Nginx as a reverse proxy for public access.
 
-This document describes how to set up Briefer on a Google Cloud Platform (GCP) instance using Compute Engine, Docker, and optionally, Nginx as a reverse proxy for public access.
+Note that these are recommendations from October 2024 and may be subject to change due to updates in GCP. If you encounter any issues, please feel free to update this document.
 
 ## Table of Contents
 
@@ -12,22 +13,17 @@ This document describes how to set up Briefer on a Google Cloud Platform (GCP) i
 5. [(Optional) Configuring Nginx for Public Access](#optional-configuring-nginx-for-public-access)
 6. [Conclusion](#conclusion)
 
----
-
 ## Prerequisites
 
 - Google Cloud Platform (GCP) account
-- Basic knowledge of Linux commands
 - Access to Google Cloud Console
 - SSH key configured to access the GCP instance
-
----
 
 ## Creating the Compute Engine Instance
 
 1. Access the [Google Cloud Console](https://console.cloud.google.com/) and navigate to Compute Engine > VM instances.
 2. Click on "Create Instance."
-3. Configure the virtual machine with the following specifications:
+3. We recommend configuring the VM with these settings (or higher):
    - **vCPUs**: 2
    - **Memory**: 8 GB
    - **Disk**: 10 GB balanced
@@ -37,67 +33,61 @@ This document describes how to set up Briefer on a Google Cloud Platform (GCP) i
 
 | These requirements are ideal for most cases. However, they can be adjusted up or down depending on your project's needs and demands.
 
-Once the instance is initialized, connect to it via SSH to proceed with the setup.
-
----
+Once the instance is initialized, connect to it via SSH.
 
 ## Installing Docker
 
 1. Update the instance's packages:
-
    ```bash
    sudo apt update && sudo apt upgrade -y
    ```
-
 2. Install the necessary packages for HTTPS repositories:
-
    ```bash
    sudo apt install apt-transport-https ca-certificates curl software-properties-common
    ```
-
 3. Add the Docker repository:
-
    ```bash
    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
    sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
    sudo apt update
    ```
-
 4. Install Docker:
-
    ```bash
    sudo apt install docker-ce -y
    ```
-
 5. Add your user to the `docker` group:
-
    ```bash
    sudo usermod -aG docker ${USER}
    ```
-
 6. Verify if Docker was installed correctly:
 
    ```bash
    docker ps
    ```
 
----
-
 ## Running Briefer
 
-With Docker installed, you can run Briefer using the following command:
+After installing Docker, you can run Briefer using the following command:
 
 ```bash
-docker run -d   -p 3000:3000   -v briefer_psql_data:/var/lib/postgresql/data   -v briefer_jupyter_data:/home/jupyteruser   -v briefer_briefer_data:/home/briefer   briefercloud/briefer
+docker run -d \
+  -p 3000:3000
+  -v briefer_psql_data:/var/lib/postgresql/data \
+  -v briefer_jupyter_data:/home/jupyteruser \
+  -v briefer_briefer_data:/home/briefer \
+  briefercloud/briefer
 ```
 
-Verify that Briefer is running by accessing port 3000 on your instance's public IP:
+Verify that Briefer is running by accessing port `3000` on your instance's public IP:
 
 ```bash
 curl http://<your_public_ip>:3000
 ```
 
 The Briefer interface should be accessible directly from the browser using the same URL.
+
+> [!NOTE]
+> Please note that you should not be able to login yet because you're serving Briefer over HTTP and have not set the `ALLOW_HTTP` environment variable to `true`. If you want to continue using Briefer over HTTP please add `--env ALLOW_HTTP=true` to the `docker run` command. If you want to use HTTPS, please set up SSL certificates.
 
 ---
 
@@ -155,9 +145,3 @@ To expose Briefer through a reverse proxy using Nginx:
    ```
 
 Now, Briefer will be accessible through your instance's public IP without needing to specify port 3000.
-
----
-
-## Conclusion
-
-In this guide, you set up Briefer on a GCP instance using Docker, and optionally configured Nginx as a reverse proxy. This setup is ideal for development environments or smaller instances. For more complex environments, refer to the [official Briefer documentation](https://briefercloud.com/docs).
