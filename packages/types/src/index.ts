@@ -1034,7 +1034,7 @@ export type WriteBackResult = z.infer<typeof WriteBackResult>
 
 export type Properties = {
   needsSetup: boolean
-  requiresOpenAiKey: boolean
+  disableCustomOpenAiKey: boolean
   disabledAnonymousTelemetry: boolean
 }
 
