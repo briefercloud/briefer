@@ -62,10 +62,10 @@ export default function SQLServerForm({
       <div className="space-y-12">
         <div className="border-b border-gray-900/10 pb-8">
           <h2 className="text-lg font-semibold leading-7 text-gray-900">
-            {SQLServerDataSource ? 'Edit' : 'New'} SQLServer data source
+            {SQLServerDataSource ? 'Edit' : 'New'} SQL Server data source
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-500">
-            {SQLServerDataSource ? 'Edit' : 'Add'} a SQLServer database for Briefer to
+            {SQLServerDataSource ? 'Edit' : 'Add'} a SQL Server database for Briefer to
             pull data from. Our fixed IP address is{' '}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
               {GATEWAY_IP()}
@@ -91,7 +91,7 @@ export default function SQLServerForm({
                   })}
                   type="text"
                   name="name"
-                  placeholder="My SQLServer database"
+                  placeholder="My SQL Server database"
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />

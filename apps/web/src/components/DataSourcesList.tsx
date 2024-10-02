@@ -100,7 +100,7 @@ const databaseUrl = (ds: DataSource): string => {
       case 'mysql':
         return `mysql://${ds.data.host}:${ds.data.port}/${ds.data.database}`
       case 'sqlserver':
-        return `sqlserver://${ds.data.host}:${ds.data.port};databaseName=${ds.data.database};user=${ds.data.username};password=******;`
+        return `sqlserver://${ds.data.host}:${ds.data.port};databaseName=${ds.data.database};`
       case 'trino':
         return (
           `trino://${ds.data.host}:${ds.data.port}` +
@@ -216,7 +216,6 @@ interface Props {
 
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
-    console.log(props.dataSources)
     return props.dataSources.sort((a, b) => {
       if (a.dataSource.data.name < b.dataSource.data.name) return -1
       if (a.dataSource.data.name > b.dataSource.data.name) return 1

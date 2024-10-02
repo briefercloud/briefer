@@ -75,7 +75,7 @@ export default function DataSourcesPage() {
             />
             <DataSourceBlock
               icon="/icons/sqlserver.png"
-              name="SQLServer"
+              name="SQL Server"
               href={`/workspaces/${workspaceId}/data-sources/new/sqlserver`}
             />
             <DataSourceBlock

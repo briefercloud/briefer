@@ -19,7 +19,7 @@ const pagePath = (workspaceId: string) => [
     current: false,
   },
   {
-    name: 'Add SQLServer data source',
+    name: 'Add SQL Server data source',
     icon: PlusCircleIcon,
     href: '#',
     current: true,
