@@ -132,6 +132,27 @@ model MySQLDataSource {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model SQLServerDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String
+  username       String
+  password       String
+  cert           String?
+  notes          String
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+  workspaceId    String     @db.Uuid
+  workspace      Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model OracleDataSource {
   id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
@@ -346,6 +367,7 @@ model Workspace {
   athenaDataSources    AthenaDataSource[]
   oracleDataSources    OracleDataSource[]
   mySQLDataSources     MySQLDataSource[]
+  sqlServerDataSources SQLServerDataSource[]
   trinoDataSources     TrinoDataSource[]
   environmentVariables EnvironmentVariable[]
 }

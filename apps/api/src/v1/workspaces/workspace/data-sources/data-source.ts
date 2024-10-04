@@ -23,6 +23,9 @@ import {
   getTrinoDataSource,
   updateTrinoDataSource,
   deleteTrinoDataSource,
+  deleteSQLServerDataSource,
+  getSQLServerDataSource,
+  updateSQLServerDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -33,6 +36,7 @@ import * as redshift from '../../../../datasources/redshift.js'
 import * as athena from '../../../../datasources/athena.js'
 import * as oracle from '../../../../datasources/oracle.js'
 import * as mysql from '../../../../datasources/mysql.js'
+import * as sqlserver from '../../../../datasources/sqlserver.js'
 import * as trino from '../../../../datasources/trino.js'
 import { ping } from '../../../../datasources/index.js'
 import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
@@ -62,7 +66,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       }),
     }),
     z.object({
-      type: z.literal('mysql'),
+      type: z.union([z.literal('mysql'), z.literal('sqlserver')]),
       data: z.object({
         id: z.string().min(1),
         name: z.string().min(1),
@@ -146,6 +150,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         getAthenaDataSource(workspaceId, dataSourceId),
         getOracleDataSource(workspaceId, dataSourceId),
         getMySQLDataSource(workspaceId, dataSourceId),
+        getSQLServerDataSource(workspaceId, dataSourceId),
         getTrinoDataSource(workspaceId, dataSourceId),
       ])
     ).find((e) => e !== null)
@@ -186,6 +191,20 @@ const dataSourceRouter = (socketServer: IOServer) => {
         )
 
         await mysql.ping(mysqlDs)
+        break
+      }
+      case 'sqlserver': {
+        const sqlserverDS = await updateSQLServerDataSource(
+          {
+            ...data.data,
+            id: dataSourceId,
+            password:
+              data.data.password === '' ? undefined : data.data.password,
+          },
+          config().DATASOURCES_ENCRYPTION_KEY
+        )
+
+        await sqlserver.ping(sqlserverDS)
         break
       }
       case 'redshift': {
@@ -324,7 +343,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         return {
           status: 200,
           payload: {
-            type: 'psql',
+            type: 'redshift',
             data: targetRedshiftDb,
           },
         }
@@ -382,6 +401,19 @@ const dataSourceRouter = (socketServer: IOServer) => {
         }
       }
 
+      const targetSQLServerDb = await recoverFromNotFound(
+        deleteSQLServerDataSource(workspaceId, targetId)
+      )
+      if (targetSQLServerDb) {
+        return {
+          status: 200,
+          payload: {
+            type: 'sqlserver',
+            data: targetSQLServerDb,
+          },
+        }
+      }
+
       const targetTrinoDb = await recoverFromNotFound(
         deleteTrinoDataSource(workspaceId, targetId)
       )
@@ -417,6 +449,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       z.literal('oracle'),
       z.literal('mysql'),
       z.literal('trino'),
+      z.literal('sqlserver'),
     ]),
   })
   router.post('/ping', async (req, res) => {

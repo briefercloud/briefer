@@ -93,6 +93,7 @@ export const useNewDataSource = (workspaceId: string) => {
         | 'oracle'
         | 'mysql'
         | 'trino'
+        | 'sqlserver'
     ): Promise<DataSource> => {
       if (!workspaceId) {
         throw new Error('Missing workspaceId')

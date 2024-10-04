@@ -1,5 +1,5 @@
 import { APIDataSources } from '@/hooks/useDatasources'
-import type { DataSource, DataSourceType } from '@briefer/database'
+import type { DataSource } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
@@ -7,12 +7,24 @@ import { formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import Link from 'next/link'
 import { Fragment, useCallback, useMemo } from 'react'
 
+export type DataSourceType =
+  | 'psql'
+  | 'mysql'
+  | 'bigquery'
+  | 'athena'
+  | 'redshift'
+  | 'oracle'
+  | 'trino'
+  | 'sqlserver'
+
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
     case 'psql':
       return 'PostgreSQL'
     case 'mysql':
       return 'MySQL'
+    case 'sqlserver':
+      return 'SQLServer'
     case 'bigquery':
       return 'BigQuery'
     case 'athena':
@@ -32,6 +44,8 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/postgres.png'
     case 'mysql':
       return '/icons/mysql.png'
+    case 'sqlserver':
+      return '/icons/sqlserver.png'
     case 'bigquery':
       return '/icons/bigquery.png'
     case 'athena':
@@ -60,6 +74,8 @@ const databaseUrl = (ds: DataSource): string => {
         return 'oracle://demodb'
       case 'mysql':
         return 'mysql://demodb'
+      case 'sqlserver':
+        return 'sqlserver://demodb'
       case 'trino':
         return 'trino://demodb'
     }
@@ -77,6 +93,8 @@ const databaseUrl = (ds: DataSource): string => {
         return `oracle://${ds.data.host}:${ds.data.port}/${ds.data.database}`
       case 'mysql':
         return `mysql://${ds.data.host}:${ds.data.port}/${ds.data.database}`
+      case 'sqlserver':
+        return `sqlserver://${ds.data.host}:${ds.data.port};databaseName=${ds.data.database};user=${ds.data.username};`
       case 'trino':
         return (
           `trino://${ds.data.host}:${ds.data.port}` +
@@ -112,15 +130,15 @@ function LastConnection(props: LastConnectionProps) {
   const lastConnText = props.dataSource.data.isDemo
     ? 'just now'
     : props.dataSource.data.lastConnection === null
-      ? 'never'
-      : differenceInSeconds(
-            new Date(),
-            new Date(props.dataSource.data.lastConnection)
-          ) < 30
-        ? 'just now'
-        : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
-            addSuffix: true,
-          })
+    ? 'never'
+    : differenceInSeconds(
+        new Date(),
+        new Date(props.dataSource.data.lastConnection)
+      ) < 30
+    ? 'just now'
+    : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
+        addSuffix: true,
+      })
 
   const [statusBallColor, statusBallRippleColor] = useMemo(() => {
     if (props.dataSource.data.isDemo) {
@@ -192,6 +210,7 @@ interface Props {
 
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
+    console.log(props.dataSources)
     return props.dataSources.sort((a, b) => {
       if (a.config.data.name < b.config.data.name) return -1
       if (a.config.data.name > b.config.data.name) return 1
