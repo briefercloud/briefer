@@ -62,12 +62,7 @@ function Title(props: Props) {
       editable: props.isEditable,
       extensions: [
         Document,
-        Paragraph,
         Text,
-        TaskList,
-        TaskItem.configure({
-          nested: true,
-        }),
         TitleExtension.configure({
           level: 1,
           HTMLAttributes: {
