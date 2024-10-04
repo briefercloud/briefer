@@ -39,7 +39,7 @@ import {
   PythonSucceededText,
 } from '@/components/ExecutionStatusText'
 import { ConnectDragPreview } from 'react-dnd'
-import ApproveDiffButons from '../../ApproveDiffButtons'
+import ApproveDiffButtons from '../../ApproveDiffButtons'
 import EditWithAIForm from '../../EditWithAIForm'
 import { PythonExecTooltip } from '../../ExecTooltip'
 import { useMonacoContext } from '@/components/MonacoProvider'
@@ -417,7 +417,7 @@ function PythonBlock(props: Props) {
               />
             </div>
           </div>
-          <ApproveDiffButons
+          <ApproveDiffButtons
             visible={diffButtonsVisible}
             canTry={status === 'idle'}
             onTry={onTry}
@@ -450,7 +450,7 @@ function PythonBlock(props: Props) {
                       className={clsx(
                         !props.isEditable || !hasOaiKey
                           ? 'cursor-not-allowed bg-gray-200'
-                          : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                          : 'cursor-pointer hover:bg-gray-50 hover:text-gray-700',
                         'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
                       )}
                     >

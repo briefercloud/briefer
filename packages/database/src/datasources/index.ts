@@ -183,7 +183,7 @@ export async function getDatabaseURL(
 ): Promise<string> {
   switch (ds.type) {
     case 'psql': {
-      // TODO: differenciate DataSource and APIDataSource
+      // TODO: differentiate DataSource and APIDataSource
       const dbDs = await prisma().postgreSQLDataSource.findFirstOrThrow({
         where: { id: ds.data.id },
       })

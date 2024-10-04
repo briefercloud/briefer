@@ -302,7 +302,7 @@ export function closeSQLEditWithAIPrompt(
   block: Y.XmlElement<SQLBlock>,
   cleanPrompt: boolean
 ) {
-  const opeartion = () => {
+  const operation = () => {
     const prompt = getSQLBlockEditWithAIPrompt(block)
     if (cleanPrompt) {
       prompt.delete(0, prompt.length)
@@ -312,9 +312,9 @@ export function closeSQLEditWithAIPrompt(
   }
 
   if (block.doc) {
-    block.doc.transact(opeartion)
+    block.doc.transact(operation)
   } else {
-    opeartion()
+    operation()
   }
 }
 

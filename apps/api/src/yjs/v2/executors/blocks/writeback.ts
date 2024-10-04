@@ -63,7 +63,7 @@ export class WritebackExecutor implements IWritebackExecutor {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
-          queeueSize: this.executionQueue.size,
+          queueSize: this.executionQueue.size,
         },
         'enqueueing writeback block execution'
       )

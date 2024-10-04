@@ -13,7 +13,7 @@ export type PythonCompletionMessage = {
   value: PythonSuggestion
 }
 
-const completPython =
+const completePython =
   (io: IOServer, socket: Socket, { user, userWorkspaces }: Session) =>
   async (data: unknown) => {
     const parsedData = z
@@ -159,4 +159,4 @@ const completPython =
     }
   }
 
-export default completPython
+export default completePython

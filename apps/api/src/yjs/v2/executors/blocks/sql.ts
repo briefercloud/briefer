@@ -96,7 +96,7 @@ export type SQLEffects = {
   editWithAI: typeof editWithAI
 }
 
-type RunninQuery = {
+type RunningQuery = {
   abortController: AbortController
   abort?: () => Promise<void>
 }
@@ -121,7 +121,7 @@ export class SQLExecutor implements ISQLExecutor {
   private executionQueue: PQueue
   private dataframes: Y.Map<DataFrame>
   private blocks: Y.Map<YBlock>
-  private runningQueries = new Map<Y.XmlElement<SQLBlock>, RunninQuery>()
+  private runningQueries = new Map<Y.XmlElement<SQLBlock>, RunningQuery>()
   private jupyterManager: IJupyterManager
   private effects: SQLEffects
   private events: SQLEvents
@@ -159,7 +159,7 @@ export class SQLExecutor implements ISQLExecutor {
   ) {
     this.events.sqlRun(EventContext.fromYTransaction(tr))
     const abortController = new AbortController()
-    const runningQuery: RunninQuery = { abortController }
+    const runningQuery: RunningQuery = { abortController }
     this.runningQueries.set(block, runningQuery)
 
     try {

@@ -148,7 +148,7 @@ Finally, if you're not sure whether you should open an issue or ask a question o
 
 ### :lock: Reporting Security Issues
 
-If you've found a security issue in Briefer, please don't open an issue. Instead, send an email to [founders@briefer.cloud](mailto:founders@briefer.cloud) or open the Vunerability Report using the Security tab in this repository.
+If you've found a security issue in Briefer, please don't open an issue. Instead, send an email to [founders@briefer.cloud](mailto:founders@briefer.cloud) or open the Vulnerability Report using the Security tab in this repository.
 Additionally read our [Security Policy](./SECURITY.md)
 
 <br />

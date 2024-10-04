@@ -610,7 +610,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
         ) {
           // if changing orderIndex
           if (doc.parentId === document.parentId) {
-            // we ned to increment orderIndex of all documents that comes after futureOrderIndex
+            // we need to increment orderIndex of all documents that comes after futureOrderIndex
             if (doc.orderIndex >= futureOrderIndex) {
               affectedDocuments = affectedDocuments.set(doc.id, {
                 ...doc,

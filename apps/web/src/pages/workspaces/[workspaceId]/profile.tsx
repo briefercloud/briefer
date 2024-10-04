@@ -61,7 +61,7 @@ function Profile(props: Props) {
     })
 
   const [success, setSuccess] = useState(false)
-  const onCloseSuccessNotificaiton = useCallback(() => {
+  const onCloseSuccessNotification = useCallback(() => {
     setSuccess(false)
   }, [])
 
@@ -270,7 +270,7 @@ function Profile(props: Props) {
       </div>
       <SuccessNotification
         show={success}
-        onClose={onCloseSuccessNotificaiton}
+        onClose={onCloseSuccessNotification}
       />
     </Layout>
   )
