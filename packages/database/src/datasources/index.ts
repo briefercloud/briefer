@@ -50,6 +50,7 @@ export const DataSourceType = z.enum([
   'athena',
   'oracle',
   'mysql',
+  'sqlserver',
   'trino',
 ] as const)
 
