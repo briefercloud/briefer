@@ -1,21 +1,11 @@
 import { APIDataSources } from '@/hooks/useDatasources'
-import type { DataSource } from '@briefer/database'
+import type { DataSource, DataSourceType } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
 import { formatDistanceToNow, differenceInSeconds } from 'date-fns'
 import Link from 'next/link'
 import { Fragment, useCallback, useMemo } from 'react'
-
-export type DataSourceType =
-  | 'psql'
-  | 'mysql'
-  | 'bigquery'
-  | 'athena'
-  | 'redshift'
-  | 'oracle'
-  | 'trino'
-  | 'sqlserver'
 
 export const dataSourcePrettyName = (t: DataSourceType): string => {
   switch (t) {
@@ -210,7 +200,6 @@ interface Props {
 
 export default function DataSourcesList(props: Props) {
   const orderedAPIDataSources = useMemo(() => {
-    console.log(props.dataSources)
     return props.dataSources.sort((a, b) => {
       if (a.config.data.name < b.config.data.name) return -1
       if (a.config.data.name > b.config.data.name) return 1
