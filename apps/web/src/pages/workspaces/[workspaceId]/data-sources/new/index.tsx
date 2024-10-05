@@ -74,6 +74,11 @@ export default function DataSourcesPage() {
               href={`/workspaces/${workspaceId}/data-sources/new/mysql`}
             />
             <DataSourceBlock
+              icon="/icons/sqlserver.png"
+              name="SQLServer"
+              href={`/workspaces/${workspaceId}/data-sources/new/sqlserver`}
+            />
+            <DataSourceBlock
               icon="/icons/oracle.png"
               name="Oracle"
               href={`/workspaces/${workspaceId}/data-sources/new/oracle`}

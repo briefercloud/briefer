@@ -19,6 +19,7 @@ import { makeMySQLQuery } from './mysql.js'
 import { makeTrinoQuery } from './trino.js'
 import { updateConnStatus } from '../../datasources/index.js'
 import { getJupyterManager } from '../../jupyter/index.js'
+import { makeSQLServerQuery } from './sqlserver.js'
 
 export async function makeSQLQuery(
   workspaceId: string,
@@ -83,6 +84,18 @@ export async function makeSQLQuery(
       break
     case 'oracle':
       result = await makeOracleQuery(
+        workspaceId,
+        sessionId,
+        queryId,
+        dataframeName,
+        datasource.data,
+        encryptionKey,
+        sql,
+        onProgress
+      )
+      break
+    case 'sqlserver':
+      result = await makeSQLServerQuery(
         workspaceId,
         sessionId,
         queryId,

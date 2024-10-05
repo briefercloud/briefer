@@ -26,6 +26,7 @@ import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
 import { z } from 'zod'
 import { PythonExecutionError } from '../python/index.js'
+import { getSqlServerSchema } from './sqlserver.js'
 
 function decryptDBData(
   dataSourceId: string,
@@ -64,6 +65,14 @@ async function getFromCache(
     case 'mysql':
       encrypted = (
         await prisma().mySQLDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select: { structure: true },
+        })
+      ).structure
+      break
+    case 'sqlserver':
+      encrypted = (
+        await prisma().sQLServerDataSource.findUniqueOrThrow({
           where: { id: dataSourceId },
           select: { structure: true },
         })
@@ -262,6 +271,9 @@ async function _refreshDataSourceStructure(
       case 'athena':
         finalStructure = await getAthenaSchema(dataSource.config.data)
         break
+      case 'sqlserver':
+        finalStructure = await getSqlServerSchema(dataSource.config.data)
+        break
       case 'trino':
         finalStructure = await getTrinoSchema(
           dataSource.config.data,
@@ -396,6 +408,13 @@ async function persist(ds: APIDataSource): Promise<APIDataSource> {
           data: { structure },
         })
         return ds
+      case 'sqlserver': {
+        await prisma().sQLServerDataSource.update({
+          where: { id: ds.config.data.id },
+          data: { structure },
+        })
+        return ds
+      }
       case 'trino':
         await prisma().trinoDataSource.update({
           where: { id: ds.config.data.id },

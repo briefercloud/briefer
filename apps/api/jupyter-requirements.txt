@@ -45,6 +45,7 @@ googleapis-common-protos==1.62.0
 db-dtypes==1.2.0
 fastparquet==2024.2.0
 oracledb==2.2.0
+pymssql==2.3.1
 redshift-connector==2.0.917
 sqlalchemy-bigquery==1.11.0
 # sqlalchemy-redshift==0.8.14

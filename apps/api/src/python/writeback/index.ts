@@ -49,6 +49,7 @@ export async function writeback(
         onConflictColumns,
         encryptionKey
       )
+    case 'sqlserver':
     case 'mysql':
     case 'oracle':
     case 'athena':

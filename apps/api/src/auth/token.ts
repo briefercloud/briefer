@@ -306,6 +306,10 @@ export const isAuthorizedForDataSource = async (
       const result = await prisma().mySQLDataSource.findFirst(query)
       return result !== null
     }
+    case 'sqlserver': {
+      const result = await prisma().sQLServerDataSource.findFirst(query)
+      return result !== null
+    }
     case 'trino': {
       const result = await prisma().trinoDataSource.findFirst(query)
       return result !== null
