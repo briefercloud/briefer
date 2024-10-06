@@ -24,7 +24,6 @@ export const onComment =
       const { documentId, content } = parsedPyload.data as z.infer<
         typeof Payload
       >
-      // save to db
       const comment = await prisma().comment.create({
         data: {
           content: content,
@@ -38,10 +37,7 @@ export const onComment =
         user: { name: session.user.name, picture: session.user.picture },
       }
 
-      // ack to the user
       callback?.(getCallbackSuccessResponse())
-
-      // broadcast to all users in the document room
       broadcastComment(io, documentId, response)
     } catch (e) {
       callback?.(getCallbackErrorResponse())
@@ -60,7 +56,7 @@ export const joinWorkspaceDocument =
       if (!socket.rooms.has(roomId)) {
         await socket.join(roomId)
       }
-      await emitWorkspaceDocumenttComments(socket, parsedData.data.docId)
+      await emitWorkspaceDocumentComments(socket, parsedData.data.docId)
       callback && callback(getCallbackSuccessResponse())
     } catch (e) {
       callback && callback(getCallbackErrorResponse('Internal server error'))
@@ -93,7 +89,7 @@ const broadcastComment = (
   io.to(getDocumentRoomId(documentId)).emit('workspace-comment', [comment])
 }
 
-const emitWorkspaceDocumenttComments = async (
+const emitWorkspaceDocumentComments = async (
   socket: Socket,
   docId: string
 ) => {

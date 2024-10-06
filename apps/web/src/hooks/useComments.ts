@@ -20,7 +20,6 @@ export const useComments = (
   useEffect(() => {
     socket?.emit("join-workspace-document", {docId}, (ack: CommentAck) => {
       if(ack.status === 'error'){
-        console.log({ack})
         setError("Failed to load comments")
       } 
     })

@@ -118,7 +118,7 @@ export default function Comments(props: Props) {
                           </span>{' '}
                         </div>
                         <time
-                          dateTime={comment.createdAt}
+                          dateTime={new Date(comment.createdAt).toISOString()}
                           className="flex-none py-0.5 text-xs leading-5 text-gray-300"
                         >
                           {timeAgo(new Date(comment.createdAt))}

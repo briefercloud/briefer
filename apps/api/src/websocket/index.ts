@@ -167,7 +167,6 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(refreshDataSource(io, socket, session))
     )
 
-    // expecting a workspace id and comment
     socket.on("workspace-comment", trackWork(onComment(io, session)))
 
     socket.on('disconnect', (reason) => {
