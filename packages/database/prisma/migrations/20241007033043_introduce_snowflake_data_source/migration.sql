@@ -7,7 +7,7 @@ CREATE TABLE "SnowflakeDataSource" (
     "password" TEXT NOT NULL,
     "warehouse" TEXT NOT NULL,
     "database" TEXT NOT NULL,
-    "region" TEXT DEFAULT 'us-west',
+    "region" TEXT NOT NULL DEFAULT 'us-east-1',
     "notes" TEXT NOT NULL,
     "structure" TEXT,
     "isDemo" BOOLEAN NOT NULL DEFAULT false,

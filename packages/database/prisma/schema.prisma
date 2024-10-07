@@ -204,7 +204,7 @@ model SnowflakeDataSource {
   password       String
   warehouse      String
   database       String
-  region         String?    @default("us-west")
+  region         String    @default("us-east-1")
   notes          String
   structure      String?
   isDemo         Boolean    @default(false)
