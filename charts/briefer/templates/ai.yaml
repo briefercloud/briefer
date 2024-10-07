@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-ai
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: ai
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: ai
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.name" . }}-ai
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: ai
+spec:
+  replicas: {{ .Values.ai.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: ai
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: ai
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      containers:
+        - name: ai
+          image: briefercloud/briefer-ai:v{{ default .Chart.AppVersion .Values.ai.version }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: BASIC_AUTH_USERNAME 
+              value: {{ .Values.ai.user }}
+            - name: BASIC_AUTH_PASSWORD 
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: AI_PASSWORD
+            - name: NODE_ENV
+              value: production
+            - name: OPENAI_DEFAULT_MODEL_NAME
+              value: gpt-4o
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: OPENAI_API_KEY
+            - name: PORT
+              value: "8000"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          {{- with .Values.ai.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{ end }}

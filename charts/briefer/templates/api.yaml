@@ -1,0 +1,151 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-api
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: api
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: api
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.name" . }}-api
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: api
+spec:
+  replicas: {{ .Values.api.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: api
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: api
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      initContainers:
+        - name: migrate
+          image: briefercloud/briefer-api:v{{ default .Chart.AppVersion .Values.api.version }}
+          imagePullPolicy: IfNotPresent
+          workingDir: /app/packages/database
+          command: [npx]
+          args:
+            - prisma
+            - migrate
+            - deploy
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: POSTGRES_PRISMA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: POSTGRES_PRISMA_URL
+      containers:
+        - name: api
+          image: briefercloud/briefer-api:v{{ default .Chart.AppVersion .Values.api.version }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: AI_API_URL
+              value: http://{{ include "helm.name" . }}-ai
+            - name: AI_API_USERNAME
+              value: {{ .Values.ai.user }}
+            - name: AI_API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: AI_PASSWORD
+            - name: API_URL
+              value: /api
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: AUTH_JWT_SECRET
+            - name: DATASOURCES_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: DATASOURCES_ENCRYPTION_KEY
+            - name: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+            - name: FRONTEND_URL
+              value: /
+            - name: JUPYTER_HOST
+              value: {{ include "helm.name" . }}-jupyter
+            - name: JUPYTER_PORT
+              value: "80"
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JUPYTER_TOKEN
+            - name: LOGIN_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: LOGIN_JWT_SECRET
+            - name: POSTGRES_DATABASE
+              value: {{ .Values.postgres.database }}
+            - name: POSTGRES_HOSTNAME
+              value: {{ default .Values.postgres.hostname }}
+            - name: POSTGRES_USERNAME
+              value: {{ .Values.postgres.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_PORT
+              value: {{ .Values.postgres.port | quote }}
+            - name: WORKSPACE_SECRETS_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: WORKSPACE_SECRETS_ENCRYPTION_KEY
+            {{- range $k, $v := .Values.api.env }}
+            - name: {{ $k}}
+              value: {{ $v | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          {{- with .Values.api.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{ end }}
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+

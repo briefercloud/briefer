@@ -1,0 +1,7 @@
+bin/
+Makefile
+README.md
+README.md.gotmpl
+k3d.yaml
+values.local.yaml
+values.yaml

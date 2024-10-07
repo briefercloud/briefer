@@ -1,0 +1,4 @@
+postgres:
+  create: true
+  diskSize: 250Mi
+  hostname: briefer-postgres

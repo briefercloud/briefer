@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "helm.name" . }}-nginx
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: ingress
+data:
+{{ (tpl (.Files.Glob "config/*").AsConfig .) | indent 2 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-nginx
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: ingress
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: ingress
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.name" . }}-nginx
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: ingress
+spec:
+  replicas: {{ .Values.nginx.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: ingress
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: ingress
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      containers:
+        - name: nginx
+          image: nginx:{{ .Values.nginx.version }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          {{- with .Values.nginx.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{ end }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "helm.name" . }}-nginx
+            items:
+              - key: nginx.conf
+                path: nginx.conf
+              - key: mime.types
+                path: mime.types

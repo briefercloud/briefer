@@ -1,0 +1,92 @@
+{{ template "chart.header" . }}
+{{ template "chart.description" . }}
+
+{{ template "chart.versionBadge" . }}{{ template "chart.typeBadge" . }}{{ template "chart.appVersionBadge" . }}
+
+This repository contains a Helm chart which can be used to deploy Briefer to your Kubernetes cluster.
+
+## Prerequisites
+
+You'll need a few things in place before installing the Chart. In particular, you'll need:
+
+* A running postgres server with access credentials to be used by Briefer.
+* A Kubernetes namespace to deploy to.
+* A secret named `briefer` deployed in that namespace.
+* A values file with appropriate settings for your deployment
+
+### Creating the Secret
+
+```bash
+# Create the namespace on your K8s cluster.
+kubectl create ns <YOUR_NAMESPACE>
+
+# Create the secret.
+# See https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret for alternatives.
+kubectl create secret generic briefer -n <YOUR_NAMESPACE> \
+  --from-literal=AI_PASSWORD=<SECRET_VALUE> \
+  --from-literal=AUTH_JWT_SECRET=<SECRET_VALUE> \
+  --from-literal=DATASOURCES_ENCRYPTION_KEY=<SECRET_VALUE> \
+  --from-literal=ENVIRONMENT_VARIABLES_ENCRYPTION_KEY=<SECRET_VALUE> \
+  --from-literal=JUPYTER_TOKEN=<SECRET_VALUE> \
+  --from-literal=LOGIN_JWT_SECRET=<SECRET_VALUE> \
+  --from-literal=OPENAI_API_KEY=<SECRET_VALUE> \
+  --from-literal=POSTGRES_PASSWORD=<SECRET_VALUE> \
+  --from-literal=POSTGRES_PRISMA_URL=<SECRET_VALUE> \
+  --from-literal=WORKSPACE_SECRETS_ENCRYPTION_KEY=<SECRET_VALUE>
+```
+
+> NOTE: You can use a different name for the secret. Just be sure to set `secretName` in your values file accordingly.
+
+**Example**
+
+```bash
+kubectl create secret generic briefer -n briefer \
+  --from-literal=AI_PASSWORD="$(openssl rand -hex 12)" \
+  --from-literal=AUTH_JWT_SECRET="$(openssl rand -hex 24)" \
+  --from-literal=DATASOURCES_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+  --from-literal=ENVIRONMENT_VARIABLES_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+  --from-literal=JUPYTER_TOKEN="$(openssl rand -hex 24)" \
+  --from-literal=LOGIN_JWT_SECRET="$(openssl rand -hex 24)" \
+  --from-literal=OPENAI_API_KEY="sk-placeholder" \
+  --from-literal=POSTGRES_PASSWORD="myPostgesPassword" \
+  --from-literal=POSTGRES_PRISMA_URL="postgresql://briefer:myPostgesPassword@pghost:5432/briefer?schema=public" \
+  --from-literal=WORKSPACE_SECRETS_ENCRYPTION_KEY="$(openssl rand -hex 32)"
+```
+
+Values file:
+
+```yaml
+api:
+  env:
+    LOG_LEVEL: info
+    POSTGRES_DATABASE: briefer
+    POSTGRES_HOSTNAME: pghost
+    POSTGRES_PORT: "5432"
+    POSTGRES_USERNAME: briefer
+    PYTHON_ALLOWED_LIBRARIES: plotly,matplotlib,numpy,pandas
+```
+
+## Installing the Chart
+
+For now, this chart isn't published in any repos. You'll need to clone this repo to install it.
+
+To install the chart with the release name `briefer`:
+
+```bash
+git clone https://github.com/briefercloud/briefer
+cd briefer
+helm install briefer chart -f <your_values_file> [--set <key>=<value>,...]
+```
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}
+
+## Contributing
+
+The README.md file is auto-generated using [helm-docs]. To update, modify the chart as needed and mention aything 
+relavent in the README.md.gotmpl file. Then run `helm-docs .` to generate an updated README.md file.
+
+[helm-docs]: https://github.com/norwoodj/helm-docs
