@@ -94,10 +94,12 @@ helm install briefer chart -f <your_values_file> [--set <key>=<value>,...]
 | api.resources | string | `nil` | Resource quotas for the containers. See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/ |
 | api.version | string | `.Values.brieferVersion` | The version of the briefer-api image to run. |
 | brieferVersion | string | `.Chart.AppVersion` | The version of briefer to deploy. This is used for all container images unless an override is specified locally for the service (see `ai`, `api`, `jupyter`, etc. for details). |
-| jupyter | object | `{"args":["server","--ip=0.0.0.0","--ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10","--ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6","--ServerApp.max_body_size=107374182400"],"replicas":1,"resources":null,"version":""}` | Configuration for the jupyter service. |
+| jupyter | object | `{"args":["server","--ip=0.0.0.0","--ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10","--ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6","--ServerApp.max_body_size=107374182400"],"diskSize":"20Gi","replicas":1,"resources":null,"storageClassName":null,"version":""}` | Configuration for the jupyter service. |
 | jupyter.args | list | `["server","--ip=0.0.0.0","--ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10","--ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6","--ServerApp.max_body_size=107374182400"]` | Arguments to be sent to `jupyter`. |
+| jupyter.diskSize | string | `"20Gi"` | The size of the disk to create for the jupyter statefulset. |
 | jupyter.replicas | int | `1` | The number of replicas to run. |
 | jupyter.resources | string | `nil` | Resource quotas for the containers. See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/ |
+| jupyter.storageClassName | string | `nil` | The storageClassName to use for the PVC. If left blank, the Cloud Provider's default storage class will be used. |
 | jupyter.version | string | `.Values.brieferVersion` | The version of the briefer-jupyter image to run. |
 | nginx | object | `{"replicas":1,"resources":null,"version":"1.27"}` | Nginx configuration. |
 | nginx.replicas | int | `1` | The number of replicas to run. |

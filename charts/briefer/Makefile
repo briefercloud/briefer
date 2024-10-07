@@ -25,7 +25,7 @@ install: up
 
 # Renders this chart to stdout using the values in values.local.yaml
 template: $(HELM)
-	@$(HELM) template briefer . -f values.local.yaml
+	@$(HELM) template briefer . -f values.yaml -f values.local.yaml
 
 # Starts up a new K3D cluster and updates the context.
 up: $(K3D)

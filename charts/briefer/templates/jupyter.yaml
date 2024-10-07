@@ -16,7 +16,7 @@ spec:
       targetPort: http
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: {{ include "helm.name" . }}-jupyter
   labels:
@@ -24,15 +24,11 @@ metadata:
     role: jupyter
 spec:
   replicas: {{ .Values.jupyter.replicas }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 1
   selector:
     matchLabels:
       {{- include "helm.selectorLabels" . | nindent 6 }}
       role: jupyter
+  serviceName: {{ include "helm.name" . | nindent 4 }}
   template:
     metadata:
       labels:
@@ -72,3 +68,16 @@ spec:
             httpGet:
               path: /api
               port: 8888
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "helm.name" . }}-jupyter
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.jupyter.diskSize }}
+        {{ with .Values.jupyter.storageClass }}
+        storageClassName: {{ . }}
+        {{ end }}
+        

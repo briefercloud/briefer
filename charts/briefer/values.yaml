@@ -94,11 +94,16 @@ jupyter:
     - --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10
     - --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6
     - --ServerApp.max_body_size=107374182400
+  # -- The size of the disk to create for the jupyter statefulset.
+  diskSize: 20Gi
   # -- The number of replicas to run.
   replicas: 1
   # -- Resource quotas for the containers.
   # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
   resources: ~
+  # -- The storageClassName to use for the PVC.
+  # If left blank, the Cloud Provider's default storage class will be used.
+  storageClassName: ~
   # -- The version of the briefer-jupyter image to run.
   # @default -- `.Values.brieferVersion`
   version: ""
