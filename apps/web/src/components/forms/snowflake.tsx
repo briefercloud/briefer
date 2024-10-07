@@ -8,7 +8,7 @@ import { GATEWAY_IP } from '@/utils/info'
 import Spin from '../Spin'
 
 export type SnowflakeDataSourceInput = SnowflakeDataSource & {
-  password: string,
+  password: string
 }
 
 type SnowflakeDataSourceFormValues = SnowflakeDataSourceInput
@@ -49,8 +49,8 @@ export default function SnowflakeForm({
             {snowflakeDataSource ? 'Edit' : 'New'} Snowflake data source
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-500">
-            {snowflakeDataSource ? 'Edit' : 'Add'} a Snowflake database for Briefer to
-            pull data from. Our fixed IP address is{' '}
+            {snowflakeDataSource ? 'Edit' : 'Add'} a Snowflake database for
+            Briefer to pull data from. Our fixed IP address is{' '}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
               {GATEWAY_IP()}
             </code>
@@ -83,32 +83,7 @@ export default function SnowflakeForm({
               </div>
             </div>
 
-            <div className="col-span-5">
-              <label
-                htmlFor="warehouse"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Warehouse
-              </label>
-              <div className="mt-2">
-                <input
-                  {...register('warehouse', {
-                    required: {
-                      value: true,
-                      message: 'Warehouse is required.',
-                    },
-                  })}
-                  type="text"
-                  name="warehouse"
-                  placeholder="Warehouse name"
-                  required
-                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                />
-                <FormError msg={formState.errors.warehouse?.message} />
-              </div>
-            </div>
-
-            <div className="col-span-5">
+            <div className="col-span-4">
               <label
                 htmlFor="database"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -133,6 +108,56 @@ export default function SnowflakeForm({
               </div>
             </div>
 
+            <div className="col-span-3">
+              <label
+                htmlFor="region"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Region
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register('region', {
+                    required: {
+                      value: true,
+                      message: 'Region is required.',
+                    },
+                  })}
+                  type="text"
+                  name="region"
+                  placeholder="us-east-1"
+                  required
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+                <FormError msg={formState.errors.database?.message} />
+              </div>
+            </div>
+
+            <div className="col-span-3">
+              <label
+                htmlFor="warehouse"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Warehouse
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register('warehouse', {
+                    required: {
+                      value: true,
+                      message: 'Warehouse is required.',
+                    },
+                  })}
+                  type="text"
+                  name="warehouse"
+                  placeholder="EXAMPLE_WH"
+                  required
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+                <FormError msg={formState.errors.warehouse?.message} />
+              </div>
+            </div>
+
             <div className="col-span-4">
               <label
                 htmlFor="account"
@@ -150,7 +175,7 @@ export default function SnowflakeForm({
                   })}
                   type="text"
                   name="account"
-                  placeholder="Account name"
+                  placeholder="abc12345"
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />
@@ -203,50 +228,6 @@ export default function SnowflakeForm({
                   </span>
                 )}
                 <FormError msg={formState.errors.password?.message} />
-              </div>
-            </div>
-
-            <div className="col-span-5">
-              <label
-                htmlFor="host"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Host
-              </label>
-              <div className="mt-2">
-                <input
-                  {...register('host', {
-                    required: false,
-                  })}
-                  type="text"
-                  name="host"
-                  placeholder="example.com"
-                  required
-                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                />
-                <FormError msg={formState.errors.host?.message} />
-              </div>
-            </div>
-
-            <div className="col-span-5">
-              <label
-                htmlFor="region"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Host
-              </label>
-              <div className="mt-2">
-                <input
-                  {...register('region', {
-                    required: false,
-                  })}
-                  type="text"
-                  name="region"
-                  placeholder="us-west"
-                  required
-                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                />
-                <FormError msg={formState.errors.region?.message} />
               </div>
             </div>
 

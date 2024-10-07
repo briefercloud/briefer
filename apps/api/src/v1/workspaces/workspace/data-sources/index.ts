@@ -275,7 +275,6 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               ...data.data,
               workspaceId,
               region: data.data.region ?? null,
-              host: data.data.host ?? null,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,

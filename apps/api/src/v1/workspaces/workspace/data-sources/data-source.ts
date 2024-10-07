@@ -145,7 +145,6 @@ const dataSourceRouter = (socketServer: IOServer) => {
         warehouse: z.string().min(1),
         database: z.string().min(1),
         region: z.string().optional(),
-        host: z.string().optional(),
         notes: z.string(),
       }),
     }),

@@ -6,11 +6,7 @@ import { encrypt } from './crypto.js'
 
 export type SnowflakeDataSource = Omit<
   PrismaSnowflakeDataSource,
-  | 'createdAt'
-  | 'updatedAt'
-  | 'lastConnection'
-  | 'password'
-  | 'structure'
+  'createdAt' | 'updatedAt' | 'lastConnection' | 'password' | 'structure'
 > & {
   createdAt: string
   updatedAt: string
@@ -28,7 +24,6 @@ function toSnowflakeDataSource(
     database: pdataSource.database,
     account: pdataSource.account,
     region: pdataSource.isDemo ? '' : pdataSource.region,
-    host: pdataSource.isDemo ? '' : pdataSource.host,
     notes: pdataSource.notes,
     workspaceId: pdataSource.workspaceId,
     isDemo: pdataSource.isDemo,

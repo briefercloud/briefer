@@ -308,7 +308,7 @@ export async function getDatabaseURL(
       const password = encodeURIComponent(
         await getDatasourcePassword(ds, encryptionKey)
       )
-      return `snowflake://${ds.data.user}:${password}@${ds.data.account}/${ds.data.database}?warehouse=${ds.data.warehouse}`
+      return `snowflake://${ds.data.user}:${password}@${ds.data.account}.${ds.data.region}/${ds.data.database}?warehouse=${ds.data.warehouse}`
     }
   }
 }

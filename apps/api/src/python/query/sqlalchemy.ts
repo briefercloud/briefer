@@ -18,7 +18,13 @@ export async function makeSQLAlchemyQuery(
   sessionId: string,
   dataframeName: string,
   databaseUrl: string,
-  dataSourceType: 'mysql' | 'oracle' | 'psql' | 'redshift' | 'trino' | 'snowflake',
+  dataSourceType:
+    | 'mysql'
+    | 'oracle'
+    | 'psql'
+    | 'redshift'
+    | 'trino'
+    | 'snowflake',
   jobId: string,
   query: string,
   queryId: string,
@@ -139,7 +145,9 @@ def briefer_make_sqlalchemy_query():
             print(json.dumps({"type": "log", "message": "Iterating over chunks"}))
             for chunk in chunks:
                 if not os.path.exists(flag_file_path):
-                    _briefer_cancel_sqlalchemy_query(engine, job_id, ${JSON.stringify(dataSourceType)})
+                    _briefer_cancel_sqlalchemy_query(engine, job_id, ${JSON.stringify(
+                      dataSourceType
+                    )})
                     aborted = True
                     break
 
