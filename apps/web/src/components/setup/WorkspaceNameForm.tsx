@@ -25,7 +25,7 @@ function WorkspaceNameSetupStep(props: Props) {
       onSubmit={props.handleSubmit(props.onNextStep)}
     >
       <h2 className="text-2xl">{"What's your workspace name?"}</h2>
-      <div className="relative flex flex-col items-start">
+      <div className="relative flex flex-col items-center justify-center">
         <input
           type="text"
           id="search"
@@ -35,6 +35,17 @@ function WorkspaceNameSetupStep(props: Props) {
             required: {
               value: true,
               message: 'The workspace name is required',
+            },
+            validate: (value) => {
+              if (value.length > 100) {
+                return "The workspace name can't be longer than 100 characters"
+              }
+
+              const regex = /^[a-zA-Z0-9\s-]*$/
+
+              return regex.test(value)
+                ? true
+                : 'The workspace name can only contain letters, numbers, spaces, and hyphens'
             },
           })}
         />
