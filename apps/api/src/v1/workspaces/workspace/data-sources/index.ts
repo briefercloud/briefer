@@ -107,7 +107,7 @@ const dataSourcePayload = z.union([
       password: z.string().min(1),
       warehouse: z.string().min(1),
       database: z.string().min(1),
-      region: z.string().optional(),
+      region: z.string().min(1),
       host: z.string().optional(),
       notes: z.string(),
     }),
@@ -274,7 +274,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             const payload = {
               ...data.data,
               workspaceId,
-              region: data.data.region ?? null,
+              region: data.data.region,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
