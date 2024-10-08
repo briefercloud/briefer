@@ -26,7 +26,7 @@ const pagePath = (workspaceId: string) => [
   },
 ]
 
-export default function NewDataSourcePostgresSQLPage() {
+export default function NewDataSourceSnowflakePage() {
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
 
