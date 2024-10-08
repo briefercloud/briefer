@@ -196,6 +196,28 @@ model AthenaDataSource {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model SnowflakeDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  account        String
+  user           String
+  password       String
+  warehouse      String
+  database       String
+  region         String    @default("us-east-1")
+  notes          String
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model BigQueryDataSource {
   id                String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name              String
@@ -369,6 +391,7 @@ model Workspace {
   mySQLDataSources     MySQLDataSource[]
   sqlServerDataSources SQLServerDataSource[]
   trinoDataSources     TrinoDataSource[]
+  snowflakeDataSources SnowflakeDataSource[]
   environmentVariables EnvironmentVariable[]
 }
 
@@ -448,15 +471,15 @@ enum ReusableComponentType {
 }
 
 model ReusableComponent {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
   state      Bytes
   type       ReusableComponentType
   title      String
-  blockId    String   @db.Uuid @unique
-  documentId String   @db.Uuid
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  blockId    String                @unique @db.Uuid
+  documentId String                @db.Uuid
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @default(now()) @updatedAt
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 }
