@@ -1,0 +1,45 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: briefer
+  name: briefer-jupyter
+spec:
+  selector:
+    matchLabels:
+      app: "briefer-jupyter"
+  template:
+    metadata:
+      labels:
+        app: "briefer-jupyter"
+    spec:
+      containers:
+      - name: jupyter
+        image: briefercloud/briefer-jupyter:latest
+        command: ["sh", "-c", "jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400"]
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5                                                                      
+          timeoutSeconds: 10
+        env:
+        - name: JUPYTER_TOKEN 
+          value: "{{.Values.jupyter.token}}" 
+        ports:
+        - containerPort: {{.Values.jupyter.port}} 
+          name: jupyter-port
+---
+# Cluster IP Service
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: "briefer"
+  name: "briefer-jupyter-service"
+spec:
+  selector:
+    app: "briefer-jupyter"
+  ports:
+  - port: {{.Values.jupyter.port}} 
+    targetPort: jupyter-port

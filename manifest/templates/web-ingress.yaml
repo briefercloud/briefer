@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: briefer-web-ingress-host
+  namespace: briefer
+spec:
+  ingressClassName: traefik 
+  rules:
+  - host: app.localhost 
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: briefer-web-service
+            port:
+              number: 3000

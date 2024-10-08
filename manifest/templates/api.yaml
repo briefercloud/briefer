@@ -1,0 +1,104 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: briefer
+  name: briefer-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: briefer-api
+  template:
+    metadata:
+      labels:
+        app: briefer-api
+    spec:
+      initContainers:
+      - name: wait-for-job
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          while true; do
+            status=$(kubectl get job briefer-migration -n briefer -o jsonpath='{.status.succeeded}')
+            if [ "$status" = "1" ]; then
+              echo "Job completed successfully."
+              break
+            else
+              echo "Waiting for Job to complete..."
+              sleep 5
+            fi
+          done
+      containers:
+      - name: api
+        image: ionesiojr/tst:latest 
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'curl -f http://localhost:{{.Values.api.port}}/readyz || exit 1']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5                                                                      
+          timeoutSeconds: 10 
+        env:
+        - name: NODE_ENV
+          value: "{{ .Values.api.env }}"
+        - name: LOG_LEVEL
+          value: "{{.Values.api.logLevel }}" 
+        - name: API_URL
+          value: "{{.Values.api.url}}" 
+        - name: FRONTEND_URL
+          value: "{{.Values.web.url}}" 
+        - name: TLD
+          value: "{{.Values.api.tld}}" 
+        - name: LOGIN_JWT_SECRET
+          value: "{{.Values.api.loginJwtSecret}}" 
+        - name: AUTH_JWT_SECRET
+          value: "{{.Values.api.authJwtSecret}}" 
+        - name: AI_API_URL
+          value: "{{.Values.ai.url}}" 
+        - name: AI_API_USERNAME
+          value: "{{.Values.ai.username}}" 
+        - name: AI_API_PASSWORD
+          value: "{{.Values.ai.password}}" 
+        - name: PYTHON_ALLOWED_LIBRARIES
+          value: 'plotly,matplotlib,numpy,pandas'
+        - name: POSTGRES_USERNAME
+          value: "{{.Values.postgres.username}}" 
+        - name: POSTGRES_PASSWORD
+          value: "{{.Values.postgres.password}}" 
+        - name: POSTGRES_HOSTNAME
+          value: "{{.Values.postgres.hostname}}" 
+        - name: POSTGRES_PORT
+          value: "{{.Values.postgres.port}}" 
+        - name: POSTGRES_DATABASE
+          value: "{{.Values.postgres.database}}" 
+        - name: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+          value: "{{.Values.api.envEncryptionKeys}}" 
+        - name: DATASOURCES_ENCRYPTION_KEY
+          value: "{{.Values.api.dataEncryptionKeys}}" 
+        - name: WORKSPACE_SECRETS_ENCRYPTION_KEY
+          value: "{{.Values.api.workspaceEncryptionKeys}}" 
+        - name: JUPYTER_HOST
+          value: "{{.Values.jupyter.hostname}}" 
+        - name: JUPYTER_PORT
+          value: "{{.Values.jupyter.port}}" 
+        - name: JUPYTER_TOKEN
+          value: "{{.Values.jupyter.token}}" 
+        ports:
+        - containerPort: {{.Values.api.port }} 
+          name: api-port
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: briefer
+  name: briefer-api-service
+spec:
+  selector:
+    app: briefer-api
+  ports:
+  - protocol: TCP
+    port: {{.Values.api.port}} 
+    targetPort: api-port

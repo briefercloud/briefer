@@ -1,0 +1,31 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: briefer
+  name: briefer-migration
+spec:
+  template:
+    metadata:
+      labels:
+        app: briefer-migration
+    spec:
+      initContainers:                                                                                                                                                                                                  
+      - name: init-delay                                                                                                                                                                                               
+        image: busybox                                                                                                                                                                                                 
+        command: ['sh', '-c', 'sleep 5']  
+      containers:
+        - name: migration
+          image: ionesiojr/tst:latest
+          workingDir: '/app/packages/database'
+          command: ['npx', 'prisma', 'migrate', 'deploy']
+          env:
+            - name: NODE_ENV
+              value: "{{.Values.api.env}}" 
+            - name: LOG_LEVEL
+              value: "{{.Values.api.logLevel}}" 
+            - name: POSTGRES_PRISMA_URL
+              value: 'postgresql://{{.Values.postgres.username}}:{{.Values.postgres.password}}@{{.Values.postgres.hostname}}:{{.Values.postgres.port}}/{{.Values.postgres.database}}?schema=public'
+      restartPolicy: Never
+  backoffLimit: 4
+

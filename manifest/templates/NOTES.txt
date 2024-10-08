@@ -1,0 +1,20 @@
+  Thank you for installing {{ .Chart.Name }}!
+
+  Your release is named {{ .Release.Name }}.
+
+  To check the status of your release:
+    $ helm status {{ .Release.Name }}
+
+  To get the deployed resources:
+    $ kubectl get all -l app.kubernetes.io/instance={{ .Release.Name }}
+
+  If you need to make changes to the configuration, you can either:
+    1. Edit your values file (values.yaml) and upgrade the release:
+       $ helm upgrade {{ .Release.Name }} {{ .Chart.Name }} -f values.yaml
+
+    2. Override specific values during upgrade:
+       $ helm upgrade {{ .Release.Name }} {{ .Chart.Name }} --set key1=value1,key2=value2
+
+  To delete the release and associated resources:
+    $ helm delete {{ .Release.Name }}
+
