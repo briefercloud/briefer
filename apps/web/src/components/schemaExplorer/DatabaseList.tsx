@@ -4,12 +4,19 @@ import { databaseImages } from '../DataSourcesList'
 import { ChevronRightIcon } from '@heroicons/react/24/outline'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/solid'
 import { isDataSourceStructureLoading } from '@briefer/types'
+import { useMemo } from 'react'
 
 interface Props {
   dataSources: APIDataSources
   onSelectDataSource: (dataSourceId: string) => void
 }
 export default function DatabaseList(props: Props) {
+  const sortedDataSources = useMemo(() => {
+    return props.dataSources.sort((a, b) => {
+      return a.config.data.name.localeCompare(b.config.data.name)
+    })
+  }, [props.dataSources])
+
   return (
     <div className="flex flex-col h-full">
       <ExplorerTitle
@@ -21,7 +28,7 @@ export default function DatabaseList(props: Props) {
       />
       <div className="flex-grow text-sm text-gray-500 font-sans font-medium overflow-y-auto border-t border-gray-200 mt-4">
         <ul className="h-full">
-          {props.dataSources.map((dataSource) => {
+          {sortedDataSources.map((dataSource) => {
             return (
               <li
                 key={dataSource.config.data.id}

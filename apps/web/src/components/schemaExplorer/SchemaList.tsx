@@ -28,6 +28,10 @@ export default function SchemaList(props: Props) {
     }
   }, [props.dataSource.structure])
 
+  const sortedSchemaNames = useMemo(() => {
+    return schemaNames.sort((a, b) => a.localeCompare(b))
+  }, [schemaNames])
+
   return (
     <div className="flex flex-col h-full">
       <ExplorerTitle
@@ -61,7 +65,7 @@ export default function SchemaList(props: Props) {
             onRetrySchema={props.onRetrySchema}
           />
           <ul className="h-full">
-            {schemaNames.map((schemaName) => {
+            {sortedSchemaNames.map((schemaName) => {
               return (
                 <li
                   key={schemaName}
