@@ -94,6 +94,7 @@ export const useNewDataSource = (workspaceId: string) => {
         | 'mysql'
         | 'trino'
         | 'sqlserver'
+        | 'monetdb'
     ): Promise<DataSource> => {
       if (!workspaceId) {
         throw new Error('Missing workspaceId')
