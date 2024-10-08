@@ -35,12 +35,14 @@ export default function TableList(props: Props) {
 
       const schema = schemas[props.schema] ?? { tables: {} }
 
-      return Object.entries(schema.tables).map(([tableName, table]) => {
-        return {
-          name: tableName,
-          columns: table.columns,
-        }
-      })
+      return Object.entries(schema.tables)
+        .map(([tableName, table]) => {
+          return {
+            name: tableName,
+            columns: table.columns,
+          }
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
     }, [props.dataSource.structure, props.schema])
 
   const columns = useMemo(
