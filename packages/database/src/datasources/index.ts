@@ -9,6 +9,7 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
+import * as monetdb from './monetdb.js'
 import { DataSourceStructureStateV2 } from '@briefer/types'
 import { z } from 'zod'
 
@@ -40,6 +41,7 @@ export type DataSource =
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
   | { type: 'sqlserver'; data: SQLServerDataSource }
+  | { type: 'monetdb'; data: monetdb.MonetDBDataSource }
 
 export type DataSourceType = DataSource['type']
 
@@ -139,6 +141,12 @@ export async function getDatasource(
         .then((data): DataSource | null =>
           data ? { type: 'sqlserver', data } : null
         )
+    case 'monetdb':
+      return monetdb
+        .getMonetDbDataSource(workspaceId, id)
+        .then((data): DataSource | null =>
+          data ? { type: 'monetdb', data } : null
+        )
   }
 }
 
@@ -196,6 +204,19 @@ export async function getDatasourcePassword(
     case 'bigquery':
     case 'athena':
       return ''
+    case 'monetdb':
+      return prisma()
+        .monetDBDataSource.findFirstOrThrow({
+          where: {
+            id: datasource.data.id,
+          },
+          select: {
+            password: true,
+          },
+        })
+        .then((row) =>
+          row.password !== null ? decrypt(row.password, encryptionKey) : ''
+        )
   }
 }
 
@@ -285,6 +306,12 @@ export async function getDatabaseURL(
       )
       return `mssql+pymssql://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
     }
+    case 'monetdb': {
+      const password = encodeURIComponent(
+        await getDatasourcePassword(ds, encryptionKey)
+      )
+      return `monetdb://${ds.data.host}:${ds.data.port}/${ds.data.database}?user=${ds.data.username}&password=${password}`
+    }
   }
 }
 
@@ -337,6 +364,18 @@ export async function getCredentialsInfo(
 
       return {
         sslrootcert: decrypt(mysql.cert, encryptionKey),
+      }
+    }
+    case 'monetdb': {
+      const monetdb = await prisma().monetDBDataSource.findFirstOrThrow({
+        where: { id: ds.data.id },
+      })
+      if (!monetdb.cert) {
+        return null
+      }
+
+      return {
+        sslrootcert: decrypt(monetdb.cert, encryptionKey),
       }
     }
   }
