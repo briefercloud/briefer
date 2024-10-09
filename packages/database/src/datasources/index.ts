@@ -34,6 +34,7 @@ export type MySQLDataSource = mysql.MySQLDataSource
 export type TrinoDataSource = trino.TrinoDataSource
 export type SQLServerDataSource = sqlserver.SQLServerDataSource
 export type SnowflakeDataSource = snowflake.SnowflakeDataSource
+export type MonetDBDataSource = monetdb.MonetDBDataSource
 
 export type DataSource =
   | { type: 'psql'; data: PostgreSQLDataSource }
@@ -44,7 +45,7 @@ export type DataSource =
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
   | { type: 'sqlserver'; data: SQLServerDataSource }
-  | { type: 'monetdb'; data: monetdb.MonetDBDataSource }
+  | { type: 'monetdb'; data: MonetDBDataSource }
   | { type: 'snowflake'; data: SnowflakeDataSource }
 
 export type DataSourceType = DataSource['type']
@@ -59,6 +60,7 @@ export const DataSourceType = z.enum([
   'sqlserver',
   'trino',
   'snowflake',
+  'monetdb',
 ] as const)
 
 // Ensure Zod enum stays in sync with `DataSourceType`
@@ -88,6 +90,7 @@ export async function listDataSources(
     sqlserver.listSQLServerDataSources(workspaceId),
     trino.listTrinoDataSources(workspaceId),
     snowflake.listSnowflakeDataSources(workspaceId),
+    monetdb.listMonetDbDataSources(workspaceId),
   ])
 
   return dbs.reduce((acc, cur) => acc.concat(cur), [])
