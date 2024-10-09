@@ -28,6 +28,7 @@ import { getMySQLSchema } from './mysql.js'
 import { z } from 'zod'
 import { PythonExecutionError } from '../python/index.js'
 import { getSqlServerSchema } from './sqlserver.js'
+import { getDatabricksSQLSchema } from '../python/query/databrickssql.js'
 
 function decryptDBData(
   dataSourceId: string,
@@ -122,6 +123,14 @@ async function getFromCache(
     case 'snowflake':
       encrypted = (
         await prisma().snowflakeDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select: { structure: true },
+        })
+      ).structure
+      break
+    case 'databrickssql':
+      encrypted = (
+        await prisma().databricksSQLDataSource.findUniqueOrThrow({
           where: { id: dataSourceId },
           select: { structure: true },
         })
@@ -307,6 +316,13 @@ async function _refreshDataSourceStructure(
           onTable
         )
         break
+      case 'databrickssql':
+        finalStructure = await getDatabricksSQLSchema(
+          dataSource.config.data,
+          config().DATASOURCES_ENCRYPTION_KEY,
+          onTable
+        )
+        break
     }
 
     await updateQueue.onIdle()
@@ -457,6 +473,12 @@ async function persist(ds: APIDataSource): Promise<APIDataSource> {
         return ds
       case 'snowflake':
         await prisma().snowflakeDataSource.update({
+          where: { id: ds.config.data.id },
+          data: { structure },
+        })
+        return ds
+      case 'databrickssql':
+        await prisma().databricksSQLDataSource.update({
           where: { id: ds.config.data.id },
           data: { structure },
         })

@@ -21,6 +21,7 @@ import { makeSnowflakeQuery } from './snowflake.js'
 import { updateConnStatus } from '../../datasources/index.js'
 import { getJupyterManager } from '../../jupyter/index.js'
 import { makeSQLServerQuery } from './sqlserver.js'
+import { makeDatabricksSQLQuery } from './databrickssql.js'
 
 export async function makeSQLQuery(
   workspaceId: string,
@@ -144,6 +145,18 @@ export async function makeSQLQuery(
         onProgress
       )
       break
+      case 'databrickssql':
+        result = await makeDatabricksSQLQuery(
+          workspaceId,
+          sessionId,
+          queryId,
+          dataframeName,
+          datasource.data,
+          encryptionKey,
+          sql,
+          onProgress
+        )
+        break
   }
 
   result[0].then(async (r) => {
