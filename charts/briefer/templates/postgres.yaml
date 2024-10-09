@@ -1,0 +1,80 @@
+{{- if .Values.postgres.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "helm.name" . }}-postgres
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: database
+spec:
+  {{ with .Values.postgres.storageClass }}
+  storageClassName: {{ . }}
+  {{ end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.postgres.diskSize }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-postgres
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: database
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: database
+  ports:
+    - port: 5432
+      protocol: TCP
+      targetPort: sql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.name" . }}-postgres
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: database
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: database
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      containers:
+        - name: pg
+          image: postgres:{{ .Values.postgres.version }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.username }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: POSTGRES_PASSWORD
+          ports:
+            - name: sql
+              containerPort: {{ .Values.postgres.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "helm.name" . }}-postgres
+{{- end }}

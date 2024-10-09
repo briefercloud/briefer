@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-jupyter
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: jupyter
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: jupyter
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "helm.name" . }}-jupyter
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: jupyter
+spec:
+  replicas: {{ .Values.jupyter.replicas }}
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: jupyter
+  serviceName: {{ include "helm.name" . | nindent 4 }}
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: jupyter
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      containers:
+        - name: jupyter
+          image: briefercloud/briefer-jupyter:v{{ default .Chart.AppVersion .Values.jupyter.version }}
+          imagePullPolicy: IfNotPresent
+          command: ["jupyter"]
+          args:
+            {{- toYaml .Values.jupyter.args | nindent 12 }}
+          env:
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secretName }}
+                  key: JUPYTER_TOKEN
+          ports:
+            - name: http
+              containerPort: 8888
+              protocol: TCP
+          {{- with .Values.jupyter.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{ end }}
+          livenessProbe:
+            httpGet:
+              path: /api
+              port: 8888
+            initialDelaySeconds: 60
+            timeoutSeconds: 30
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /api
+              port: 8888
+  volumeClaimTemplates:
+    - metadata:
+        name: {{ include "helm.name" . }}-jupyter
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.jupyter.diskSize }}
+        {{ with .Values.jupyter.storageClass }}
+        storageClassName: {{ . }}
+        {{ end }}
+        

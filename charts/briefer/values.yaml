@@ -1,0 +1,120 @@
+################################################################################
+# Generated the README.md with https://github.com/norwoodj/helm-docs
+#
+# See that README there for details about formatting.
+################################################################################
+
+# -- The version of briefer to deploy.
+# This is used for all container images unless an override is specified locally
+# for the service (see `ai`, `api`, `jupyter`, etc. for details).
+# @default -- `.Chart.AppVersion`
+brieferVersion: ""
+
+# -- The name of the secret used to configure Briefer services.
+secretName: briefer
+
+# -- Configuration of the service account used by all pods.
+serviceAccount:
+  # -- Whether or not to create the service account.
+  create: true
+  # -- The service account name.
+  # @default -- The name of the release.
+  name: ""
+  # -- Additional annotations to add to the service account. Useful for things
+  # like workload identity mappings in GKE.
+  annotations: {}
+
+# -- Nginx configuration.
+nginx:
+  # -- The number of replicas to run.
+  replicas: 1
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The version of nginx to run.
+  version: "1.27"
+
+# -- Configuration for running PostgreSQL.
+postgres:
+  # -- When true, deploy the ephemeral PostgreSQL container.
+  create: false
+  # -- The name of the database
+  database: briefer
+  # -- When create is true, the size of the volume to create.
+  diskSize: 10Gi
+  # -- The hostname of the DB server to connect to.
+  hostname: ~
+  # -- The port to connect on.
+  port: 5432
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The storageClassName to use for the PVC.
+  # If left blank, the Cloud Provider's default storage class will be used.
+  storageClassName: ~
+  # -- The username to connect as.
+  username: briefer
+  # -- The version of the postgres container to run.
+  version: "16"
+
+# -- Configuration for the AI service.
+ai:
+  # -- The number of replicas to run.
+  replicas: 1
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The basic auth username for the AI service.
+  user: briefer
+  # -- The version of the briefer-ai image to run.
+  # @default -- `.Values.brieferVersion`
+  version: ""
+
+# -- Configuration for the API.
+api:
+  # -- Environment variables for the API server.
+  env:
+    LOG_LEVEL: info
+    PYTHON_ALLOWED_LIBRARIES: plotly,matplotlib,numpy,pandas
+  # -- The number of replicas to run.
+  replicas: 1
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The version of the briefer-api image to run.
+  # @default -- `.Values.brieferVersion`
+  version: ""
+
+# -- Configuration for the jupyter service.
+jupyter:
+  # -- Arguments to be sent to `jupyter`.
+  args:
+    - server
+    - --ip=0.0.0.0
+    - --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10
+    - --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6
+    - --ServerApp.max_body_size=107374182400
+  # -- The size of the disk to create for the jupyter statefulset.
+  diskSize: 20Gi
+  # -- The number of replicas to run.
+  replicas: 1
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The storageClassName to use for the PVC.
+  # If left blank, the Cloud Provider's default storage class will be used.
+  storageClassName: ~
+  # -- The version of the briefer-jupyter image to run.
+  # @default -- `.Values.brieferVersion`
+  version: ""
+
+# -- Configuration for the web (frontend) service.
+web:
+  # -- The number of replicas to run.
+  replicas: 1
+  # -- Resource quotas for the containers.
+  # See https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  resources: ~
+  # -- The version of the briefer-web image to run.
+  # @default -- `.Values.brieferVersion`
+  version: ""

@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "helm.name" . }}-web
+  labels:
+    {{- include "helm.labels" . | nindent 4}}
+    role: web
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "helm.selectorLabels" . | nindent 4 }}
+    role: web
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "helm.name" . }}-web
+  labels:
+    {{- include "helm.labels" . | nindent 4 }}
+    role: web
+spec:
+  replicas: {{ .Values.web.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      {{- include "helm.selectorLabels" . | nindent 6 }}
+      role: web
+  template:
+    metadata:
+      labels:
+        {{- include "helm.labels" . | nindent 8 }}
+        role: web
+    spec:
+      serviceAccount: {{ include "helm.serviceAccountName" . }}
+      containers:
+        - name: web
+          image: briefercloud/briefer-web:v{{ default .Chart.AppVersion .Values.web.version }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: NODE_ENV
+              value: production
+          ports:
+            - name: http
+              containerPort: 4000
+              protocol: TCP
+          {{- with .Values.web.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{ end }}

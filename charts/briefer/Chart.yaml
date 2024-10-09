@@ -1,0 +1,8 @@
+apiVersion: v2
+name: briefer
+home: https://github.com/briefercloud/briefer/tree/main/helm
+description: |
+  A chart for installing Briefer and all of it's components.
+
+version: 0.1.0
+appVersion: 0.0.26
