@@ -13,7 +13,7 @@ import userRouter from './user.js'
 import { validate } from 'uuid'
 import { generatePassword, hashPassword } from '../../../../password.js'
 import { hasWorkspaceRoles } from '../../../../auth/token.js'
-import { isNameValid } from '../../../../utils/cleanNames.js'
+import { isUserNameValid } from '../../../../utils/validation.js'
 
 const usersRouter = Router({ mergeParams: true })
 
@@ -45,7 +45,7 @@ usersRouter.post('/', isAdmin, async (req, res) => {
 
     const email = result.data.email.trim()
 
-    if (!isNameValid(result.data.name)) {
+    if (!isUserNameValid(result.data.name)) {
       res.status(400).end()
       return
     }

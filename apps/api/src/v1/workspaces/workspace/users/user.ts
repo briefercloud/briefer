@@ -11,7 +11,7 @@ import {
   generatePassword,
   hashPassword,
 } from '../../../../password.js'
-import { isNameValid } from '../../../../utils/cleanNames.js'
+import { isUserNameValid } from '../../../../utils/validation.js'
 
 const userRouter = Router({ mergeParams: true })
 
@@ -58,7 +58,7 @@ userRouter.put('/', async (req, res) => {
   }
 
   if (payload.data.name) {
-    if (!isNameValid(payload.data.name)) {
+    if (!isUserNameValid(payload.data.name)) {
       res.sendStatus(400)
       return
     }

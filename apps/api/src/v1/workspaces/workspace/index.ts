@@ -16,7 +16,7 @@ import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
 import { WorkspaceEditFormValues } from '@briefer/types'
 import { encrypt } from '@briefer/database'
 import { config } from '../../../config/index.js'
-import { isNameValid } from '../../../utils/cleanNames.js'
+import { isWorkspaceNameValid } from '../../../utils/validation.js'
 
 const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 
@@ -65,7 +65,7 @@ export default function workspaceRouter(socketServer: IOServer) {
     }
 
     if (payload.data.name) {
-      if (!isNameValid(payload.data.name)) {
+      if (!isWorkspaceNameValid(payload.data.name)) {
         res.status(400).end()
         return
       }
