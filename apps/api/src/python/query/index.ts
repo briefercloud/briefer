@@ -21,7 +21,7 @@ import { makeSnowflakeQuery } from './snowflake.js'
 import { updateConnStatus } from '../../datasources/index.js'
 import { getJupyterManager } from '../../jupyter/index.js'
 import { makeSQLServerQuery } from './sqlserver.js'
-import { makeMonetDBQuery } from './monetdb'
+import { makeMonetDBQuery } from './monetdb.js'
 
 export async function makeSQLQuery(
   workspaceId: string,

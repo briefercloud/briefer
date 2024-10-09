@@ -8,7 +8,7 @@ import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
-import * as monetdb from "./monetdb"
+import * as monetdb from "./monetdb.js"
 import { DataSourceConnectionError } from '@briefer/types'
 
 export async function ping(ds: DataSource): Promise<DataSource> {
