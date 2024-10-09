@@ -24,6 +24,7 @@ export * from './sqlserver.js'
 export * from './crypto.js'
 export * from './trino.js'
 export * from './snowflake.js'
+export * from "./monetdb.js"
 
 export type BigQueryDataSource = bq.BigQueryDataSource
 export type PostgreSQLDataSource = psql.PostgreSQLDataSource

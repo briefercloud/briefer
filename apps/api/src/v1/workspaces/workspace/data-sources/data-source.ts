@@ -29,6 +29,7 @@ import {
   getSnowflakeDataSource,
   updateSnowflakeDataSource,
   deleteSnowflakeDataSource,
+  getMonetDbDataSource
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -148,6 +149,20 @@ const dataSourceRouter = (socketServer: IOServer) => {
         notes: z.string(),
       }),
     }),
+    z.object({
+      type: z.literal('monetdb'),
+      data: z.object({
+        name: z.string().min(1),
+        host: z.string().min(1),
+        port: z.string().min(1),
+        database: z.string().min(1),
+        username: z.string().min(1),
+        password: z.string().min(1),
+        notes: z.string(),
+        readOnly: z.boolean(),
+        cert: z.string().optional(),
+      }),
+    }),
   ])
 
   router.put('/', async (req, res) => {
@@ -171,6 +186,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         getSQLServerDataSource(workspaceId, dataSourceId),
         getTrinoDataSource(workspaceId, dataSourceId),
         getSnowflakeDataSource(workspaceId, dataSourceId),
+        getMonetDbDataSource(workspaceId, dataSourceId),
       ])
     ).find((e) => e !== null)
     if (!existingDb) {

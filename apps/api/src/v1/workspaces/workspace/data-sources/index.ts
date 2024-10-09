@@ -112,6 +112,20 @@ const dataSourcePayload = z.union([
       notes: z.string(),
     }),
   }),
+  z.object({
+    type: z.literal('monetdb'),
+    data: z.object({
+      name: z.string().min(1),
+      host: z.string().min(1),
+      port: z.string().min(1),
+      database: z.string().min(1),
+      username: z.string().min(1),
+      password: z.string().min(1),
+      notes: z.string(),
+      readOnly: z.boolean(),
+      cert: z.string().optional(),
+    }),
+  }),
 ])
 
 export type DataSourcePayload = z.infer<typeof dataSourcePayload>
@@ -287,6 +301,22 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             dsRes = { type: 'snowflake', data: ds }
             break
           }
+          case "monetdb": {
+            const payload = {
+              ...data.data,
+              workspaceId,
+              cert: data.data.cert ?? null,
+              connStatus: 'offline' as const,
+              connError: JSON.stringify(neverPingedError),
+              lastConnection: null,
+            }
+            const ds = await createPSQLDataSource(
+              payload,
+              config().DATASOURCES_ENCRYPTION_KEY
+            )
+            dsRes = { type: 'psql', data: ds }
+            break
+          }
         }
 
         return dsRes
@@ -301,6 +331,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           case 'athena':
           case 'sqlserver':
           case 'snowflake':
+          case "monetdb":
           case 'trino':
             return null
           case 'oracle': {
@@ -373,6 +404,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         getDatasource(workspaceId, dataSourceId, 'sqlserver'),
         getDatasource(workspaceId, dataSourceId, 'trino'),
         getDatasource(workspaceId, dataSourceId, 'snowflake'),
+        getDatasource(workspaceId, dataSourceId, "monetdb")
       ])
     ).find((e) => e !== null)
 
