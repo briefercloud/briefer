@@ -56,5 +56,7 @@ export async function writeback(
     case 'snowflake':
     case 'trino':
       throw new Error(`${datasource.type} writeback not implemented`)
+    case 'databrickssql':
+      throw new Error(`${datasource.type} writeback not implemented`)
   }
 }
