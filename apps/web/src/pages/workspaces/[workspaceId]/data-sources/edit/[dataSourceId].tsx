@@ -23,6 +23,9 @@ import OracleForm, { OracleDataSourceInput } from '@/components/forms/oracle'
 import MySQLForm, { MySQLDataSourceInput } from '@/components/forms/mysql'
 import TrinoForm, { TrinoDataSourceInput } from '@/components/forms/trino'
 import SQLServerForm from '@/components/forms/sqlserver'
+import SnowflakeForm, {
+  SnowflakeDataSourceInput,
+} from '@/components/forms/snowflake'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -41,6 +44,7 @@ export default function EditDataSourcePostgresSQLPage() {
         | OracleDataSourceInput
         | MySQLDataSourceInput
         | TrinoDataSourceInput
+        | SnowflakeDataSourceInput
     ) => {
       if (!data) {
         return
@@ -133,6 +137,12 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             trinoDataSource={data.config.data}
+          />
+        ) : data && data.config.type === 'snowflake' ? (
+          <SnowflakeForm
+            workspaceId={workspaceId}
+            onSubmit={onSubmit}
+            snowflakeDataSource={data.config.data}
           />
         ) : null}
       </div>

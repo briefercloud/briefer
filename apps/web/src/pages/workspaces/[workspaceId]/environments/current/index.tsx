@@ -213,4 +213,6 @@ trino==0.329.0
 duckdb==1.0.0
 openpyxl==3.1.2
 mysqlclient==2.2.4
-pymongo==4.8.0`
+pymongo==4.8.0
+snowflake-connector-python==3.12.2
+snowflake-sqlalchemy==1.6.1`

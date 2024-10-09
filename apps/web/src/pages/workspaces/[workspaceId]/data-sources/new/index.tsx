@@ -103,6 +103,11 @@ export default function DataSourcesPage() {
               name="MonetDB"
               href={`/workspaces/${workspaceId}/data-sources/new/monetdb`}
             />
+            <DataSourceBlock
+              icon="/icons/snowflake.png"
+              name="Snowflake"
+              href={`/workspaces/${workspaceId}/data-sources/new/snowflake`}
+            />
 
             <button
               onClick={onToggleFiles}

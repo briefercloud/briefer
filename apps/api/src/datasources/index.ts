@@ -7,6 +7,7 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
+import * as snowflake from './snowflake.js'
 import { DataSourceConnectionError } from '@briefer/types'
 
 export async function ping(ds: DataSource): Promise<DataSource> {
@@ -35,6 +36,9 @@ export async function ping(ds: DataSource): Promise<DataSource> {
       break
     case 'trino':
       result = await trino.ping(ds.data)
+      break
+    case 'snowflake':
+      result = await snowflake.ping(ds.data)
       break
   }
 
@@ -72,5 +76,7 @@ export async function updateConnStatus(
       return sqlserver.updateConnStatus(ds.data, status)
     case 'trino':
       return trino.updateConnStatus(ds.data, status)
+    case 'snowflake':
+      return snowflake.updateConnStatus(ds.data, status)
   }
 }

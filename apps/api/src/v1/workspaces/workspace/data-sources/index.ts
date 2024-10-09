@@ -10,6 +10,7 @@ import {
   createMySQLDataSource,
   createTrinoDataSource,
   createSQLServerDataSource,
+  createSnowflakeDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -95,6 +96,20 @@ const dataSourcePayload = z.union([
       password: z.string(),
       notes: z.string(),
       readOnly: z.boolean(),
+    }),
+  }),
+  z.object({
+    type: z.literal('snowflake'),
+    data: z.object({
+      name: z.string().min(1),
+      account: z.string().min(1),
+      user: z.string().min(1),
+      password: z.string().min(1),
+      warehouse: z.string().min(1),
+      database: z.string().min(1),
+      region: z.string().min(1),
+      host: z.string().optional(),
+      notes: z.string(),
     }),
   }),
 ])
@@ -255,6 +270,23 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             dsRes = { type: 'trino', data: ds }
             break
           }
+          case 'snowflake': {
+            const payload = {
+              ...data.data,
+              workspaceId,
+              region: data.data.region,
+              connStatus: 'offline' as const,
+              connError: JSON.stringify(neverPingedError),
+              lastConnection: null,
+            }
+
+            const ds = await createSnowflakeDataSource(
+              payload,
+              config().DATASOURCES_ENCRYPTION_KEY
+            )
+            dsRes = { type: 'snowflake', data: ds }
+            break
+          }
         }
 
         return dsRes
@@ -268,6 +300,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           case 'bigquery':
           case 'athena':
           case 'sqlserver':
+          case 'snowflake':
           case 'trino':
             return null
           case 'oracle': {
@@ -339,6 +372,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         getDatasource(workspaceId, dataSourceId, 'mysql'),
         getDatasource(workspaceId, dataSourceId, 'sqlserver'),
         getDatasource(workspaceId, dataSourceId, 'trino'),
+        getDatasource(workspaceId, dataSourceId, 'snowflake'),
       ])
     ).find((e) => e !== null)
 

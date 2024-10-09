@@ -11,6 +11,7 @@ import {
   generatePassword,
   hashPassword,
 } from '../../../../password.js'
+import { isNameValid } from '../../../../utils/cleanNames.js'
 
 const userRouter = Router({ mergeParams: true })
 
@@ -54,6 +55,13 @@ userRouter.put('/', async (req, res) => {
       reason: 'invalid-payload',
     })
     return
+  }
+
+  if (payload.data.name) {
+    if (!isNameValid(payload.data.name)) {
+      res.sendStatus(400)
+      return
+    }
   }
 
   let name = payload.data.name?.trim()

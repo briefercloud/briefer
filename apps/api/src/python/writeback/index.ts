@@ -53,6 +53,7 @@ export async function writeback(
     case 'mysql':
     case 'oracle':
     case 'athena':
+    case 'snowflake':
     case 'trino':
       throw new Error(`${datasource.type} writeback not implemented`)
   }
