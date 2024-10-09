@@ -14,7 +14,7 @@ import {
   decodeLoginToken,
 } from './token.js'
 import { createWorkspace } from '../workspace/index.js'
-import { isNameValid } from '../utils/cleanNames.js'
+import { isWorkspaceNameValid } from '../utils/validation.js'
 
 type BaseAuthConfig = {
   FRONTEND_URL: string
@@ -70,10 +70,7 @@ export default function getRouter<H extends ApiUser>(
       })
       .safeParse(req.body)
 
-    const isWorkspaceNameValid =
-      payload.success && isNameValid(payload.data.workspaceName)
-
-    if (!payload.success || !isWorkspaceNameValid) {
+    if (!payload.success || !isWorkspaceNameValid(payload.data.workspaceName)) {
       res.status(400).json({
         reason: 'invalid-payload',
       })
