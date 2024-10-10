@@ -32,7 +32,7 @@ import { EditorAwarenessProvider } from '@/hooks/useEditorAwareness'
 import ShortcutsModal from './ShortcutsModal'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import ReusableComponents from './ReusableComponents'
-import { SaveConfirmationModal } from './ReusableComponents'
+import PageSettingsPanel from './PageSettingsPanel'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -94,6 +94,7 @@ function PrivateDocumentPageInner(
     | { _tag: 'schemaExplorer'; dataSourceId: string | null }
     | { _tag: 'shortcuts' }
     | { _tag: 'reusableComponents' }
+    | { _tag: 'pageSettings' }
     | null
   >(null)
 
@@ -154,6 +155,12 @@ function PrivateDocumentPageInner(
 
   const onToggleFiles = useCallback(() => {
     setSelectedSidebar((v) => (v?._tag === 'files' ? null : { _tag: 'files' }))
+  }, [setSelectedSidebar])
+
+  const onTogglePageSettings = useCallback(() => {
+    setSelectedSidebar((v) =>
+      v?._tag === 'pageSettings' ? null : { _tag: 'pageSettings' }
+    )
   }, [setSelectedSidebar])
 
   const router = useRouter()
@@ -308,6 +315,7 @@ function PrivateDocumentPageInner(
           onToggleSchemaExplorer={onToggleSchemaExplorerEllipsis}
           onToggleReusableComponents={onToggleReusableComponents}
           onToggleShortcuts={onToggleShortcuts}
+          onTogglePageSettings={onTogglePageSettings}
           isViewer={isViewer}
           isDeleted={isDeleted}
           isFullScreen={isFullScreen}
@@ -399,6 +407,12 @@ function PrivateDocumentPageInner(
               visible={selectedSidebar?._tag === 'reusableComponents'}
               onHide={onHideSidebar}
               yDoc={yDoc}
+            />
+            <PageSettingsPanel
+              workspaceId={props.workspaceId}
+              documentId={props.documentId}
+              visible={selectedSidebar?._tag === 'pageSettings'}
+              onHide={onHideSidebar}
             />
           </>
         )}

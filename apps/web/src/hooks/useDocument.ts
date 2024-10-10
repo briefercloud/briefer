@@ -5,6 +5,7 @@ import { useDocuments } from './useDocuments'
 type API = {
   setIcon: (icon: string) => Promise<void>
   publish: () => Promise<void>
+  toggleRunUnexecutedBlocks: () => Promise<void>
 }
 
 type UseDocument = [
@@ -13,7 +14,7 @@ type UseDocument = [
     loading: boolean
     publishing: boolean
   },
-  API,
+  API
 ]
 
 function useDocument(workspaceId: string, documentId: string): UseDocument {
@@ -22,6 +23,8 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
     () => documents.find((doc) => doc.id === documentId) ?? null,
     [documents, documentId]
   )
+
+  const currRunUnexecutedBlocks = document?.runUnexecutedBlocks ?? false
 
   const setIcon = useCallback(
     (icon: string) => api.setIcon(documentId, icon),
@@ -40,12 +43,28 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
     }
   }, [workspaceId, documentId, api.publish])
 
+  const toggleRunUnexecutedBlocks = useCallback(async () => {
+    const newRunUnexecutedBlocks = !currRunUnexecutedBlocks
+    try {
+      await api.updateDocumentSettings(documentId, {
+        runUnexecutedBlocks: newRunUnexecutedBlocks,
+      })
+    } catch (err) {
+      alert('Failed to update document settings')
+    }
+  }, [
+    workspaceId,
+    documentId,
+    currRunUnexecutedBlocks,
+    api.updateDocumentSettings,
+  ])
+
   return useMemo(
     () => [
       { document, loading, publishing },
-      { setIcon, publish },
+      { setIcon, publish, toggleRunUnexecutedBlocks },
     ],
-    [loading, setIcon, publish]
+    [loading, setIcon, publish, toggleRunUnexecutedBlocks]
   )
 }
 

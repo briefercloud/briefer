@@ -86,7 +86,7 @@ file`
         return
       }
 
-      requestRun(pythonBlock, blocks, layout, environmentStartedAt, false)
+      requestRun(pythonBlock, blocks, layout, environmentStartedAt, true)
     },
     [props.yDoc, environmentStartedAt]
   )
@@ -131,7 +131,7 @@ file`
         return
       }
 
-      requestRun(sqlBlock, blocks, layout, environmentStartedAt, false)
+      requestRun(sqlBlock, blocks, layout, environmentStartedAt, true)
     },
     [props.yDoc, environmentStartedAt]
   )

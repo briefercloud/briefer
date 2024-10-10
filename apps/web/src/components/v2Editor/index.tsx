@@ -476,11 +476,16 @@ const DraggableTabbedBlock = (props: {
         blocks.value,
         layout.value,
         environmentStartedAt,
-        false,
+        !props.document.runUnexecutedBlocks,
         customCallback
       )
     },
-    [blocks.value, layout.value, environmentStartedAt]
+    [
+      blocks.value,
+      layout.value,
+      props.document.runUnexecutedBlocks,
+      environmentStartedAt,
+    ]
   )
 
   const onTry = useCallback(
@@ -537,7 +542,7 @@ file`
         blocks.value,
         layout.value,
         environmentStartedAt,
-        false
+        true
       )
     },
     [blocks, layout, environmentStartedAt]
@@ -581,7 +586,7 @@ file`
         blocks.value,
         layout.value,
         environmentStartedAt,
-        false
+        true
       )
     },
     []

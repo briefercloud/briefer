@@ -202,6 +202,10 @@ type API = {
     parentId: string | null,
     orderIndex: number
   ) => Promise<void>
+  updateDocumentSettings: (
+    id: string,
+    settings: { runUnexecutedBlocks: boolean }
+  ) => Promise<void>
   publish: (id: string) => Promise<void>
 }
 
@@ -731,6 +735,51 @@ export function useDocuments(workspaceId: string): UseDocuments {
     [documents, workspaceId, state, setState]
   )
 
+  const updateDocumentSettings = useCallback(
+    async (id: string, settings: { runUnexecutedBlocks: boolean }) => {
+      const document = documents.find((doc) => doc.id === id)
+      if (!document) {
+        return
+      }
+
+      setState((s) => {
+        const { loading, documents } = s.get(workspaceId) ?? {
+          loading: true,
+          documents: List(),
+        }
+
+        return s.set(workspaceId, {
+          loading,
+          documents: documents.map((doc) =>
+            doc.id === id
+              ? {
+                  ...doc,
+                  ...settings,
+                }
+              : doc
+          ),
+        })
+      })
+
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/documents/${id}/settings`,
+        {
+          credentials: 'include',
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings),
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error(`Error changing settings for Document(${id})`)
+      }
+    },
+    [documents, workspaceId, state, setState]
+  )
+
   return useMemo(
     () => [
       { loading, documents },
@@ -742,6 +791,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
         setIcon,
         updateParent,
         publish,
+        updateDocumentSettings,
       },
     ],
     [
@@ -754,6 +804,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
       setIcon,
       updateParent,
       publish,
+      updateDocumentSettings,
     ]
   )
 }
