@@ -5,13 +5,10 @@ import {
   Cog8ToothIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
-import {
-  PostgreSQLDataSourceInput,
-} from '@/components/forms/postgresql'
 import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
-import MonetDBForm from '@/components/forms/monetdb'
+import MonetDBForm, { MonetDbDataSourceInput } from '@/components/forms/monetdb'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -36,9 +33,9 @@ export default function NewDataSourceMonetDBPage() {
   const newDataSource = useNewDataSource(workspaceId)
 
   const onSubmit = useCallback(
-    async (data: PostgreSQLDataSourceInput) => {
+    async (data: MonetDbDataSourceInput) => {
       try {
-        const ds = await newDataSource(data, 'psql')
+        const ds = await newDataSource(data, 'monetdb')
         if (ds.data.connStatus === 'offline') {
           router.push(
             `/workspaces/${workspaceId}/data-sources?offline=${ds.data.id}`

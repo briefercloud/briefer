@@ -98,6 +98,7 @@ export const useNewDataSource = (workspaceId: string) => {
         | 'sqlserver'
         | 'monetdb'
         | 'snowflake'
+        | 'monetdb'
     ): Promise<DataSource> => {
       if (!workspaceId) {
         throw new Error('Missing workspaceId')

@@ -29,7 +29,9 @@ import {
   getSnowflakeDataSource,
   updateSnowflakeDataSource,
   deleteSnowflakeDataSource,
-  getMonetDbDataSource
+  getMonetDbDataSource,
+  updateMonedDbDataSource,
+  deleteMonetDbDataSource
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -43,6 +45,7 @@ import * as mysql from '../../../../datasources/mysql.js'
 import * as sqlserver from '../../../../datasources/sqlserver.js'
 import * as trino from '../../../../datasources/trino.js'
 import * as snowflake from '../../../../datasources/snowflake.js'
+import * as monetDb from "../../../../datasources/monetdb.js"
 import { ping } from '../../../../datasources/index.js'
 import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import {
@@ -152,12 +155,13 @@ const dataSourceRouter = (socketServer: IOServer) => {
     z.object({
       type: z.literal('monetdb'),
       data: z.object({
+        id: z.string().min(1),
         name: z.string().min(1),
         host: z.string().min(1),
         port: z.string().min(1),
         database: z.string().min(1),
         username: z.string().min(1),
-        password: z.string().min(1),
+        password: z.string(),
         notes: z.string(),
         readOnly: z.boolean(),
         cert: z.string().optional(),
@@ -341,6 +345,20 @@ const dataSourceRouter = (socketServer: IOServer) => {
         await snowflake.ping(snowflakeDs)
         break
       }
+      case "monetdb": {
+        const monetDbDs = await updateMonedDbDataSource(
+          {
+            ...data.data,
+            id: dataSourceId,
+            password:
+              data.data.password === '' ? undefined : data.data.password,
+          },
+          config().DATASOURCES_ENCRYPTION_KEY
+        )
+
+        await monetDb.ping(monetDbDs)
+        break
+      }
     }
 
     const ds = await getDatasource(workspaceId, dataSourceId, data.type)
@@ -489,6 +507,19 @@ const dataSourceRouter = (socketServer: IOServer) => {
         }
       }
 
+      const targetMonetDb = await recoverFromNotFound(
+        deleteMonetDbDataSource(workspaceId, targetId)
+      )
+      if(targetMonetDb) {
+        return {
+          status: 200,
+          payload: {
+            type: 'monetdb',
+            data: targetMonetDb,
+          },
+        }
+      }
+
       return { status: 404 }
     }
 
@@ -513,6 +544,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       z.literal('trino'),
       z.literal('sqlserver'),
       z.literal('snowflake'),
+      z.literal("monetdb"),
     ]),
   })
   router.post('/ping', async (req, res) => {
@@ -535,6 +567,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         res.status(404).end()
         return
       }
+
 
       const dsConfig = await ping(dataSource)
 

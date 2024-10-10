@@ -333,7 +333,7 @@ export async function getDatabaseURL(
       const password = encodeURIComponent(
         await getDatasourcePassword(ds, encryptionKey)
       )
-      return `monetdb://${ds.data.host}:${ds.data.port}/${ds.data.database}?user=${ds.data.username}&password=${password}`
+      return `monetdb://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
     }
     case 'snowflake': {
       const password = encodeURIComponent(

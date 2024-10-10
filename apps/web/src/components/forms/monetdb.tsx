@@ -1,4 +1,4 @@
-import type { PostgreSQLDataSource } from '@briefer/database'
+import type { MonetDBDataSource } from '@briefer/database'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
@@ -9,43 +9,43 @@ import { readFile } from '@/utils/file'
 import { GATEWAY_IP } from '@/utils/info'
 import Spin from '../Spin'
 
-export type PostgreSQLDataSourceInput = PostgreSQLDataSource & {
+export type MonetDbDataSourceInput = MonetDBDataSource & {
   password: string
   cert?: string
 }
 
-type PostgreSQLDataSourceFormValues = Omit<
-  PostgreSQLDataSourceInput,
+type MonetDbDataSourceFormValues = Omit<
+MonetDbDataSourceInput,
   'cert'
 > & {
   password: string
   cert: File
 }
 
-type PostgreSQLFormProps = {
-  onSubmit: (values: PostgreSQLDataSourceInput) => Promise<void>
-  postgreSQLDataSource?: PostgreSQLDataSource | null
+type MonetDbFormProps = {
+  onSubmit: (values: MonetDbDataSourceInput) => Promise<void>
+  monetDbDataSource?: MonetDBDataSource | null
   workspaceId: string
 }
 
 export default function MonetDBForm({
-  postgreSQLDataSource,
+  monetDbDataSource,
   onSubmit,
   workspaceId,
-}: PostgreSQLFormProps) {
-  const isEditing = Boolean(postgreSQLDataSource)
+}: MonetDbFormProps) {
+  const isEditing = Boolean(monetDbDataSource)
 
   const { register, handleSubmit, formState, reset, control } =
-    useForm<PostgreSQLDataSourceFormValues>({
+    useForm<MonetDbDataSourceFormValues>({
       mode: 'onChange',
       defaultValues: { readOnly: true },
     })
 
   useEffect(() => {
-    if (postgreSQLDataSource) {
-      reset(postgreSQLDataSource)
+    if (monetDbDataSource) {
+      reset(monetDbDataSource)
     }
-  }, [postgreSQLDataSource, reset])
+  }, [monetDbDataSource, reset])
 
   const onSubmitHandler = handleSubmit(async (data) => {
     const certFile = data.cert
@@ -65,10 +65,10 @@ export default function MonetDBForm({
       <div className="space-y-12">
         <div className="border-b border-gray-900/10 pb-8">
           <h2 className="text-lg font-semibold leading-7 text-gray-900">
-            {postgreSQLDataSource ? 'Edit' : 'New'} PostgreSQL data source
+            {monetDbDataSource ? 'Edit' : 'New'} MonetDb data source
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-500">
-            {postgreSQLDataSource ? 'Edit' : 'Add'} a PostgreSQL database for
+            {monetDbDataSource ? 'Edit' : 'Add'} a MonetDb database for
             Briefer to pull data from. Our fixed IP address is{' '}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
               {GATEWAY_IP()}
@@ -94,7 +94,7 @@ export default function MonetDBForm({
                   })}
                   type="text"
                   name="name"
-                  placeholder="My PostgreSQL database"
+                  placeholder="My MonetDb database"
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />
@@ -143,7 +143,7 @@ export default function MonetDBForm({
                   })}
                   type="number"
                   name="port"
-                  placeholder="5432"
+                  placeholder="50000"
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />
@@ -193,7 +193,7 @@ export default function MonetDBForm({
                   })}
                   type="text"
                   name="username"
-                  placeholder="postgres"
+                  placeholder="monetdb"
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />

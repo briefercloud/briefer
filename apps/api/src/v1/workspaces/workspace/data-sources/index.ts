@@ -11,6 +11,7 @@ import {
   createTrinoDataSource,
   createSQLServerDataSource,
   createSnowflakeDataSource,
+  createMonetDbDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -310,11 +311,11 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
             }
-            const ds = await createPSQLDataSource(
+            const ds = await createMonetDbDataSource(
               payload,
               config().DATASOURCES_ENCRYPTION_KEY
             )
-            dsRes = { type: 'psql', data: ds }
+            dsRes = { type: 'monetdb', data: ds }
             break
           }
         }

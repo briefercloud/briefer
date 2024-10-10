@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import {
-  PostgreSQLDataSource,
-  RedshiftDataSource,
+  MonetDBDataSource,
   getDatabaseURL,
 } from '@briefer/database'
 import {
@@ -21,7 +20,7 @@ export async function makeMonetDBQuery(
   sessionId: string,
   queryId: string,
   dataframeName: string,
-  datasource: PostgreSQLDataSource | RedshiftDataSource,
+  datasource: MonetDBDataSource,
   encryptionKey: string,
   sql: string,
   onProgress: (result: SuccessRunQueryResult) => void
@@ -48,14 +47,14 @@ export async function makeMonetDBQuery(
 }
 
 export function pingMonetDb(
-  ds: PostgreSQLDataSource | RedshiftDataSource,
+  ds: MonetDBDataSource,
   encryptionKey: string
 ): Promise<null | Error> {
   return pingSQLAlchemy({ type: "monetdb", data: ds }, encryptionKey, null)
 }
 
 export function getMonetDBSchema(
-  ds: PostgreSQLDataSource | RedshiftDataSource,
+  ds: MonetDBDataSource,
   encryptionKey: string,
   onTable: OnTable
 ): Promise<DataSourceStructure> {
