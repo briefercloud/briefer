@@ -318,5 +318,9 @@ export const isAuthorizedForDataSource = async (
       const result = await prisma().snowflakeDataSource.findFirst(query)
       return result !== null
     }
+    case 'monetdb': {
+      const result = await prisma().monetDBDataSource.findFirst(query)
+      return result !== null
+    }
   }
 }

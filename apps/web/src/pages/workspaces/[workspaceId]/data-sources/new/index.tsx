@@ -34,7 +34,7 @@ const DataSourceBlock = ({ name, icon, href }: DataSourceBlockProps) => {
       href={href}
       className="py-5 px-6 w-36 h-36 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
     >
-      <img src={icon} alt="" className="h-16 w-16" />
+      <img src={icon} alt="" className="h-16 w-16 object-contain" />
       <span className="text-md">{name}</span>
     </Link>
   )
@@ -97,6 +97,11 @@ export default function DataSourcesPage() {
               icon="/icons/trino.png"
               name="Trino"
               href={`/workspaces/${workspaceId}/data-sources/new/trino`}
+            />
+            <DataSourceBlock
+              icon="/icons/monetdb.png"
+              name="MonetDB"
+              href={`/workspaces/${workspaceId}/data-sources/new/monetdb`}
             />
             <DataSourceBlock
               icon="/icons/snowflake.png"

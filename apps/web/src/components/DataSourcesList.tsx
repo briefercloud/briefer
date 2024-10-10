@@ -27,6 +27,8 @@ export const dataSourcePrettyName = (t: DataSourceType): string => {
       return 'Trino'
     case 'snowflake':
       return 'Snowflake'
+    case 'monetdb':
+      return 'MonetDB'
   }
 }
 
@@ -50,6 +52,8 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/trino.png'
     case 'snowflake':
       return '/icons/snowflake.png'
+    case 'monetdb':
+      return '/icons/monetdb.png'
   }
 }
 
@@ -74,6 +78,8 @@ const databaseUrl = (ds: DataSource): string => {
         return 'trino://demodb'
       case 'snowflake':
         return 'snowflake://demodb'
+      case 'monetdb':
+        return 'monetdb://demodb'
     }
   } else {
     switch (ds.type) {
@@ -98,6 +104,8 @@ const databaseUrl = (ds: DataSource): string => {
         )
       case 'snowflake':
         return `snowflake://${ds.data.account}/${ds.data.database}?warehouse=${ds.data.warehouse}`
+      case "monetdb":
+        return `monetdb://${ds.data.host}:${ds.data.port}/${ds.data.database}`
     }
   }
 }
@@ -128,15 +136,15 @@ function LastConnection(props: LastConnectionProps) {
   const lastConnText = props.dataSource.data.isDemo
     ? 'just now'
     : props.dataSource.data.lastConnection === null
-    ? 'never'
-    : differenceInSeconds(
-        new Date(),
-        new Date(props.dataSource.data.lastConnection)
-      ) < 30
-    ? 'just now'
-    : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
-        addSuffix: true,
-      })
+      ? 'never'
+      : differenceInSeconds(
+            new Date(),
+            new Date(props.dataSource.data.lastConnection)
+          ) < 30
+        ? 'just now'
+        : formatDistanceToNow(new Date(props.dataSource.data.lastConnection), {
+            addSuffix: true,
+          })
 
   const [statusBallColor, statusBallRippleColor] = useMemo(() => {
     if (props.dataSource.data.isDemo) {
