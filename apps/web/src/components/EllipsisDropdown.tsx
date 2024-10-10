@@ -2,6 +2,7 @@ import {
   BookOpenIcon,
   ClockIcon,
   CodeBracketSquareIcon,
+  Cog6ToothIcon,
   MapIcon,
 } from '@heroicons/react/24/outline'
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/20/solid'
@@ -21,6 +22,7 @@ interface Props {
   onToggleFiles?: () => void
   onToggleSchemaExplorer?: () => void
   onToggleShortcuts?: () => void
+  onTogglePageSettings?: () => void
   onToggleReusableComponents?: () => void
   isViewer: boolean
   isDeleted: boolean
@@ -121,6 +123,14 @@ function EllipsisDropdown(props: Props) {
               icon={<MapIcon className="h-4 w-4" />}
               text="Keyboard shortcuts"
               onClick={props.onToggleShortcuts}
+            />
+          )}
+
+          {props.onTogglePageSettings && (
+            <MenuButton
+              icon={<Cog6ToothIcon className="h-4 w-4" />}
+              text="Page settings"
+              onClick={props.onTogglePageSettings}
             />
           )}
         </Menu.Items>
