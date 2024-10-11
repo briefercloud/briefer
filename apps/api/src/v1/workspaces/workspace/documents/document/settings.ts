@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { getParam } from '../../../../../utils/express.js'
 import { z } from 'zod'
 import { IOServer } from '../../../../../websocket/index.js'
-import prisma from '@briefer/database'
+import prisma, { recoverFromNotFound } from '@briefer/database'
 import { broadcastDocument } from '../../../../../websocket/workspace/documents.js'
 
 const DocumentSettings = z.object({
@@ -24,11 +24,12 @@ export default function settingsRouter(socketServer: IOServer) {
     const runUnexecutedBlocks = body.data.runUnexecutedBlocks
 
     try {
-      const doc = await prisma().document.update({
-        where: { id: documentId },
-        data: { runUnexecutedBlocks },
-      })
-
+      const doc = await recoverFromNotFound(
+        prisma().document.update({
+          where: { id: documentId },
+          data: { runUnexecutedBlocks },
+        })
+      )
       if (!doc) {
         res.status(404).end()
         return
