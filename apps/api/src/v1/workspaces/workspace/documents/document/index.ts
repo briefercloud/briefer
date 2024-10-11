@@ -26,6 +26,7 @@ import {
 import inputsRouter from './inputs.js'
 import publishRouter from './publish.js'
 import { canUpdateWorkspace } from '../../../../../auth/token.js'
+import settingsRouter from './settings.js'
 
 export default function documentRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
@@ -256,6 +257,7 @@ export default function documentRouter(socketServer: IOServer) {
   router.use('/icon', canUpdateWorkspace, iconRouter)
   router.use('/inputs', canUpdateWorkspace, inputsRouter)
   router.use('/publish', canUpdateWorkspace, publishRouter(socketServer))
+  router.use('/settings', canUpdateWorkspace, settingsRouter(socketServer))
 
   return router
 }
