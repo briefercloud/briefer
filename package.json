@@ -1,6 +1,6 @@
 {
   "name": "briefer",
-  "version": "0.0.32",
+  "version": "0.0.33",
   "main": "index.js",
   "repository": "git@github.com:ergomake/nora.git",
   "private": true,
