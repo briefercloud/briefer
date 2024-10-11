@@ -10,9 +10,9 @@ const DocumentSettings = z.object({
 })
 
 export default function settingsRouter(socketServer: IOServer) {
-  const publishRouter = Router({ mergeParams: true })
+  const settingsRouter = Router({ mergeParams: true })
 
-  publishRouter.put('/', async (req, res) => {
+  settingsRouter.put('/', async (req, res) => {
     const workspaceId = getParam(req, 'workspaceId')
     const documentId = getParam(req, 'documentId')
     const body = DocumentSettings.safeParse(req.body)
@@ -24,17 +24,15 @@ export default function settingsRouter(socketServer: IOServer) {
     const runUnexecutedBlocks = body.data.runUnexecutedBlocks
 
     try {
-      await prisma().$transaction(async (tx) => {
-        const doc = await tx.document.update({
-          where: { id: documentId },
-          data: { runUnexecutedBlocks },
-        })
-
-        if (!doc) {
-          res.status(404).end()
-          return
-        }
+      const doc = await prisma().document.update({
+        where: { id: documentId },
+        data: { runUnexecutedBlocks },
       })
+
+      if (!doc) {
+        res.status(404).end()
+        return
+      }
 
       await broadcastDocument(socketServer, workspaceId, documentId)
 
@@ -46,11 +44,11 @@ export default function settingsRouter(socketServer: IOServer) {
           documentId,
           err,
         },
-        'Failed to publish document'
+        'Failed to update document settings'
       )
       res.status(500).end()
     }
   })
 
-  return publishRouter
+  return settingsRouter
 }
