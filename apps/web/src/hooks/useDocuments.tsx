@@ -73,6 +73,7 @@ function upsertDocumentInMemory(
       clock: 0,
       appClock: 0,
       userAppClock: {},
+      runUnexecutedBlocks: true,
     })
   }
 
