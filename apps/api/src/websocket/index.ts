@@ -23,7 +23,7 @@ import {
   refreshDataSource,
   refreshDataSources,
 } from './workspace/data-sources.js'
-import { joinWorkspaceDocument, leaveWorkspaceDocument, onComment } from './workspace/comments.js'
+import { fetchDocumentComments } from './workspace/comments.js'
 
 interface EmitEvents {
   'environment-status-update': (msg: {
@@ -68,7 +68,16 @@ interface EmitEvents {
     componentId: string
   }) => void
 
-  "workspace-comment": (comment: Comment[]) => void
+  'document-comments': (msg: {
+    documentId: string
+    comments: Comment[]
+  }) => void
+  'document-comment': (msg: { documentId: string; comment: Comment }) => void
+  'document-comment-deleted': (msg: {
+    documentId: string
+    commentId: string
+  }) => void
+
   'python-completion': (msg: PythonCompletionMessage) => void
 }
 
@@ -131,7 +140,8 @@ export function createSocketServer(server: http.Server): Server {
     }
 
     const trackWork =
-      (fn: (data: unknown, callback?: Function) => Promise<void>) => async (data: unknown, callback?: Function) => {
+      (fn: (data: unknown, callback?: Function) => Promise<void>) =>
+      async (data: unknown, callback?: Function) => {
         const id = uuidv4()
         try {
           const promise = fn(data, callback)
@@ -144,9 +154,6 @@ export function createSocketServer(server: http.Server): Server {
 
     socket.on('join-workspace', trackWork(joinWorkspace(io, socket, session)))
     socket.on('leave-workspace', trackWork(leaveWorkspace(socket, session)))
-
-    socket.on("join-workspace-document", trackWork(joinWorkspaceDocument(socket)))
-    socket.on("leave-workspace-document", trackWork(leaveWorkspaceDocument(socket)))
 
     socket.on(
       'get-environment-status',
@@ -167,7 +174,10 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(refreshDataSource(io, socket, session))
     )
 
-    socket.on("workspace-comment", trackWork(onComment(io, session)))
+    socket.on(
+      'fetch-document-comments',
+      trackWork(fetchDocumentComments(socket, session))
+    )
 
     socket.on('disconnect', (reason) => {
       logger().info(
@@ -208,4 +218,3 @@ export function createSocketServer(server: http.Server): Server {
     },
   }
 }
-

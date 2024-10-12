@@ -3,121 +3,73 @@ import { IOServer, Socket } from '../index.js'
 import { prisma } from '@briefer/database'
 import { Session } from '../../types.js'
 
-import { CommentAck, Comment } from '@briefer/types'
+import { Comment, uuidSchema } from '@briefer/types'
+import { isAuthorizedForDocument } from '../../auth/token.js'
+import { logger } from '../../logger.js'
 
-const DEFAULT_WORKSPACE_COMMENT_ERROR_MSG = 'Something went wrong'
+export function fetchDocumentComments(socket: Socket, session: Session) {
+  return async (data: unknown) => {
+    const payload = z.object({ documentId: uuidSchema }).safeParse(data)
+    if (!payload.success) {
+      return
+    }
 
-const Payload = z.object({
-  documentId: z.string(),
-  content: z.string().min(1),
-})
-
-export const onComment =
-  (io: IOServer, session: Session) =>
-  async (data: unknown, callback?: Function) => {
     try {
-      const parsedPyload = Payload.safeParse(data)
-      if (!parsedPyload.success && callback) {
-        callback(getCallbackErrorResponse('Invalid payload'))
+      const doc = await isAuthorizedForDocument(
+        payload.data.documentId,
+        session.user.id
+      )
+      if (!doc) {
         return
       }
-      const { documentId, content } = parsedPyload.data as z.infer<
-        typeof Payload
-      >
-      const comment = await prisma().comment.create({
-        data: {
-          content: content,
-          documentId: documentId,
-          userId: session.user.id,
-        },
+
+      const comments = await prisma().comment.findMany({
+        where: { documentId: payload.data.documentId },
+        include: { user: { select: { name: true, picture: true } } },
+        orderBy: { createdAt: 'asc' },
       })
 
-      const response: Comment = {
-        ...comment,
-        user: { name: session.user.name, picture: session.user.picture },
-      }
-
-      callback?.(getCallbackSuccessResponse())
-      broadcastComment(io, documentId, response)
-    } catch (e) {
-      callback?.(getCallbackErrorResponse())
+      socket.emit('document-comments', {
+        documentId: payload.data.documentId,
+        comments: comments.map((c) => ({
+          ...c,
+          createdAt: c.createdAt.toISOString(),
+          updatedAt: c.updatedAt.toISOString(),
+        })),
+      })
+    } catch (err) {
+      logger().error(
+        {
+          err,
+          userId: session.user.id,
+          documentId: payload.data.documentId,
+        },
+        'Error fetching document comments'
+      )
     }
   }
+}
 
-export const joinWorkspaceDocument =
-  (socket: Socket) => async (data: unknown, callback?: Function) => {
-    try {
-      const parsedData = z.object({ docId: z.string() }).safeParse(data)
-      if (!parsedData.success) {
-        callback && callback(getCallbackErrorResponse('Invalid payload'))
-        return
-      }
-      const roomId = getDocumentRoomId(parsedData.data.docId)
-      if (!socket.rooms.has(roomId)) {
-        await socket.join(roomId)
-      }
-      await emitWorkspaceDocumentComments(socket, parsedData.data.docId)
-      callback && callback(getCallbackSuccessResponse())
-    } catch (e) {
-      callback && callback(getCallbackErrorResponse('Internal server error'))
-    }
-  }
-
-export const leaveWorkspaceDocument =
-  (socket: Socket) => async (data: unknown, callback?: Function) => {
-    try {
-      const parsedData = z.object({ docId: z.string() }).safeParse(data)
-      if (!parsedData.success) {
-        callback && callback(getCallbackErrorResponse('Invalid payload'))
-        return
-      }
-      const roomId = getDocumentRoomId(parsedData.data.docId)
-      if (socket.rooms.has(roomId)) {
-        await socket.leave(roomId)
-      }
-      callback && callback(getCallbackSuccessResponse())
-    } catch (e) {
-      callback && callback(getCallbackErrorResponse('Internal server error'))
-    }
-  }
-
-const broadcastComment = (
+export function broadcastComment(
   io: IOServer,
+  workspaceId: string,
   documentId: string,
   comment: Comment
-) => {
-  io.to(getDocumentRoomId(documentId)).emit('workspace-comment', [comment])
+) {
+  io.to(workspaceId).emit('document-comment', {
+    documentId,
+    comment,
+  })
 }
 
-const emitWorkspaceDocumentComments = async (
-  socket: Socket,
-  docId: string
-) => {
-  try {
-    const comments: Comment[] = await prisma().comment.findMany({
-      where: { documentId: docId },
-      include: { user: { select: { name: true, picture: true } } },
-      orderBy: { createdAt: 'asc' },
-    })
-    socket.emit('workspace-comment', comments)
-  } catch (e) {
-    throw e
-  }
-}
-
-const getCallbackErrorResponse = (errorMsg?: string): CommentAck => {
-  return {
-    status: 'error',
-    errorMsg: errorMsg ?? DEFAULT_WORKSPACE_COMMENT_ERROR_MSG,
-  }
-}
-
-const getCallbackSuccessResponse = (): CommentAck => {
-  return {
-    status: 'success',
-  }
-}
-
-const getDocumentRoomId = (doc_id: string) => {
-  return `document-room-${doc_id}`
+export function broadcastCommentDeleted(
+  io: IOServer,
+  workspaceId: string,
+  documentId: string,
+  commentId: string
+) {
+  io.to(workspaceId).emit('document-comment-deleted', {
+    documentId,
+    commentId,
+  })
 }

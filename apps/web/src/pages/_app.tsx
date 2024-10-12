@@ -19,6 +19,7 @@ import useProperties from '@/hooks/useProperties'
 import Telemetry from '@/components/Telemetry'
 import { DataSourcesProvider } from '@/hooks/useDatasources'
 import { ReusableComponentsProvider } from '@/hooks/useReusableComponents'
+import { CommentsProvider } from '@/hooks/useComments'
 const MonacoProvider = dynamic(() => import('@/components/MonacoProvider'), {
   ssr: false,
 })
@@ -45,17 +46,19 @@ function App({ Component, pageProps: { session, ...pageProps } }: Props) {
         <WebsocketProvider>
           <EnvironmentStatusProvider>
             <DocumentsProvider>
-              <DataSourcesProvider>
-                <ReusableComponentsProvider>
-                  <SideBarProvider>
-                    <Layout>
-                      <MonacoProvider>
-                        <Component {...pageProps} />
-                      </MonacoProvider>
-                    </Layout>
-                  </SideBarProvider>
-                </ReusableComponentsProvider>
-              </DataSourcesProvider>
+              <CommentsProvider>
+                <DataSourcesProvider>
+                  <ReusableComponentsProvider>
+                    <SideBarProvider>
+                      <Layout>
+                        <MonacoProvider>
+                          <Component {...pageProps} />
+                        </MonacoProvider>
+                      </Layout>
+                    </SideBarProvider>
+                  </ReusableComponentsProvider>
+                </DataSourcesProvider>
+              </CommentsProvider>
             </DocumentsProvider>
           </EnvironmentStatusProvider>
         </WebsocketProvider>

@@ -1098,11 +1098,6 @@ export const WorkspaceCreateValues = z.object({
 
 export type WorkspaceCreateInput = z.infer<typeof WorkspaceCreateValues>
 
-export type CommentAck = {
-  status: "success" | "error"
-  errorMsg?: string
-}
-
 export type Comment = {
   user: {
     name: string
@@ -1112,6 +1107,6 @@ export type Comment = {
   content: string
   documentId: string
   userId: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
