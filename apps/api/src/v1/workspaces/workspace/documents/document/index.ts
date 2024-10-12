@@ -251,7 +251,7 @@ export default function documentRouter(socketServer: IOServer) {
 
   router.use('/queries', queriesRouter)
   router.use('/schedules', canUpdateWorkspace, schedulesRouter)
-  router.use('/comments', commentsRouter)
+  router.use('/comments', commentsRouter(socketServer))
   router.use('/favorite', favoriteRouter)
   router.use('/files', canUpdateWorkspace, filesRouter)
   router.use('/icon', canUpdateWorkspace, iconRouter)

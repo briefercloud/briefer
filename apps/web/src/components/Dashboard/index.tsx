@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SquaresPlusIcon } from '@heroicons/react/24/solid'
 import { BookUpIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
@@ -28,6 +28,7 @@ import Files from '../Files'
 import { PublishBlinkingSignal } from '../BlinkingSignal'
 import { Tooltip } from '../Tooltips'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
+import useWebsocket from '@/hooks/useWebsocket'
 
 interface Props {
   document: ApiDocument
@@ -62,6 +63,7 @@ export default function Dashboard(props: Props) {
   )
 
   const router = useRouter()
+  const socket = useWebsocket()
 
   const onPublish = useCallback(async () => {
     if (props.publishing) {

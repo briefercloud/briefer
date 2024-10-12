@@ -1097,3 +1097,16 @@ export const WorkspaceCreateValues = z.object({
 })
 
 export type WorkspaceCreateInput = z.infer<typeof WorkspaceCreateValues>
+
+export type Comment = {
+  user: {
+    name: string
+    picture: string | null
+  }
+  id: string
+  content: string
+  documentId: string
+  userId: string
+  createdAt: string
+  updatedAt: string
+}

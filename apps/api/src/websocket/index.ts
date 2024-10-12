@@ -9,7 +9,7 @@ import {
   APIReusableComponent,
   EnvironmentStatus,
 } from '@briefer/database'
-import { PythonCompletionMessage } from '@briefer/types'
+import { PythonCompletionMessage, Comment } from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
 import { joinWorkspace, leaveWorkspace } from './workspace/index.js'
@@ -23,6 +23,7 @@ import {
   refreshDataSource,
   refreshDataSources,
 } from './workspace/data-sources.js'
+import { fetchDocumentComments } from './workspace/comments.js'
 
 interface EmitEvents {
   'environment-status-update': (msg: {
@@ -65,6 +66,16 @@ interface EmitEvents {
   'workspace-component-removed': (msg: {
     workspaceId: string
     componentId: string
+  }) => void
+
+  'document-comments': (msg: {
+    documentId: string
+    comments: Comment[]
+  }) => void
+  'document-comment': (msg: { documentId: string; comment: Comment }) => void
+  'document-comment-deleted': (msg: {
+    documentId: string
+    commentId: string
   }) => void
 
   'python-completion': (msg: PythonCompletionMessage) => void
@@ -129,10 +140,11 @@ export function createSocketServer(server: http.Server): Server {
     }
 
     const trackWork =
-      (fn: (data: unknown) => Promise<void>) => async (data: unknown) => {
+      (fn: (data: unknown, callback?: Function) => Promise<void>) =>
+      async (data: unknown, callback?: Function) => {
         const id = uuidv4()
         try {
-          const promise = fn(data)
+          const promise = fn(data, callback)
           workInProgress.set(id, promise)
           await promise
         } finally {
@@ -142,6 +154,7 @@ export function createSocketServer(server: http.Server): Server {
 
     socket.on('join-workspace', trackWork(joinWorkspace(io, socket, session)))
     socket.on('leave-workspace', trackWork(leaveWorkspace(socket, session)))
+
     socket.on(
       'get-environment-status',
       trackWork(handleGetEnvironmentStatus(socket, session))
@@ -151,6 +164,7 @@ export function createSocketServer(server: http.Server): Server {
       trackWork(handleRestartEnvironment(socket, session))
     )
     socket.on('complete-python', trackWork(completePython(io, socket, session)))
+
     socket.on(
       'workspace-datasources-refresh-all',
       trackWork(refreshDataSources(io, socket, session))
@@ -158,6 +172,11 @@ export function createSocketServer(server: http.Server): Server {
     socket.on(
       'workspace-datasources-refresh-one',
       trackWork(refreshDataSource(io, socket, session))
+    )
+
+    socket.on(
+      'fetch-document-comments',
+      trackWork(fetchDocumentComments(socket, session))
     )
 
     socket.on('disconnect', (reason) => {

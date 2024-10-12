@@ -1,5 +1,4 @@
 import { Transition } from '@headlessui/react'
-import { useComments } from '@/hooks/useComments'
 import {
   ChangeEventHandler,
   useCallback,
@@ -11,6 +10,7 @@ import {
 import { UserIcon, ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
 import timeAgo from '@/utils/timeAgo'
 import { useSession } from '@/hooks/useAuth'
+import { useComments } from '@/hooks/useComments'
 
 interface Props {
   workspaceId: string
@@ -20,10 +20,7 @@ interface Props {
 }
 export default function Comments(props: Props) {
   const session = useSession()
-  const [comments, { createComment }] = useComments(
-    props.workspaceId,
-    props.documentId
-  )
+  const [comments, { createComment }] = useComments(props.documentId)
   const [content, setContent] = useState('')
 
   const ref = useRef<HTMLDivElement>(null)
@@ -36,7 +33,7 @@ export default function Comments(props: Props) {
   const onComment = useCallback(
     async (e?: FormEvent<HTMLFormElement>) => {
       e?.preventDefault()
-      await createComment(content, props.documentId)
+      createComment(props.workspaceId, props.documentId, content)
       setContent('')
     },
     [createComment, content, props.documentId]
@@ -90,6 +87,7 @@ export default function Comments(props: Props) {
           className="flex-1 space-y-6 pb-6 pt-4 px-2 px-4 pt-6 xl:px-6"
         >
           {comments.map((comment) => {
+            console.log(comment)
             return (
               <li key={comment.id} className="relative flex gap-x-4">
                 <>
@@ -113,7 +111,7 @@ export default function Comments(props: Props) {
                         </span>{' '}
                       </div>
                       <time
-                        dateTime={comment.createdAt}
+                        dateTime={new Date(comment.createdAt).toISOString()}
                         className="flex-none py-0.5 text-xs leading-5 text-gray-300"
                       >
                         {timeAgo(new Date(comment.createdAt))}
