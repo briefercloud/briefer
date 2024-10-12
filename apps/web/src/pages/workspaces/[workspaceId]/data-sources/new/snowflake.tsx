@@ -5,7 +5,9 @@ import {
   Cog8ToothIcon,
   PlusCircleIcon,
 } from '@heroicons/react/24/outline'
-import SnowflakeForm, { SnowflakeDataSourceInput } from '@/components/forms/snowflake'
+import SnowflakeForm, {
+  SnowflakeDataSourceInput,
+} from '@/components/forms/snowflake'
 import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
@@ -36,9 +38,9 @@ export default function NewDataSourceSnowflakePage() {
     async (data: SnowflakeDataSourceInput) => {
       try {
         const ds = await newDataSource(data, 'snowflake')
-        if (ds.data.connStatus === 'offline') {
+        if (ds.config.data.connStatus === 'offline') {
           router.push(
-            `/workspaces/${workspaceId}/data-sources?offline=${ds.data.id}`
+            `/workspaces/${workspaceId}/data-sources?offline=${ds.config.data.id}`
           )
         } else {
           router.push(`/workspaces/${workspaceId}/data-sources`)

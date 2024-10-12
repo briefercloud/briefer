@@ -1,9 +1,11 @@
-import prisma, { BigQueryDataSource, DataSource } from '@briefer/database'
+import prisma, { BigQueryDataSource } from '@briefer/database'
 import { config } from '../config/index.js'
 import { DataSourceStatus } from './index.js'
 import { pingBigQuery } from '../python/query/bigquery.js'
 
-export async function ping(ds: BigQueryDataSource): Promise<DataSource> {
+export async function ping(
+  ds: BigQueryDataSource
+): Promise<BigQueryDataSource> {
   const lastConnection = new Date()
   const err = await pingBigQuery(ds, config().DATASOURCES_ENCRYPTION_KEY)
 
@@ -20,7 +22,7 @@ export async function ping(ds: BigQueryDataSource): Promise<DataSource> {
 export async function updateConnStatus(
   ds: BigQueryDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<BigQueryDataSource> {
   const newDs = await prisma().bigQueryDataSource.update({
     where: { id: ds.id },
     data: {
@@ -35,12 +37,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'bigquery',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

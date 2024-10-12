@@ -1,11 +1,11 @@
-import prisma, { DataSource, TrinoDataSource } from '@briefer/database'
+import prisma, { TrinoDataSource } from '@briefer/database'
 import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { pingTrino, getTrinoSchema } from '../python/query/trino.js'
 import { config } from '../config/index.js'
 import { OnTable } from './structure.js'
 
-export async function ping(ds: TrinoDataSource): Promise<DataSource> {
+export async function ping(ds: TrinoDataSource): Promise<TrinoDataSource> {
   const lastConnection = new Date()
   const err = await pingTrino(ds, config().DATASOURCES_ENCRYPTION_KEY)
 
@@ -29,7 +29,7 @@ export async function getSchema(
 export async function updateConnStatus(
   ds: TrinoDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<TrinoDataSource> {
   const newDs = await prisma().trinoDataSource.update({
     where: { id: ds.id },
     data: {
@@ -47,12 +47,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'trino',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

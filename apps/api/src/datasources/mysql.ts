@@ -1,6 +1,5 @@
 import { config } from '../config/index.js'
 import prisma, {
-  DataSource,
   MySQLDataSource,
   getMySQLCert,
   getMySQLPassword,
@@ -31,7 +30,9 @@ async function getMySQLConfig(
   }
 }
 
-export async function ping(datasource: MySQLDataSource): Promise<DataSource> {
+export async function ping(
+  datasource: MySQLDataSource
+): Promise<MySQLDataSource> {
   const lastConnection = new Date()
   const mySQLConfig = await getMySQLConfig(datasource)
 
@@ -171,7 +172,7 @@ export async function getMySQLSchema(
 export async function updateConnStatus(
   ds: MySQLDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<MySQLDataSource> {
   const newDs = await prisma().mySQLDataSource.update({
     where: { id: ds.id },
     data: {
@@ -186,12 +187,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'mysql',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

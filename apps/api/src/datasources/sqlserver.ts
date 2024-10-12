@@ -1,6 +1,5 @@
 import { config } from '../config/index.js'
 import prisma, {
-  DataSource,
   SQLServerDataSource,
   getSQLServerCert,
   getSQLServerPassword,
@@ -42,7 +41,7 @@ async function getSQLServerConfig(
 
 export async function ping(
   datasource: SQLServerDataSource
-): Promise<DataSource> {
+): Promise<SQLServerDataSource> {
   const lastConnection = new Date()
   const SQLServerConfig = await getSQLServerConfig(datasource)
 
@@ -190,7 +189,7 @@ export async function getSqlServerSchema(
 export async function updateConnStatus(
   ds: SQLServerDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<SQLServerDataSource> {
   const newDs = await prisma().sQLServerDataSource.update({
     where: { id: ds.id },
     data: {
@@ -205,12 +204,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'sqlserver',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

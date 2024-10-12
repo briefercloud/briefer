@@ -1,10 +1,10 @@
 import { config } from '../config/index.js'
-import prisma, { DataSource, OracleDataSource } from '@briefer/database'
+import prisma, { OracleDataSource } from '@briefer/database'
 import { DataSourceStatus } from './index.js'
 import { pingOracle } from '../python/query/oracle.js'
 import { logger } from '../logger.js'
 
-export async function ping(ds: OracleDataSource): Promise<DataSource> {
+export async function ping(ds: OracleDataSource): Promise<OracleDataSource> {
   const lastConnection = new Date()
   const err = await pingOracle(ds, config().DATASOURCES_ENCRYPTION_KEY)
 
@@ -23,7 +23,7 @@ export async function ping(ds: OracleDataSource): Promise<DataSource> {
 export async function updateConnStatus(
   ds: OracleDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<OracleDataSource> {
   const newDs = await prisma().oracleDataSource.update({
     where: { id: ds.id },
     data: {
@@ -38,12 +38,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'oracle',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

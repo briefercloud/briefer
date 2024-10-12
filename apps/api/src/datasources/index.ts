@@ -1,4 +1,4 @@
-import { DataSource } from '@briefer/database'
+import { APIDataSource } from '@briefer/database'
 import * as bq from './bigquery.js'
 import * as redshift from './redshift.js'
 import * as psql from './psql.js'
@@ -9,40 +9,41 @@ import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
 import { DataSourceConnectionError } from '@briefer/types'
+import { IOServer } from '../websocket/index.js'
+import { broadcastDataSource } from '../websocket/workspace/data-sources.js'
 
-export async function ping(ds: DataSource): Promise<DataSource> {
-  let result: DataSource
-  switch (ds.type) {
-    case 'bigquery':
-      result = await bq.ping(ds.data)
-      break
-    case 'redshift':
-      result = await redshift.ping(ds.data)
-      break
-    case 'psql':
-      result = await psql.ping(ds.data)
-      break
-    case 'athena':
-      result = await athena.ping(ds.data)
-      break
-    case 'oracle':
-      result = await oracle.ping(ds.data)
-      break
-    case 'mysql':
-      result = await mysql.ping(ds.data)
-      break
-    case 'sqlserver':
-      result = await sqlserver.ping(ds.data)
-      break
-    case 'trino':
-      result = await trino.ping(ds.data)
-      break
-    case 'snowflake':
-      result = await snowflake.ping(ds.data)
-      break
-  }
+export async function ping(
+  socket: IOServer,
+  ds: APIDataSource
+): Promise<APIDataSource> {
+  await updateConnStatus(ds, { connStatus: 'checking' })
+  broadcastDataSource(socket, ds)
 
-  return result
+  ds.config.data = await (() => {
+    switch (ds.config.type) {
+      case 'bigquery':
+        return bq.ping(ds.config.data)
+      case 'redshift':
+        return redshift.ping(ds.config.data)
+      case 'psql':
+        return psql.ping(ds.config.data)
+      case 'athena':
+        return athena.ping(ds.config.data)
+      case 'oracle':
+        return oracle.ping(ds.config.data)
+      case 'mysql':
+        return mysql.ping(ds.config.data)
+      case 'sqlserver':
+        return sqlserver.ping(ds.config.data)
+      case 'trino':
+        return trino.ping(ds.config.data)
+      case 'snowflake':
+        return snowflake.ping(ds.config.data)
+    }
+  })()
+  broadcastDataSource(socket, ds)
+
+  return ds
 }
 
 export type DataSourceStatus =
@@ -50,33 +51,43 @@ export type DataSourceStatus =
       connStatus: 'online'
       lastConnection: Date
     }
+  | { connStatus: 'checking' }
   | {
       connStatus: 'offline'
       connError: DataSourceConnectionError
     }
 
-export async function updateConnStatus(
-  ds: DataSource,
+export async function updateConnStatus<T extends Pick<APIDataSource, 'config'>>(
+  ds: T,
   status: DataSourceStatus
-): Promise<DataSource> {
-  switch (ds.type) {
+): Promise<T> {
+  switch (ds.config.type) {
     case 'bigquery':
-      return bq.updateConnStatus(ds.data, status)
+      ds.config.data = await bq.updateConnStatus(ds.config.data, status)
+      return ds
     case 'redshift':
-      return redshift.updateConnStatus(ds.data, status)
+      ds.config.data = await redshift.updateConnStatus(ds.config.data, status)
+      return ds
     case 'psql':
-      return psql.updateConnStatus(ds.data, status)
+      ds.config.data = await psql.updateConnStatus(ds.config.data, status)
+      return ds
     case 'athena':
-      return athena.updateConnStatus(ds.data, status)
+      ds.config.data = await athena.updateConnStatus(ds.config.data, status)
+      return ds
     case 'oracle':
-      return oracle.updateConnStatus(ds.data, status)
+      ds.config.data = await oracle.updateConnStatus(ds.config.data, status)
+      return ds
     case 'mysql':
-      return mysql.updateConnStatus(ds.data, status)
+      ds.config.data = await mysql.updateConnStatus(ds.config.data, status)
+      return ds
     case 'sqlserver':
-      return sqlserver.updateConnStatus(ds.data, status)
+      ds.config.data = await sqlserver.updateConnStatus(ds.config.data, status)
+      return ds
     case 'trino':
-      return trino.updateConnStatus(ds.data, status)
+      ds.config.data = await trino.updateConnStatus(ds.config.data, status)
+      return ds
     case 'snowflake':
-      return snowflake.updateConnStatus(ds.data, status)
+      ds.config.data = await snowflake.updateConnStatus(ds.config.data, status)
+      return ds
   }
 }

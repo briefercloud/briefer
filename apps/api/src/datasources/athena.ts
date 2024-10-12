@@ -1,9 +1,5 @@
 import aws from 'aws-sdk'
-import prisma, {
-  DataSource,
-  AthenaDataSource,
-  decrypt,
-} from '@briefer/database'
+import prisma, { AthenaDataSource, decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
 import { logger } from '../logger.js'
 import {
@@ -51,7 +47,7 @@ async function getAthenaClient(
   }
 }
 
-export async function ping(ds: AthenaDataSource): Promise<DataSource> {
+export async function ping(ds: AthenaDataSource): Promise<AthenaDataSource> {
   const { athena: client, s3OutputPath } = await getAthenaClient(ds)
 
   const params = {
@@ -190,7 +186,7 @@ export async function getAthenaSchema(
 export async function updateConnStatus(
   ds: AthenaDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<AthenaDataSource> {
   const newDs = await prisma().athenaDataSource.update({
     where: { id: ds.id },
     data: {
@@ -205,12 +201,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'athena',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError ? JSON.parse(newDs.connError) : null,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError ? JSON.parse(newDs.connError) : null,
   }
 }

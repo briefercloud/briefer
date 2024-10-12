@@ -148,10 +148,13 @@ export async function makeSQLQuery(
 
   result[0].then(async (r) => {
     if (r.type === 'success') {
-      await updateConnStatus(datasource, {
-        connStatus: 'online',
-        lastConnection: new Date(),
-      })
+      await updateConnStatus(
+        { config: datasource },
+        {
+          connStatus: 'online',
+          lastConnection: new Date(),
+        }
+      )
     }
   })
 
