@@ -8,6 +8,7 @@ import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
+import * as monetdb from "./monetdb.js"
 import { DataSourceConnectionError } from '@briefer/types'
 
 export async function ping(ds: DataSource): Promise<DataSource> {
@@ -39,6 +40,9 @@ export async function ping(ds: DataSource): Promise<DataSource> {
       break
     case 'snowflake':
       result = await snowflake.ping(ds.data)
+      break
+    case "monetdb":
+      result = await monetdb.ping(ds.data)
       break
   }
 
@@ -78,5 +82,7 @@ export async function updateConnStatus(
       return trino.updateConnStatus(ds.data, status)
     case 'snowflake':
       return snowflake.updateConnStatus(ds.data, status)
+    case "monetdb":
+      return monetdb.updateConnStatus(ds.data, status)
   }
 }

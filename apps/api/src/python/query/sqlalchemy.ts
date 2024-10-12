@@ -24,7 +24,8 @@ export async function makeSQLAlchemyQuery(
     | 'psql'
     | 'redshift'
     | 'trino'
-    | 'snowflake',
+    | 'snowflake'
+    | "monetdb",
   jobId: string,
   query: string,
   queryId: string,

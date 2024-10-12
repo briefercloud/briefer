@@ -9,6 +9,7 @@ import * as oracle from './oracle.js'
 import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
+import * as monetdb from './monetdb.js'
 import * as snowflake from './snowflake.js'
 import { DataSourceStructureStateV2 } from '@briefer/types'
 import { z } from 'zod'
@@ -23,6 +24,7 @@ export * from './sqlserver.js'
 export * from './crypto.js'
 export * from './trino.js'
 export * from './snowflake.js'
+export * from "./monetdb.js"
 
 export type BigQueryDataSource = bq.BigQueryDataSource
 export type PostgreSQLDataSource = psql.PostgreSQLDataSource
@@ -33,6 +35,7 @@ export type MySQLDataSource = mysql.MySQLDataSource
 export type TrinoDataSource = trino.TrinoDataSource
 export type SQLServerDataSource = sqlserver.SQLServerDataSource
 export type SnowflakeDataSource = snowflake.SnowflakeDataSource
+export type MonetDBDataSource = monetdb.MonetDBDataSource
 
 export type DataSource =
   | { type: 'psql'; data: PostgreSQLDataSource }
@@ -43,6 +46,7 @@ export type DataSource =
   | { type: 'mysql'; data: MySQLDataSource }
   | { type: 'trino'; data: TrinoDataSource }
   | { type: 'sqlserver'; data: SQLServerDataSource }
+  | { type: 'monetdb'; data: MonetDBDataSource }
   | { type: 'snowflake'; data: SnowflakeDataSource }
 
 export type DataSourceType = DataSource['type']
@@ -57,6 +61,7 @@ export const DataSourceType = z.enum([
   'sqlserver',
   'trino',
   'snowflake',
+  'monetdb',
 ] as const)
 
 // Ensure Zod enum stays in sync with `DataSourceType`
@@ -86,6 +91,7 @@ export async function listDataSources(
     sqlserver.listSQLServerDataSources(workspaceId),
     trino.listTrinoDataSources(workspaceId),
     snowflake.listSnowflakeDataSources(workspaceId),
+    monetdb.listMonetDbDataSources(workspaceId),
   ])
 
   return dbs.reduce((acc, cur) => acc.concat(cur), [])
@@ -145,6 +151,12 @@ export async function getDatasource(
         .then((data): DataSource | null =>
           data ? { type: 'sqlserver', data } : null
         )
+    case 'monetdb':
+      return monetdb
+        .getMonetDbDataSource(workspaceId, id)
+        .then((data): DataSource | null =>
+          data ? { type: 'monetdb', data } : null
+      )
     case 'snowflake':
       return snowflake
         .getSnowflakeDataSource(workspaceId, id)
@@ -208,6 +220,19 @@ export async function getDatasourcePassword(
     case 'bigquery':
     case 'athena':
       return ''
+    case 'monetdb':
+      return prisma()
+        .monetDBDataSource.findFirstOrThrow({
+          where: {
+            id: datasource.data.id,
+          },
+          select: {
+            password: true,
+          },
+        })
+        .then((row) =>
+          row.password !== null ? decrypt(row.password, encryptionKey) : ''
+        )
     case 'snowflake':
       return prisma()
         .snowflakeDataSource.findFirstOrThrow({
@@ -304,6 +329,12 @@ export async function getDatabaseURL(
       )
       return `mssql+pymssql://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
     }
+    case 'monetdb': {
+      const password = encodeURIComponent(
+        await getDatasourcePassword(ds, encryptionKey)
+      )
+      return `monetdb://${ds.data.username}:${password}@${ds.data.host}:${ds.data.port}/${ds.data.database}`
+    }
     case 'snowflake': {
       const password = encodeURIComponent(
         await getDatasourcePassword(ds, encryptionKey)
@@ -362,6 +393,18 @@ export async function getCredentialsInfo(
 
       return {
         sslrootcert: decrypt(mysql.cert, encryptionKey),
+      }
+    }
+    case 'monetdb': {
+      const monetdb = await prisma().monetDBDataSource.findFirstOrThrow({
+        where: { id: ds.data.id },
+      })
+      if (!monetdb.cert) {
+        return null
+      }
+
+      return {
+        sslrootcert: decrypt(monetdb.cert, encryptionKey),
       }
     }
     case 'snowflake':

@@ -26,6 +26,7 @@ import SQLServerForm from '@/components/forms/sqlserver'
 import SnowflakeForm, {
   SnowflakeDataSourceInput,
 } from '@/components/forms/snowflake'
+import MonetDBForm, { MonetDbDataSourceInput } from '@/components/forms/monetdb'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -45,6 +46,7 @@ export default function EditDataSourcePostgresSQLPage() {
         | MySQLDataSourceInput
         | TrinoDataSourceInput
         | SnowflakeDataSourceInput
+        | MonetDbDataSourceInput
     ) => {
       if (!data) {
         return
@@ -143,6 +145,12 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             snowflakeDataSource={data.config.data}
+          />
+        ) : data && data.config.type === 'monetdb' ? (
+          <MonetDBForm
+            workspaceId={workspaceId}
+            onSubmit={onSubmit}
+            monetDbDataSource={data.config.data}
           />
         ) : null}
       </div>

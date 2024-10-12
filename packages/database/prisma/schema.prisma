@@ -283,6 +283,29 @@ model TrinoDataSource {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model MonetDBDataSource {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  host           String
+  port           String
+  database       String
+  username       String
+  password       String
+  notes          String
+  readOnly       Boolean    @default(true)
+  cert           String?
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now()) @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String   @default("")
@@ -393,6 +416,7 @@ model Workspace {
   mySQLDataSources     MySQLDataSource[]
   sqlServerDataSources SQLServerDataSource[]
   trinoDataSources     TrinoDataSource[]
+  monetDBDataSources   MonetDBDataSource[]
   snowflakeDataSources SnowflakeDataSource[]
   environmentVariables EnvironmentVariable[]
 }
