@@ -8,7 +8,9 @@ import {
 import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
-import SQLServerForm, { SQLServerDataSourceInput } from '@/components/forms/sqlserver'
+import SQLServerForm, {
+  SQLServerDataSourceInput,
+} from '@/components/forms/sqlserver'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -36,9 +38,9 @@ export default function NewDataSourceSQLServerPage() {
     async (data: SQLServerDataSourceInput) => {
       try {
         const ds = await newDataSource(data, 'sqlserver')
-        if (ds.data.connStatus === 'offline') {
+        if (ds.config.data.connStatus === 'offline') {
           router.push(
-            `/workspaces/${workspaceId}/data-sources?offline=${ds.data.id}`
+            `/workspaces/${workspaceId}/data-sources?offline=${ds.config.data.id}`
           )
         } else {
           router.push(`/workspaces/${workspaceId}/data-sources`)

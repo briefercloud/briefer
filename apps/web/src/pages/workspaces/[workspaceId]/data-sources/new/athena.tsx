@@ -36,9 +36,9 @@ export default function NewDataSourceAthenaPage() {
     async (data: AthenaDataSourceInput) => {
       try {
         const ds = await newDataSource(data, 'athena')
-        if (ds.data.connStatus === 'offline') {
+        if (ds.config.data.connStatus === 'offline') {
           router.push(
-            `/workspaces/${workspaceId}/data-sources?offline=${ds.data.id}`
+            `/workspaces/${workspaceId}/data-sources?offline=${ds.config.data.id}`
           )
         } else {
           router.push(`/workspaces/${workspaceId}/data-sources`)

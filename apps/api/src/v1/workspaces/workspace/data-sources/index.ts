@@ -323,15 +323,25 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         return
       }
 
-      const datasource = await createDataSource(data).then(ping)
+      const datasource = await createDataSource(data).then((ds) =>
+        ping(socketServer, {
+          config: ds,
+          structure: {
+            status: 'loading',
+            startedAt: Date.now(),
+            loadingPing: 0,
+            structure: null,
+          },
+        })
+      )
       captureDatasourceCreated(
         req.session.user,
         workspaceId,
-        datasource.data.id,
+        datasource.config.data.id,
         data.type
       )
 
-      await fetchDataSourceStructure(socketServer, datasource, {
+      await fetchDataSourceStructure(socketServer, datasource.config, {
         forceRefresh: true,
       })
 

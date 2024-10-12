@@ -1,10 +1,12 @@
 import { config } from '../config/index.js'
-import prisma, { DataSource, SnowflakeDataSource } from '@briefer/database'
+import prisma, { SnowflakeDataSource } from '@briefer/database'
 import { DataSourceStatus } from './index.js'
 import { pingSnowflake } from '../python/query/snowflake.js'
 import { logger } from '../logger.js'
 
-export async function ping(ds: SnowflakeDataSource): Promise<DataSource> {
+export async function ping(
+  ds: SnowflakeDataSource
+): Promise<SnowflakeDataSource> {
   const lastConnection = new Date()
   const err = await pingSnowflake(ds, config().DATASOURCES_ENCRYPTION_KEY)
 
@@ -23,7 +25,7 @@ export async function ping(ds: SnowflakeDataSource): Promise<DataSource> {
 export async function updateConnStatus(
   ds: SnowflakeDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<SnowflakeDataSource> {
   const newDs = await prisma().snowflakeDataSource.update({
     where: { id: ds.id },
     data: {
@@ -38,12 +40,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'snowflake',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

@@ -1,9 +1,11 @@
 import { config } from '../config/index.js'
-import prisma, { DataSource, RedshiftDataSource } from '@briefer/database'
+import prisma, { RedshiftDataSource } from '@briefer/database'
 import { DataSourceStatus } from './index.js'
 import { pingPSQL } from '../python/query/psql.js'
 
-export async function ping(ds: RedshiftDataSource): Promise<DataSource> {
+export async function ping(
+  ds: RedshiftDataSource
+): Promise<RedshiftDataSource> {
   const lastConnection = new Date()
   const err = await pingPSQL(
     ds,
@@ -24,7 +26,7 @@ export async function ping(ds: RedshiftDataSource): Promise<DataSource> {
 export async function updateConnStatus(
   ds: RedshiftDataSource,
   status: DataSourceStatus
-): Promise<DataSource> {
+): Promise<RedshiftDataSource> {
   const newDs = await prisma().redshiftDataSource.update({
     where: { id: ds.id },
     data: {
@@ -39,12 +41,9 @@ export async function updateConnStatus(
   })
 
   return {
-    type: 'redshift',
-    data: {
-      ...ds,
-      connStatus: newDs.connStatus,
-      lastConnection: newDs.lastConnection?.toISOString() ?? null,
-      connError: newDs.connError,
-    },
+    ...ds,
+    connStatus: newDs.connStatus,
+    lastConnection: newDs.lastConnection?.toISOString() ?? null,
+    connError: newDs.connError,
   }
 }

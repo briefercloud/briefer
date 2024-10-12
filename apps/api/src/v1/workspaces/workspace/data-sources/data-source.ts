@@ -33,15 +33,6 @@ import {
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
 import { config } from '../../../../config/index.js'
-import * as psql from '../../../../datasources/psql.js'
-import * as bq from '../../../../datasources/bigquery.js'
-import * as redshift from '../../../../datasources/redshift.js'
-import * as athena from '../../../../datasources/athena.js'
-import * as oracle from '../../../../datasources/oracle.js'
-import * as mysql from '../../../../datasources/mysql.js'
-import * as sqlserver from '../../../../datasources/sqlserver.js'
-import * as trino from '../../../../datasources/trino.js'
-import * as snowflake from '../../../../datasources/snowflake.js'
 import { ping } from '../../../../datasources/index.js'
 import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import {
@@ -151,15 +142,15 @@ const dataSourceRouter = (socketServer: IOServer) => {
   ])
 
   router.put('/', async (req, res) => {
-    const result = dataSourceSchema.safeParse(req.body)
-    if (!result.success) {
+    const payload = dataSourceSchema.safeParse(req.body)
+    if (!payload.success) {
       res.status(400).end()
       return
     }
 
     const workspaceId = getParam(req, 'workspaceId')
     const dataSourceId = getParam(req, 'dataSourceId')
-    const data = result.data
+    const data = payload.data
     const existingDb = (
       await Promise.all([
         getPSQLDataSource(workspaceId, dataSourceId),
@@ -185,7 +176,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
 
     switch (data.type) {
       case 'psql': {
-        const psqlDs = await updatePSQLDataSource(
+        await updatePSQLDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -194,12 +185,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await psql.ping(psqlDs)
         break
       }
       case 'mysql': {
-        const mysqlDs = await updateMySQLDataSource(
+        await updateMySQLDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -208,12 +197,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await mysql.ping(mysqlDs)
         break
       }
       case 'sqlserver': {
-        const sqlserverDS = await updateSQLServerDataSource(
+        await updateSQLServerDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -222,12 +209,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await sqlserver.ping(sqlserverDS)
         break
       }
       case 'redshift': {
-        const redshiftDs = await updateRedshiftDataSource(
+        await updateRedshiftDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -236,12 +221,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await redshift.ping(redshiftDs)
         break
       }
       case 'bigquery': {
-        const bqDs = await updateBigQueryDataSource(
+        await updateBigQueryDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -254,12 +237,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await bq.ping(bqDs)
         break
       }
       case 'athena': {
-        const athenaDs = await updateAthenaDataSource(
+        await updateAthenaDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -272,8 +253,6 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await athena.ping(athenaDs)
         break
       }
       case 'oracle': {
@@ -284,7 +263,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
           return
         }
 
-        const oracleDs = await updateOracleDataSource(
+        await updateOracleDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -293,12 +272,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await oracle.ping(oracleDs)
         break
       }
       case 'trino': {
-        const trinoDs = await updateTrinoDataSource(
+        await updateTrinoDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -307,12 +284,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await trino.ping(trinoDs)
         break
       }
       case 'snowflake': {
-        const snowflakeDs = await updateSnowflakeDataSource(
+        await updateSnowflakeDataSource(
           {
             ...data.data,
             id: dataSourceId,
@@ -321,8 +296,6 @@ const dataSourceRouter = (socketServer: IOServer) => {
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
-
-        await snowflake.ping(snowflakeDs)
         break
       }
     }
@@ -345,10 +318,8 @@ const dataSourceRouter = (socketServer: IOServer) => {
       forceRefresh: true,
     })
 
-    res.json({
-      structure,
-      config: ds,
-    })
+    const result = await ping(socketServer, { config: ds, structure })
+    res.json(result)
   })
 
   router.delete('/', async (req, res) => {
@@ -509,25 +480,23 @@ const dataSourceRouter = (socketServer: IOServer) => {
     const workspaceId = getParam(req, 'workspaceId')
     const dataSourceId = getParam(req, 'dataSourceId')
     try {
-      const dataSource = await getDatasource(
+      const dsConfig = await getDatasource(
         workspaceId,
         dataSourceId,
         result.data.type
       )
-
-      if (!dataSource) {
+      if (!dsConfig) {
         res.status(404).end()
         return
       }
 
-      const dsConfig = await ping(dataSource)
-
-      await broadcastDataSource(socketServer, {
-        config: dsConfig,
-        structure: await fetchDataSourceStructure(socketServer, dsConfig, {
-          forceRefresh: false,
-        }),
+      const structure = await fetchDataSourceStructure(socketServer, dsConfig, {
+        forceRefresh: false,
       })
+
+      const ds = await ping(socketServer, { config: dsConfig, structure })
+
+      broadcastDataSource(socketServer, ds)
 
       res.json({
         lastConnection: dsConfig.data.lastConnection,

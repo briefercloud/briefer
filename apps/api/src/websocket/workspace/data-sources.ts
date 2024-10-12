@@ -90,7 +90,7 @@ export async function emitDataSources(
   socket.emit('workspace-datasources', { workspaceId, dataSources: result })
 }
 
-export async function broadcastDataSource(
+export function broadcastDataSource(
   socket: IOServer,
   dataSource: APIDataSource
 ) {
