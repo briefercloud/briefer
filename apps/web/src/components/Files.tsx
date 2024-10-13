@@ -37,6 +37,7 @@ interface Props {
   visible: boolean
   onHide: () => void
   yDoc?: Y.Doc
+  scrollToBottom?: () => void
 }
 export default function Files(props: Props) {
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -87,8 +88,13 @@ file`
       }
 
       requestRun(pythonBlock, blocks, layout, environmentStartedAt, true)
+      if (props.scrollToBottom) {
+        setTimeout(() => {
+          props.scrollToBottom?.()
+        }, 200)
+      }
     },
-    [props.yDoc, environmentStartedAt]
+    [props.yDoc, environmentStartedAt, props.scrollToBottom]
   )
 
   const onUseInSQL = useCallback(
@@ -132,8 +138,13 @@ file`
       }
 
       requestRun(sqlBlock, blocks, layout, environmentStartedAt, true)
+      if (props.scrollToBottom) {
+        setTimeout(() => {
+          props.scrollToBottom?.()
+        }, 200)
+      }
     },
-    [props.yDoc, environmentStartedAt]
+    [props.yDoc, environmentStartedAt, props.scrollToBottom]
   )
 
   const [
