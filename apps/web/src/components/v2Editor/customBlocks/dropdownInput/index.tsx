@@ -14,13 +14,15 @@ import {
   dropdownInputRequestSaveVariable,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Spin from '@/components/Spin'
 import { ConnectDragPreview } from 'react-dnd'
 import { ClockIcon } from '@heroicons/react/20/solid'
 import DropdownSettings from './dropdownSettings'
 import { DataFrame } from '@briefer/types'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { Combobox } from '@headlessui/react'
+import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -75,6 +77,15 @@ interface Props {
 function DropdownInputBlock(props: Props) {
   const blockId = props.block.getAttribute('id')
   const attrs = getDropdownInputAttributes(props.block, props.blocks)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState(attrs.value.newValue ?? '')
+
+  const filteredOptions =
+    query === ''
+      ? attrs.options
+      : attrs.options.filter((option) =>
+          option.toLowerCase().includes(query.toLowerCase())
+        )
 
   const onChangeLabel = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,7 +149,8 @@ function DropdownInputBlock(props: Props) {
     dropdownInputRequestSaveVariable(props.block)
   }, [props.block])
 
-  const selectRef = useRef<HTMLSelectElement>(null)
+  const selectRef = useRef<HTMLUListElement>(null)
+
   useEffect(() => {
     if (props.isCursorWithin && props.isCursorInserting) {
       selectRef.current?.focus()
@@ -163,7 +175,8 @@ function DropdownInputBlock(props: Props) {
   }, [setInteractionState])
 
   const unfocusOnEscape = useCallback(
-    (e: React.KeyboardEvent<HTMLSelectElement>) => {
+    (e: React.KeyboardEvent<HTMLUListElement>) => {
+      console.log(e.key)
       if (e.key === 'Escape') {
         selectRef.current?.blur()
       }
@@ -264,37 +277,85 @@ function DropdownInputBlock(props: Props) {
         </div>
         <div className="flex flex-col space-y-1">
           <div className="relative">
-            <select
-              ref={selectRef}
-              onFocus={onFocus}
-              onBlur={onBlur}
-              onKeyDown={unfocusOnEscape}
-              className={clsx(
-                'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
-                attrs.value.error
-                  ? 'ring-red-200 focus:ring-red-200'
-                  : 'focus:ring-primary-200',
-                props.isCursorWithin &&
-                  !props.isCursorInserting &&
-                  !props.belongsToMultiTabGroup
-                  ? 'ring-blue-400'
-                  : 'ring-gray-200',
-                (isLoadingDropdownInputValue || attrs.value.error) && 'bg-none' // this removes the caret
-              )}
-              value={attrs.value.newValue ?? ''}
-              onChange={onChange}
+            <Combobox
+              value={selected}
+              onChange={(value) => {
+                setSelected(value)
+                updateDropdownInputValue(props.block, { newValue: value })
+                props.onRun(props.block)
+              }}
               disabled={
                 dropdownInputValueExecStatus !== 'idle' ||
                 (!props.isEditable && !props.isApp)
               }
             >
-              <option value="" disabled></option>
-              {attrs.options.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              <div className="relative">
+                <Combobox.Input
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                  className={clsx(
+                    'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
+                    attrs.value.error
+                      ? 'ring-red-200 focus:ring-red-200'
+                      : 'focus:ring-primary-200',
+                    props.isCursorWithin &&
+                      !props.isCursorInserting &&
+                      !props.belongsToMultiTabGroup
+                      ? 'ring-primary-400'
+                      : 'ring-gray-200',
+                    (isLoadingDropdownInputValue || attrs.value.error) && 'bg-none' // this removes the caret
+                  )}
+                  displayValue={(value: string) => value}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <Combobox.Button className="absolute inset-y-0 right-0 px-2.5" onClick={() => setQuery('')}>
+                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                </Combobox.Button>
+              </div>
+              <Combobox.Options
+                ref={selectRef}
+                onKeyDown={unfocusOnEscape}
+                className={
+                  'absolute mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm z-10'
+                }
+              >
+                {filteredOptions.map((option) => (
+                  <Combobox.Option
+                  key={option}
+                  value={option}
+                  className={({ active }) =>
+                    clsx(
+                      'cursor-default select-none relative py-2 pl-10 pr-4',
+                      active ? 'bg-primary-400 text-black' : 'text-gray-900'
+                    )
+                  }
+                >
+                  {({ selected, active }) => (
+                    <>
+                      <span
+                        className={clsx(
+                          'block truncate',
+                          selected ? 'font-medium' : 'font-normal'
+                        )}
+                      >
+                        {option}
+                      </span>
+                      {selected ? (
+                        <span
+                          className={clsx(
+                            'absolute inset-y-0 left-0 flex items-center pl-3',
+                            active ? 'text-white' : 'text-blue-600'
+                          )}
+                        >
+                          <CheckIcon className="w-4 h-4" aria-hidden="true" color="black" />
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </Combobox.Option>
+                ))}
+              </Combobox.Options>
+            </Combobox>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 group">
               {(attrs.value.error || dropdownInputValueExecStatus !== 'idle') &&
                 (dropdownInputValueExecStatus === 'loading' ? (
