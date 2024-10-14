@@ -23,7 +23,8 @@ export async function makeSQLAlchemyQuery(
     | 'psql'
     | 'redshift'
     | 'trino'
-    | 'snowflake',
+    | 'snowflake'
+    | 'databrickssql',
   jobId: string,
   query: string,
   queryId: string,
