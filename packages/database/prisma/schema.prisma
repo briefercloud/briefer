@@ -283,6 +283,27 @@ model TrinoDataSource {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
+model DatabricksSQLDataSource {
+  id             String     @id  @default(dbgenerated("gen_random_uuid()"))  @db.Uuid
+  name           String
+  token          String
+  hostname       String
+  http_path      String
+  catalog        String     @default("")
+  schema         String     @default("")
+  notes          String
+  structure      String?
+  isDemo         Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @default(now())  @updatedAt
+  connStatus     ConnStatus @default(online)
+  connError      String?
+  lastConnection DateTime?
+
+  workspaceId String     @db.Uuid
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
 model User {
   id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String   @default("")
@@ -381,20 +402,21 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  secrets              WorkspaceSecrets?      @relation(fields: [secretsId], references: [id])
-  documents            Document[]
-  users                UserWorkspace[]
-  postgresDataSources  PostgreSQLDataSource[]
-  bigQueryDataSources  BigQueryDataSource[]
-  redshiftDataSources  RedshiftDataSource[]
-  athenaDataSources    AthenaDataSource[]
-  oracleDataSources    OracleDataSource[]
-  mySQLDataSources     MySQLDataSource[]
-  sqlServerDataSources SQLServerDataSource[]
-  trinoDataSources     TrinoDataSource[]
-  snowflakeDataSources SnowflakeDataSource[]
-  environmentVariables EnvironmentVariable[]
+  owner                    User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  secrets                  WorkspaceSecrets?      @relation(fields: [secretsId], references: [id])
+  documents                Document[]
+  users                    UserWorkspace[]
+  postgresDataSources      PostgreSQLDataSource[]
+  bigQueryDataSources      BigQueryDataSource[]
+  redshiftDataSources      RedshiftDataSource[]
+  athenaDataSources        AthenaDataSource[]
+  oracleDataSources        OracleDataSource[]
+  mySQLDataSources         MySQLDataSource[]
+  sqlServerDataSources     SQLServerDataSource[]
+  trinoDataSources         TrinoDataSource[]
+  snowflakeDataSources     SnowflakeDataSource[]
+  databricksSQLDataSources DatabricksSQLDataSource[]
+  environmentVariables     EnvironmentVariable[]
 }
 
 enum UserWorkspaceRole {

@@ -8,6 +8,7 @@ import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
+import * as databrickssql from './databrickssql.js'
 import { DataSourceConnectionError } from '@briefer/types'
 import { IOServer } from '../websocket/index.js'
 import { broadcastDataSource } from '../websocket/workspace/data-sources.js'
@@ -39,6 +40,8 @@ export async function ping(
         return trino.ping(ds.config.data)
       case 'snowflake':
         return snowflake.ping(ds.config.data)
+      case 'databrickssql':
+        return databrickssql.ping(ds.config.data)
     }
   })()
   broadcastDataSource(socket, ds)
@@ -88,6 +91,9 @@ export async function updateConnStatus<T extends Pick<APIDataSource, 'config'>>(
       return ds
     case 'snowflake':
       ds.config.data = await snowflake.updateConnStatus(ds.config.data, status)
+      return ds
+    case 'databrickssql':
+      ds.config.data = await databrickssql.updateConnStatus(ds.config.data, status)
       return ds
   }
 }
