@@ -331,8 +331,8 @@ function VisualizationControls(props: Props) {
             htmlFor={`rightYAxisName-${yI}-${sI}`}
             className="block text-xs font-medium leading-6 text-gray-900 pb-1"
           >
-            {yI === 0 && sI === 0 ? 'Left' : 'Right'} Y-Axis Name
-            {sI > 0 ? ` (Series ${sI})` : ''}
+            {yI === 0 ? 'Primary' : 'Secondary'} Y-Axis Title
+            {sI > 0 ? ` (Series ${sI + 1})` : ''}
           </label>
           <input
             name={`rightYAxisName-${yI}-${sI}`}
