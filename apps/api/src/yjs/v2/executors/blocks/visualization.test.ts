@@ -46,9 +46,9 @@ describe('VisualizationExecutor', () => {
     block.setAttribute('xAxis', { name: 'a', type: 'string' })
     block.setAttribute('yAxes', [
       {
-        name: null,
         series: [
           {
+            axisName: null,
             chartType: null,
             column: { name: 'b', type: 'int' },
             aggregateFunction: null,
@@ -118,9 +118,9 @@ describe('VisualizationExecutor', () => {
         'ascending',
         [
           {
-            name: null,
             series: [
               {
+                axisName: null,
                 aggregateFunction: null,
                 chartType: null,
                 colorBy: null,

@@ -88,9 +88,9 @@ export const makeVisualizationBlock = (
     yAxisAggregateFunction: null,
     yAxes: [
       {
-        name: null,
         series: [
           {
+            axisName: null,
             column: null,
             aggregateFunction: null,
             colorBy: null,
@@ -133,9 +133,9 @@ function getYAxes(block: Y.XmlElement<VisualizationBlock>): YAxis[] {
   if (yAxis || yAxisName || yAxisAggregateFunction || colorBy) {
     yAxes = [
       {
-        name: yAxisName,
         series: [
           {
+            axisName: null,
             column: yAxis,
             aggregateFunction: yAxisAggregateFunction,
             colorBy,
@@ -158,9 +158,9 @@ function getYAxes(block: Y.XmlElement<VisualizationBlock>): YAxis[] {
   if (yAxes.length === 0) {
     yAxes = [
       {
-        name: null,
         series: [
           {
+            axisName: null,
             column: null,
             aggregateFunction: null,
             colorBy: null,

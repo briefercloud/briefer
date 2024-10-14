@@ -197,41 +197,24 @@ function VisualizationControls(props: Props) {
     [props.onChangeXAxisName]
   )
 
-  const onChangeLeftYAxisName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onChangeYAxisName = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement>,
+      axisIndex: number,
+      seriesIndex: number
+    ) => {
       if (props.yAxes.length === 0) {
         return
       }
 
       const name = e.target.value === '' ? null : e.target.value
 
-      props.onChangeYAxes([
-        {
-          series: props.yAxes[0].series,
-          name,
-        },
-        ...props.yAxes.slice(1),
-      ])
-    },
-    [props.yAxes, props.onChangeYAxes]
-  )
+      const targetAxis = props.yAxes[axisIndex]
+      targetAxis.series[seriesIndex].axisName = name
 
-  const onChangeRightYAxisName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (props.yAxes.length < 2) {
-        return
-      }
-
-      const name = e.target.value === '' ? null : e.target.value
-
-      props.onChangeYAxes([
-        props.yAxes[0],
-        {
-          series: props.yAxes[1].series,
-          name,
-        },
-        ...props.yAxes.slice(2),
-      ])
+      props.onChangeYAxes(
+        props.yAxes.map((y, i) => (i === axisIndex ? targetAxis : y))
+      )
     },
     [props.yAxes, props.onChangeYAxes]
   )
@@ -269,9 +252,9 @@ function VisualizationControls(props: Props) {
     props.onChangeYAxes([
       ...props.yAxes,
       {
-        name: null,
         series: [
           {
+            axisName: null,
             column: null,
             aggregateFunction: null,
             colorBy: null,
@@ -338,6 +321,31 @@ function VisualizationControls(props: Props) {
         props.dataframe?.columns ?? []
       )[0] ?? null,
     [props.dataframe?.columns]
+  )
+
+  const axisNameComponents = props.yAxes.map((yAxis, yI) =>
+    yAxis.series.map((_, sI) => {
+      return (
+        <div>
+          <label
+            htmlFor={`rightYAxisName-${yI}-${sI}`}
+            className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+          >
+            {yI === 0 && sI === 0 ? 'Left' : 'Right'} Y-Axis Name
+            {sI > 0 ? ` (Series ${sI})` : ''}
+          </label>
+          <input
+            name={`rightYAxisName-${yI}-${sI}`}
+            type="text"
+            placeholder="My Y-Axis"
+            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+            value={props.yAxes[yI]?.series[sI]?.axisName ?? ''}
+            onChange={(e) => onChangeYAxisName(e, yI, sI)}
+            disabled={!props.dataframe || !props.isEditable}
+          />
+        </div>
+      )
+    })
   )
 
   return (
@@ -582,47 +590,7 @@ function VisualizationControls(props: Props) {
           )}
           {tab === 'y-axis' && (
             <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              <div>
-                <label
-                  htmlFor="leftYAxisName"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  {props.yAxes.length > 1 &&
-                  props.chartType !== 'trend' &&
-                  props.chartType !== 'number'
-                    ? 'Left '
-                    : ''}
-                  Y-Axis Name
-                </label>
-                <input
-                  name="leftYAxisName"
-                  type="text"
-                  placeholder="My Y-Axis"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={props.yAxes[0]?.name ?? ''}
-                  onChange={onChangeLeftYAxisName}
-                  disabled={!props.dataframe || !props.isEditable}
-                />
-              </div>
-              {props.yAxes.length > 1 && (
-                <div>
-                  <label
-                    htmlFor="rightYAxisName"
-                    className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                  >
-                    Right Y-Axis Name
-                  </label>
-                  <input
-                    name="rightYAxisName"
-                    type="text"
-                    placeholder="My Y-Axis"
-                    className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                    value={props.yAxes[1]?.name ?? ''}
-                    onChange={onChangeRightYAxisName}
-                    disabled={!props.dataframe || !props.isEditable}
-                  />
-                </div>
-              )}
+              {axisNameComponents}
             </div>
           )}
           {tab === 'labels' && (

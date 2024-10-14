@@ -157,6 +157,7 @@ function YAxisPicker(props: Props) {
         series: [
           ...props.yAxis.series,
           {
+            axisName: null,
             column: null,
             aggregateFunction: null,
             colorBy: null,
