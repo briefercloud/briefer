@@ -176,7 +176,6 @@ function DropdownInputBlock(props: Props) {
 
   const unfocusOnEscape = useCallback(
     (e: React.KeyboardEvent<HTMLUListElement>) => {
-      console.log(e.key)
       if (e.key === 'Escape') {
         selectRef.current?.blur()
       }
@@ -289,29 +288,35 @@ function DropdownInputBlock(props: Props) {
                 (!props.isEditable && !props.isApp)
               }
             >
-              <div className="relative">
-                <Combobox.Input
-                  onFocus={onFocus}
-                  onBlur={onBlur}
-                  className={clsx(
-                    'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
-                    attrs.value.error
-                      ? 'ring-red-200 focus:ring-red-200'
-                      : 'focus:ring-primary-200',
-                    props.isCursorWithin &&
-                      !props.isCursorInserting &&
-                      !props.belongsToMultiTabGroup
-                      ? 'ring-primary-400'
-                      : 'ring-gray-200',
-                    (isLoadingDropdownInputValue || attrs.value.error) && 'bg-none' // this removes the caret
-                  )}
-                  displayValue={(value: string) => value}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                <Combobox.Button className="absolute inset-y-0 right-0 px-2.5" onClick={() => setQuery('')}>
-                  <ChevronDownIcon className="w-5 h-5 text-gray-400" />
-                </Combobox.Button>
-              </div>
+              <Combobox.Button as="div" className="block w-full">
+                <div className="relative">
+                  <Combobox.Input
+                    onFocus={onFocus}
+                    onBlur={onBlur}
+                    className={clsx(
+                      'block rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset placeholder:text-gray-400 focus:ring-2 focus:ring-inset w-full disabled:bg-gray-100 disabled:cursor-not-allowed bg-white',
+                      attrs.value.error
+                        ? 'ring-red-200 focus:ring-red-200'
+                        : 'focus:ring-primary-200',
+                      props.isCursorWithin &&
+                        !props.isCursorInserting &&
+                        !props.belongsToMultiTabGroup
+                        ? 'ring-primary-400'
+                        : 'ring-gray-200',
+                      (isLoadingDropdownInputValue || attrs.value.error) &&
+                        'bg-none' // this removes the caret
+                    )}
+                    displayValue={(value: string) => value}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  <div
+                    className="inline-block absolute inset-y-0 right-0 px-2.5 bottom-1/2 transform translate-y-1/2"
+                    onClick={() => setQuery('')}
+                  >
+                    <ChevronDownIcon className="w-5 h-5 text-gray-400" />
+                  </div>
+                </div>
+              </Combobox.Button>
               <Combobox.Options
                 ref={selectRef}
                 onKeyDown={unfocusOnEscape}
@@ -321,38 +326,42 @@ function DropdownInputBlock(props: Props) {
               >
                 {filteredOptions.map((option) => (
                   <Combobox.Option
-                  key={option}
-                  value={option}
-                  className={({ active }) =>
-                    clsx(
-                      'cursor-default select-none relative py-2 pl-10 pr-4',
-                      active ? 'bg-primary-400 text-black' : 'text-gray-900'
-                    )
-                  }
-                >
-                  {({ selected, active }) => (
-                    <>
-                      <span
-                        className={clsx(
-                          'block truncate',
-                          selected ? 'font-medium' : 'font-normal'
-                        )}
-                      >
-                        {option}
-                      </span>
-                      {selected ? (
+                    key={option}
+                    value={option}
+                    className={({ active }) =>
+                      clsx(
+                        'cursor-default select-none relative py-2 pl-10 pr-4',
+                        active ? 'bg-ceramic-100 text-black' : 'text-gray-900'
+                      )
+                    }
+                  >
+                    {({ selected, active }) => (
+                      <>
                         <span
                           className={clsx(
-                            'absolute inset-y-0 left-0 flex items-center pl-3',
-                            active ? 'text-white' : 'text-blue-600'
+                            'block truncate',
+                            selected ? 'font-medium' : 'font-normal'
                           )}
                         >
-                          <CheckIcon className="w-4 h-4" aria-hidden="true" color="black" />
+                          {option}
                         </span>
-                      ) : null}
-                    </>
-                  )}
-                </Combobox.Option>
+                        {selected ? (
+                          <span
+                            className={clsx(
+                              'absolute inset-y-0 left-0 flex items-center pl-3',
+                              active ? 'text-white' : 'text-blue-600'
+                            )}
+                          >
+                            <CheckIcon
+                              className="w-4 h-4"
+                              aria-hidden="true"
+                              color="black"
+                            />
+                          </span>
+                        ) : null}
+                      </>
+                    )}
+                  </Combobox.Option>
                 ))}
               </Combobox.Options>
             </Combobox>
