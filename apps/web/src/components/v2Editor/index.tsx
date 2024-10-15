@@ -489,7 +489,7 @@ const DraggableTabbedBlock = (props: {
       blocks.value,
       layout.value,
       props.document.runUnexecutedBlocks,
-      environmentStartedAt,
+      environmentStartedAt?.toISOString(),
     ]
   )
 
@@ -1114,8 +1114,8 @@ const Editor = (props: Props) => {
     },
     [
       props.yDoc,
-      layout,
-      blocks,
+      layout.value,
+      blocks.value,
       props.dataSources,
       newSQLDatasourceId,
       editorAPI.insert,
@@ -1135,7 +1135,7 @@ const Editor = (props: Props) => {
 
       onAddBlock(blockType, pos === 'above' ? nextIndex : nextIndex + 1)
     },
-    [layout, blocks, editorState, onAddBlock]
+    [layout.value, blocks.value, editorState.cursorBlockId, onAddBlock]
   )
 
   const insertBelow = useCallback(() => {
@@ -1151,7 +1151,7 @@ const Editor = (props: Props) => {
     }
 
     addBlockShortcut(blockType, 'below')
-  }, [editorState, blocks, addBlockShortcut])
+  }, [editorState.cursorBlockId, blocks.value, addBlockShortcut])
 
   const focusCursorBlock = useCallback(() => {
     if (editorState.cursorBlockId) {
