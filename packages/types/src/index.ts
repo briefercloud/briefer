@@ -568,6 +568,7 @@ export const AggregateFunction = z.union([
 export type AggregateFunction = z.infer<typeof AggregateFunction>
 
 export type Series = {
+  axisName: string | null
   chartType: ChartType | null
   column: DataFrameColumn | null
   aggregateFunction: AggregateFunction | null
@@ -575,7 +576,6 @@ export type Series = {
 }
 
 export type YAxis = {
-  name: string | null
   series: Series[]
 }
 

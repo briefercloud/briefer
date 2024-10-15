@@ -155,7 +155,6 @@ def _briefer_create_chart(
     color_by_type,
     number_values_format,
     show_data_labels,
-    alone_in_series,
     color
 ):
     # Append _x, _y and _color to ensure uniqueness
@@ -276,7 +275,7 @@ def _briefer_create_chart(
         x_title = x_axis_name
 
     y_title = f"{y_axis_col} ({y_axis_agg_func})" if y_axis_agg_func else y_axis_col
-    if y_axis_name and alone_in_series:
+    if y_axis_name:
         y_title = y_axis_name
 
     x_time_unit = None
@@ -789,7 +788,6 @@ def _briefer_create_visualization(
             None,
             number_values_format,
             show_data_labels,
-            True,
             color
         )
         layers.append(chart)
@@ -826,7 +824,7 @@ def _briefer_create_visualization(
                     x_axis_type,
                     x_axis_group_func,
                     x_axis_sort,
-                    y_axis['name'],
+                    serie['axisName'],
                     serie['column']['name'],
                     serie['column']['type'],
                     serie['aggregateFunction'],
@@ -834,7 +832,6 @@ def _briefer_create_visualization(
                     color_by["type"] if color_by else None,
                     number_values_format,
                     show_data_labels,
-                    len(y_axis['series']) == 1,
                     color
                 )
                 series.append(chart)

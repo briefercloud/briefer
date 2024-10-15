@@ -525,7 +525,7 @@ function PythonBlock(props: Props) {
 
       <div
         className={clsx(
-          'absolute h-full transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1',
+          'absolute h-full transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1 z-20',
           isEditorFocused || statusIsDisabled ? 'opacity-100' : 'opacity-0',
           !props.isEditable ? 'hidden' : 'block'
         )}
