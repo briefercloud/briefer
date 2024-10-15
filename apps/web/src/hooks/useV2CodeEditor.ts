@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
 import { DiffOnMount, OnMount } from '@monaco-editor/react'
 import { useCallback, useEffect, useState } from 'react'
-import { editor, KeyMod, KeyCode } from 'monaco-editor'
+import { editor, KeyMod, KeyCode, IDisposable } from 'monaco-editor'
 import { MonacoBinding } from 'y-monaco'
 import useSideBar from './useSideBar'
 import { updateYText } from '@briefer/editor'
@@ -168,85 +168,111 @@ function useCodeEditor(
       return
     }
 
-    editor.addAction({
-      id: 'run-select-below',
-      label: 'Blur Editor',
-      keybindings: [KeyCode.Escape],
-      run: () => {
-        if (document.activeElement instanceof HTMLElement) {
-          document.activeElement.blur()
-        }
-      },
-    })
+    const disposes: IDisposable[] = []
+
+    disposes.push(
+      editor.addAction({
+        id: 'run-select-below',
+        label: 'Blur Editor',
+        keybindings: [KeyCode.Escape],
+        run: () => {
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur()
+          }
+        },
+      })
+    )
 
     if (!readOnly) {
-      editor.addAction({
-        id: 'run-block',
-        label: 'Run block',
-        keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
-        run: onRun,
-      })
+      disposes.push(
+        editor.addAction({
+          id: 'run-block',
+          label: 'Run block',
+          keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
+          run: onRun,
+        })
+      )
 
-      editor.addAction({
-        id: 'run-and-select-below',
-        label: 'Run block and select below',
-        keybindings: [KeyMod.Shift | KeyCode.Enter],
-        run: () => {
-          onRun()
-          selectBelow?.()
-        },
-      })
+      disposes.push(
+        editor.addAction({
+          id: 'run-and-select-below',
+          label: 'Run block and select below',
+          keybindings: [KeyMod.Shift | KeyCode.Enter],
+          run: () => {
+            onRun()
+            selectBelow?.()
+          },
+        })
+      )
 
-      editor.addAction({
-        id: 'run-and-insert-below',
-        label: 'Run block and insert below',
+      disposes.push(
+        editor.addAction({
+          id: 'run-and-insert-below',
+          label: 'Run block and insert below',
 
-        keybindings: [KeyMod.Alt | KeyCode.Enter],
-        run: () => {
-          console.log('run-and-insert-below')
-          onRun()
-          insertBelow?.()
-        },
-      })
+          keybindings: [KeyMod.Alt | KeyCode.Enter],
+          run: () => {
+            console.log('run-and-insert-below')
+            onRun()
+            insertBelow?.()
+          },
+        })
+      )
 
       if (onOpenAIForm) {
-        editor.addAction({
-          id: 'open-ai-edit-form',
-          label: 'Open AI edit form',
-          keybindings: [KeyMod.CtrlCmd | KeyCode.KeyE],
-          run: onOpenAIForm,
-        })
+        disposes.push(
+          editor.addAction({
+            id: 'open-ai-edit-form',
+            label: 'Open AI edit form',
+            keybindings: [KeyMod.CtrlCmd | KeyCode.KeyE],
+            run: onOpenAIForm,
+          })
+        )
       }
     } else {
-      editor.addAction({
-        id: 'run-block',
-        label: 'Run block',
-        keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
-        run: () => {},
-      })
-
-      editor.addAction({
-        id: 'run-and-select-below',
-        label: 'Run block and select below',
-        keybindings: [KeyMod.Shift | KeyCode.Enter],
-        run: () => {},
-      })
-
-      editor.addAction({
-        id: 'run-and-insert-below',
-        label: 'Run block and insert below',
-        keybindings: [KeyMod.Alt | KeyCode.Enter],
-        run: () => {},
-      })
-
-      if (onOpenAIForm) {
+      disposes.push(
         editor.addAction({
-          id: 'open-ai-edit-form',
-          label: 'Open AI edit form',
-          keybindings: [KeyMod.CtrlCmd | KeyCode.KeyE],
+          id: 'run-block',
+          label: 'Run block',
+          keybindings: [KeyMod.CtrlCmd | KeyCode.Enter],
           run: () => {},
         })
+      )
+
+      disposes.push(
+        editor.addAction({
+          id: 'run-and-select-below',
+          label: 'Run block and select below',
+          keybindings: [KeyMod.Shift | KeyCode.Enter],
+          run: () => {},
+        })
+      )
+
+      disposes.push(
+        editor.addAction({
+          id: 'run-and-insert-below',
+          label: 'Run block and insert below',
+          keybindings: [KeyMod.Alt | KeyCode.Enter],
+          run: () => {},
+        })
+      )
+
+      if (onOpenAIForm) {
+        disposes.push(
+          editor.addAction({
+            id: 'open-ai-edit-form',
+            label: 'Open AI edit form',
+            keybindings: [KeyMod.CtrlCmd | KeyCode.KeyE],
+            run: () => {},
+          })
+        )
       }
+    }
+
+    return () => {
+      disposes.forEach((dispose) => {
+        dispose.dispose()
+      })
     }
   }, [editor, onRun, onOpenAIForm, readOnly])
 
