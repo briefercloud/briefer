@@ -87,7 +87,6 @@ export default function Comments(props: Props) {
           className="flex-1 space-y-6 pb-6 pt-4 px-2 px-4 pt-6 xl:px-6"
         >
           {comments.map((comment) => {
-            console.log(comment)
             return (
               <li key={comment.id} className="relative flex gap-x-4">
                 <>
