@@ -337,6 +337,7 @@ function PythonBlock(props: Props) {
           >
             <div>
               <CodeEditor
+                workspaceId={props.document.workspaceId}
                 blockId={blockId}
                 source={source}
                 language="python"

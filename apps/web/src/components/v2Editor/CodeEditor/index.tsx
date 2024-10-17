@@ -1,20 +1,15 @@
 import * as Y from 'yjs'
 import { useCallback, useEffect, useRef } from 'react'
-import {
-  Annotation,
-  ChangeSpec,
-  EditorState,
-  StateField,
-} from '@codemirror/state'
+import { Annotation, ChangeSpec, EditorState } from '@codemirror/state'
 import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { python } from '@codemirror/lang-python'
-import { sql } from '@codemirror/lang-sql'
 import { basicSetup } from 'codemirror'
 import { EditorView, keymap, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { materialLight } from './theme'
 
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { useSQLExtension } from './sql'
 
 function createTextSync(source: Y.Text) {
   const plugin = ViewPlugin.fromClass(
@@ -24,7 +19,6 @@ function createTextSync(source: Y.Text) {
       }
 
       public update(update: ViewUpdate) {
-        console.log('update!')
         if (!update.docChanged) {
           return
         }
@@ -58,12 +52,10 @@ function createTextSync(source: Y.Text) {
       }
 
       private observe() {
-        console.log(source.toString())
         source.observe(this.onEvent)
       }
 
       private onEvent = (e: Y.YTextEvent, tr: Y.Transaction) => {
-        console.log('onEvent', e, tr)
         if (tr.local) {
           return
         }
@@ -76,8 +68,8 @@ function createTextSync(source: Y.Text) {
               typeof change.insert === 'string'
                 ? change.insert
                 : Array.isArray(change.insert)
-                  ? change.insert.join('')
-                  : ''
+                ? change.insert.join('')
+                : ''
             changeSpecs.push({
               from: pos,
               insert: text,
@@ -168,6 +160,7 @@ export type CodeEditor = {
 }
 
 interface Props {
+  workspaceId: string
   blockId: string
   source: Y.Text
   language: 'python' | 'sql'
@@ -176,9 +169,11 @@ interface Props {
   onRun: () => void
   onInsertBlock: () => void
   diff?: Y.Text
+  dataSourceId?: string | null
 }
 export function CodeEditor(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
+  const sql = useSQLExtension(props.workspaceId, props.dataSourceId ?? null)
 
   const onRunInsertBlock = useCallback(() => {
     props.onRun()
@@ -213,8 +208,8 @@ export function CodeEditor(props: Props) {
         ...(props.language === 'python'
           ? [python()]
           : props.language === 'sql'
-            ? [sql()]
-            : []),
+          ? [sql]
+          : []),
         keymap.of(vscodeKeymap),
         EditorState.readOnly.of(props.readOnly),
         createTextSync(diff ?? source),
@@ -290,7 +285,7 @@ export function CodeEditor(props: Props) {
     } else {
       viewRef.current = initializeEditorView(editorRef.current)
     }
-  }, [props.source, props.diff, props.language, props.readOnly, editorRef])
+  }, [props.source, props.diff, props.language, props.readOnly, editorRef, sql])
 
   useEffect(() => {
     if (
