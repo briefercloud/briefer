@@ -20,7 +20,7 @@ const materialLightTheme = EditorView.theme(
     '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
       { backgroundColor: 'rgb(230, 235, 240)' },
     '.cm-selectionMatch': { backgroundColor: 'rgb(233, 242, 254)' },
-    '.cm-activeLine': { backgroundColor: '#ffffff' },
+    '.cm-activeLine': { backgroundColor: 'transparent' },
     '.cm-gutters': {
       backgroundColor: '#ffffff',
       color: '#237893',
