@@ -1,0 +1,160 @@
+# Set this to false if you are using an external Postgres database (recommended)
+enableLocalPostgres: true
+
+ai:
+  enabled: true
+
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-ai
+    tag: latest
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 0.5
+      memory: 2Gi
+    limits:
+      cpu: 0.5
+      memory: 2Gi
+
+  env:
+    modelName: gpt-3.5-turbo
+
+  secrets:
+    aiApiUsername: ai-basic-username
+    aiApiPassword: ai-basic-password
+    openAiApiKey: your_openai_api_key
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+web:
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-web
+    tag: latest
+    pullPolicy: Always
+
+  # optional
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  #
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+api:
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-api
+    tag: latest
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 1
+      memory: 4Gi
+
+  env:
+    # update these two URLs with your ingress URLs
+    frontendUrl: http://localhost:4000
+    apiUrl: http://localhost:8080
+    logLevel: info
+    jupyterRepository: docker.io
+    jupyterImage: briefer/enterprise/jupyter
+    jupyterTag: v566
+    jupyterPort: 8888
+    postgresHostname: postgres
+    postgresPort: 5432
+    postgresDatabase: briefer
+    aiApiUrl: http://ai:8080
+
+  secrets:
+    postgresUsername: postgres
+    postgresPassword: password
+    # Change these values to your own - run `openssl rand -hex 32` to generate new values
+    jupyterToken: '040cf534cae586316a328c9358851c16d67bc631a087e48f9c2d513cb83575ce' # openssl rand -hex 32
+    authJwtSecret: 'bb8ff1d9614715717b691ef4a64676aa820eb4a0e1d8a48ccf3be75cd760b26f' # openssl rand -hex 32
+    loginJwtSecret: 'df7387a5da36d42c85116d434efe446d48e821aa681d8c2de375ff5aa6218511' # openssl rand -hex 32
+    datasourcesEncryptionKey: '3aac238ac8083cfe9c441bb3c46f5f670587e5eb90f6bdd59e051926e66fd2d2' # openssl rand -hex 32
+    environmentVariablesEncryptionKey: '0b31bb4d482322391b4f753435e7ebd03f3e805f3e94ba8293c84f119763920f' # openssl rand -hex 32
+    integrationsConfigEncryptionKey: '399f1170e6089a772421810018d23afb77204e06a24c6a7227c7026a6ff3c0bd' # openssl rand -hex 32
+    workspaceSecretsEncryptionKey: 'dcebf67b5b1ac0238d0c83584d8cd046d4ce6b0390c58868af8146e0df72031c' # openssl rand -hex 32
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  #
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+# use tolerations and affinity to deploy the jupyter pod on a specific node if needed
+jupyter:
+  storageClassName: standard
+  storageSize: 16Gi
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-jupyter
+    tag: latest
+    pullPolicy: Always
+
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - jupyter
+  #             - key: topology.kubernetes.io/zone
+  #               operator: In
+  #               values:
+  #                 - jupyter

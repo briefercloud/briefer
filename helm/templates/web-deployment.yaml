@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-deployment
+  namespace: '{{ .Release.Namespace }}'
+  labels:
+    app.kubernetes.io/name: briefer
+    app.kubernetes.io/component: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: briefer
+      app.kubernetes.io/component: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: briefer
+        app.kubernetes.io/component: web
+    spec:
+      serviceAccountName: briefer-web
+      containers:
+        - name: web
+          image: '{{ .Values.web.image.repository }}/{{ .Values.web.image.name }}:{{ .Values.web.image.tag }}'
+          imagePullPolicy: '{{ .Values.web.image.pullPolicy | default "Always" }}'
+          {{- if .Values.web.resources }}
+          resources:
+            {{- with .Values.web.resources.requests }}
+            requests:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+            {{- with .Values.web.resources.limits }}
+            limits:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: NEXT_PUBLIC_API_URL
+              value: '{{ .Values.api.env.apiUrl }}'
+            - name: NEXT_PUBLIC_API_WS_URL
+              value: '{{ .Values.api.env.apiUrl | replace "http://" "ws://" | replace "https://" "wss://" }}'
+            - name: NEXT_PUBLIC_PUBLIC_URL
+              value: '{{ .Values.api.env.frontendUrl }}'
+      {{- if .Values.web.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range .Values.web.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms }}
+            - matchExpressions:
+              {{- range .matchExpressions }}
+              - key: {{ .key }}
+                operator: {{ .operator }}
+                values:
+                {{- range .values }}
+                - {{ . }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+      {{- end }}
+      {{- if .Values.web.tolerations }}
+      tolerations:
+        {{- range .Values.web.tolerations }}
+        - key: {{ .key }}
+          operator: {{ .operator }}
+          value: {{ .value }}
+          effect: {{ .effect }}
+        {{- end }}
+      {{- end }}
