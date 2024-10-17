@@ -1,0 +1,161 @@
+# Set this to false if you are using an external Postgres database (recommended)
+enableLocalPostgres: true
+
+ai:
+  enabled: true
+
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-ai
+    tag: latest
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 0.5
+      memory: 2Gi
+    limits:
+      cpu: 0.5
+      memory: 2Gi
+
+  env:
+    modelName: gpt-3.5-turbo
+
+  secrets:
+    aiApiUsername: ai-basic-username
+    aiApiPassword: ai-basic-password
+    openAiApiKey: your_openai_api_key
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+web:
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-web
+    tag: latest
+    pullPolicy: Always
+
+  # optional
+  resources:
+    requests:
+      cpu: 1
+      memory: 2Gi
+    limits:
+      cpu: 1
+      memory: 2Gi
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  #
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+api:
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-api
+    tag: latest
+    pullPolicy: Always
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 1
+      memory: 4Gi
+
+  env:
+    # update these two URLs with your ingress URLs
+    frontendUrl: http://localhost:4000
+    apiUrl: http://localhost:8080
+    logLevel: info
+    jupyterRepository: docker.io
+    jupyterImage: briefer/enterprise/jupyter
+    jupyterTag: v566
+    jupyterPort: 8888
+    postgresHostname: postgres
+    postgresPort: 5432
+    postgresDatabase: briefer
+    aiApiUrl: http://ai:8080
+
+  secrets:
+    postgresUsername: postgres
+    postgresPassword: password
+    # Change these values to your own by running the indicated command
+    # or just leave these empty and the chart will generate random values for you
+    jupyterToken: '' # openssl rand -hex 32
+    authJwtSecret: '' # openssl rand -hex 32
+    loginJwtSecret: '' # openssl rand -hex 32
+    datasourcesEncryptionKey: '' # openssl rand -hex 32
+    environmentVariablesEncryptionKey: '' # openssl rand -hex 32
+    integrationsConfigEncryptionKey: '' # openssl rand -hex 32
+    workspaceSecretsEncryptionKey: '' # openssl rand -hex 32
+
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - core
+  #
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+
+# use tolerations and affinity to deploy the jupyter pod on a specific node if needed
+jupyter:
+  storageClassName: standard
+  storageSize: 16Gi
+  image:
+    repository: docker.io
+    name: briefercloud/briefer-jupyter
+    tag: latest
+    pullPolicy: Always
+
+  # tolerations:
+  #   - key: 'briefer.cloud/domain'
+  #     operator: 'Equal'
+  #     value: 'core'
+  #     effect: 'NoSchedule'
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: briefer.cloud/domain
+  #               operator: In
+  #               values:
+  #                 - jupyter
+  #             - key: topology.kubernetes.io/zone
+  #               operator: In
+  #               values:
+  #                 - jupyter

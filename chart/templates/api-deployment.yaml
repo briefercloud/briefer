@@ -1,0 +1,222 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  namespace: '{{ .Release.Namespace }}'
+  labels:
+    app.kubernetes.io/name: briefer
+    app.kubernetes.io/component: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: briefer
+      app.kubernetes.io/component: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: briefer
+        app.kubernetes.io/component: api
+    spec:
+      serviceAccountName: briefer-api
+      terminationGracePeriodSeconds: 600
+      initContainers:
+        - name: db-migration
+          image: '{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}'
+          imagePullPolicy: '{{ .Values.api.image.pullPolicy | default "Always" }}'
+          workingDir: /app/packages/database
+          command: ["/bin/sh"]
+          args:
+            - "-c"
+            - "export POSTGRES_PRISMA_URL=postgresql://$POSTGRES_USERNAME:$POSTGRES_PASSWORD@$POSTGRES_HOSTNAME:$POSTGRES_PORT/$POSTGRES_DATABASE?schema=public && npx prisma migrate deploy"
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: postgresUsername
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: postgresPassword
+            - name: POSTGRES_HOSTNAME
+              value: '{{ .Values.api.env.postgresHostname }}'
+            - name: POSTGRES_PORT
+              value: '{{ .Values.api.env.postgresPort }}'
+            - name: POSTGRES_DATABASE
+              value: '{{ .Values.api.env.postgresDatabase }}'
+          resources:
+            requests:
+              cpu: 100m
+            limits:
+              memory: 1Gi
+      containers:
+        - name: api
+          image: '{{ .Values.api.image.repository }}/{{ .Values.api.image.name }}:{{ .Values.api.image.tag }}'
+          imagePullPolicy: '{{ .Values.api.image.pullPolicy | default "Always" }}'
+          {{- if .Values.api.resources }}
+          resources:
+            {{- with .Values.api.resources.requests }}
+            requests:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+            {{- with .Values.api.resources.limits }}
+            limits:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          env:
+            - name: NODE_ENV
+              value: '{{ .Values.api.env.nodeEnv | default "production" }}'
+            - name: LOG_LEVEL
+              value: '{{ .Values.api.env.logLevel }}'
+            - name: API_URL
+              value: '{{ .Values.api.env.apiUrl }}'
+            - name: FRONTEND_URL
+              value: '{{ .Values.api.env.frontendUrl }}'
+            - name: JUPYTER_HOST
+              value: 'briefer-jupyter-service'
+            - name: JUPYTER_PORT
+              value: '{{ .Values.api.env.jupyterPort }}'
+            - name: JUPYTER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: jupyterToken
+
+            - name: POSTGRES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: postgresUsername
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: postgresPassword
+            - name: POSTGRES_HOSTNAME
+              value: '{{ .Values.api.env.postgresHostname }}'
+            - name: POSTGRES_PORT
+              value: '{{ .Values.api.env.postgresPort }}'
+            - name: POSTGRES_DATABASE
+              value: '{{ .Values.api.env.postgresDatabase }}'
+            - name: POSTGRES_CONNECTION_LIMIT
+              value: '{{ .Values.api.env.postgresConnectionLimit | default "30" }}'
+            - name: POSTGRES_POOL_TIMEOUT
+              value: '{{ .Values.api.env.postgresPoolTimeout | default "10" }}'
+
+            - name: LOGIN_LINK_EXPIRATION
+              value: '{{ .Values.api.env.loginLinkExpiration | default "24h" }}'
+            - name: LOGIN_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: loginJwtSecret
+            - name: AUTH_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: authJwtSecret
+            - name: AUTH_JWT_EXPIRATION
+              value: '{{ .Values.api.env.authJwtExpiration | default "30d" }}'
+
+{{- if .Values.ai.enabled }}
+            # AI related environment variables
+            - name: AI_API_URL
+              value: '{{ .Values.api.env.aiApiUrl }}'
+            - name: AI_API_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: aiApiUsername
+            - name: AI_API_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: aiApiPassword
+            - name: PYTHON_ALLOWED_LIBRARIES
+              value: '{{ .Values.api.env.pythonAllowedLibraries | default "pandas, plotly, matplotlib" }}'
+{{- end }}
+
+            - name: DATASOURCES_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: datasourcesEncryptionKey
+
+            - name: ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: environmentVariablesEncryptionKey
+
+            - name: WORKSPACE_SECRETS_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: workspaceSecretsEncryptionKey
+
+            - name: INTEGRATIONS_CONFIG_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: api-secrets
+                  key: integrationsConfigEncryptionKey
+
+            - name: YJS_DOCS_CACHE_SIZE_MB
+              value: '{{ .Values.api.env.yjsDocsCacheSizeMB | default "1024" }}'
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 90
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 90
+
+      {{- if .Values.api.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range .Values.api.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms }}
+            - matchExpressions:
+              {{- range .matchExpressions }}
+              - key: {{ .key }}
+                operator: {{ .operator }}
+                values:
+                {{- range .values }}
+                - {{ . }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+      {{- end }}
+
+      {{- if .Values.api.tolerations }}
+      tolerations:
+        {{- range .Values.api.tolerations }}
+        - key: {{ .key }}
+          operator: {{ .operator }}
+          value: {{ .value }}
+          effect: {{ .effect }}
+        {{- end }}
+      {{- end }}

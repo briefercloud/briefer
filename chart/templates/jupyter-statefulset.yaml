@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: '{{ .Release.Namespace }}'
+  name: briefer-jupyter
+  labels:
+    app.kubernetes.io/name: briefer
+    app.kubernetes.io/component: jupyter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: briefer
+      app.kubernetes.io/component: jupyter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: briefer
+        app.kubernetes.io/component: jupyter
+    spec:
+      containers:
+      - name: jupyter
+        image: '{{ .Values.jupyter.image.repository }}/{{ .Values.jupyter.image.name }}:{{ .Values.jupyter.image.tag }}'
+        command: ["sh", "-c", "jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400"]
+        livenessProbe:
+          exec:
+            command: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          failureThreshold: 5
+          timeoutSeconds: 10
+        env:
+        - name: JUPYTER_TOKEN
+          value: "{{ .Values.api.secrets.jupyterToken }}"
+        ports:
+        - containerPort: 8888
+          name: jupyter-port
+  volumeClaimTemplates:
+  - metadata:
+      name: jupyter-storage
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "{{ .Values.jupyter.storageClassName | default "standard" }}"
+      resources:
+        requests:
+          storage: "{{ .Values.jupyter.storageSize | default "16Gi" }}"
