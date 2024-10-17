@@ -10,6 +10,7 @@ import { materialLight } from './theme'
 
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useSQLExtension } from './sql'
+import { usePythonExtension } from './python'
 
 function createTextSync(source: Y.Text) {
   const plugin = ViewPlugin.fromClass(
@@ -161,6 +162,7 @@ export type CodeEditor = {
 
 interface Props {
   workspaceId: string
+  documentId: string
   blockId: string
   source: Y.Text
   language: 'python' | 'sql'
@@ -174,6 +176,7 @@ interface Props {
 export function CodeEditor(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
   const sql = useSQLExtension(props.workspaceId, props.dataSourceId ?? null)
+  const python = usePythonExtension(props.documentId, props.blockId)
 
   const onRunInsertBlock = useCallback(() => {
     props.onRun()
@@ -206,7 +209,7 @@ export function CodeEditor(props: Props) {
         basicSetup,
         EditorView.lineWrapping,
         ...(props.language === 'python'
-          ? [python()]
+          ? [python]
           : props.language === 'sql'
           ? [sql]
           : []),
@@ -285,7 +288,15 @@ export function CodeEditor(props: Props) {
     } else {
       viewRef.current = initializeEditorView(editorRef.current)
     }
-  }, [props.source, props.diff, props.language, props.readOnly, editorRef, sql])
+  }, [
+    props.source,
+    props.diff,
+    props.language,
+    props.readOnly,
+    editorRef,
+    sql,
+    python,
+  ])
 
   useEffect(() => {
     if (

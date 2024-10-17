@@ -9,7 +9,7 @@ import {
   APIReusableComponent,
   EnvironmentStatus,
 } from '@briefer/database'
-import { PythonCompletionMessage, Comment } from '@briefer/types'
+import { Comment, PythonSuggestionsResult } from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
 import { joinWorkspace, leaveWorkspace } from './workspace/index.js'
@@ -77,8 +77,6 @@ interface EmitEvents {
     documentId: string
     commentId: string
   }) => void
-
-  'python-completion': (msg: PythonCompletionMessage) => void
 }
 
 export interface Socket extends BaseSocket<any, EmitEvents> {
@@ -140,11 +138,11 @@ export function createSocketServer(server: http.Server): Server {
     }
 
     const trackWork =
-      (fn: (data: unknown, callback?: Function) => Promise<void>) =>
-      async (data: unknown, callback?: Function) => {
+      <A>(fn: (data: unknown, ack: (data: A) => void) => Promise<void>) =>
+      async (data: unknown, ack: (data: A) => void) => {
         const id = uuidv4()
         try {
-          const promise = fn(data, callback)
+          const promise = fn(data, ack)
           workInProgress.set(id, promise)
           await promise
         } finally {
@@ -163,7 +161,10 @@ export function createSocketServer(server: http.Server): Server {
       'restart-environment',
       trackWork(handleRestartEnvironment(socket, session))
     )
-    socket.on('complete-python', trackWork(completePython(io, socket, session)))
+    socket.on(
+      'complete-python',
+      trackWork<PythonSuggestionsResult>(completePython(io, socket, session))
+    )
 
     socket.on(
       'workspace-datasources-refresh-all',

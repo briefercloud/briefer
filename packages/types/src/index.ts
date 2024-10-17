@@ -895,14 +895,9 @@ export const PythonSuggestion = z.object({
 
 export type PythonSuggestion = z.infer<typeof PythonSuggestion>
 
-export type PythonCompletionMessage =
+export type PythonSuggestionsResult =
   | {
       status: 'success'
-      documentId: string
-      blockId: string
-      modelId: string
-      position: number
-      currentWord: string | null
       suggestions: PythonSuggestion[]
     }
   | {

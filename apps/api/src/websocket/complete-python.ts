@@ -3,37 +3,30 @@ import { Session } from '../types.js'
 import { z } from 'zod'
 import { logger } from '../logger.js'
 import { DocumentPersistor } from '../yjs/v2/persistors.js'
-import { PythonSuggestion } from '@briefer/types'
+import { PythonSuggestion, PythonSuggestionsResult } from '@briefer/types'
 import { getDocumentSourceWithBlockStartPos } from '@briefer/editor'
 import { getCompletion } from '../python/index.js'
 import { getDocId, getYDocForUpdate } from '../yjs/v2/index.js'
 import { isAuthorizedForDocument } from '../auth/token.js'
-export type PythonCompletionMessage = {
-  status: 'success'
-  value: PythonSuggestion
-}
 
 const completPython =
   (io: IOServer, socket: Socket, { user, userWorkspaces }: Session) =>
-  async (data: unknown) => {
+  async (data: unknown, ack: (result: PythonSuggestionsResult) => void) => {
     const parsedData = z
       .object({
         documentId: z.string(),
         blockId: z.string(),
-        modelId: z.string(),
         position: z.number(),
-        currentWord: z.string().nullable(),
       })
       .safeParse(data)
     if (!parsedData.success) {
-      socket.emit('python-completion', {
+      ack({
         status: 'invalid-payload',
       })
       return
     }
 
-    const { blockId, documentId, modelId, position, currentWord } =
-      parsedData.data
+    const { blockId, documentId, position } = parsedData.data
 
     const doc = await isAuthorizedForDocument(documentId, user.id)
     const role = doc ? userWorkspaces[doc.workspaceId]?.role : null
@@ -64,13 +57,8 @@ const completPython =
           )
 
           if (completion.content.status === 'abort') {
-            socket.emit('python-completion', {
+            ack({
               status: 'success',
-              documentId,
-              blockId,
-              modelId,
-              position,
-              currentWord,
               suggestions: [],
             })
             return
@@ -86,7 +74,7 @@ const completPython =
               },
               'Python completion error'
             )
-            socket.emit('python-completion', {
+            ack({
               status: 'unexpected-error',
             })
             return
@@ -132,13 +120,8 @@ const completPython =
             })
           }
 
-          socket.emit('python-completion', {
+          ack({
             status: 'success',
-            documentId,
-            blockId,
-            modelId,
-            position,
-            currentWord,
             suggestions,
           })
         },
@@ -153,7 +136,7 @@ const completPython =
         },
         'Failed to get python completion'
       )
-      socket.emit('python-completion', {
+      ack({
         status: 'unexpected-error',
       })
     }
