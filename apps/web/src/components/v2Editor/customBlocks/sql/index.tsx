@@ -496,6 +496,7 @@ function SQLBlock(props: Props) {
             <div>
               <CodeEditor
                 workspaceId={props.document.workspaceId}
+                documentId={props.document.id}
                 blockId={blockId}
                 source={source}
                 language="sql"
