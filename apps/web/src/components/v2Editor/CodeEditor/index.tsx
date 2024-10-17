@@ -1,43 +1,111 @@
 import * as Y from 'yjs'
 import { useCallback, useEffect, useRef } from 'react'
-import { Annotation, EditorState, StateField } from '@codemirror/state'
+import {
+  Annotation,
+  ChangeSpec,
+  EditorState,
+  StateField,
+} from '@codemirror/state'
 import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { python } from '@codemirror/lang-python'
 import { sql } from '@codemirror/lang-sql'
 import { basicSetup } from 'codemirror'
-import { EditorView, keymap } from '@codemirror/view'
+import { EditorView, keymap, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { materialLight } from './theme'
 
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 
-// FIXME: This is buggy
-export function createTextSync(source: Y.Text) {
-  return StateField.define({
-    create() {
-      return source
-    },
-    update: (value: Y.Text, tr) => {
-      if (tr.changes.empty || tr.annotation(IsLocalAnnotation)) {
-        return value
+function createTextSync(source: Y.Text) {
+  const plugin = ViewPlugin.fromClass(
+    class {
+      constructor(private view: EditorView) {
+        this.observe()
       }
 
-      const operation = () => {
-        tr.changes.iterChanges((fromA, toA, fromB, _toB, inserted) => {
-          value.delete(fromA, toA - fromA)
-          value.insert(fromB, inserted.toString())
+      public update(update: ViewUpdate) {
+        console.log('update!')
+        if (!update.docChanged) {
+          return
+        }
+
+        const operation = () => {
+          update.transactions.forEach((tr) => {
+            if (tr.annotation(IsLocalAnnotation)) {
+              return
+            }
+
+            tr.changes.iterChanges((fromA, toA, fromB, _toB, inserted) => {
+              if (toA - fromA > 0) {
+                source.delete(fromA, toA - fromA)
+              }
+              if (inserted.length > 0) {
+                source.insert(fromB, inserted.toString())
+              }
+            })
+          })
+        }
+
+        if (source.doc) {
+          source.doc.transact(operation)
+        } else {
+          operation()
+        }
+      }
+
+      public destroy() {
+        source.unobserve(this.onEvent)
+      }
+
+      private observe() {
+        console.log(source.toString())
+        source.observe(this.onEvent)
+      }
+
+      private onEvent = (e: Y.YTextEvent, tr: Y.Transaction) => {
+        console.log('onEvent', e, tr)
+        if (tr.local) {
+          return
+        }
+
+        const changeSpecs: ChangeSpec[] = []
+        let pos = 0
+        for (const change of e.delta) {
+          if (change.insert) {
+            const text =
+              typeof change.insert === 'string'
+                ? change.insert
+                : Array.isArray(change.insert)
+                  ? change.insert.join('')
+                  : ''
+            changeSpecs.push({
+              from: pos,
+              insert: text,
+            })
+            pos += text.length
+          } else if (change.delete) {
+            changeSpecs.push({
+              from: pos,
+              to: pos + change.delete,
+              insert: '',
+            })
+            pos += change.delete
+          } else if (change.retain) {
+            pos += change.retain
+          }
+        }
+
+        const transaction = this.view.state.update({
+          changes: changeSpecs,
+          annotations: [IsLocalAnnotation.of(true)],
         })
-      }
 
-      if (value.doc) {
-        value.doc.transact(operation)
-      } else {
-        operation()
+        this.view.dispatch(transaction)
       }
+    }
+  )
 
-      return value
-    },
-  })
+  return plugin
 }
 
 const IsLocalAnnotation = Annotation.define<boolean>()
@@ -131,7 +199,7 @@ export function CodeEditor(props: Props) {
       return
     }
 
-    function getExtensions(source: Y.Text) {
+    function getExtensions(source: Y.Text, diff?: Y.Text) {
       return [
         ...brieferKeyMaps({
           onBlur: editorAPI.blur,
@@ -149,7 +217,7 @@ export function CodeEditor(props: Props) {
             : []),
         keymap.of(vscodeKeymap),
         EditorState.readOnly.of(props.readOnly),
-        createTextSync(source),
+        createTextSync(diff ?? source),
         materialLight,
       ]
     }
@@ -185,7 +253,7 @@ export function CodeEditor(props: Props) {
       destroyCurrent()
 
       const state = EditorState.create({
-        extensions: getExtensions(props.source),
+        extensions: getExtensions(props.source, props.diff),
         doc: props.source.toString(),
         selection,
       })
