@@ -2,7 +2,7 @@ import dynamic from 'next/dynamic'
 
 import { useDataSources } from '@/hooks/useDatasources'
 import useDocument from '@/hooks/useDocument'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { ApiDocument, ApiUser, UserWorkspaceRole } from '@briefer/database'
 import { isNil } from 'ramda'
@@ -81,6 +81,7 @@ function PrivateDocumentPageInner(
     publishing: boolean
   }
 ) {
+  const [shouldScroll, setShouldScroll] = useState(false)
   const documentTitle = useMemo(
     () => props.document.title || 'Untitled',
     [props.document.title]
@@ -324,6 +325,10 @@ function PrivateDocumentPageInner(
     </div>
   )
 
+  const scrollToBottom = useCallback(() => {
+    setShouldScroll(true)
+  }, [setShouldScroll])
+
   return (
     <Layout
       topBarClassname={props.isApp ? 'bg-gray-50' : undefined}
@@ -332,6 +337,8 @@ function PrivateDocumentPageInner(
       <div className="w-full relative flex">
         <EditorAwarenessProvider awareness={provider.awareness}>
           <V2Editor
+            shouldScroll={shouldScroll}
+            setShouldScroll={setShouldScroll}
             document={props.document}
             dataSources={dataSources}
             isPublicViewer={false}
@@ -401,6 +408,7 @@ function PrivateDocumentPageInner(
               visible={selectedSidebar?._tag === 'files'}
               onHide={onHideSidebar}
               yDoc={yDoc}
+              scrollToBottom={scrollToBottom}
             />
             <ReusableComponents
               workspaceId={props.workspaceId}

@@ -1175,6 +1175,8 @@ const V2EditorRow = (props: {
 }
 
 type V2EditorProps = {
+  shouldScroll: boolean
+  setShouldScroll: (shouldScroll: boolean) => void
   isPublicViewer: boolean
   document: ApiDocument
   dataSources: APIDataSources
@@ -1268,6 +1270,13 @@ const V2Editor = (props: V2EditorProps) => {
       setInteractionState((prev) => ({ ...prev, scrollIntoView: false }))
     }
   }, [interactionState, scrollViewRef])
+
+  useEffect(() => {
+    if (props.shouldScroll && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ top: scrollViewRef.current.scrollHeight, behavior: 'smooth' })
+      props.setShouldScroll(false)
+    }
+  }, [props.shouldScroll, scrollViewRef, props.setShouldScroll])
 
   const onAddBlock = useCallback(
     (type: BlockType, index: number) => {
