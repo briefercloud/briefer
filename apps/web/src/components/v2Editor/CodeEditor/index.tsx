@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Annotation, ChangeSpec, EditorState } from '@codemirror/state'
 import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
-import { python } from '@codemirror/lang-python'
 import { basicSetup } from 'codemirror'
 import { EditorView, keymap, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { materialLight } from './theme'
@@ -172,6 +171,7 @@ interface Props {
   onInsertBlock: () => void
   diff?: Y.Text
   dataSourceId?: string | null
+  disabled: boolean
 }
 export function CodeEditor(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
@@ -197,7 +197,7 @@ export function CodeEditor(props: Props) {
       return
     }
 
-    function getExtensions(source: Y.Text, diff?: Y.Text) {
+    function getExtensions(source: Y.Text, disabled: boolean) {
       return [
         ...brieferKeyMaps({
           onBlur: editorAPI.blur,
@@ -214,9 +214,9 @@ export function CodeEditor(props: Props) {
           ? [sql]
           : []),
         keymap.of(vscodeKeymap),
-        EditorState.readOnly.of(props.readOnly),
-        createTextSync(diff ?? source),
-        materialLight,
+        EditorState.readOnly.of(props.disabled ?? props.readOnly),
+        createTextSync(source),
+        materialLight(disabled),
       ]
     }
 
@@ -251,7 +251,7 @@ export function CodeEditor(props: Props) {
       destroyCurrent()
 
       const state = EditorState.create({
-        extensions: getExtensions(props.source, props.diff),
+        extensions: getExtensions(props.source, props.disabled),
         doc: props.source.toString(),
         selection,
       })
@@ -267,12 +267,12 @@ export function CodeEditor(props: Props) {
       destroyCurrent()
 
       const a = EditorState.create({
-        extensions: getExtensions(props.source),
+        extensions: getExtensions(props.source, props.disabled),
         doc: props.source.toString(),
         selection,
       })
       const b = EditorState.create({
-        extensions: getExtensions(diff),
+        extensions: getExtensions(diff, props.disabled),
         doc: diff.toString(),
       })
 
@@ -296,6 +296,7 @@ export function CodeEditor(props: Props) {
     editorRef,
     sql,
     python,
+    props.disabled,
   ])
 
   useEffect(() => {

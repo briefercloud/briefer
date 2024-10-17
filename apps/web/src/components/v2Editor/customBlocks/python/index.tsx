@@ -347,6 +347,7 @@ function PythonBlock(props: Props) {
                 onRun={onRun}
                 onInsertBlock={props.insertBelow ?? (() => {})}
                 diff={aiSuggestions ?? undefined}
+                disabled={statusIsDisabled}
               />
             </div>
           </div>
