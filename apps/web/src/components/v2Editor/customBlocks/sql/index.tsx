@@ -495,6 +495,7 @@ function SQLBlock(props: Props) {
           >
             <div>
               <CodeEditor
+                workspaceId={props.document.workspaceId}
                 blockId={blockId}
                 source={source}
                 language="sql"
@@ -503,6 +504,7 @@ function SQLBlock(props: Props) {
                 onRun={onRun}
                 onInsertBlock={props.insertBelow}
                 diff={aiSuggestions ?? undefined}
+                dataSourceId={dataSourceId}
               />
             </div>
           </div>
