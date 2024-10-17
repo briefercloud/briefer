@@ -67,7 +67,7 @@ export default function UsersPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId ?? '')}>
-      <div className="w-full bg-white h-full">
+      <div className="w-full bg-white h-full overflow-scroll">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
