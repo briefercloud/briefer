@@ -506,6 +506,7 @@ function SQLBlock(props: Props) {
                 onInsertBlock={props.insertBelow}
                 diff={aiSuggestions ?? undefined}
                 dataSourceId={dataSourceId}
+                disabled={statusIsDisabled}
               />
             </div>
           </div>
