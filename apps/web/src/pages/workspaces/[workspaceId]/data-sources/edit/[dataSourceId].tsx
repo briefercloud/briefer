@@ -26,6 +26,9 @@ import SQLServerForm from '@/components/forms/sqlserver'
 import SnowflakeForm, {
   SnowflakeDataSourceInput,
 } from '@/components/forms/snowflake'
+import DatabricksSQLForm, {
+  DatabricksSQLDataSourceInput
+} from '@/components/forms/databrickssql'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -45,6 +48,7 @@ export default function EditDataSourcePostgresSQLPage() {
         | MySQLDataSourceInput
         | TrinoDataSourceInput
         | SnowflakeDataSourceInput
+        | DatabricksSQLDataSourceInput
     ) => {
       if (!data) {
         return
@@ -143,6 +147,12 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             snowflakeDataSource={data.config.data}
+          />
+        ) : data && data.config.type === 'databrickssql' ? (
+          <DatabricksSQLForm
+            workspaceId={workspaceId}
+            onSubmit={onSubmit}
+            databricksSQLDataSource={data.config.data}
           />
         ) : null}
       </div>
