@@ -41,3 +41,8 @@ jobs:
         run: |
           aws s3 cp index.yaml s3://charts.briefer.cloud/
           aws s3 cp briefer-*.tgz s3://charts.briefer.cloud/
+
+      - name: Create CloudFront Invalidation
+        run: |
+          caller_reference="github-$(date +%s)"
+          aws cloudfront create-invalidation --distribution-id E2CKL8NBX9H7JP --invalidation-batch "Paths={Quantity=1,Items=[\"/*\"]},CallerReference=\"$caller_reference\"" --no-cli-pager
