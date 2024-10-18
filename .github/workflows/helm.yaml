@@ -30,12 +30,12 @@ jobs:
         run: |
           helm package chart/ --destination .
 
-      - name: Install Helm S3 plugin
-        run: helm plugin install https://github.com/hypnoglow/helm-s3.git
-
-      - name: Add Briefer's S3 repo
-        run: helm repo add briefer-public-helm s3://briefer-helm
+      - name: Update Helm Chart Index
+        run: |
+          aws s3 cp s3://briefer-helm-charts/index.yaml .
+          helm repo index . --merge index.yaml
 
       - name: Upload Helm Chart to S3
         run: |
-          helm s3 push briefer-*.tgz briefer-public-helm
+          aws s3 cp
+          aws s3 cp briefer-*.tgz s3://briefer-helm-charts/
