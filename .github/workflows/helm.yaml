@@ -2,10 +2,8 @@ name: Push Helm Chart to S3
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'chart/**'
+    tags:
+      - 'helm-v*' # temporary
 
 jobs:
   build-and-push:
