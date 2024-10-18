@@ -1,0 +1,94 @@
+{{- if .Values.ai.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-deployment
+  namespace: '{{ .Release.Namespace }}'
+  labels:
+      app.kubernetes.io/name: briefer
+      app.kubernetes.io/component: ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: briefer
+      app.kubernetes.io/component: ai
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: briefer
+        app.kubernetes.io/component: ai
+    spec:
+      serviceAccountName: briefer-ai
+      containers:
+        - name: ai
+          image: '{{ .Values.ai.image.repository }}/{{ .Values.ai.image.name }}:{{ .Values.ai.image.tag }}'
+          imagePullPolicy: '{{ .Values.ai.image.pullPolicy | default "Always" }}'
+          {{- if .Values.ai.resources }}
+          resources:
+            {{- with .Values.ai.resources.requests }}
+            requests:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+            {{- with .Values.ai.resources.limits }}
+            limits:
+              {{- if .memory }}
+              memory: {{ .memory | quote }}
+              {{- end }}
+              {{- if .cpu }}
+              cpu: {{ .cpu | quote }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          env:
+            - name: PORT
+              value: '{{ .Values.ai.env.port | default "8080" }}'
+            - name: OPENAI_DEFAULT_MODEL_NAME
+              value: '{{ .Values.ai.env.modelName }}'
+            - name: BASIC_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: aiApiUsername
+            - name: BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: aiApiPassword
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: ai-secrets
+                  key: openAiApiKey
+      {{- if .Values.ai.affinity }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            {{- range .Values.ai.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms }}
+            - matchExpressions:
+              {{- range .matchExpressions }}
+              - key: {{ .key }}
+                operator: {{ .operator }}
+                values:
+                {{- range .values }}
+                - {{ . }}
+                {{- end }}
+              {{- end }}
+            {{- end }}
+      {{- end }}
+      {{- if .Values.ai.tolerations }}
+      tolerations:
+        {{- range .Values.ai.tolerations }}
+        - key: {{ .key }}
+          operator: {{ .operator }}
+          value: {{ .value }}
+          effect: {{ .effect }}
+        {{- end }}
+      {{- end }}
+{{- end }}

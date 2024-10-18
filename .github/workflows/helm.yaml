@@ -1,0 +1,50 @@
+name: Push Helm Chart to S3
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'chart/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4.2.0
+        with:
+          version: 'v3.10.3'
+
+      - name: Package Helm Chart
+        run: |
+          helm package chart/ --destination .
+
+      - name: Update Helm Chart Index
+        run: |
+          if aws s3 ls s3://charts.briefer.cloud/index.yaml; then
+            aws s3 cp s3://charts.briefer.cloud/index.yaml .
+            helm repo index . --merge index.yaml
+          else
+            helm repo index .
+          fi
+
+      - name: Upload Helm Chart to S3
+        run: |
+          aws s3 cp index.yaml s3://charts.briefer.cloud/
+          aws s3 cp briefer-*.tgz s3://charts.briefer.cloud/
+
+      - name: Create CloudFront Invalidation
+        run: |
+          caller_reference="github-$(date +%s)"
+          aws cloudfront create-invalidation --distribution-id E2CKL8NBX9H7JP --invalidation-batch "Paths={Quantity=1,Items=[\"/*\"]},CallerReference=\"$caller_reference\"" --no-cli-pager
