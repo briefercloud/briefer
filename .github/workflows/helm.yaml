@@ -30,10 +30,14 @@ jobs:
 
       - name: Update Helm Chart Index
         run: |
-          aws s3 cp s3://briefer-helm-charts/index.yaml .
-          helm repo index . --merge index.yaml
+          if aws s3 ls s3://charts.briefer.cloud/index.yaml; then
+            aws s3 cp s3://charts.briefer.cloud/index.yaml .
+            helm repo index . --merge index.yaml
+          else
+            helm repo index .
+          fi
 
       - name: Upload Helm Chart to S3
         run: |
-          aws s3 cp
-          aws s3 cp briefer-*.tgz s3://briefer-helm-charts/
+          aws s3 cp index.yaml s3://charts.briefer.cloud/
+          aws s3 cp briefer-*.tgz s3://charts.briefer.cloud/
