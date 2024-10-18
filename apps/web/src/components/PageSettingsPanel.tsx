@@ -17,7 +17,6 @@ interface Props {
 export default function PageSettingsPanel(props: Props) {
   const [{ document }, api] = useDocument(props.workspaceId, props.documentId)
 
-  console.log('runUnexecutedBlocks', document?.runUnexecutedBlocks)
   return (
     <>
       <Transition

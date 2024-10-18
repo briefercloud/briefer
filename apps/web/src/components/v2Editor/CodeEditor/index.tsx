@@ -13,7 +13,7 @@ import { usePythonExtension } from './python'
 
 function createTextSync(source: Y.Text) {
   const plugin = ViewPlugin.fromClass(
-    class {
+    class YTextSync {
       constructor(private view: EditorView) {
         this.observe()
       }
@@ -266,15 +266,15 @@ export function CodeEditor(props: Props) {
       const selection = getSelection()
       destroyCurrent()
 
-      const a = EditorState.create({
+      const a = {
         extensions: getExtensions(props.source, props.disabled),
         doc: props.source.toString(),
         selection,
-      })
-      const b = EditorState.create({
+      }
+      const b = {
         extensions: getExtensions(diff, props.disabled),
         doc: diff.toString(),
-      })
+      }
 
       return new MergeView({
         a,
