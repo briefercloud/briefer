@@ -1,71 +1,150 @@
 ---
 title: Introduction
-description: 'Welcome to the home of your new documentation'
+description: 'Briefer is the modern open-source BI and data science tool.'
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.svg"
-  alt="Hero Light"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.svg"
-  alt="Hero Dark"
-/>
+## What is Briefer
 
-## Setting up
+Briefer is like Notion for code notebooks and dashboards. It gives technical users all the flexibility they need to publish dashboards, analyze data, create reports, and build data apps. At the same time, Briefer makes it easy for non-technical users to view and interact with data.
 
-The first step to world-class documentation is setting up your editing environments.
+In Briefer, you can:
+
+- 📚📊 **Create notebooks and dashboards** using Markdown, Python, SQL, and native visualizations.
+- 🤳 **Build interactive data apps** using inputs, dropdowns, and date pickers.
+- 🕰️ **Schedule notebooks and dashboards** to run and update periodically.
+- ⚙️ **Create and test ad-hoc pipelines** using writebacks.
+- 🤖 **Generate code and queries** using an AI that understands your database schema and your notebook's context.
+
+In addition to all that, Briefer is also multiplayer, meaning two or more people can work on the same notebook or dashboard at the same time and see each other's changes in real-time.
+
+## Getting started
 
 <CardGroup cols={2}>
   <Card
-    title="Edit Your Docs"
-    icon="pen-to-square"
-    href="https://mintlify.com/docs/quickstart"
+    title="Local quickstart"
+    icon="computer"
+    href="./getting-started/quickstart"
   >
-    Get your docs set up locally for easy development
+    Get Briefer running on your machine.
   </Card>
-  <Card
-    title="Preview Changes"
-    icon="image"
-    href="https://mintlify.com/docs/development"
-  >
-    Preview your changes before you push to make sure they're perfect
+  <Card title="Cloud quickstart" icon="cloud" href="./getting-started/cloud">
+    Set up a workspace in our cloud.
+  </Card>
+  <Card title="Deploy Briefer" icon="users" href="./getting-started/deploy">
+    Deploy Briefer for your team to use.
   </Card>
 </CardGroup>
 
-## Make it yours
-
-Update your docs to your brand and add valuable content for the best user conversion.
+## Features
 
 <CardGroup cols={2}>
-  <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
-  >
-    Customize your docs to your company's colors and brands
+  <Card title="Product overview" icon="map" href="./product/overview">
+    A quick overview on Briefer's features and how to use it.
   </Card>
   <Card
-    title="Reference APIs"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
+    title="Notebooks and Dashboards"
+    icon="table-columns"
+    href="./product/notebooks-and-dashboards"
   >
-    Automatically generate endpoints from an OpenAPI spec
+    How to create and manage notebooks and dashboards.
+  </Card>
+  <Card title="Data sources" icon="database" href="./product/data-sources">
+    Connect your databases to Briefer.
+  </Card>
+  <Card title="Files" icon="folder-open" href="./product/files">
+    Upload files to Briefer and use them.
+  </Card>
+  <Card title="Schema explorer" icon="book" href="./product/schema-explorer">
+    Explore your database's schema and data.
+  </Card>
+  <Card title="Schedules" icon="calendar" href="./product/schedules">
+    Schedule your pages to run periodically.
+  </Card>
+  <Card title="Snapshots" icon="camera" href="./product/snapshots">
+    See how your pages evolved over time and restore them.
   </Card>
   <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/components/accordion"
+    title="Reusable components"
+    icon="cubes-stacked"
+    href="./product/reusable-components"
   >
-    Build interactive features and designs to guide your users
+    Turn blocks into components you can reuse across pages.
+  </Card>
+  <Card title="Sharing" icon="share-nodes" href="./product/sharing">
+    Share your pages with others.
+  </Card>
+  <Card title="Environments" icon="microchip" href="./product/environments">
+    Share your pages with others.
   </Card>
   <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
+    title="Environment variables"
+    icon="key"
+    href="./product/environment-variables"
   >
-    Check out our showcase of our favorite documentation
+    Store keys, settings, and other values as environment variables that you can
+    use.
+  </Card>
+  <Card
+    title="AI assistant"
+    icon="wand-magic-sparkles"
+    href="./product/environment-variables"
+  >
+    Use AI to generate code and queries for you.
+  </Card>
+  <Card title="Slack integration" icon="key" href="./product/slack-integration">
+    Get your pages' sent periodically on Slack.
+  </Card>
+  <Card
+    title="Keyboard shortcuts"
+    icon="keyboard"
+    href="./product/keyboard-shortcuts"
+  >
+    Use keyboard shortcuts for convenience and speed.
+  </Card>
+</CardGroup>
+
+## Blocks
+
+<CardGroup cols={2}>
+  <Card title="Blocks overview" icon="cubes" href="./blocks/overview">
+    How blocks work and how to organize them.
+  </Card>
+  <Card title="Text" icon="quote-left" href="./blocks/text">
+    Add context to your pages using our markdown-enabled editor.
+  </Card>
+  <Card title="SQL" icon="database" href="./blocks/sql">
+    Run SQL queries against databases and files.
+  </Card>
+  <Card title="Python" icon="python" href="./blocks/python">
+    Manipulate data, hit APIs, and create graphs using Python.
+  </Card>
+  <Card title="Visualization" icon="chart-line" href="./blocks/visualization">
+    Create graphs using point-and-click visualizations.
+  </Card>
+  <Card title="Writebacks" icon="file-import" href="./blocks/writebacks">
+    Write data back to your databases.
+  </Card>
+  <Card title="Pivot tables" icon="table" href="./blocks/writebacks">
+    Create pivot tables with your data.
+  </Card>
+  <Card title="Inputs" icon="pen-to-square" href="./blocks/writebacks">
+    Add text inputs, dropdowns, and date pickers to your pages.
+  </Card>
+</CardGroup>
+
+## Settings and management
+
+<CardGroup cols={2}>
+  <Card title="Installing packages" icon="hard-drive" href="./blocks/overview">
+    Install new Python packages into your environment.
+  </Card>
+  <Card title="User management" icon="user-plus" href="./blocks/text">
+    Invite others and manage permissions.
+  </Card>
+  <Card title="Workspace settings" icon="gear" href="./blocks/sql">
+    Configure your workspace.
+  </Card>
+  <Card title="Page settings" icon="scroll" href="./blocks/python">
+    Change page-specific settings.
   </Card>
 </CardGroup>
