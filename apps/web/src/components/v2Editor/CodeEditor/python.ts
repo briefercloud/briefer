@@ -47,6 +47,12 @@ function getRightNotIntersection(str1: string, str2: string): string {
     }
   }
 
+  // if i is equal to str1.length, it means the user
+  // didn't type anything before the completion
+  if (i === str1.length) {
+    return str2
+  }
+
   return str2.slice(i)
 }
 
