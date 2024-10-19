@@ -1,11 +1,9 @@
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { SessionUser, useSession } from '@/hooks/useAuth'
 import useDocument from '@/hooks/useDocument'
-import { useEffect, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { ApiDocument, UserWorkspaceRole } from '@briefer/database'
-import { useYDoc } from '@/hooks/useYDoc'
-import { getDashboard } from '@briefer/editor'
+import { UserWorkspaceRole } from '@briefer/database'
 import {
   ContentSkeleton,
   TitleSkeleton,
@@ -82,67 +80,17 @@ function PrivateDocumentPage(props: PrivateDocumentPageProps) {
         `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook/edit`
       )
     }
-  }, [document, loading, props.user])
 
-  if (document && document.publishedAt) {
-    return (
-      <NotebookOrDashboard
-        document={document}
-        userId={props.user.id}
-        role={props.role}
-      />
-    )
-  }
-
-  return (
-    <Layout>
-      <div className="w-full flex justify-center">
-        <div className={clsx(widthClasses, 'py-20')}>
-          <TitleSkeleton visible />
-          <ContentSkeleton visible />
-        </div>
-      </div>
-    </Layout>
-  )
-}
-
-interface NotebookOrDashboardProps {
-  document: ApiDocument
-  userId: string
-  role: UserWorkspaceRole
-}
-function NotebookOrDashboard(props: NotebookOrDashboardProps) {
-  const clock = useMemo(
-    () => props.document.userAppClock[props.userId] ?? props.document.appClock,
-    [props.document.userAppClock, props.userId]
-  )
-  const { yDoc, syncing } = useYDoc(
-    props.document.id,
-    true,
-    clock,
-    props.userId,
-    props.document.publishedAt,
-    true,
-    null
-  )
-
-  const router = useRouter()
-  useEffect(() => {
-    if (syncing) {
-      return
-    }
-
-    const dashboard = getDashboard(yDoc)
-    if (dashboard.size === 0) {
+    if (document.hasDashboard) {
       router.replace(
-        `/workspaces/${props.document.workspaceId}/documents/${props.document.id}/notebook`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/dashboard`
       )
     } else {
       router.replace(
-        `/workspaces/${props.document.workspaceId}/documents/${props.document.id}/dashboard`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook`
       )
     }
-  }, [syncing, yDoc, router, props.document, props.role])
+  }, [document, loading, props.user])
 
   return (
     <Layout>

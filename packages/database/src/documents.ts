@@ -8,6 +8,7 @@ export type ApiDocument = Document & {
   appClock: number
   appId: string
   userAppClock: Record<string, number>
+  hasDashboard: boolean
 }
 export type ApiDeletedDocument = ApiDocument & {
   deletedAt: Date
@@ -30,6 +31,7 @@ export async function getDocument(
           id: true,
           createdAt: true,
           clock: true,
+          hasDashboard: true,
           userYjsAppDocuments: {
             select: {
               userId: true,
@@ -53,13 +55,11 @@ export async function getDocument(
         appId: doc.yjsAppDocuments[0]?.id ?? '',
         appClock: doc.yjsAppDocuments[0]?.clock ?? 0,
         userAppClock:
-          doc.yjsAppDocuments[0]?.userYjsAppDocuments.reduce(
-            (acc, userDoc) => {
-              acc[userDoc.userId] = userDoc.clock
-              return acc
-            },
-            {} as Record<string, number>
-          ) ?? {},
+          doc.yjsAppDocuments[0]?.userYjsAppDocuments.reduce((acc, userDoc) => {
+            acc[userDoc.userId] = userDoc.clock
+            return acc
+          }, {} as Record<string, number>) ?? {},
+        hasDashboard: doc.yjsAppDocuments[0]?.hasDashboard ?? false,
       }
     : null
 }
@@ -92,6 +92,7 @@ export async function listDocuments(
           id: true,
           clock: true,
           createdAt: true,
+          hasDashboard: true,
           userYjsAppDocuments: {
             select: {
               userId: true,
@@ -114,13 +115,11 @@ export async function listDocuments(
     clock: doc.yjsDocument?.clock ?? 0,
     appClock: doc.yjsAppDocuments[0]?.clock ?? 0,
     userAppClock:
-      doc.yjsAppDocuments[0]?.userYjsAppDocuments.reduce(
-        (acc, userDoc) => {
-          acc[userDoc.userId] = userDoc.clock
-          return acc
-        },
-        {} as Record<string, number>
-      ) ?? {},
+      doc.yjsAppDocuments[0]?.userYjsAppDocuments.reduce((acc, userDoc) => {
+        acc[userDoc.userId] = userDoc.clock
+        return acc
+      }, {} as Record<string, number>) ?? {},
+    hasDashboard: doc.yjsAppDocuments[0]?.hasDashboard ?? false,
   }))
 }
 

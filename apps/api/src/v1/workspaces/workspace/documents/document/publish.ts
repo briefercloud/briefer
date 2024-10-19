@@ -47,6 +47,7 @@ export default function publishRouter(socketServer: IOServer) {
                   state: Buffer.from(
                     Y.encodeStateAsUpdate(getYDocWithoutHistory(yDoc))
                   ),
+                  hasDashboard: yDoc.dashboard.size > 0,
                 },
               })
               setPristine(yDoc.ydoc)
