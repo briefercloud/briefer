@@ -12,7 +12,6 @@ import {
   useEffect,
   useMemo,
   useCallback,
-  useImperativeHandle,
 } from 'react'
 import { useHotkeysContext } from 'react-hotkeys-hook'
 import { Awareness } from 'y-protocols/awareness.js'
@@ -148,8 +147,6 @@ export function EditorAwarenessProvider(props: Props) {
     }),
     [insert, focus, blur, move]
   )
-
-  // useImperativeHandle(ref, () => api, [api])
 
   const contextValue = useMemo(
     (): UseEditorAwareness => [state, api],
