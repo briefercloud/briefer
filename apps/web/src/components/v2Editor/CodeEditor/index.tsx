@@ -214,7 +214,7 @@ export function CodeEditor(props: Props) {
           ? [sql]
           : []),
         keymap.of(vscodeKeymap),
-        EditorState.readOnly.of(props.disabled ?? props.readOnly),
+        EditorState.readOnly.of(props.disabled || props.readOnly),
         createTextSync(source),
         materialLight(disabled),
       ]
