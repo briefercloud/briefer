@@ -61,6 +61,11 @@ export const DataSourceIcons = ({
         icon="/icons/snowflake.png"
         name="Snowflake"
         href={`/workspaces/${workspaceId}/data-sources/new/snowflake`}
+        />
+      <DataSourceBlock
+        icon="/icons/databrickssql.png"
+        name="Databricks SQL"
+        href={`/workspaces/${workspaceId}/data-sources/new/databrickssql`}
       />
       <button
         onClick={onCSV}

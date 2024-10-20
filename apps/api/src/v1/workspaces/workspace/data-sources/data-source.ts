@@ -29,6 +29,9 @@ import {
   getSnowflakeDataSource,
   updateSnowflakeDataSource,
   deleteSnowflakeDataSource,
+  getDatabricksSQLDataSource,
+  updateDatabricksSQLDataSource,
+  deleteDatabricksSQLDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -139,6 +142,19 @@ const dataSourceRouter = (socketServer: IOServer) => {
         notes: z.string(),
       }),
     }),
+    z.object({
+      type: z.literal('databrickssql'),
+      data: z.object({
+        id: z.string().min(1),
+        name: z.string().min(1),
+        hostname: z.string().min(1),
+        http_path: z.string().min(1),
+        token: z.string().min(1),
+        catalog: z.string(),
+        schema: z.string(),
+        notes: z.string(),
+      }),
+    }),
   ])
 
   router.put('/', async (req, res) => {
@@ -162,6 +178,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         getSQLServerDataSource(workspaceId, dataSourceId),
         getTrinoDataSource(workspaceId, dataSourceId),
         getSnowflakeDataSource(workspaceId, dataSourceId),
+        getDatabricksSQLDataSource(workspaceId, dataSourceId),
       ])
     ).find((e) => e !== null)
     if (!existingDb) {
@@ -293,6 +310,17 @@ const dataSourceRouter = (socketServer: IOServer) => {
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
+          },
+          config().DATASOURCES_ENCRYPTION_KEY
+        )
+        break
+      }
+      case 'databrickssql': {
+        await updateDatabricksSQLDataSource(
+          {
+            ...data.data,
+            id: dataSourceId,
+            token: data.data.token === ''? undefined : data.data.token,
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
@@ -444,6 +472,19 @@ const dataSourceRouter = (socketServer: IOServer) => {
         }
       }
 
+      const targetDatabricksSQLDb = await recoverFromNotFound(
+        deleteDatabricksSQLDataSource(workspaceId, targetId)
+      )
+      if (targetDatabricksSQLDb) {
+        return {
+          status: 200,
+          payload: {
+            type: 'databrickssql',
+            data: targetDatabricksSQLDb,
+          },
+        }
+      }
+
       return { status: 404 }
     }
 
@@ -468,6 +509,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       z.literal('trino'),
       z.literal('sqlserver'),
       z.literal('snowflake'),
+      z.literal('databrickssql'),
     ]),
   })
   router.post('/ping', async (req, res) => {
