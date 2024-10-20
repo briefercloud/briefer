@@ -74,6 +74,7 @@ function upsertDocumentInMemory(
       appClock: 0,
       userAppClock: {},
       runUnexecutedBlocks: true,
+      hasDashboard: false,
     })
   }
 
