@@ -132,22 +132,10 @@ function DateInputBlockInput(props: Props) {
     }
   }, [])
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
   const onFocus = useCallback(() => {
-    setInteractionState({
-      mode: 'insert',
-      cursorBlockId: props.blockId,
-      scrollIntoView: false,
-    })
-  }, [setInteractionState, props.blockId])
-
-  const onBlur = useCallback(() => {
-    setInteractionState((prev) => ({
-      ...prev,
-      mode: 'normal',
-      scrollIntoView: false,
-    }))
-  }, [setInteractionState])
+    editorAPI.insert(props.blockId, { scrollIntoView: false })
+  }, [editorAPI.insert, props.blockId])
 
   return (
     <div className="relative">
@@ -159,7 +147,7 @@ function DateInputBlockInput(props: Props) {
         onKeyUp={onKeyUp}
         onClick={onClick}
         onFocus={onFocus}
-        onBlur={onBlur}
+        onBlur={editorAPI.blur}
       >
         {
           // @ts-ignore

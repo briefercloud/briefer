@@ -429,14 +429,10 @@ function VisualizationBlock(props: Props) {
     props.onToggleIsBlockHiddenInPublished(blockId)
   }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
-  const { setInteractionState } = useEditorAwareness()
+  const [, editorAPI] = useEditorAwareness()
   const onClickWithin = useCallback(() => {
-    setInteractionState({
-      cursorBlockId: blockId ?? null,
-      scrollIntoView: false,
-      mode: 'insert',
-    })
-  }, [blockId, setInteractionState])
+    editorAPI.insert(blockId, { scrollIntoView: false })
+  }, [blockId, editorAPI.insert])
 
   if (props.isDashboard) {
     return (

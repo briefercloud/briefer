@@ -310,9 +310,6 @@ function BlockListItem(props: BlockListItemProps) {
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
               onSchemaExplorer={() => {}}
-              isCursorWithin={false}
-              isCursorInserting={false}
-              selectBelow={() => {}}
               insertBelow={() => {}}
             />
           </div>
@@ -332,8 +329,6 @@ function BlockListItem(props: BlockListItemProps) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
-            isCursorWithin={false}
-            isCursorInserting={false}
           />
         ),
         onVisualization: (block) => (
