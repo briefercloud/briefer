@@ -30,13 +30,18 @@ function createTextSync(source: Y.Text) {
               return
             }
 
-            tr.changes.iterChanges((fromA, toA, fromB, _toB, inserted) => {
-              if (toA - fromA > 0) {
-                source.delete(fromA, toA - fromA)
+            let adj = 0
+            tr.changes.iterChanges((fromA, toA, _fromB, _toB, insert) => {
+              const insertText = insert.sliceString(0, insert.length, '\n')
+              if (fromA !== toA) {
+                source.delete(fromA + adj, toA - fromA)
               }
-              if (inserted.length > 0) {
-                source.insert(fromB, inserted.toString())
+
+              if (insertText.length > 0) {
+                source.insert(fromA + adj, insertText)
               }
+
+              adj += insertText.length - (toA - fromA)
             })
           })
         }
@@ -73,6 +78,7 @@ function createTextSync(source: Y.Text) {
                 : ''
             changeSpecs.push({
               from: pos,
+              to: pos,
               insert: text,
             })
             pos += text.length
@@ -262,6 +268,7 @@ export function CodeEditor(props: Props) {
           })
         : EditorState.create(config)
 
+      const comingFromMerge = mergeRef.current !== null
       destroyCurrent()
 
       const view = new EditorView({
@@ -269,19 +276,21 @@ export function CodeEditor(props: Props) {
         parent,
       })
 
-      // update doc
-      view.dispatch(
-        state.update({
-          changes: [
-            {
-              from: 0,
-              to: state.doc.length,
-              insert: props.source.toString(),
-            },
-          ],
-          annotations: [IsLocalAnnotation.of(true)],
-        })
-      )
+      if (comingFromMerge) {
+        // update doc
+        view.dispatch(
+          state.update({
+            changes: [
+              {
+                from: 0,
+                to: state.doc.length,
+                insert: props.source.toString(),
+              },
+            ],
+            annotations: [IsLocalAnnotation.of(true)],
+          })
+        )
+      }
 
       return view
     }
