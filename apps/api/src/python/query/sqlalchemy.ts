@@ -326,6 +326,8 @@ export async function getSQLAlchemySchema(
 import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
+from sqlalchemy.exc import ProgrammingError
+from psycopg2.errors import InsufficientPrivilege
 
 
 def schema_from_tables(inspector, tables):
@@ -334,11 +336,17 @@ def schema_from_tables(inspector, tables):
         schema_name, table_name = table.split(".")
         print(json.dumps({"log": f"Getting schema for table {table}"}))
         columns = []
-        for column in inspector.get_columns(table_name, schema=schema_name):
-            columns.append({
-                "name": column["name"],
-                "type": str(column["type"])
-            })
+        try:
+            for column in inspector.get_columns(table_name, schema=schema_name):
+                columns.append({
+                    "name": column["name"],
+                    "type": str(column["type"])
+                })
+        except ProgrammingError as e:
+            if isinstance(e.orig, InsufficientPrivilege):
+                print(json.dumps({"log": f"Insufficient privileges to access table {table}"}))
+            else:
+                raise e
 
         if schema_name not in schemas:
             schemas[schema_name] = {
