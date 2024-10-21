@@ -19,11 +19,33 @@ import {
 } from '@briefer/types'
 import { APIDataSource } from '@briefer/database'
 
+function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
+  if (!type) {
+    return StandardSQL
+  }
+
+  switch (type) {
+    case 'bigquery':
+    case 'snowflake':
+    case 'oracle':
+    case 'trino':
+    case 'athena':
+      return StandardSQL
+    case 'mysql':
+      return MySQL
+    case 'psql':
+    case 'redshift':
+      return PostgreSQL
+    case 'sqlserver':
+      return MSSQL
+  }
+}
+
 async function computeCompletion(dataSource: APIDataSource) {
   const structure = getDataSourceStructureFromState(dataSource.structure)
   const schema = getSchemaFromStructure(structure)
   return schemaCompletionSource({
-    dialect: StandardSQL,
+    dialect: getDialect(dataSource.config.type),
     schema,
     defaultSchema: structure?.defaultSchema ?? '',
   })
@@ -87,27 +109,7 @@ function getSchemaFromStructure(
 }
 
 function language(dataSource: APIDataSource | null): Extension {
-  const dialect: SQLDialect = (() => {
-    if (!dataSource) {
-      return StandardSQL
-    }
-
-    switch (dataSource.config.type) {
-      case 'bigquery':
-      case 'snowflake':
-      case 'oracle':
-      case 'trino':
-      case 'athena':
-        return StandardSQL
-      case 'mysql':
-        return MySQL
-      case 'psql':
-      case 'redshift':
-        return PostgreSQL
-      case 'sqlserver':
-        return MSSQL
-    }
-  })()
+  const dialect = getDialect(dataSource?.config.type)
 
   const keywordSource = keywordCompletionSource(dialect, true)
   const keywordCompletion = async (
