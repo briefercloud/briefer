@@ -5,6 +5,7 @@ import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { basicSetup } from 'codemirror'
 import { EditorView, keymap, ViewPlugin, ViewUpdate } from '@codemirror/view'
+import { historyField } from '@codemirror/commands'
 import { materialLight } from './theme'
 
 import useEditorAwareness from '@/hooks/useEditorAwareness'
@@ -190,7 +191,7 @@ export function CodeEditor(props: Props) {
 
   const editorRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
-  const mergeViewRef = useRef<MergeView | null>(null)
+  const mergeRef = useRef<{ view: MergeView; state: any } | null>(null)
 
   useEffect(() => {
     if (!editorRef.current) {
@@ -223,7 +224,7 @@ export function CodeEditor(props: Props) {
     function getSelection() {
       const selection =
         viewRef.current?.state.selection ??
-        mergeViewRef.current?.a.state.selection
+        mergeRef.current?.view.a.state.selection
 
       const isOutOfRange =
         selection &&
@@ -242,28 +243,55 @@ export function CodeEditor(props: Props) {
     function destroyCurrent() {
       viewRef.current?.destroy()
       viewRef.current = null
-      mergeViewRef.current?.destroy()
-      mergeViewRef.current = null
+      mergeRef.current?.view.destroy()
+      mergeRef.current = null
     }
 
     function initializeEditorView(parent: Element) {
       const selection = getSelection()
-      destroyCurrent()
-
-      const state = EditorState.create({
+      const config = {
         extensions: getExtensions(props.source, props.disabled),
         doc: props.source.toString(),
         selection,
-      })
+      }
 
-      return new EditorView({
+      const state = mergeRef.current
+        ? EditorState.fromJSON(mergeRef.current.state, config, {
+            // deserialize history
+            history: historyField,
+          })
+        : EditorState.create(config)
+
+      destroyCurrent()
+
+      const view = new EditorView({
         state,
         parent,
       })
+
+      // update doc
+      view.dispatch(
+        state.update({
+          changes: [
+            {
+              from: 0,
+              to: state.doc.length,
+              insert: props.source.toString(),
+            },
+          ],
+          annotations: [IsLocalAnnotation.of(true)],
+        })
+      )
+
+      return view
     }
 
     function initializeMergeView(diff: Y.Text, parent: Element) {
       const selection = getSelection()
+      const state = viewRef.current?.state.toJSON({
+        // serialize history
+        history: historyField,
+      })
       destroyCurrent()
 
       const a = {
@@ -276,19 +304,24 @@ export function CodeEditor(props: Props) {
         doc: diff.toString(),
       }
 
-      return new MergeView({
-        a,
-        b,
-        parent,
-      })
+      return {
+        view: new MergeView({
+          a,
+          b,
+          parent,
+        }),
+        state,
+      }
     }
 
     if (props.diff) {
-      mergeViewRef.current = initializeMergeView(props.diff, editorRef.current)
+      mergeRef.current = initializeMergeView(props.diff, editorRef.current)
     } else {
       viewRef.current = initializeEditorView(editorRef.current)
     }
   }, [
+    viewRef,
+    mergeRef,
     props.source,
     props.diff,
     props.language,
@@ -307,11 +340,11 @@ export function CodeEditor(props: Props) {
       if (viewRef.current && !viewRef.current.hasFocus) {
         viewRef.current.focus()
       } else if (
-        mergeViewRef.current &&
-        !mergeViewRef.current.a.hasFocus &&
-        !mergeViewRef.current.b.hasFocus
+        mergeRef.current &&
+        !mergeRef.current.view.a.hasFocus &&
+        !mergeRef.current.view.b.hasFocus
       ) {
-        mergeViewRef.current.a.focus()
+        mergeRef.current.view.a.focus()
       }
     }
   }, [editorState.cursorBlockId, editorState.mode, props.blockId])
