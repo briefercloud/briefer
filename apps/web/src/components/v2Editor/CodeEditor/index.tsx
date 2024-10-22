@@ -162,10 +162,6 @@ function brieferKeyMaps(cbs: {
   ]
 }
 
-export type CodeEditor = {
-  focus: () => void
-}
-
 interface Props {
   workspaceId: string
   documentId: string
@@ -364,6 +360,15 @@ export function CodeEditor(props: Props) {
       editorAPI.insert(props.blockId, { scrollIntoView: false })
     },
     [editorAPI.insert, props.blockId]
+  )
+
+  useEffect(
+    () => () => {
+      // cleanup after unmount
+      viewRef.current?.destroy()
+      mergeRef.current?.view.destroy()
+    },
+    []
   )
 
   return <div onClick={onClick} ref={editorRef}></div>

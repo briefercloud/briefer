@@ -4,12 +4,10 @@ import Collaboration from '@tiptap/extension-collaboration'
 import Document from '@tiptap/extension-document'
 import Placeholder from '@tiptap/extension-placeholder'
 import Text from '@tiptap/extension-text'
-import Paragraph from '@tiptap/extension-paragraph'
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
 import { mergeAttributes, Node } from '@tiptap/core'
 import clsx from 'clsx'
 import { TitleSkeleton } from './ContentSkeleton'
+import { useEffect } from 'react'
 
 export type Level = 1 | 2 | 3 | 4 | 5 | 6
 
@@ -88,6 +86,14 @@ function Title(props: Props) {
       },
     },
     [props.content, props.isEditable, props.style]
+  )
+
+  useEffect(
+    () => () => {
+      // cleanup after unmount
+      editor?.destroy()
+    },
+    [editor]
   )
 
   return (

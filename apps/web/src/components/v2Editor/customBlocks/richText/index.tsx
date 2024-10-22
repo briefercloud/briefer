@@ -104,6 +104,14 @@ const useBlockEditor = ({
     [content]
   )
 
+  useEffect(
+    () => () => {
+      // cleanup after unmount
+      editor?.destroy()
+    },
+    [editor]
+  )
+
   return { editor }
 }
 
