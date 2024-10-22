@@ -232,6 +232,7 @@ export function setupYJSSocketServerV2(
       const startTime = Date.now()
       try {
         logger().info('[shutdown] Shutting down YJS socket server')
+        wss.close()
         stopCollection()
         while (docs.size > 0) {
           if (Date.now() - startTime > 60 * 1000 * 2) {
