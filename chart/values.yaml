@@ -7,7 +7,7 @@ ai:
   image:
     repository: docker.io
     name: briefercloud/briefer-ai
-    tag: latest
+    tag: v0.0.42
     pullPolicy: Always
 
   resources:
@@ -45,7 +45,7 @@ web:
   image:
     repository: docker.io
     name: briefercloud/briefer-web
-    tag: latest
+    tag: v0.0.42
     pullPolicy: Always
 
   # optional
@@ -77,7 +77,7 @@ api:
   image:
     repository: docker.io
     name: briefercloud/briefer-api
-    tag: latest
+    tag: v0.0.42
     pullPolicy: Always
 
   resources:
@@ -135,10 +135,19 @@ api:
 jupyter:
   storageClassName: standard
   storageSize: 16Gi
+
+  resources:
+    requests:
+      cpu: 1
+      memory: 4Gi
+    limits:
+      cpu: 1
+      memory: 4Gi
+
   image:
     repository: docker.io
     name: briefercloud/briefer-jupyter
-    tag: latest
+    tag: v0.0.42
     pullPolicy: Always
 
   # tolerations:
@@ -152,10 +161,6 @@ jupyter:
   #       nodeSelectorTerms:
   #         - matchExpressions:
   #             - key: briefer.cloud/domain
-  #               operator: In
-  #               values:
-  #                 - jupyter
-  #             - key: topology.kubernetes.io/zone
   #               operator: In
   #               values:
   #                 - jupyter

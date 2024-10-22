@@ -21,6 +21,27 @@ spec:
       - name: jupyter
         image: '{{ .Values.jupyter.image.repository }}/{{ .Values.jupyter.image.name }}:{{ .Values.jupyter.image.tag }}'
         command: ["sh", "-c", "jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400"]
+        {{- if .Values.jupyter.resources }}
+        resources:
+          {{- with .Values.jupyter.resources.requests }}
+          requests:
+            {{- if .memory }}
+            memory: {{ .memory | quote }}
+            {{- end }}
+            {{- if .cpu }}
+            cpu: {{ .cpu | quote }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.jupyter.resources.limits }}
+          limits:
+            {{- if .memory }}
+            memory: {{ .memory | quote }}
+            {{- end }}
+            {{- if .cpu }}
+            cpu: {{ .cpu | quote }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
         livenessProbe:
           exec:
             command: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
