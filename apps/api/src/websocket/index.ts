@@ -210,8 +210,14 @@ export function createSocketServer(server: http.Server): Server {
             await p
           }
         }
-
         logger().info('All socket server work finished')
+
+        logger().info('Closing socket server')
+        await new Promise<void>((resolve) => {
+          server.closeAllConnections()
+          server.close(() => resolve())
+        })
+        logger().info('Socket server closed')
       } catch (err) {
         logger().error({ err }, 'Error shutting down socket server')
         throw err
