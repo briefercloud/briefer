@@ -61,6 +61,25 @@
         "deployment/kubernetes",
         "deployment/troubleshooting"
       ]
+    },
+    {
+      "group": "Product docs",
+      "pages": [
+        "product/product-overview",
+        "product/notebooks-and-dashboards",
+        "product/data-sources",
+        "product/files",
+        "product/schema-explorer",
+        "product/schedules",
+        "product/snapshots",
+        "product/reusable-components",
+        "product/sharing",
+        "product/environments",
+        "product/environment-variables",
+        "product/ai-assistant",
+        "product/slack-integration",
+        "product/keyboard-shortcuts"
+      ]
     }
   ],
   "footerSocials": {
