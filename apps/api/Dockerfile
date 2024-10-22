@@ -2,7 +2,7 @@ FROM node:18-slim AS base
 
 ENV TURBO_TELEMETRY_DISABLED=1
 
-RUN apt-get update -y && apt-get install -y openssl curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y && apt-get install -y openssl curl tini && rm -rf /var/lib/apt/lists/*
 
 # The web Dockerfile is copy-pasted into our main docs at /docs/handbook/deploying-with-docker.
 # Make sure you update this Dockerfile, the Dockerfile in the web workspace and copy that over to Dockerfile in the docs.
@@ -58,4 +58,6 @@ RUN chown -R expressjs:expressjs /app/node_modules/@prisma/engines
 
 USER expressjs
 
-CMD node --max-old-space-size=12000 apps/api/dist/src/index.js
+# Use tini as the init system so that signals are forwarded to the node process
+ENTRYPOINT ["tini", "--"]
+CMD ["node", "--max-old-space-size=12000", "apps/api/dist/src/index.js"]
