@@ -142,19 +142,20 @@ async function main() {
 
     shuttingDown = true
     shutdownPromise = new Promise(async (resolve) => {
-      logger().info('Handling shut down')
+      logger().info('[shutdown] Handling shutdown')
+      server.close()
       while (true) {
         try {
           await Promise.all(shutdownFunctions.map((fn) => fn()))
           break
         } catch (err) {
-          logger().error({ err }, 'Error while shutting down server')
+          logger().error({ err }, '[shutdown] Error while shutting down server')
           await new Promise((resolve) => setTimeout(resolve, 200))
-          logger().info('Retrying shutdown handling')
+          logger().info('[shutdown] Retrying shutdown handling')
         }
       }
 
-      logger().info('Shut down complete')
+      logger().info('[shutdown] Shutdown complete')
       resolve()
       process.exit(0)
     })

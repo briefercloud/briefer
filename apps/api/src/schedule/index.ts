@@ -219,7 +219,7 @@ export async function runSchedule(socketServer: IOServer) {
   })
 
   return async () => {
-    logger().info('Stopping schedule')
+    logger().info('[shutdown] Stopping schedule')
 
     stop = true
     await loop
@@ -231,14 +231,14 @@ export async function runSchedule(socketServer: IOServer) {
     while (running.size > 0) {
       logger().info(
         { running: running.size },
-        'Waiting for running jobs to finish'
+        '[shutdown] Waiting for running jobs to finish'
       )
       for (const promise of running.values()) {
         await promise
       }
     }
 
-    logger().info('All jobs finished')
+    logger().info('[shutdown] All jobs finished')
     return loop
   }
 }

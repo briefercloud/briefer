@@ -199,7 +199,7 @@ export function createSocketServer(server: http.Server): Server {
     io: io,
     shutdown: async () => {
       try {
-        logger().info('Shutting down socket server')
+        logger().info('[shutdown] Shutting down socket server')
         while (workInProgress.size > 0) {
           logger().info(
             { workInProgress: workInProgress.size },
@@ -210,16 +210,13 @@ export function createSocketServer(server: http.Server): Server {
             await p
           }
         }
-        logger().info('All socket server work finished')
+        logger().info('[shutdown] All socket server work finished')
 
         logger().info('Closing socket server')
-        await new Promise<void>((resolve) => {
-          server.closeAllConnections()
-          server.close(() => resolve())
-        })
-        logger().info('Socket server closed')
+        await io.close()
+        logger().info('[shutdown] Socket server closed')
       } catch (err) {
-        logger().error({ err }, 'Error shutting down socket server')
+        logger().error({ err }, '[shutdown] Error shutting down socket server')
         throw err
       }
     },

@@ -225,14 +225,27 @@ export function setupYJSSocketServerV2(
     }
   })
 
+  const stopCollection = startDocumentCollection()
+
   return {
     async shutdown() {
+      const startTime = Date.now()
       try {
-        logger().info('Shutting down YJS socket server')
+        logger().info('[shutdown] Shutting down YJS socket server')
+        stopCollection()
         while (docs.size > 0) {
+          if (Date.now() - startTime > 60 * 1000 * 2) {
+            logger().error(
+              { count: docs.size },
+              '[shutdown] Some YJS docs did not close in time'
+            )
+            // 2 minutes
+            break
+          }
+
           logger().info(
             { docsCount: docs.size },
-            'Waiting for YJS docs to close'
+            '[shutdown] Waiting for YJS docs to close'
           )
           await pAll(
             Array.from(docs.values()).map((doc) => async () => {
@@ -251,9 +264,12 @@ export function setupYJSSocketServerV2(
           await new Promise((resolve) => setTimeout(resolve, 200))
         }
 
-        logger().info('All YJS docs closed')
+        logger().info('[shutdown] All YJS docs closed')
       } catch (err) {
-        logger().error({ err }, 'Failed to shutdown YJS socket server')
+        logger().error(
+          { err },
+          '[shutdown] Failed to shutdown YJS socket server'
+        )
         throw err
       }
     },
@@ -283,64 +299,82 @@ export const docsCache = new LRUCache<string, WSSharedDocV2>({
   },
 })
 
-async function collectDocs() {
-  const start = Date.now()
-  try {
-    logger().trace({ docsCount: docs.size }, 'Collecting docs')
-    const queue = new PQueue({ concurrency: 6 })
-    let collected = 0
-    for (const [docId, doc] of docs) {
-      logger().trace({ docId }, 'Checking if doc can be collected')
-      if (doc.canCollect()) {
-        logger().trace({ docId }, 'Doc can be collected')
-        queue.add(async () => {
-          if (!doc.canCollect()) {
-            logger().trace(
-              { docId },
-              'Doc was referenced again, collectiong aborted'
-            )
-            return
-          }
+function startDocumentCollection() {
+  let timeout: NodeJS.Timeout | null = null
+  let stopped = false
+  async function collectDocs() {
+    const start = Date.now()
+    try {
+      logger().trace({ docsCount: docs.size }, 'Collecting docs')
+      const queue = new PQueue({ concurrency: 6 })
+      let collected = 0
+      for (const [docId, doc] of docs) {
+        logger().trace({ docId }, 'Checking if doc can be collected')
+        if (doc.canCollect()) {
+          logger().trace({ docId }, 'Doc can be collected')
+          queue.add(async () => {
+            if (!doc.canCollect()) {
+              logger().trace(
+                { docId },
+                'Doc was referenced again, collectiong aborted'
+              )
+              return
+            }
 
-          logger().trace({ docId }, 'Persisting doc state')
-          await doc.persist(false)
-          if (!doc.canCollect()) {
-            logger().trace(
-              { docId },
-              'Doc was referenced again while persisting, collection aborted'
-            )
-            return
-          }
+            logger().trace({ docId }, 'Persisting doc state')
+            await doc.persist(false)
+            if (!doc.canCollect()) {
+              logger().trace(
+                { docId },
+                'Doc was referenced again while persisting, collection aborted'
+              )
+              return
+            }
 
-          docs.delete(docId)
-          if (!docsCache.has(docId)) {
-            // only destroy if the doc is not in cache
-            doc.destroy()
-          }
-          logger().trace({ docId }, 'Doc collected')
-          collected++
-        })
+            docs.delete(docId)
+            if (!docsCache.has(docId)) {
+              // only destroy if the doc is not in cache
+              doc.destroy()
+            }
+            logger().trace({ docId }, 'Doc collected')
+            collected++
+          })
+        }
       }
+
+      logger().trace(
+        {
+          size: queue.size,
+        },
+        'Waiting for doc collection queue to drain'
+      )
+      await queue.onIdle()
+      logger().trace(
+        { collected, timeMs: Date.now() - start },
+        'Docs collected'
+      )
+    } catch (err) {
+      logger().error(
+        { err, timeMs: Date.now() - start },
+        'Failed to collect docs'
+      )
     }
 
-    logger().trace(
-      {
-        size: queue.size,
-      },
-      'Waiting for doc collection queue to drain'
-    )
-    await queue.onIdle()
-    logger().trace({ collected, timeMs: Date.now() - start }, 'Docs collected')
-  } catch (err) {
-    logger().error(
-      { err, timeMs: Date.now() - start },
-      'Failed to collect docs'
-    )
-  }
+    if (stopped) {
+      return
+    }
 
-  setTimeout(collectDocs, DOCUMENT_COLLECTION_INTERVAL)
+    timeout = setTimeout(collectDocs, DOCUMENT_COLLECTION_INTERVAL)
+  }
+  collectDocs()
+
+  return () => {
+    stopped = true
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+  }
 }
-collectDocs()
 
 const messageSync = 0
 const messageAwareness = 1
