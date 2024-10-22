@@ -1,0 +1,41 @@
+---
+title: Deploy Briefer
+description: 'Deploy Briefer for your whole team to use.'
+---
+
+**The ideal way to use Briefer is to deploy it somewhere your whole team can access**.
+
+<img className="block dark:hidden" src="/images/briefer-usage-overview.png" />
+<img
+  className="hidden dark:block"
+  src="/images/briefer-usage-overview-dark.png"
+/>
+
+In this page, you will find links to in-depth deployment guides for your favourite platforms.
+
+<Tip>
+  If you don't want to manage your own Briefer deployment, you can also [sign up
+  for the cloud version](https://app.briefer.cloud/auth/signup).
+</Tip>
+
+## In-depth deployment guides
+
+You can deploy Briefer on a virtual machine (like EC2, or GCE) or on your own Kubernetes cluster (if you have one).
+
+<CardGroup cols={2}>
+  <Card title="Virtual Machine (Generic)" icon="desktop" href="./deployment/vm">
+    A generic guide on how to deploy Briefer on any virtual machine.
+  </Card>
+  <Card title="GCE Virtual Machine (GCP)" icon="google" href="./deployment/gcp">
+    A GCP-specific guide for deploying Briefer.
+  </Card>
+  <Card title="Kubernetes" icon="circle-nodes" href="./deployment/kubernetes">
+    A guide on how to deploy Briefer on a Kubernetes cluster.
+  </Card>
+</CardGroup>
+
+<Info>
+  If you find any problem with these in-depth guides or want to contribute a new
+  one, please submit a pull request on [our GitHub
+  repo](https://github.com/briefercloud/briefer).
+</Info>

@@ -7,6 +7,15 @@ description: 'Briefer is the modern open-source BI and data science tool.'
 
 Briefer is like Notion for code notebooks and dashboards. It gives technical users all the flexibility they need to publish dashboards, analyze data, create reports, and build data apps. At the same time, Briefer makes it easy for non-technical users to view and interact with data.
 
+<video
+  controls={false}
+  muted
+  autoPlay
+  playsInline
+  className="w-full aspect-video"
+  src="https://briefer.cloud/demo-header-v2.mp4"
+></video>
+
 In Briefer, you can:
 
 - 📚📊 **Create notebooks and dashboards** using Markdown, Python, SQL, and native visualizations.
@@ -19,19 +28,19 @@ In addition to all that, Briefer is also multiplayer, meaning two or more people
 
 ## Getting started
 
+There are three ways to set up Briefer. You can install it on your machine for individual use, sign up for the cloud for a more convenient collaborative workspace, or you can deploy it to your own infrastructure. All of these options are free.
+
+We recommend that you either sign-up for the cloud or deploy it yourself. That way, your whole team will be able to collaborate in Briefer.
+
 <CardGroup cols={2}>
-  <Card
-    title="Local quickstart"
-    icon="computer"
-    href="./getting-started/quickstart"
-  >
+  <Card title="Local quickstart" icon="computer" href="./get-started/local.mdx">
     Get Briefer running on your machine.
   </Card>
-  <Card title="Cloud quickstart" icon="cloud" href="./getting-started/cloud">
+  <Card title="Cloud quickstart" icon="cloud" href="./get-started/cloud">
     Set up a workspace in our cloud.
   </Card>
-  <Card title="Deploy Briefer" icon="users" href="./getting-started/deploy">
-    Deploy Briefer for your team to use.
+  <Card title="Deploy Briefer" icon="users" href="./get-started/deploy">
+    Deploy Briefer for your whole team to use.
   </Card>
 </CardGroup>
 
@@ -135,16 +144,28 @@ In addition to all that, Briefer is also multiplayer, meaning two or more people
 ## Settings and management
 
 <CardGroup cols={2}>
-  <Card title="Installing packages" icon="hard-drive" href="./blocks/overview">
+  <Card
+    title="Installing packages"
+    icon="hard-drive"
+    href="./settings/installing-packages"
+  >
     Install new Python packages into your environment.
   </Card>
-  <Card title="User management" icon="user-plus" href="./blocks/text">
+  <Card
+    title="User management"
+    icon="user-plus"
+    href="./settings/user-management"
+  >
     Invite others and manage permissions.
   </Card>
-  <Card title="Workspace settings" icon="gear" href="./blocks/sql">
+  <Card
+    title="Workspace settings"
+    icon="gear"
+    href="./settings/workspace-settings"
+  >
     Configure your workspace.
   </Card>
-  <Card title="Page settings" icon="scroll" href="./blocks/python">
+  <Card title="Page settings" icon="scroll" href="./settings/page-settings">
     Change page-specific settings.
   </Card>
 </CardGroup>
