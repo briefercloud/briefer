@@ -1,0 +1,108 @@
+---
+title: Troubleshooting
+description: 'How to solve the most common issues with Briefer deployments.'
+icon: magnifying-glass
+---
+
+This page covers the most common issues with Briefer deployments and how to solve them.
+
+Please make sure to update Briefer to the latest version before starting to troubleshoot. We're constantly improving the project and fixing bugs, so it's possible that your issue has already been solved in newer versions.
+
+<CodeGroup>
+```bash Pip upgrade
+# If you're using pip, upgrade with:
+pip install --upgrade briefer
+```
+
+```bash Docker upgrade
+# If you're using Docker, upgrade with:
+
+# 1. Remove the old container (find it with docker ps -a)
+docker rm <your_container_id>
+
+# 2. Pull the latest image (docker pull --no-cache briefercloud/briefer:latest)
+docker pull --no-cache briefercloud/briefer:latest
+
+# 3. Run it again (you might also want to delete old volumes)
+docker run -d \
+  -p 3000:3000 \
+  -v briefer_psql_data:/var/lib/postgresql/data \
+  -v briefer_jupyter_data:/home/jupyteruser \
+  -v briefer_briefer_data:/home/briefer \
+  briefercloud/briefer
+```
+
+</CodeGroup>
+
+<Info>
+  In case you need assistance, please don't feel shy to open an issue or send us
+  an email at [contact@briefer.cloud](mailto:contact@briefer.cloud). We're here
+  to help.
+</Info>
+
+## Solving common issues
+
+<Accordion title="I can access the web application, but the sign-in is not working">
+
+If you're running Briefer in another machine, for example an external server, Raspbery Pi, etc - make sure you have enabled HTTPS for your current setup while accessing Briefer on port `3000`.
+
+In case you can't enable HTTPS or just want to try it out over HTTP, you can run Briefer over HTTP by setting the `ALLOW_HTTP` environment variable to `true`:
+
+```bash
+ALLOW_HTTP=true briefer
+```
+
+Note that using `ALLOW_HTTP` will _not_ set the session cookie as Secure, thus allowing you to sign in using HTTP. We don't recommend using this option production.
+
+Furthermore, if you're using an older version of Briefer, you might need to delete older volumes which might contain conflicting data. You can do that by running:
+
+```sh
+# If you have data on disk (like files), you may want to back those files up before running these commands
+# Still, these commands do *not* delete the data in your database (notebooks, dashboards, users, etc)
+docker volume rm briefer_jupyter_data
+docker volume rm briefer_briefer_data
+```
+
+</Accordion>
+
+<Accordion title="I can't access the web application">
+If you're not able to access the web application, Briefer is either not running or not exposed to the internet (or within your local network). The latter is the most common issue.
+
+To check if Briefer is running, SSH into your server and run `docker ps`. You should see a container using the image `briefercloud/briefer` or `briefercloud/briefer-web`. If you don't see it, Briefer is not running.
+
+If Briefer is running, have a look at its logs and see if there are any errors. You can do that by running `docker logs <container_id>`, where `<container_id>` is the ID of the Briefer container.
+
+Finally, make sure that you've exposed your server to the internet or your local network. You can do that by allowing traffic on port `3000` and creating the necessary DNS records to access the host. Finally, please ensure that the container's port is bound to the host's port (`3000`).
+
+</Accordion>
+
+<Accordion title="I can access the web application, but it can't talk to the API">
+In this case, it's likely that the web process is running, but the API is not.
+
+If the API is running, have a look at its logs and see if there are any errors. You can do that by running `docker logs <container_id>`, where `<container_id>` is the ID of the API container or the monolithic Briefer container in case that's what you're using.
+
+Check if it complains about any missing environment variables or if there's any other straightforward error that you can solve.
+
+If you can't figure out what's happening, please [open an issue here](https://github.com/briefercloud/briefer/issues).
+
+</Accordion>
+
+<Accordion title="I get a 500 error whenever I try to access Briefer">
+
+This is likely an issue with encrypting and decrypting tokens. It usually happens when you have lingering data from a previous execution while having changed Briefer's encryption keys.
+
+To fix this issue, start by clearing your browser's cookies and local storage. Then, try accessing Briefer again.
+
+<Tip>
+  You can clear cookies and local storage exclusively for Briefer's address by
+  using the _Application_ tab in Chrome's DevTools.
+</Tip>
+
+If you still can't access Briefer you may have to remove Briefer's old docker volumes.
+
+```sh
+docker volume rm briefer_jupyter_data
+docker volume rm briefer_briefer_data
+```
+
+</Accordion>

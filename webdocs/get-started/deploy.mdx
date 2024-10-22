@@ -3,7 +3,9 @@ title: Deploy Briefer
 description: 'Deploy Briefer for your whole team to use.'
 ---
 
-**The ideal way to use Briefer is to deploy it somewhere your whole team can access**.
+**Briefer is a web application designed for multiple people to use**.
+
+Ideally, you should deploy it to a server that is accessible to all the people who will view and create reports and dashboards, like an EC2 instance on AWS, a droplet on DigitalOcean, or a virtual machine on Azure. If you have a Kubernetes cluster, you can use that too.
 
 <img className="block dark:hidden" src="/images/briefer-usage-overview.png" />
 <img
@@ -31,6 +33,13 @@ You can deploy Briefer on a virtual machine (like EC2, or GCE) or on your own Ku
   </Card>
   <Card title="Kubernetes" icon="circle-nodes" href="./deployment/kubernetes">
     A guide on how to deploy Briefer on a Kubernetes cluster.
+  </Card>
+  <Card
+    title="Troubleshooting"
+    icon="magnifying-glass"
+    href="./deployment/troubleshooting"
+  >
+    How to solve the most common issues with Briefer deployments.
   </Card>
 </CardGroup>
 

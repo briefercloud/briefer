@@ -55,7 +55,12 @@
     },
     {
       "group": "Deployment guides",
-      "pages": ["deployment/vm", "deployment/gcp", "deployment/kubernetes"]
+      "pages": [
+        "deployment/vm",
+        "deployment/gcp",
+        "deployment/kubernetes",
+        "deployment/troubleshooting"
+      ]
     }
   ],
   "footerSocials": {
