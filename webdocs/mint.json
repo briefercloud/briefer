@@ -80,6 +80,15 @@
         "product/slack-integration",
         "product/keyboard-shortcuts"
       ]
+    },
+    {
+      "group": "Settings and management",
+      "pages": [
+        "settings/installing-packages",
+        "settings/user-management",
+        "settings/workspace-settings",
+        "settings/page-settings"
+      ]
     }
   ],
   "footerSocials": {
