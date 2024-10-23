@@ -82,6 +82,7 @@ class Provider implements IProvider {
   }
 
   public destroy() {
+    this.wsProvider.awareness.destroy()
     this.wsProvider.off('sync', this.onWSSynced)
     this.wsProvider.destroy()
   }
