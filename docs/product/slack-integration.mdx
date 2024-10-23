@@ -1,0 +1,33 @@
+---
+title: Slack integration
+description: Get your pages sent periodically on Slack.
+icon: slack
+---
+
+Briefer's paid plans allow you to send a snapshot of your page whenever a scheduled run finishes. This feature is useful when you want to share your data and dashboards with your team or stakeholders without them having to log in to Briefer.
+
+To set up Slack integration, access the integrations page by clicking the "Integrations" menu icon on the bottom left corner of the screen.
+
+<Frame caption={`Click the "Integrations" menu icon to open the integrations page.`}>
+  <img src="/images/open-integrations.png" alt="Opening the integrations page" />
+</Frame>
+
+Then, click the "Add an integration" button and select "Slack" from the list of available integrations. Once you've selected Slack, you'll need to complete the authorization process to connect your Briefer account with your Slack workspace.
+
+<Frame caption="Complete the authorization process to connect your Briefer account with your Slack workspace.">
+  <img src="/images/slack-oauth.png" alt="Slack OAuth process" />
+</Frame>
+
+After that's done, you can add a Slack integration to your schedule by selecting the Slack integration within the "Notifications" section when configuring your schedule.
+
+<Frame caption="Add notifications to your schedule within the schedule editor.">
+  <img src="/images/add-notifications.png" alt="Adding notifications to a schedule" />
+</Frame>
+
+That way, Briefer will send messages on Slack with the snapshot of your page in PDF whenever the schedule runs successfully.
+
+<Frame caption="Example of a Slack message with a page snapshot.">
+  <img src="/images/slack-output-example.png" alt="Example of a Slack message with a page snapshot" />
+</Frame>
+
+<Note>Right now, you can only send snapshots of your pages in notebook format. We're working on adding support for dashboards soon.</Note>

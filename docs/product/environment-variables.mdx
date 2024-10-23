@@ -1,0 +1,35 @@
+---
+title: Environment variables
+description: Store keys, settings, and other values as environment variables that you can use.
+icon: key
+---
+
+Environment variables are a way to store reusable data and sensitive information like API keys, database passwords, and other settings that you can use in your Python code.
+
+These variables are ideal for when you don't want to hardcode sensitive information in your code. Instead, you can store them as environment variables and read them.
+
+You can manage your environment variables by clicking the "Environment variables" button on the bottom bar of the editor.
+
+<Frame caption="The environment variables button on the bottom bar.">
+  <img src="/images/environment-variables-button.png" alt="Environment variables button" />
+</Frame>
+
+This will open a page in which you can add and delete environment variables.
+
+<Frame caption="The environment variables page.">
+  <img src="/images/environment-variables-page.png" alt="Environment variables page" />
+</Frame>
+
+Within the environment variables page, you can add a new variable by clicking the "Add variable" button.
+
+Once you're done adding your variables, click the "Save" button to save them. Then, you will be prompted to restart your environment to apply the changes.
+
+Finally, you can use your environment variables in your Python code by reading them from the `os.environ` dictionary.
+
+```python
+import os
+
+your_env_var = os.getenv('YOUR_ENV_VAR')
+
+print(your_env_var)
+```

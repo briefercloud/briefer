@@ -1,0 +1,46 @@
+---
+title: Environments
+description: Configure the environments in which your code runs.
+icon: microchip
+---
+
+Your Briefer environment is where your code runs.
+
+You can see your environment's details by clicking the environment's name on the bottom bar while editing a notebook. This will show you the Python version, installed packages, and resource limits.
+
+<Frame caption="Click the environment name to view the environment's details.">
+  <img src="/images/open-environment.png" alt="Viewing the environment details" />
+</Frame>
+
+Your environment's size will depend on which Briefer version you're using. If you're using the cloud version, you will have different resource limits depending on your plan. If you're using the open-source version, you can configure your environment to be as big as your machine allows.
+
+<Tip>The Briefer team can customize the environment's resource limits for paid plans on the cloud. Contact us at [contact@briefer.cloud](mailto:contact@briefer.cloud) if you need a custom environment beyond the included limits in your plan.</Tip>
+
+Your environment status shows up on the right of your bottom bar while editing a notebook. To restart your environment, click the "restart" icon next to your environment's status.
+
+<Frame caption="Check your environment's status and restart it using the bottom bar.">
+  <img src="/images/environment-status.png" alt="Checking the environment status and restarting it" />
+</Frame>
+
+## Individual and shared environments
+
+Some plans, including the enterprise plan, allow you to configure custom environments that can be either "individual" or "shared."
+
+Additionally, you can set how much memory and CPU each environment can use.
+
+After configuring a custom environment, you an assign it to a page using the bottom bar.
+
+Here are the differences between individual and shared environments:
+
+- **Individual environments** are not shared between pages. Every time you run some code in a page with an individual environment, Briefer will create a new instance of the environment for that page.
+- **Shared environments** are shared between pages. If you assign a shared environment to a page, Briefer will use the same instance of the environment for all pages that use that environment.
+
+<Note>Briefer's default environments are _shared_.</Note>
+
+## Configuring the nodes in which your environments run (Kubernetes)
+
+To learn how to configure the nodes in which your environments run, check out the [Kubernetes configuration guide](/deployment/kubernetes).
+
+## Installing packages in your environment
+
+To learn how to install packages in your environment, check out the [installing packages](/settings/installing-packages) page.

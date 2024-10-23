@@ -1,0 +1,91 @@
+---
+title: First steps
+description: "Here's what to do after setting up Briefer."
+icon: shoe-prints
+---
+
+After setting up Briefer, we recommend that you do three things to get started:
+
+<Steps>
+  <Step title="Connect your data sources">
+    Briefer can connect to your databases so you can use real data in your pages. You can connect to your data sources by clicking on the "Data sources" button on the bottom left corner of the interface.
+  </Step>
+  <Step title="Create your first page">
+    Use Python, SQL, or point-and-click visualizations to create your first page. After creating your first page using the notebook view, you can switch to the dashboard view and drag and drop your blocks into it.
+  </Step>
+  <Step title="Invite your team">
+    Invite your team to see your work and collaborate with you. You can invite your team by clicking on the "Users" menu on the bottom left corner of the interface.
+  </Step>
+</Steps>
+
+<Tip>If you need help navigating Briefer's interface, check out the [Interface overview](/product/interface-overview) page.</Tip>
+
+## 1. Connecting a data source
+
+You can connect to your data sources by clicking on the "Data sources" button on the bottom left corner of the interface. Then, click on the "Add data source" button to add a new data source connection.
+
+Briefer supports a variety of data sources, including:
+
+- PostgreSQL
+- BigQuery
+- Redshift
+- MySQL
+- SQL Server
+- Snowflake
+
+<Frame caption={`You can access the "data sources" page using the button on the bottom left corner of the interface.`}>
+  <img src="/images/data-sources-button.png" alt="Data sources button" />
+</Frame>
+
+<Tip>If you're using Briefer's cloud version and your data source is behind a firewall, you'll need to add Briefer's IP addresses to your firewall's whitelist. You can see Briefer's IP address on the top of the data source form or by clicking the "IPs and more info" button on the top right corner of the data sources list.</Tip>
+
+To connect to a data source, you'll need to provide the connection details, such as the host, port, username, and password.
+
+After connecting a data source, you can use it in SQL blocks to fetch data.
+
+## 2. Creating your first page
+
+Click the plus icon that appears next to "Pages" on the left sidebar to create a new page.
+
+You can then add blocks to your page by clicking the "add block" button that appears when you hover over the gaps between blocks.
+
+We recommend that you start with a query block to fetch some data from your data source. Then, you can use that query's result in your Python blocks by using the variable name that appears on the top of the query block, as shown in the example below.
+
+<Frame caption="Using a query's result as a data frame">
+![](/images/query-to-dataframe.gif)
+</Frame>
+
+Additionally, you can use the query's result to create point-and-click visualizations through the "Visualizations" block.
+
+<Frame caption="Creating a visualization from a query's result">
+![](/images/query-to-visualization.gif)
+</Frame>
+
+Finally, you can switch to the dashboard view by clicking the "Dashboard" button on the top right corner of the editor. In the dashboard view, you can drag and drop your blocks to create a layout for your dashboard.
+
+<Frame caption="Creating a dashboard by dragging and dropping blocks">
+![](/images/overview-notebooks-dashboards.gif)
+</Frame>
+
+## 3. Inviting your team
+
+After creating your first page, you can invite your team to see your work and collaborate with you.
+
+You can invite your team by clicking on the "Users" menu on the bottom left corner of the interface. Then, click the "Add user" button on the top right corner of the users list to invite a new user.
+
+<Frame caption="Inviting your team">
+![Invite your team](/images/invite-team.gif)
+</Frame>
+
+<Info>For more details about user management and permissions, check out the [user management](/settings/user-management) page.</Info>
+
+## 4. Where to go from here
+
+After completing these steps, we recommend that you explore other features of Briefer, such as:
+
+- [Files](/product/files): for uploading files to Briefer and using them in your pages.
+- [Input blocks](/product/inputs): for adding text inputs, dropdowns, and date pickers to your pages.
+- [Schedules](/product/schedules): for running and updating your pages periodically.
+- [Environment variables](/product/environment-variables): for storing sensitive information like API keys and database passwords and using those values in your pages.
+- [Snapshots](/product/snapshots): for seeing how your pages evolved over time and restoring them to a previous state.
+- [Schema explorer](/product/schema-explorer): for exploring your database's schema and data.
