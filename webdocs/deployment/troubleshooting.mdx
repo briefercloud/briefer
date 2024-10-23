@@ -76,6 +76,29 @@ Finally, make sure that you've exposed your server to the internet or your local
 
 </Accordion>
 
+<Accordion title="I can access the web application, but I can't run code">
+
+This problem is likely due to an issue with the WebSocket connection that Briefer uses to send code execution requests to the backend (and document edits).
+
+If you're using a reverse proxy, make sure that it's configured to allow WebSocket connections. You can do that by adding the following configuration to your Nginx reverse proxy:
+
+```nginx
+# WebSocket settings
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "Upgrade";
+
+# Disable buffering for WebSocket
+proxy_buffering off;
+proxy_cache_bypass $http_upgrade;
+
+# Timeouts for long-polling
+proxy_read_timeout 60s;
+proxy_send_timeout 60s;
+```
+
+If you're using a different reverse proxy, make sure to check its documentation for WebSocket configuration.
+</Accordion>
+
 <Accordion title="I can access the web application, but it can't talk to the API">
 In this case, it's likely that the web process is running, but the API is not.
 
