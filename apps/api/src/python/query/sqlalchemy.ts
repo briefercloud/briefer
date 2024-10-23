@@ -327,7 +327,7 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy.exc import ProgrammingError
-form sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.exc import NoSuchTableError
 from psycopg2.errors import InsufficientPrivilege
 
 
