@@ -1,0 +1,63 @@
+---
+title: Files
+description: 'Upload files to Briefer and use them.'
+icon: folder-open
+---
+
+Briefer allows you to upload files to your workspace and use them in your pages. You can upload files of any type, such as CSV, Excel, or images, and use them in your Python and SQL blocks.
+
+## Uploading files
+
+You can upload files by opening the files panel. To open the files panel, click on the "Files" button on the bottom bar while editing a notebook. Alternatively, you can also click on the "Files" menu option within the three dots menu on the top right corner of the editor.
+
+<Frame caption="Where to open the files panel">
+  <img src="/images/open-files.png" alt="Opening the files panel" />
+</Frame>
+
+After opening the files panel, just drag and drop your files into the panel to upload them. You can also click on the "Add" button within the panel to select files from your computer.
+
+After uploading a file, you can use it in your Python and SQL blocks.
+
+<Frame caption={`Clicking the "Use in Python" or "Use in SQL" links will cause Briefer to add an example Python or SQL block reading that file.`}>
+  <img src="/images/use-file.png" alt="Using an uploaded file" />
+</Frame>
+
+<Tip>All files uploaded to Briefer will be stored in your jupyter server's disk. This means that you can read them directly from disk in your Python code, as you would in a regular Jupyter notebook running on your machine.</Tip>
+
+## Querying files
+
+You can query files in your SQL blocks by using Briefer's DuckDB integration.
+
+DuckDB is an in-memory SQL database that allows you to query files directly from your SQL blocks.
+
+To query a file in DuckDB, add a SQL block and select "DuckDB" as the data source on the top right corner of the block. Then, write your query as you would with any other data source, as shown in the example below.
+
+<Frame caption="Reading files in DuckDB">
+  <img src="/images/duckdb-query-file.png" alt="Querying a file in DuckDB" />
+</Frame>
+
+<Tip>You can also query data frames using DuckDB. For that, just use the dataframe variable in your `SELECT` statement's `FROM` clause, like `SELECT * FROM my_df`.</Tip>
+
+## Using files in Python blocks
+
+You can use files in your Python blocks by reading them from disk.
+
+You can read files using Python's built-in `open` function or using libraries like `pandas` for CSV and Excel files.
+
+<Frame caption="Reading a file from disk using Python.">
+  <img src="/images/use-file-python.png" alt="Reading a file from disk using Python" />
+</Frame>
+
+## Storage limits and storage classes
+
+Your Briefer workspace has a storage limit that depends on which version of Briefer you're using. If you're using the cloud version, you will have different storage limits depending on your plan.
+
+If you're running the self-hosted version straight from a container, you should check your Docker container's storage limits.
+
+In case you're running Briefer on Kubernetes, you can set up a particular `storageClass` and `storageSize` in your Helm chart's `values.yaml` file to define the storage limits, as shown in the example below.
+
+```yaml
+jupyter:
+  storageClassName: standard
+  storageSize: 16Gi
+```
