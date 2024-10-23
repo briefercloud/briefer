@@ -108,6 +108,14 @@ const useBlockEditor = ({
     () => () => {
       // cleanup after unmount
       editor?.destroy()
+
+      // manually destroy collaboration undo manager
+      try {
+        // @ts-ignore
+        editor?.state['y-undo$']?.undoManager?.destroy()
+      } catch (e) {
+        console.error('Failed to destroy collaboration undo manager', e)
+      }
     },
     [editor]
   )

@@ -1778,11 +1778,7 @@ function TabRef(props: TabRefProps) {
 export default function V2Editor(props: Omit<Props, 'scrollViewRef'>) {
   const scrollViewRef = useRef<HTMLDivElement>(null)
   return (
-    <EditorAwarenessProvider
-      awareness={props.provider.awareness}
-      scrollViewRef={scrollViewRef}
-      yDoc={props.yDoc}
-    >
+    <EditorAwarenessProvider scrollViewRef={scrollViewRef} yDoc={props.yDoc}>
       <Editor {...props} scrollViewRef={scrollViewRef} />
     </EditorAwarenessProvider>
   )

@@ -14,7 +14,6 @@ import {
   useCallback,
 } from 'react'
 import { useHotkeysContext } from 'react-hotkeys-hook'
-import { Awareness } from 'y-protocols/awareness.js'
 
 export type InteractionState = {
   mode: 'normal' | 'insert'
@@ -50,7 +49,6 @@ const Context = createContext<[InteractionState, InteractionAPI]>([
 type UseEditorAwareness = [InteractionState, InteractionAPI]
 
 interface Props {
-  awareness: Awareness
   scrollViewRef: React.RefObject<HTMLDivElement>
   children: React.ReactNode
   yDoc: Y.Doc
