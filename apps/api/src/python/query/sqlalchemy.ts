@@ -327,6 +327,7 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy.exc import ProgrammingError
+form sqlalchemy.exc import NoSuchTableError
 from psycopg2.errors import InsufficientPrivilege
 
 
@@ -345,8 +346,12 @@ def schema_from_tables(inspector, tables):
         except ProgrammingError as e:
             if isinstance(e.orig, InsufficientPrivilege):
                 print(json.dumps({"log": f"Insufficient privileges to access table {table}"}))
-            else:
-                raise e
+                continue
+
+            raise e
+        except NoSuchTableError as e:
+            print(json.dumps({"log": f"Got NoSuchTableError when trying to get columns for table {table}"}))
+            continue
 
         if schema_name not in schemas:
             schemas[schema_name] = {
