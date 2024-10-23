@@ -93,7 +93,7 @@ docker run -d `
 
 These volumes are for Briefer to store its data, including its pages, dashboards, schedules, and users. If you want to remove Briefer's data, you can remove these volumes.
 
-For more information on how to deploy Briefer in production, please refer to our [deployment guide](/docs/DEPLOYMENT.md).
+For more information on how to deploy Briefer in production, please refer to our [deployment guide](https://docs.briefer.cloud/get-started/deploy).
 
 If you want to contribute to Briefer, please read our [contributing guide](/.github/CONTRIBUTING.md) which explains how run Briefer in development mode.
 
