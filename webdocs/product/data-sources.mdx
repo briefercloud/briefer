@@ -15,7 +15,7 @@ Briefer supports a variety of data sources, including:
 - SQL Server
 - Snowflake
 
-<Tip>Briefer can connect to _any_ database, even if there's no native connector available. If you want to connect to a database for which there's no native connector, you can use Python code to connect to it manually. See [installing packages](./settings/installing-packages) to learn how to install your favorite database's driver and connect to it. You may also want to look at the docs for [environment variables](./product/environment-variables) so you don't have to put credentials in your code.</Tip>
+<Tip>Briefer can connect to _any_ database, even if there's no native connector available. If you want to connect to a database for which there's no native connector, you can use Python code to connect to it manually. See [installing packages](/settings/installing-packages) to learn how to install your favorite database's driver and connect to it. You may also want to look at the docs for [environment variables](/product/environment-variables) so you don't have to put credentials in your code.</Tip>
 
 **To connect to your data sources, click on the "Data sources" button on the bottom left corner of the interface. Then, click on the "Add data source" button to add a new data source connection.**
 
@@ -40,8 +40,6 @@ By default, the SQL block will use the first data source you connected to Briefe
 You can also use data sources in writeback blocks. Writeback blocks allow you to write data back to your database.
 
 When you add a writeback block, you'll see a data source selector on the left side of the block. You can use this selector to choose the data source you want to write data to.
-
-For more information on writebacks, check out the [Writebacks](./product/writebacks) page.
 
 <Note>We don't yet support writebacks for all types of data sources. At the moment you can only write data back to Postgres and BigQuery instances. We'll work to add writeback support for more data sources soon.</Note>
 
