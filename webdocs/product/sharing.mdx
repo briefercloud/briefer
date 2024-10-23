@@ -1,0 +1,45 @@
+---
+title: Sharing and exporting
+description: Share your pages with others or export them.
+icon: share-nodes
+---
+
+In Briefer, there are many ways to share your pages with others. You can share them through a public link, invite others to your workspace and send them a private link, or you can export your page as a PDF if you're on a paid plan.
+
+Alternatively, you can also export individual plots as PNG images or download query results and dataframes as CSV files.
+
+## Sharing a page through a private link (inviting others to your workspace)
+
+To share a page through a private link, you must invite the person you want to share the page with to your workspace. To learn how to do this, please check the [user management](./settings/user-management) documentation.
+
+After inviting the person to your workspace, you can share the page with them by clicking on the share button on the top right corner of the editor.
+
+## Sharing a page through a public link
+
+To share a page through a public link, click on the share button on the top right corner of the editor. Then, toggle the public page switch to "on".
+
+Finally, copy the public link and share it with others. **Anyone with the link will be able to view the page**.
+
+## Exporting a page as a PDF
+
+You can export both notebooks and dashboards as PDFs. To do this, click on "Share" button on the top right corner of the editor and select "Export as PDF".
+
+<Note>Exporting pages as PDFs is only available in Briefer's paid plans.</Note>
+
+## Exporting a plot as a PNG image
+
+Whenever you create an image plot with Python or with the "Visualizations" block, you can export it as a PNG image. To do this, click on the `PNG` button on the bottom right corner of your block.
+
+## Exporting query results and dataframes as a CSV file
+
+All query results can be downloaded as CSV files. To do this, click on the `CSV` button on the bottom right corner of your query block.
+
+<Tip>If you want to download a dataframe as a CSV file, you can do a `SELECT *` using DuckDB in a SQL block and then click on the `CSV` button on the bottom right corner of the block.</Tip>
+
+## Exporting other files
+
+If you want to export any other type of file, you can just write it to disk using Python's built-in functions.
+
+Then, open the files panel, find the file you want to export, and click on the `Download` button.
+
+<Note>For more information about files and the files panel, check out the [files](./product/files) documentation.</Note>
