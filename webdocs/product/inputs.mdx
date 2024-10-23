@@ -1,0 +1,45 @@
+---
+title: Inputs
+description: Add inputs to your pages.
+icon: pen-to-square
+---
+
+You can add text inputs, dropdowns, and date pickers to your pages (both to notebooks and dashboards) to make them interactive and dynamic.
+
+To add an input, click the "Add block" button and select the "Input" block. You can then configure the input's settings, such as its label and type.
+
+After adding your input, you can use its value in Python and SQL blocks by using the variable name that appears on the top right of the input block (within the green background).
+
+<Frame caption="Using an input block.">
+  <img src="/images/using-inputs.gif" alt="Adding and using an input block" />
+</Frame>
+
+## Using input values within SQL blocks
+
+You can use the value of an input within a SQL block by using the `{{ your_variable }}` syntax. For example, if you have an input named `start_date`, you can use its value in a SQL query like this:
+
+```sql
+SELECT * FROM `demo_ecommerce.orders` WHERE date >= '{{ start_date }}'
+```
+
+Doing that will cause Briefer to replace `{{ start_date }}` with the value of the `start_date` input when running the query.
+
+<Tip>You can interpolate _any_ variables within SQL queries, not only variables tied to input blocks. This allows you to create dynamic queries that depend on the values of your inputs, Python blocks, or even environment variables.</Tip>
+
+## Input types
+
+In addition to text inputs, you can also add dropdowns and date pickers to your pages.
+
+Dropdowns allow you to select a value from a list of options that can be either statically defined or dynamically generated from a data frame's column.
+
+Date pickers allow you to select a date from a calendar widget.
+
+## Dynamic dropdowns
+
+You can automatically populate a dropdown with values from a data frame's column by selecting the data frame and column in the dropdown block's settings.
+
+<Frame caption="Using a dropdown block with dynamic values.">
+  <img src="/images/dynamic-dropdowns.gif" alt="Using a dropdown block with dynamic values" />
+</Frame>
+
+Using dynamic dropdowns allows you to create interactive pages that depend on the values of your data sources or data frames.
