@@ -1,0 +1,31 @@
+---
+title: Schema explorer
+description: Explore your database's schema and data.
+icon: book
+---
+
+Briefer comes with a schema explorer that allows you to explore your database's schema. This feature is helpful when you want to understand the structure of your database, the tables it contains, and the relationships between them so that you can write queries more effectively.
+
+You open the schema explorer by clicking the "book" button that appears on the right of SQL blocks as you hover over them.
+
+<Frame caption="Opening the schema explorer from a SQL block.">
+  <img src="/images/open-schema-explorer.png" alt="Opening the schema explorer" />
+</Frame>
+
+Alternatively, you can also open the schema explorer by clicking the three dots menu on the top right corner of the editor and selecting "Schema explorer".
+
+<Frame caption="Opening the schema explorer from the menu on the top right corner.">
+  <img src="/images/open-schema-explorer-threedots.png" alt="Opening the schema explorer from the menu" />
+</Frame>
+
+## Refreshing your schema
+
+When you open the schema explorer, Briefer will fetch your database's schema and display it in a tree view. This schema is refreshed every few hours to ensure that you're always looking at the most up-to-date information.
+
+If you've made changes to your database and want to see them reflected in the schema explorer immediately, you can "refresh" link that appears when you select a data source to explore.
+
+## Fixing issues with the schema explorer
+
+Sometimes, Briefer may not be able to fetch your database's schema because it doesn't have the necessary permissions. If you're having trouble viewing your schema, please ensure that the user you're using to connect to your database has the necessary permissions to fetch the schema.
+
+If that's the case, or if any other issues happen, Briefer will display an error message with more information about the problem. You can use this information to troubleshoot the issue and fix it.
