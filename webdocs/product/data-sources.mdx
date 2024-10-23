@@ -1,0 +1,58 @@
+---
+title: Data sources
+description: 'Connect your databases to Briefer and fetch data from them.'
+icon: database
+---
+
+Briefer works best when you connect it to your databases. This way, you can use real data in your pages and create more meaningful visualizations.
+
+Briefer supports a variety of data sources, including:
+
+- PostgreSQL
+- BigQuery
+- Redshift
+- MySQL
+- SQL Server
+- Snowflake
+
+<Tip>Briefer can connect to _any_ database, even if there's no native connector available. If you want to connect to a database for which there's no native connector, you can use Python code to connect to it manually. See [installing packages](./settings/installing-packages) to learn how to install your favorite database's driver and connect to it. You may also want to look at the docs for [environment variables](./product/environment-variables) so you don't have to put credentials in your code.</Tip>
+
+**To connect to your data sources, click on the "Data sources" button on the bottom left corner of the interface. Then, click on the "Add data source" button to add a new data source connection.**
+
+<Frame caption={`You can access the "data sources" page using the button on the bottom left corner of the interface.`}>
+  <img src="/images/data-sources-button.png" alt="Data sources button" />
+</Frame>
+
+<Tip>If you're using Briefer's cloud version and your data source is behind a firewall, you'll need to add Briefer's IP addresses to your firewall's whitelist. You can see Briefer's IP address on the top of the data source form or by clicking the "IPs and more info" button on the top right corner of the data sources list.</Tip>
+
+To connect to a data source, you'll need to provide the connection details, such as the host, port, username, and password.
+
+After connecting a data source, you can use it in SQL blocks to fetch data.
+
+## Using data sources in SQL blocks
+
+In every SQL block, there's a data source selector on the top right corner. You can use this selector to choose the data source you want to query.
+
+By default, the SQL block will use the first data source you connected to Briefer. If you want to change the data source, click on the selector and choose the one you want.
+
+## Using data sources for writebacks
+
+You can also use data sources in writeback blocks. Writeback blocks allow you to write data back to your database.
+
+When you add a writeback block, you'll see a data source selector on the left side of the block. You can use this selector to choose the data source you want to write data to.
+
+For more information on writebacks, check out the [Writebacks](./product/writebacks) page.
+
+<Note>We don't yet support writebacks for all types of data sources. At the moment you can only write data back to Postgres and BigQuery instances. We'll work to add writeback support for more data sources soon.</Note>
+
+## Troubleshooting data sources
+
+<Info>Sometimes Briefer may fail to ping your data source, but it doesn't necessarily mean there's a problem with your connection. Therefore, please try to run a query in a SQL block to see if you can fetch data from your data source before starting to troubleshoot.</Info>
+
+If you're having trouble connecting to your data source, the first thing to check is whether the data source's address, port, and credentials are correct. Please try connecting to your data source using a database client like `psql` and make sure you can connect to it using the same credentials you provided to Briefer.
+
+In case you're still having trouble, double check whether your data source is behind a firewall and whether you need to add Briefer's IP addresses to your firewall's allowlist.
+
+Finally, if you can't connect to your data source using the native connector, you may want to try connecting to it manually using Python code.
+
+<Tip>If you need help connecting to your data source, feel free to reach out to us at [contact@briefer.cloud](mailto:contact@briefer.cloud). We're happy to help!</Tip>

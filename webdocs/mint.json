@@ -65,8 +65,8 @@
     {
       "group": "Product docs",
       "pages": [
-        "product/product-overview",
-        "product/notebooks-and-dashboards",
+        "product/first-steps",
+        "product/interface-overview",
         "product/data-sources",
         "product/files",
         "product/schema-explorer",
