@@ -114,9 +114,12 @@ export function useProvider(
   publishedAt: string | null
 ): IProvider {
   const [provider, setProvider] = useState<Provider>(
-    new Provider(
-      getWSProvider(yDoc, documentId, isDataApp, clock, userId, publishedAt)
-    )
+    // must be a function to avoid creating a new provider on every render
+    // which would cause the provider to leak
+    () =>
+      new Provider(
+        getWSProvider(yDoc, documentId, isDataApp, clock, userId, publishedAt)
+      )
   )
 
   const isFirst = useRef(true)
@@ -133,6 +136,14 @@ export function useProvider(
       )
     )
   }, [yDoc, documentId, isDataApp, clock, userId, publishedAt])
+
+  useEffect(
+    () => () => {
+      // cleanup after the component is unmounted
+      provider.destroy()
+    },
+    []
+  )
 
   return provider
 }
