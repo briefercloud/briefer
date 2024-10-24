@@ -1,10 +1,7 @@
-'use client'
-
-import { useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
-import { CheckIcon } from '@heroicons/react/24/outline'
 import { KeyboardIcon } from 'lucide-react'
 import clsx from 'clsx'
+import { Fragment } from 'react'
 
 type ShortcutsModalProps = {
   visible: boolean
@@ -130,14 +127,14 @@ export default function ShortcutsModal(props: ShortcutsModalProps) {
                         <div key={shortcut.action} className="flex gap-x-4">
                           <div className="flex items-center justify-end w-1/3 gap-x-2 whitespace-nowrap">
                             {shortcut.keys.map((key, i) => (
-                              <>
-                                <KeyboardKey key={i} mode={shortcut.mode}>
+                              <Fragment key={i}>
+                                <KeyboardKey mode={shortcut.mode}>
                                   {key}
                                 </KeyboardKey>
                                 {i < shortcut.keys.length - 1 && (
                                   <span className="text-gray-500">or</span>
                                 )}
-                              </>
+                              </Fragment>
                             ))}
                           </div>
                           <div className="text-gray-500 whitespace-nowrap ">

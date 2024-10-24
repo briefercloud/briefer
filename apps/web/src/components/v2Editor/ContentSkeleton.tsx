@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function TitleSkeleton(props: Props) {
-  const [show, setShow] = useResettableState(false, [props.visible])
+  const [show, setShow] = useResettableState(() => false, [props.visible])
   useEffect(() => {
     if (!props.visible) {
       return
@@ -52,7 +52,7 @@ export function TitleSkeleton(props: Props) {
 }
 
 export function ContentSkeleton(props: Props) {
-  const [show, setShow] = useResettableState(false, [props.visible])
+  const [show, setShow] = useResettableState(() => false, [props.visible])
   useEffect(() => {
     if (!props.visible) {
       return

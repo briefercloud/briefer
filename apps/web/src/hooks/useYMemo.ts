@@ -34,7 +34,7 @@ export function useYMemo<O extends YObservable, T>(
   fn: (observable: O) => T,
   deps: DependencyList
 ) {
-  const [value, setValue] = useResettableState<T>(fn(observable), deps)
+  const [value, setValue] = useResettableState<T>(() => fn(observable), deps)
 
   useEffect(() => {
     const onUpdate = () => {

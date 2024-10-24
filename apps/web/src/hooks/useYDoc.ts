@@ -93,10 +93,10 @@ export function useYDoc(
   initialState: Buffer | null
 ) {
   const isFirst = useRef(true)
-  const [{ id, cached, yDoc, restore }, setYDoc] = useState(
+  const [{ id, cached, yDoc, restore }, setYDoc] = useState(() =>
     getYDoc(documentId, isDataApp, clock, publishedAt)
   )
-  const [restoring, setRestoring] = useResettableState(true, [restore])
+  const [restoring, setRestoring] = useResettableState(() => true, [restore])
   useEffect(() => {
     restore.then(() => {
       setRestoring(false)
@@ -127,7 +127,7 @@ export function useYDoc(
     userId,
     publishedAt
   )
-  const [syncing, setSyncing] = useResettableState(true, [provider])
+  const [syncing, setSyncing] = useResettableState(() => true, [provider])
   useEffect(() => {
     const onSynced = (synced: boolean) => {
       setSyncing(!synced)
@@ -200,7 +200,7 @@ export function useYDocState<T extends Y.AbstractType<any>>(
   getter: (doc: Y.Doc) => T
 ) {
   const [state, setState] = useResettableState<{ value: T }>(
-    { value: getter(yDoc) },
+    () => ({ value: getter(yDoc) }),
     [yDoc]
   )
 
@@ -221,7 +221,7 @@ export function useYDocState<T extends Y.AbstractType<any>>(
 
 export function useLastUpdatedAt(yDoc: Y.Doc): string | null {
   const [lastUpdatedAt, setLastUpdatedAt] = useResettableState<string | null>(
-    getLastUpdatedAt(yDoc),
+    () => getLastUpdatedAt(yDoc),
     [yDoc]
   )
 

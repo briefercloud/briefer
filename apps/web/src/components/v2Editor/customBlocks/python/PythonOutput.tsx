@@ -46,7 +46,7 @@ const EXPENSIVE_TYPES = new Set<PythonBlock['result'][0]['type']>([
 
 export function PythonOutputs(props: Props) {
   const [rendered, setRendered] = useResettableState(
-    Math.min(props.lazyRender ? 1 : props.outputs.length),
+    () => Math.min(props.lazyRender ? 1 : props.outputs.length),
     [props.outputs, props.lazyRender]
   )
 
@@ -286,7 +286,7 @@ function PythonPlotOutput(props: {
 
 function DashboardPlotOutput(props: { output: PythonPlotlyOutput }) {
   const [size, setSize] = useResettableState(
-    null as { width: number; height: number } | null,
+    () => null as { width: number; height: number } | null,
     [props.output.layout]
   )
 

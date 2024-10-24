@@ -176,7 +176,7 @@ function BrieferVega(props: {
   renderer?: 'canvas' | 'svg'
 }) {
   const [size, setSize] = useResettableState(
-    null as { width: number; height: number } | null,
+    () => null as { width: number; height: number } | null,
     [props.spec, props.renderer]
   )
 

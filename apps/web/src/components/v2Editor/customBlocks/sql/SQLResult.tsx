@@ -86,12 +86,13 @@ function SQLSuccess(props: SQLSuccessProps) {
   const rowsPerPage = 50
   const totalPages = Math.ceil(props.result.count / rowsPerPage)
   const [pages, setPages] = useResettableState(
-    fromPairs(
-      splitEvery(rowsPerPage, props.result.rows).map((rows, i) => [
-        i,
-        { rows, status: 'success' },
-      ])
-    ),
+    () =>
+      fromPairs(
+        splitEvery(rowsPerPage, props.result.rows).map((rows, i) => [
+          i,
+          { rows, status: 'success' },
+        ])
+      ),
     [rowsPerPage, props.result.rows]
   )
 

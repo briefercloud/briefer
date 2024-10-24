@@ -85,7 +85,7 @@ interface PasswordDialogProps {
   isReset: boolean
 }
 export function PasswordDialog(props: PasswordDialogProps) {
-  const [hidden, setHidden] = useResettableState(true, [props.user])
+  const [hidden, setHidden] = useResettableState(() => true, [props.user])
 
   const [copied, setCopied] = useState(false)
   const onCopy: MouseEventHandler<HTMLButtonElement> = useCallback(

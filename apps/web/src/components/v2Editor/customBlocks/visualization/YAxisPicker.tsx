@@ -269,7 +269,7 @@ function YAxisPicker(props: Props) {
               : undefined
           )
           .map((s, i) => (
-            <div>
+            <div key={i}>
               <div className="flex space-x-1 items-end relative group">
                 <div className="w-full">
                   <AxisSelector

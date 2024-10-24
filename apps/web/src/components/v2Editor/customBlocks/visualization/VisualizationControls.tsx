@@ -120,8 +120,8 @@ function VisualizationControls(props: Props) {
     [props.onChangeHistogramBin]
   )
 
-  const [binText, setBinText] = useResettableState(
-    props.histogramBin.type === 'maxBins' ? '10' : '1',
+  const [binText, setBinText] = useResettableState<string>(
+    () => (props.histogramBin.type === 'maxBins' ? '10' : '1'),
     [props.histogramBin.type]
   )
   const onChangeBinText: React.ChangeEventHandler<HTMLInputElement> =
