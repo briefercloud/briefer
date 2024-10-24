@@ -10,6 +10,8 @@
     |
     <a href="https://briefer.cloud" target="_blank">Website</a>
     |
+    <a href="https://docs.briefer.cloud" target="_blank">Docs</a>
+    |
     <a href="https://briefer.cloud/blog" target="_blank">Blog</a>
     |
     <a href="https://github.com/briefercloud/briefer">Issues</a>
