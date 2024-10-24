@@ -1,10 +1,11 @@
 uvicorn==0.23.2
 fastapi==0.104.1
-langchain==0.2.1
-langchain-community==0.2.1
-langchain-openai==0.1.7
-langchain-aws==0.1.6
-openai==1.27.0
+langchain==0.3.4
+langchain-core==0.3.12
+langchain-community==0.3.3
+langchain-openai==0.2.3
+langchain-aws==0.2.3
+openai==1.52.0
 python-decouple==3.8
 psycopg2-binary==2.9.9
 sqlalchemy-bigquery==1.11.0
@@ -12,7 +13,7 @@ google-cloud-bigquery-storage==2.22.0
 pyarrow
 PyAthena==3.8.2
 oracledb==2.2.0
-boto3==1.34.113
+boto3==1.34.131
 sqlalchemy-redshift==0.8.14
 redshift-connector==2.0.917
 mysqlclient==2.2.4
