@@ -161,19 +161,47 @@ def start_or_run_container(client, container_name, image, detach):
 
     thread.join()
 
-
 def pull_image(client, image):
     print(f"Downloading image {image}...")
+    low_level_client = client.api
     has_some_version = len(client.images.list(name=image)) > 0
+
     try:
-        client.images.pull(image)
-        print(f"Downloaded image {image}.")
-    except:
+        response = low_level_client.pull(image, stream=True, decode=True)
+        last_status = {}
+        layer_output = {}
+
+        for line in response:
+            layer_id = line.get('id', None)
+            status = line.get('status', '')
+            progress = line.get('progress', '')
+
+            if layer_id:
+                # Update the status for this layer
+                last_status[layer_id] = (status, progress)
+
+                # Check if we have printed this layer before and update the line if so
+                if layer_id in layer_output:
+                    # Move the cursor back up to the line for this layer_id
+                    sys.stdout.write(f"\033[{len(last_status) - list(last_status).index(layer_id)}A")
+                    # Clear the line
+                    sys.stdout.write("\033[K")
+                else:
+                    # Record the new line position for this layer_id
+                    layer_output[layer_id] = sys.stdout.tell()
+
+                # Print the updated status
+                print(f"Layer {layer_id}: {status} {progress}")
+                # Move the cursor back down to where it started
+                sys.stdout.write(f"\033[{len(last_status) - list(last_status).index(layer_id)}B")
+
+        print(f"Successfully pulled image {image}.")
+    except Exception as e:
+        print(f"Error: {str(e)}")
         if has_some_version:
             print(f"Error: failed to download image {image}. Using cached version.", file=sys.stderr)
         else:
             raise
-
 
 def attach(container):
     for stdout, stderr in container.attach(stream=True, stdout=True, stderr=True, demux=True):
