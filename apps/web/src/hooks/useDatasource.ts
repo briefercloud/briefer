@@ -4,11 +4,12 @@ import { MySQLDataSourceInput } from '@/components/forms/mysql'
 import { OracleDataSourceInput } from '@/components/forms/oracle'
 import { PostgreSQLDataSourceInput } from '@/components/forms/postgresql'
 import { RedshiftDataSourceInput } from '@/components/forms/redshift'
+import { TrinoDataSourceInput } from '@/components/forms/trino'
 import { SnowflakeDataSourceInput } from '@/components/forms/snowflake'
+import { DatabricksSQLDataSourceInput } from '@/components/forms/databrickssql'
 import type { APIDataSource } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
 import { useDataSources } from './useDatasources'
-import { TrinoDataSourceInput } from '@/components/forms/trino'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 type DataSourceInput =
@@ -20,6 +21,7 @@ type DataSourceInput =
   | MySQLDataSourceInput
   | TrinoDataSourceInput
   | SnowflakeDataSourceInput
+  | DatabricksSQLDataSourceInput
 
 type API = {
   update: (payload: DataSourceInput) => Promise<APIDataSource | null>
@@ -97,6 +99,7 @@ export const useNewDataSource = (workspaceId: string) => {
         | 'trino'
         | 'sqlserver'
         | 'snowflake'
+        | 'databrickssql',
     ): Promise<APIDataSource> => {
       if (!workspaceId) {
         throw new Error('Missing workspaceId')

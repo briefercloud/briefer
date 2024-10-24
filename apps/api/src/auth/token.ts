@@ -318,5 +318,11 @@ export const isAuthorizedForDataSource = async (
       const result = await prisma().snowflakeDataSource.findFirst(query)
       return result !== null
     }
+    case 'databrickssql': {
+      const result = await prisma().databricksSQLDataSource.findFirst(
+        query,
+      )
+      return result !== null
+    }
   }
 }
