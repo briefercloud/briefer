@@ -340,7 +340,7 @@ function YAxisPicker(props: Props) {
                   {props.defaultChartType !== 'trend' &&
                     props.defaultChartType !== 'number' && (
                       <AxisModifierSelector
-                        label="Color by"
+                        label="Group by"
                         value={s.colorBy?.name.toString() ?? null}
                         options={[
                           { name: 'None', value: null },
