@@ -54,6 +54,9 @@ function SetupForm() {
   } = useForm<UserStepFormValues>({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
+    defaultValues: {
+      shareEmail: true,
+    },
   })
 
   const [formValues, setFormValues] = useState<
@@ -65,6 +68,7 @@ function SetupForm() {
     email: '',
     password: '',
     confirmPassword: '',
+    shareEmail: true,
   })
 
   const [currentStep, setCurrentStep] = useState<'workspace' | 'user'>(
@@ -94,6 +98,7 @@ function SetupForm() {
               name: `${payload.firstName} ${payload.lastName}`,
               email: payload.email,
               password: payload.password,
+              shareEmail: payload.shareEmail,
             }),
           }
         )

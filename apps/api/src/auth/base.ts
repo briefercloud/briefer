@@ -15,6 +15,7 @@ import {
 } from './token.js'
 import { createWorkspace } from '../workspace/index.js'
 import { isWorkspaceNameValid } from '../utils/validation.js'
+import { captureWorkspaceCreated } from '../events/posthog.js'
 
 type BaseAuthConfig = {
   FRONTEND_URL: string
@@ -67,6 +68,7 @@ export default function getRouter<H extends ApiUser>(
         name: z.string().trim(),
         email: z.string().trim().email(),
         password: z.string(),
+        shareEmail: z.boolean(),
       })
       .safeParse(req.body)
 
@@ -77,7 +79,7 @@ export default function getRouter<H extends ApiUser>(
       return
     }
 
-    const { email, password } = payload.data
+    const { email, password, shareEmail } = payload.data
     if (!isValidPassword(password)) {
       res.status(400).json({
         reason: 'invalid-password',
@@ -114,6 +116,8 @@ export default function getRouter<H extends ApiUser>(
 
         return { workspace, user }
       })
+
+      captureWorkspaceCreated(user, workspace, shareEmail)
 
       const loginLink = createLoginLink(user.id, config.FRONTEND_URL)
 
