@@ -36,7 +36,7 @@ model Document {
   executionSchedules ExecutionSchedule[]
   reusableComponents ReusableComponent[]
 
-  runUnexecutedBlocks Boolean @default(true)
+  runUnexecutedBlocks Boolean @default(false)
 }
 
 model YjsDocument {
