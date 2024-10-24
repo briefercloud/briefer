@@ -46,6 +46,8 @@ spec:
             {{- end }}
           {{- end }}
           env:
+            - name: USE_AZURE
+              value: '{{ .Values.ai.env.useAzure | default "false" }}'
             - name: PORT
               value: '{{ .Values.ai.env.port | default "8080" }}'
             - name: OPENAI_DEFAULT_MODEL_NAME

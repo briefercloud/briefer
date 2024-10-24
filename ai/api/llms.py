@@ -1,5 +1,5 @@
 from langchain_aws import BedrockLLM
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, AzureOpenAI
 from decouple import config
 
 # Add available models here
@@ -10,13 +10,28 @@ bedrock_model_ids = [
     "cohere.command-r-plus-v1:0",
 ]
 
+def str_to_bool(value):
+    if value is None or value == False:
+        return False
+
+    return value.lower() in ['true', '1', 't', 'y', 'yes']
+
 def initialize_llm(model_id=None, openai_api_key=None):
     openai_api_key = openai_api_key or config("OPENAI_API_KEY")
+    use_azure = config("USE_AZURE", default=False, cast=str_to_bool)
 
     if model_id in bedrock_model_ids:
         # Initialize Bedrock using default AWS credentials provider chain
         llm = BedrockLLM(
             model_id=model_id,
+        )
+    elif use_azure:
+        # Initialize Azure OpenAI using the environment variables for API key and model name
+        llm = AzureOpenAI(
+            temperature=0,
+            verbose=False,
+            azure_api_key=openai_api_key,
+            model_name=model_id if model_id else config("OPENAI_DEFAULT_MODEL_NAME"),
         )
     else:
         # Initialize OpenAI using environment variables for API key and model name
