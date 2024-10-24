@@ -7,6 +7,7 @@ import {
   UseFormRegister,
 } from 'react-hook-form'
 import Spin from '../Spin'
+import { Tooltip } from '../Tooltips'
 
 export type UserStepFormValues = {
   firstName: string
@@ -14,6 +15,7 @@ export type UserStepFormValues = {
   email: string
   password: string
   confirmPassword: string
+  shareEmail: boolean
 }
 
 interface Props {
@@ -99,6 +101,32 @@ function UserSetupForm(props: Props) {
                   },
                 })}
               />
+            </div>
+            <div className="mt-2 flex items-center">
+              <input
+                {...props.register('shareEmail')}
+                id="shareEmail"
+                tabIndex={-1}
+                type="checkbox"
+                className="h-4 w-4 text-primary-600 transition duration-150 ease-in-out outline-0 ring-0 focus:ring-0 rounded-sm"
+              />
+              <span className="ml-2 text-sm text-gray-500 hover:cursor-pointer">
+                <label htmlFor="shareEmail">
+                  {`I'm okay to share my email with the Briefer team. `}
+                </label>
+                <Tooltip
+                  title="We will NOT send you spam, we promise."
+                  message="We use this field to understand who our users are and how we can improve Briefer."
+                  position="top"
+                  active
+                  className="inline-block"
+                  tooltipClassname="w-64"
+                >
+                  <span className="underline cursor-help hover:text-gray-600 flex gap-x-1.5 items-center">
+                    {'That will help us a lot!'}
+                  </span>
+                </Tooltip>
+              </span>
             </div>
             <FormError msg={props.formErrors.email?.message} />
           </div>
