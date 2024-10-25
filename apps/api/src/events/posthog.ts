@@ -22,7 +22,6 @@ export const captureWorkspaceCreated = async (
   shareEmail: boolean
 ) => {
   const posthog = getPostHogClient()
-  console.log('CAPTURED', posthog)
   posthog?.capture({
     distinctId: sender.id,
     event: 'workspace_created',
