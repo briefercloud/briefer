@@ -135,7 +135,7 @@ export default function SchemaExplorer(props: Props) {
         <ChevronDoubleRightIcon className="w-3 h-3" />
       </button>
       <div
-        className="w-[324px] border-l border-gray-200 h-full bg-white"
+        className="w-[324px] border-l border-gray-200 h-full bg-white overflow-hidden"
         ref={ref}
       >
         {selectedDataSource ? (
