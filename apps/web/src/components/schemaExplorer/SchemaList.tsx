@@ -42,7 +42,7 @@ export default function SchemaList(props: Props) {
         canRetrySchema={props.canRetrySchema}
       />
 
-      <div className="pt-4 flex flex-col h-full">
+      <div className="pt-4 flex flex-col h-full overflow-hidden">
         <button
           className="relative flex px-4 py-2 text-xs font-medium border-y bg-gray-50 text-gray-600 items-center justify-between font-mono hover:bg-gray-100 group w-full"
           onClick={props.onBack}
