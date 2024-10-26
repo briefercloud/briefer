@@ -1525,6 +1525,7 @@ const Editor = (props: Props) => {
           onOpenFiles={props.onOpenFiles}
           publishedAt={props.isApp ? props.document.publishedAt : null}
           lastUpdatedAt={lastUpdatedAt}
+          isViewer={props.role === 'viewer'}
         />
       )}
       <RemoveBlockDashboardConflictDialog

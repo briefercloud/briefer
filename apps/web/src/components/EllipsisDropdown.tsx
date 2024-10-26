@@ -110,7 +110,7 @@ function EllipsisDropdown(props: Props) {
             />
           )}
 
-          {props.onToggleReusableComponents && (
+          {!props.isViewer && props.onToggleReusableComponents && (
             <MenuButton
               icon={<CodeBracketSquareIcon className="h-4 w-4" />}
               text="Reusable components"
