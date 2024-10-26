@@ -337,7 +337,9 @@ function PrivateDocumentPageInner(
           isPublicViewer={false}
           isDeleted={isDeleted}
           onRestoreDocument={onRestoreDocument}
-          isEditable={!props.isApp}
+          isEditable={
+            !props.isApp && props.user.roles[props.workspaceId] !== 'viewer'
+          }
           isPDF={false}
           isApp={props.isApp}
           userId={props.user.id}
