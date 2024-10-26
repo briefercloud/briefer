@@ -145,6 +145,8 @@ export default function Dashboard(props: Props) {
         documentId={props.document.id}
         current="dashboard"
         isEditing={props.isEditing}
+        userRole={props.role}
+        isPublished={props.document.publishedAt !== null}
       />
       <div className="w-full justify-end flex items-center gap-x-2 h-[30px]">
         {props.isEditing && (

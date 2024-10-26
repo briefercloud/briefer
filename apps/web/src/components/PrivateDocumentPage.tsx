@@ -248,6 +248,8 @@ function PrivateDocumentPageInner(
         documentId={props.documentId}
         current="notebook"
         isEditing={!props.isApp}
+        userRole={props.user.roles[props.workspaceId]}
+        isPublished={props.document.publishedAt !== null}
       />
 
       <div className="w-full justify-end flex items-center gap-x-2 h-[30px]">
