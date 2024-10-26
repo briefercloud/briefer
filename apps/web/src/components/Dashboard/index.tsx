@@ -313,6 +313,7 @@ function DashboardContent(props: Props & { yDoc: Y.Doc }) {
         draggingBlock={draggingBlock}
         latestBlockId={latestBlockId}
         isEditing={props.isEditing}
+        userRole={props.role}
       />
       {props.isEditing && (
         <DashboardControls

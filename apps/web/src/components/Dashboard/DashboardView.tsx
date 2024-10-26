@@ -319,6 +319,7 @@ interface Props {
   isEditing: boolean
   noBottomPadding?: boolean
   latestBlockId: string | null
+  userRole: string
 }
 export default function DashboardView(props: Props) {
   return (
@@ -332,7 +333,7 @@ export default function DashboardView(props: Props) {
           style="font-weight: bold; font-size: 2.5rem;"
           content={props.yDoc.getXmlFragment('title')}
           isLoading={false}
-          isEditable={props.isEditing}
+          isEditable={props.isEditing && props.userRole !== 'viewer'}
           isPDF={false}
         />
       </div>

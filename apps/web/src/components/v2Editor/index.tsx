@@ -1489,7 +1489,9 @@ const Editor = (props: Props) => {
             <Title
               content={props.yDoc.getXmlFragment('title')}
               isLoading={props.isSyncing}
-              isEditable={props.isEditable && !props.isApp}
+              isEditable={
+                props.isEditable && !props.isApp && props.role !== 'viewer'
+              }
               isPDF={props.isPDF}
             />
           </div>
