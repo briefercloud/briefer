@@ -525,6 +525,7 @@ function SQLBlock(props: Props) {
               onSubmit={onSubmitEditWithAI}
               onClose={onCloseEditWithAIPrompt}
               value={editWithAIPrompt}
+              hasOutput={result !== null}
             />
           ) : (
             <div

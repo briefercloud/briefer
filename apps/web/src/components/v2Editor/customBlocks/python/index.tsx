@@ -365,6 +365,7 @@ function PythonBlock(props: Props) {
               onSubmit={onSubmitEditWithAI}
               onClose={onCloseEditWithAIPrompt}
               value={editWithAIPrompt}
+              hasOutput={results.length > 0}
             />
           ) : (
             <div

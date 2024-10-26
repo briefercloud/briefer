@@ -11,6 +11,7 @@ interface Props {
   value: Y.Text
   onSubmit: () => void
   onClose: () => void
+  hasOutput: boolean
 }
 function EditWithAIForm(props: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -101,7 +102,8 @@ function EditWithAIForm(props: Props) {
           props.loading
             ? 'bg-gray-300 border-gray-400'
             : 'bg-primary-50 border-primary-400 focus-within:bg-primary-100 focus-within:border-primary-500',
-          'w-full h-full mt-[-1px] border-t flex items-center px-3 py-1 gap-x-2 rounded-b-md'
+          props.hasOutput ? '' : 'rounded-b-md',
+          'w-full h-full mt-[-1px] border-t flex items-center px-3 py-1 gap-x-2'
         )}
       >
         <button
