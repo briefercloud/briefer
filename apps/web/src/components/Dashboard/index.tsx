@@ -238,6 +238,7 @@ export default function Dashboard(props: Props) {
             onOpenFiles={onToggleFiles}
             publishedAt={!props.isEditing ? props.document.publishedAt : null}
             lastUpdatedAt={lastUpdatedAt}
+            isViewer={props.role === 'viewer'}
           />
         </div>
 

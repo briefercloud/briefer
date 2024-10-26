@@ -48,7 +48,7 @@ function EllipsisDropdown(props: Props) {
           as="div"
           className="mt-1 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none font-sans divide-y divide-gray-200 w-52"
         >
-          {props.onToggleFiles && (
+          {!props.isViewer && props.onToggleFiles && (
             <MenuButton
               icon={<FolderIcon className="h-4 w-4" />}
               text="Files"

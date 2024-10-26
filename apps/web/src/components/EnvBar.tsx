@@ -17,6 +17,7 @@ interface Props {
   onOpenFiles: () => void
   publishedAt: string | null
   lastUpdatedAt: string | null
+  isViewer: boolean
 }
 function EnvBar(props: Props) {
   const workspaceId = useStringQuery('workspaceId')
@@ -52,7 +53,7 @@ function EnvBar(props: Props) {
             <div>
               <EnvironmentButton name="Python 3.9" workspaceId={workspaceId} />
             </div>
-            <div>
+            <div className={clsx(props.isViewer ? 'hidden' : '')}>
               <Link
                 href={`/workspaces/${workspaceId}/environments/current/variables`}
                 className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
@@ -62,7 +63,10 @@ function EnvBar(props: Props) {
               </Link>
             </div>
             <button
-              className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
+              className={clsx(
+                props.isViewer ? 'hidden' : '',
+                'border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2'
+              )}
               onClick={props.onOpenFiles}
             >
               <FolderIcon className="h-4 w-4 text-gray-600" />
