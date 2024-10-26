@@ -313,7 +313,7 @@ function SQLSuccess(props: SQLSuccessProps) {
         )}
       >
         {props.dashboardMode === 'none' && (
-          <div className="px-3 py-1.5 text-xs text-gray-300 flex items-center gap-x-0.5 justify-between">
+          <div className="p-3 text-xs text-gray-300 flex items-center gap-x-0.5 justify-between">
             <div className="flex">
               <button
                 className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm"
