@@ -14,7 +14,7 @@ function DashboardNotebookGroupButton(props: Props) {
     <div className="flex items-center px-2">
       <Link
         className={clsx(
-          'flex gap-x-1.5 items-center rounded-sm px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-inset ring-gray-300 hover:bg-ceramic-50',
+          'flex gap-x-1.5 items-center rounded-l-sm px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-inset ring-gray-300 hover:bg-ceramic-50',
           props.current === 'notebook'
             ? 'bg-ceramic-50 text-gray-900 -mr-px'
             : 'bg-white text-gray-500'
@@ -26,7 +26,7 @@ function DashboardNotebookGroupButton(props: Props) {
       </Link>
       <Link
         className={clsx(
-          'flex gap-x-1.5 items-center rounded-sm px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-inset ring-gray-300 hover:bg-ceramic-50',
+          'flex gap-x-1.5 items-center rounded-r-sm px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-inset ring-gray-300 hover:bg-ceramic-50',
           props.current === 'dashboard'
             ? 'bg-ceramic-50 text-gray-900 -ml-px'
             : 'bg-white text-gray-500'
