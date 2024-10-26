@@ -140,13 +140,14 @@ function PythonBlock(props: Props) {
 
   const { source } = getPythonAttributes(props.block)
   const lastQuery = props.block.getAttribute('lastQuery')
+  const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
   const queryStatusText = useMemo(() => {
     if (status === 'running' || status === 'running-suggestion') {
       if (envStatus === 'Starting') {
         return <LoadingEnvText />
       } else {
-        return <ExecutingPythonText />
+        return <ExecutingPythonText startExecutionTime={startQueryTime} />
       }
     }
 

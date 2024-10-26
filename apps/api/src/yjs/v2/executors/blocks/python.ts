@@ -124,6 +124,8 @@ export class PythonExecutor implements IPythonExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
+          block.setAttribute('startQueryTime', new Date().toISOString())
+
           logger().trace(
             {
               workspaceId: this.workspaceId,

@@ -212,6 +212,7 @@ function SQLBlock(props: Props) {
 
   const { source, configuration } = getSQLAttributes(props.block, props.blocks)
   const lastQuery = props.block.getAttribute('lastQuery')
+  const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
   const queryStatusText = useMemo(() => {
     switch (execStatus) {
@@ -229,7 +230,7 @@ function SQLBlock(props: Props) {
         if (envStatus === 'Starting') {
           return <LoadingEnvText />
         } else {
-          return <LoadingQueryText />
+          return <LoadingQueryText startExecutionTime={startQueryTime} />
         }
     }
   }, [execStatus, lastQuery, lastQueryTime, source, envStatus])

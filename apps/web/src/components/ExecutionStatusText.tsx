@@ -5,6 +5,10 @@ import {
   Cog8ToothIcon,
 } from '@heroicons/react/20/solid'
 
+type StartExecutionStatusTextProps = {
+  startExecutionTime: string
+}
+
 type LastExecutedStatusTextProps = {
   lastExecutionTime: string
 }
@@ -23,11 +27,16 @@ export const QuerySucceededText = ({
   )
 }
 
-export const LoadingQueryText = () => {
+export const LoadingQueryText = ({
+  startExecutionTime,
+}: StartExecutionStatusTextProps) => {
   return (
     <span className="font-syne text-gray-400 text-xs flex items-center select-none">
       <CloudArrowDownIcon className="w-4 h-4 mr-1" />
-      <span className="pt-0.5">Executing query...</span>
+      <span className="pt-0.5">
+        Executing query, started at{' '}
+        {format(new Date(startExecutionTime), "h:mm a 'on' do MMM, yyyy")}
+      </span>
     </span>
   )
 }
@@ -41,11 +50,16 @@ export const LoadingEnvText = () => {
   )
 }
 
-export const ExecutingPythonText = () => {
+export const ExecutingPythonText = ({
+  startExecutionTime,
+}: StartExecutionStatusTextProps) => {
   return (
     <span className="font-syne text-gray-400 text-xs flex items-center select-none">
       <CloudArrowDownIcon className="w-4 h-4 mr-1" />
-      <span className="pt-0.5">Executing Python code...</span>
+      <span className="pt-0.5">
+        Executing Python code, started at{' '}
+        {format(new Date(startExecutionTime), "h:mm a 'on' do MMM, yyyy")}
+      </span>
     </span>
   )
 }
