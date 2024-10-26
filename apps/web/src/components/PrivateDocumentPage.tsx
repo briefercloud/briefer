@@ -270,7 +270,9 @@ function PrivateDocumentPageInner(
           isDashboard={false}
           isApp={props.isApp}
         />
-        {props.isApp ? (
+
+        {props.user.roles[props.workspaceId] ===
+        'viewer' ? null : props.isApp ? (
           <Link
             className="flex gap-x-2 items-center rounded-sm px-3 py-1 text-sm text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-1.5 justify-center"
             href={`/workspaces/${props.document.workspaceId}/documents/${props.document.id}/notebook/edit`}
