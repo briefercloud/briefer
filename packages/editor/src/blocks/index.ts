@@ -460,6 +460,22 @@ export function getErrorMessage(block: YBlock): string | null {
   })
 }
 
+export const isRunnableBlock = <B extends YBlock>(block: B): boolean => {
+  return switchBlockType<boolean>(block, {
+    onPython: () => true,
+    onSQL: () => true,
+    onVisualization: () => true,
+    onWriteback: () => true,
+    onInput: () => true,
+    onDropdownInput: () => true,
+    onDateInput: () => true,
+    onRichText: () => false,
+    onFileUpload: () => false,
+    onDashboardHeader: () => false,
+    onPivotTable: () => true,
+  })
+}
+
 export * from './dashboard.js'
 export * from './richText.js'
 export * from './sql.js'

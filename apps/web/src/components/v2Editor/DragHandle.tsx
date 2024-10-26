@@ -8,6 +8,7 @@ import {
   FolderIcon,
   EyeSlashIcon,
   BarsArrowDownIcon,
+  PlayIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import { useRef } from 'react'
@@ -15,6 +16,8 @@ import { createPortal } from 'react-dom'
 
 const DragHandle = ({
   isDragging,
+  hasMultipleTabs,
+  hasRunnableBlocks,
   onRunBelowBlock,
   onRunAllTabs,
   onDeleteTab,
@@ -25,8 +28,10 @@ const DragHandle = ({
   targetRef,
 }: {
   isDragging: boolean
+  hasMultipleTabs: boolean
+  hasRunnableBlocks: boolean
   onRunBelowBlock: () => void
-  onRunAllTabs: (() => void) | null
+  onRunAllTabs: () => void
   onDeleteTab: (() => void) | null
   onDeleteBlock: () => void
   onDuplicateTab: (() => void) | null
@@ -95,14 +100,20 @@ const DragHandle = ({
                 >
                   <div className="flex flex-col divide-y divide-gray-200">
                     <div className="py-0.5 px-0.5">
-                      {onRunAllTabs && (
+                      {hasRunnableBlocks && (
                         <Menu.Item
                           as="button"
                           onClick={onRunAllTabs}
                           className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
                         >
-                          <ForwardIcon className="h-4 w-4" />
-                          <span>Run all tabs</span>
+                          {hasMultipleTabs ? (
+                            <ForwardIcon className="h-4 w-4" />
+                          ) : (
+                            <PlayIcon className="h-4 w-4" />
+                          )}
+                          <span>
+                            {hasMultipleTabs ? 'Run all tabs' : 'Run block'}
+                          </span>
                         </Menu.Item>
                       )}
 
@@ -115,7 +126,7 @@ const DragHandle = ({
                         <span>Run onwards</span>
                       </Menu.Item>
 
-                      {onRunAllTabs && (
+                      {hasMultipleTabs && (
                         <>
                           <Menu.Item
                             as="button"
