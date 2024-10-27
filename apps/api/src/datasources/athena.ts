@@ -1,4 +1,3 @@
-import pAll from 'p-all'
 import aws from 'aws-sdk'
 import prisma, { AthenaDataSource, decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
@@ -12,6 +11,7 @@ import {
 } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { OnTable } from './structure.js'
+import PQueue from 'p-queue'
 
 async function getAthenaClient(
   ds: AthenaDataSource
@@ -143,65 +143,80 @@ export async function getAthenaSchema(
   onTable: OnTable
 ): Promise<DataSourceStructure> {
   const { glue } = await getAthenaClient(ds)
-  const databases = await glue.getDatabases().promise()
-  logger().info(
-    {
-      schemaCount: databases.DatabaseList?.length,
-      dataSourceId: ds.id,
-      workspaceId: ds.workspaceId,
-    },
-    'Fetched schemas for Athena data source'
-  )
-
+  const pQueue = new PQueue({ concurrency: 5 })
+  let remaining = 0
   const schemas: Record<string, DataSourceSchema> = {}
+  let promises: Promise<void>[] = []
 
-  let remaining = databases.DatabaseList?.length ?? 0
-  await pAll(
-    databases.DatabaseList.map((database) => async () => {
-      const databaseName = database.Name
-      const tablesResponse = await glue
-        .getTables({ DatabaseName: databaseName })
-        .promise()
-      const tables: Record<string, DataSourceTable> = {}
-      logger().info(
-        {
-          tableCount: tablesResponse.TableList?.length,
-          schema: databaseName,
-          dataSourceId: ds.id,
-          workspaceId: ds.workspaceId,
-          remaining: --remaining,
-        },
-        `Fetched tables of schema ${databaseName} for Athena data source`
+  let nextToken: string | undefined = undefined
+  do {
+    const databases = await glue
+      .getDatabases({ NextToken: nextToken })
+      .promise()
+    remaining += databases.DatabaseList?.length ?? 0
+
+    logger().info(
+      {
+        schemaCount: databases.DatabaseList?.length,
+        dataSourceId: ds.id,
+        workspaceId: ds.workspaceId,
+      },
+      'Fetched schemas for Athena data source'
+    )
+
+    databases.DatabaseList.forEach((database) => {
+      promises.push(
+        pQueue.add(async () => {
+          const databaseName = database.Name
+          const tablesResponse = await glue
+            .getTables({ DatabaseName: databaseName })
+            .promise()
+          const tables: Record<string, DataSourceTable> = {}
+          logger().info(
+            {
+              tableCount: tablesResponse.TableList?.length,
+              schema: databaseName,
+              dataSourceId: ds.id,
+              workspaceId: ds.workspaceId,
+              remaining: --remaining,
+            },
+            `Fetched tables of schema ${databaseName} for Athena data source`
+          )
+
+          for (const table of tablesResponse.TableList ?? []) {
+            // Retrieve regular columns
+            const columns: DataSourceColumn[] = (
+              table.StorageDescriptor?.Columns ?? []
+            ).map((column) => ({
+              name: column.Name,
+              type: column.Type ?? 'unknown',
+            }))
+
+            // Retrieve partition columns (partition keys)
+            const partitionColumns: DataSourceColumn[] = (
+              table.PartitionKeys ?? []
+            ).map((partitionKey) => ({
+              name: partitionKey.Name,
+              type: partitionKey.Type ?? 'unknown',
+            }))
+
+            const tableSchema = { columns: [...columns, ...partitionColumns] }
+            onTable(databaseName, table.Name, tableSchema, 'default')
+
+            // Merge regular columns and partition columns
+            tables[table.Name] = tableSchema
+          }
+
+          schemas[databaseName] = { tables }
+        })
       )
+    })
 
-      for (const table of tablesResponse.TableList ?? []) {
-        // Retrieve regular columns
-        const columns: DataSourceColumn[] = (
-          table.StorageDescriptor?.Columns ?? []
-        ).map((column) => ({
-          name: column.Name,
-          type: column.Type ?? 'unknown',
-        }))
+    nextToken = databases.NextToken
+  } while (nextToken !== undefined)
 
-        // Retrieve partition columns (partition keys)
-        const partitionColumns: DataSourceColumn[] = (
-          table.PartitionKeys ?? []
-        ).map((partitionKey) => ({
-          name: partitionKey.Name,
-          type: partitionKey.Type ?? 'unknown',
-        }))
-
-        const tableSchema = { columns: [...columns, ...partitionColumns] }
-        onTable(databaseName, table.Name, tableSchema, 'default')
-
-        // Merge regular columns and partition columns
-        tables[table.Name] = tableSchema
-      }
-
-      schemas[databaseName] = { tables }
-    }),
-    { concurrency: 5 }
-  )
+  await Promise.all(promises)
+  await pQueue.onIdle()
 
   return {
     dataSourceId: ds.id,
