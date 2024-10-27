@@ -278,7 +278,7 @@ async function _refreshDataSourceStructure(
         )
         break
       case 'athena':
-        finalStructure = await getAthenaSchema(dataSource.config.data)
+        finalStructure = await getAthenaSchema(dataSource.config.data, onTable)
         break
       case 'sqlserver':
         finalStructure = await getSqlServerSchema(dataSource.config.data)

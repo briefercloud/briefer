@@ -1,3 +1,4 @@
+import pAll from 'p-all'
 import aws from 'aws-sdk'
 import prisma, { AthenaDataSource, decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
@@ -10,6 +11,7 @@ import {
   DataSourceTable,
 } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
+import { OnTable } from './structure.js'
 
 async function getAthenaClient(
   ds: AthenaDataSource
@@ -137,19 +139,40 @@ export async function ping(ds: AthenaDataSource): Promise<AthenaDataSource> {
 }
 
 export async function getAthenaSchema(
-  ds: AthenaDataSource
+  ds: AthenaDataSource,
+  onTable: OnTable
 ): Promise<DataSourceStructure> {
   const { glue } = await getAthenaClient(ds)
   const databases = await glue.getDatabases().promise()
+  logger().info(
+    {
+      schemaCount: databases.DatabaseList?.length,
+      dataSourceId: ds.id,
+      workspaceId: ds.workspaceId,
+    },
+    'Fetched schemas for Athena data source'
+  )
+
   const schemas: Record<string, DataSourceSchema> = {}
 
-  await Promise.all(
-    databases.DatabaseList.map(async (database) => {
+  let remaining = databases.DatabaseList?.length ?? 0
+  await pAll(
+    databases.DatabaseList.map((database) => async () => {
       const databaseName = database.Name
       const tablesResponse = await glue
         .getTables({ DatabaseName: databaseName })
         .promise()
       const tables: Record<string, DataSourceTable> = {}
+      logger().info(
+        {
+          tableCount: tablesResponse.TableList?.length,
+          schema: databaseName,
+          dataSourceId: ds.id,
+          workspaceId: ds.workspaceId,
+          remaining: --remaining,
+        },
+        `Fetched tables of schema ${databaseName} for Athena data source`
+      )
 
       for (const table of tablesResponse.TableList ?? []) {
         // Retrieve regular columns
@@ -168,12 +191,16 @@ export async function getAthenaSchema(
           type: partitionKey.Type ?? 'unknown',
         }))
 
+        const tableSchema = { columns: [...columns, ...partitionColumns] }
+        onTable(databaseName, table.Name, tableSchema, 'default')
+
         // Merge regular columns and partition columns
-        tables[table.Name] = { columns: [...columns, ...partitionColumns] }
+        tables[table.Name] = tableSchema
       }
 
       schemas[databaseName] = { tables }
-    })
+    }),
+    { concurrency: 5 }
   )
 
   return {
