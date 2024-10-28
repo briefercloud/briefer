@@ -47,6 +47,7 @@ import {
   RemoveBlockGroupResult,
   RemoveBlockDashboardConflictResult,
   getNextBlockIdAfterDelete,
+  isRunnableBlock,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -823,6 +824,13 @@ file`
     })
   }, [layout, blocks, props.id])
 
+  const hasRunnableBlocks = useMemo(() => {
+    return tabRefs.some((tab) => {
+      const block = blocks.value.get(tab.blockId)
+      return block && isRunnableBlock(block)
+    })
+  }, [tabRefs, blocks])
+
   return (
     <div className="flex group/wrapper gap-x-1 relative">
       <div
@@ -838,9 +846,11 @@ file`
         }}
       >
         <DragHandle
+          hasRunnableBlocks={hasRunnableBlocks}
+          hasMultipleTabs={hasMultipleTabs}
           isDragging={isDragging}
           onRunBelowBlock={runBelowBlock}
-          onRunAllTabs={hasMultipleTabs ? runAllTabs : null}
+          onRunAllTabs={runAllTabs}
           onDuplicateTab={hasMultipleTabs ? onDuplicateCurrentTab : null}
           onDuplicateBlock={onDuplicateBlockGroup}
           onDeleteTab={hasMultipleTabs ? onDeleteCurrentTab : null}
