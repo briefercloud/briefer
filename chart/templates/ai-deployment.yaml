@@ -48,6 +48,12 @@ spec:
           env:
             - name: USE_AZURE
               value: '{{ .Values.ai.env.useAzure | default "false" }}'
+            - name: AZURE_OPENAI_ENDPOINT
+              value: '{{ .Values.ai.env.azureOpenAIEndpoint | default "" }}'
+            - name: AZURE_API_VERSION
+              value: '{{ .Values.ai.env.azureApiVersion | default "" }}'
+            - name: AZURE_DEPLOYMENT
+              value: '{{ .Values.ai.env.azureDeployment | default "" }}'
             - name: PORT
               value: '{{ .Values.ai.env.port | default "8080" }}'
             - name: OPENAI_DEFAULT_MODEL_NAME

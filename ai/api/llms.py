@@ -20,6 +20,7 @@ def initialize_llm(model_id=None, openai_api_key=None):
     openai_api_key = openai_api_key or config("OPENAI_API_KEY")
     use_azure = config("USE_AZURE", default=False, cast=str_to_bool)
 
+
     if model_id in bedrock_model_ids:
         # Initialize Bedrock using default AWS credentials provider chain
         llm = BedrockLLM(
@@ -32,6 +33,8 @@ def initialize_llm(model_id=None, openai_api_key=None):
             verbose=False,
             azure_api_key=openai_api_key,
             model_name=model_id if model_id else config("OPENAI_DEFAULT_MODEL_NAME"),
+            azure_deployment=config("AZURE_DEPLOYMENT", default=""),
+            api_version=config("AZURE_API_VERSION", default=""),
         )
     else:
         # Initialize OpenAI using environment variables for API key and model name
