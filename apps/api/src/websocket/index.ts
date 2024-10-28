@@ -9,7 +9,11 @@ import {
   APIReusableComponent,
   EnvironmentStatus,
 } from '@briefer/database'
-import { Comment, PythonSuggestionsResult } from '@briefer/types'
+import {
+  Comment,
+  DataSourceTable,
+  PythonSuggestionsResult,
+} from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
 import { joinWorkspace, leaveWorkspace } from './workspace/index.js'
@@ -53,6 +57,19 @@ interface EmitEvents {
   'workspace-datasource-update': (msg: {
     workspaceId: string
     dataSource: APIDataSource
+  }) => void
+  'workspace-datasource-schema-table-update': (msg: {
+    workspaceId: string
+    dataSourceId: string
+    schemaName: string
+    tableName: string
+    table: DataSourceTable
+  }) => void
+  'workspace-datasource-schema-table-removed': (msg: {
+    workspaceId: string
+    dataSourceId: string
+    schemaName: string
+    tableName: string
   }) => void
 
   'workspace-components': (msg: {

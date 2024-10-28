@@ -1,5 +1,4 @@
 import prisma, { TrinoDataSource } from '@briefer/database'
-import { DataSourceStructure } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { pingTrino, getTrinoSchema } from '../python/query/trino.js'
 import { config } from '../config/index.js'
@@ -22,7 +21,7 @@ export async function ping(ds: TrinoDataSource): Promise<TrinoDataSource> {
 export async function getSchema(
   ds: TrinoDataSource,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   return getTrinoSchema(ds, config().DATASOURCES_ENCRYPTION_KEY, onTable)
 }
 

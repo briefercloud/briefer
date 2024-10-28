@@ -25,7 +25,7 @@ export default function SchemaExplorer(props: Props) {
     }
   }, [props.visible])
 
-  const [{ data: dataSources }, { refreshOne }] = useDataSources(workspaceId)
+  const [{ datasources, schemas }, { refreshOne }] = useDataSources(workspaceId)
   const [state, setState] = useState<{
     initialDataSourceId: string | null
     dataSourceId: string | null
@@ -60,9 +60,9 @@ export default function SchemaExplorer(props: Props) {
     }
 
     return (
-      dataSources.find((ds) => ds.config.data.id === state.dataSourceId) ?? null
+      datasources.find((ds) => ds.config.data.id === state.dataSourceId) ?? null
     )
-  }, [state.dataSourceId, dataSources])
+  }, [state.dataSourceId, datasources])
 
   const onSelectDataSource = useCallback(
     (dataSourceId: string) => {
@@ -78,6 +78,14 @@ export default function SchemaExplorer(props: Props) {
       )
     },
     [state]
+  )
+
+  const schemaNames = useMemo(
+    () =>
+      Array.from(
+        state.dataSourceId ? schemas.get(state.dataSourceId)?.keys() ?? [] : []
+      ),
+    [state.dataSourceId, schemas]
   )
 
   const onTableListBack = useCallback(() => {
@@ -116,6 +124,19 @@ export default function SchemaExplorer(props: Props) {
     [refreshOne]
   )
 
+  const schema = useMemo(() => {
+    if (!state.dataSourceId || !state.schema) {
+      return null
+    }
+
+    return {
+      name: state.schema,
+      state: schemas.get(state.dataSourceId)?.get(state.schema) ?? {
+        tables: {},
+      },
+    }
+  }, [state.schema, schemas])
+
   return (
     <Transition
       show={props.visible}
@@ -139,10 +160,11 @@ export default function SchemaExplorer(props: Props) {
         ref={ref}
       >
         {selectedDataSource ? (
-          state.schema ? (
+          schema ? (
             <TableList
               dataSource={selectedDataSource}
-              schema={state.schema}
+              schemaName={schema.name}
+              schema={schema.state}
               onBack={onTableListBack}
               selectedTable={state.table}
               onSelectTable={onSelectTable}
@@ -152,6 +174,7 @@ export default function SchemaExplorer(props: Props) {
           ) : (
             <SchemaList
               dataSource={selectedDataSource}
+              schemaNames={schemaNames}
               onSelectSchema={onSelectSchema}
               onBack={onSchemaListBack}
               onRetrySchema={onRetrySchema}
@@ -160,7 +183,7 @@ export default function SchemaExplorer(props: Props) {
           )
         ) : (
           <DatabaseList
-            dataSources={dataSources}
+            dataSources={datasources}
             onSelectDataSource={onSelectDataSource}
           />
         )}

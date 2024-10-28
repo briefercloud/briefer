@@ -12,6 +12,7 @@ export type PostgreSQLDataSource = Omit<
   | 'password'
   | 'cert'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -110,7 +111,12 @@ export async function updatePSQLDataSource(
 export async function createPSQLDataSource(
   data: Omit<
     PrismaPostgreSQLDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<PostgreSQLDataSource> {

@@ -1,5 +1,4 @@
 import {
-  DataSourceStructure,
   jsonString,
   Output,
   PythonErrorOutput,
@@ -319,7 +318,7 @@ export async function getSQLAlchemySchema(
   encryptionKey: string,
   credentialsInfo: object | null,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
 
   const code = `
@@ -332,7 +331,6 @@ from psycopg2.errors import InsufficientPrivilege
 
 
 def schema_from_tables(inspector, tables):
-    schemas = {}
     for table in tables:
         schema_name, table_name = table.split(".")
         print(json.dumps({"log": f"Getting schema for table {table}"}))
@@ -353,11 +351,6 @@ def schema_from_tables(inspector, tables):
             print(json.dumps({"log": f"Got NoSuchTableError when trying to get columns for table {table}"}))
             continue
 
-        if schema_name not in schemas:
-            schemas[schema_name] = {
-                "tables": {}
-            }
-
         progress = {
             "type": "progress",
             "schema": schema_name,
@@ -368,12 +361,6 @@ def schema_from_tables(inspector, tables):
             "defaultSchema": "public"
         }
         print(json.dumps(progress, default=str))
-
-        schemas[schema_name]["tables"][table_name] = {
-            "columns": columns
-        }
-
-    return schemas
 
 
 def get_data_source_structure(data_source_id, credentials_info=None):
@@ -390,53 +377,39 @@ def get_data_source_structure(data_source_id, credentials_info=None):
     inspector = inspect(engine)
     if ${JSON.stringify(ds.type)} == "bigquery":
         tables = inspector.get_table_names()
-        schemas = schema_from_tables(inspector, tables)
+        schema_from_tables(inspector, tables)
     else:
         tables = []
         for schema_name in inspector.get_schema_names():
             print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
             schema_tables = inspector.get_table_names(schema=schema_name)
             tables += [f"{schema_name}.{table}" for table in schema_tables]
-        schemas = schema_from_tables(inspector, tables)
-
-    data_source_structure = {
-        "dataSourceId": data_source_id,
-        "schemas": schemas,
-        "defaultSchema": "public"
-    }
-
-    return data_source_structure
+        schema_from_tables(inspector, tables)
 
 
 credentials_info = json.loads(${JSON.stringify(
     JSON.stringify(credentialsInfo)
   )})
-structure = get_data_source_structure("${ds.data.id}", credentials_info)
-print(json.dumps(structure, default=str))`
+get_data_source_structure("${ds.data.id}", credentials_info)`
 
   let pythonError: PythonErrorOutput | null = null
   const onError = (output: PythonErrorOutput) => {
     pythonError = output
   }
 
-  let structure: DataSourceStructure | null = null
-  const onStructure = (schema: DataSourceStructure) => {
-    structure = schema
-  }
-
+  let gotOutput = false
   return executeCode(
     ds.data.workspaceId,
     `schema-${ds.type}-${ds.data.id}`,
     code,
-    (outputs) => onSchemaOutputs(ds, outputs, onError, onStructure, onTable),
+    (outputs) => {
+      gotOutput = true
+      onSchemaOutputs(ds, outputs, onError, onTable)
+    },
     { storeHistory: false }
   )
     .then(({ promise }) => promise)
     .then(() => {
-      if (structure) {
-        return structure
-      }
-
       if (pythonError) {
         throw new PythonExecutionError(
           pythonError.type,
@@ -446,9 +419,11 @@ print(json.dumps(structure, default=str))`
         )
       }
 
-      throw new Error(
-        `Failed to get schema for datasource ${ds.data.id}. Got no output.`
-      )
+      if (!gotOutput) {
+        throw new Error(
+          `Failed to get schema for datasource ${ds.data.id}. Got no output.`
+        )
+      }
     })
 }
 
@@ -456,7 +431,6 @@ export function onSchemaOutputs(
   ds: DataSource,
   outputs: Output[],
   onError: (output: PythonErrorOutput) => void,
-  onStructure: (schema: DataSourceStructure) => void,
   onTable: OnTable
 ) {
   for (const output of outputs) {
@@ -468,13 +442,7 @@ export function onSchemaOutputs(
         }
 
         const parsedStructure = jsonString
-          .pipe(
-            z.union([
-              DataSourceStructure,
-              OnTableProgress,
-              z.object({ log: z.string() }),
-            ])
-          )
+          .pipe(z.union([OnTableProgress, z.object({ log: z.string() })]))
           .safeParse(line)
         if (parsedStructure.success) {
           if ('log' in parsedStructure.data) {
@@ -485,15 +453,13 @@ export function onSchemaOutputs(
               },
               parsedStructure.data.log
             )
-          } else if ('type' in parsedStructure.data) {
+          } else {
             onTable(
               parsedStructure.data.schema,
               parsedStructure.data.tableName,
               parsedStructure.data.table,
               parsedStructure.data.defaultSchema
             )
-          } else {
-            onStructure(parsedStructure.data)
           }
         } else {
           logger().error(

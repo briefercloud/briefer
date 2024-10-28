@@ -1,10 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { BigQueryDataSource, getCredentials } from '@briefer/database'
-import {
-  DataSourceStructure,
-  RunQueryResult,
-  SuccessRunQueryResult,
-} from '@briefer/types'
+import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
 import { makeQuery } from './index.js'
 import { renderJinja } from '../index.js'
 import { getSQLAlchemySchema, pingSQLAlchemy } from './sqlalchemy.js'
@@ -281,7 +277,7 @@ export async function getBigQuerySchema(
   ds: BigQueryDataSource,
   encryptionKey: string,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   const credentialsInfo = await getCredentials(ds, encryptionKey)
 
   return getSQLAlchemySchema(

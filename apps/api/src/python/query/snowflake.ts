@@ -1,10 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { SnowflakeDataSource, getDatabaseURL } from '@briefer/database'
-import {
-  DataSourceStructure,
-  RunQueryResult,
-  SuccessRunQueryResult,
-} from '@briefer/types'
+import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
 import {
   getSQLAlchemySchema,
   makeSQLAlchemyQuery,
@@ -54,7 +50,7 @@ export function getSnowflakeSchema(
   ds: SnowflakeDataSource,
   encryptionKey: string,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   return getSQLAlchemySchema(
     { type: 'snowflake', data: ds },
     encryptionKey,

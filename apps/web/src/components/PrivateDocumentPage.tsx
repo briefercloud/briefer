@@ -97,7 +97,7 @@ function PrivateDocumentPageInner(
     | null
   >(null)
 
-  const [{ data: dataSources }] = useDataSources(props.workspaceId)
+  const [{ datasources: dataSources }] = useDataSources(props.workspaceId)
 
   const onHideSidebar = useCallback(() => {
     setSelectedSidebar(null)

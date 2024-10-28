@@ -2,13 +2,7 @@ import aws from 'aws-sdk'
 import prisma, { AthenaDataSource, decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
 import { logger } from '../logger.js'
-import {
-  DataSourceColumn,
-  DataSourceConnectionError,
-  DataSourceSchema,
-  DataSourceStructure,
-  DataSourceTable,
-} from '@briefer/types'
+import { DataSourceColumn, DataSourceConnectionError } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { OnTable } from './structure.js'
 import PQueue from 'p-queue'
@@ -141,11 +135,10 @@ export async function ping(ds: AthenaDataSource): Promise<AthenaDataSource> {
 export async function getAthenaSchema(
   ds: AthenaDataSource,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   const { glue } = await getAthenaClient(ds)
   const pQueue = new PQueue({ concurrency: 5 })
   let remaining = 0
-  const schemas: Record<string, DataSourceSchema> = {}
   let promises: Promise<void>[] = []
 
   let nextToken: string | undefined = undefined
@@ -171,7 +164,6 @@ export async function getAthenaSchema(
           const tablesResponse = await glue
             .getTables({ DatabaseName: databaseName })
             .promise()
-          const tables: Record<string, DataSourceTable> = {}
           logger().info(
             {
               tableCount: tablesResponse.TableList?.length,
@@ -202,12 +194,7 @@ export async function getAthenaSchema(
 
             const tableSchema = { columns: [...columns, ...partitionColumns] }
             onTable(databaseName, table.Name, tableSchema, 'default')
-
-            // Merge regular columns and partition columns
-            tables[table.Name] = tableSchema
           }
-
-          schemas[databaseName] = { tables }
         })
       )
     })
@@ -217,12 +204,6 @@ export async function getAthenaSchema(
 
   await Promise.all(promises)
   await pQueue.onIdle()
-
-  return {
-    dataSourceId: ds.id,
-    schemas,
-    defaultSchema: 'default',
-  }
 }
 
 export async function updateConnStatus(

@@ -12,6 +12,7 @@ export type RedshiftDataSource = Omit<
   | 'password'
   | 'cert'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -110,7 +111,12 @@ export async function updateRedshiftDataSource(
 export async function createRedshiftDataSource(
   data: Omit<
     PrismaRedshiftDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<RedshiftDataSource> {

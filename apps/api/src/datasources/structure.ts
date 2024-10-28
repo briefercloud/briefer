@@ -1,23 +1,29 @@
 import prisma, {
   APIDataSource,
   DataSource,
+  DataSourceSchema as DBDataSourceSchema,
   decrypt,
-  encrypt,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import {
-  DataSourceStructure,
   DataSourceStructureError,
-  DataSourceStructureState,
   dataSourceStructureStateToV2,
+  dataSourceStructureStateToV3,
+  DataSourceStructureStateV1,
   DataSourceStructureStateV2,
+  DataSourceStructureStateV3,
   DataSourceTable,
   jsonString,
+  parseOrElse,
 } from '@briefer/types'
 import { config } from '../config/index.js'
 import { logger } from '../logger.js'
 import { getPSQLSchema } from '../python/query/psql.js'
-import { broadcastDataSource } from '../websocket/workspace/data-sources.js'
+import {
+  broadcastDataSource,
+  broadcastDataSourceSchemaTableRemoved,
+  broadcastDataSourceSchemaTableUpdate,
+} from '../websocket/workspace/data-sources.js'
 import PQueue from 'p-queue'
 import { getOracleSchema } from '../python/query/oracle.js'
 import { getBigQuerySchema } from '../python/query/bigquery.js'
@@ -25,9 +31,10 @@ import { getTrinoSchema } from '../python/query/trino.js'
 import { getSnowflakeSchema } from '../python/query/snowflake.js'
 import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
-import { z } from 'zod'
 import { PythonExecutionError } from '../python/index.js'
 import { getSqlServerSchema } from './sqlserver.js'
+import { z } from 'zod'
+import { splitEvery } from 'ramda'
 
 function decryptDBData(
   dataSourceId: string,
@@ -49,7 +56,7 @@ function decryptDBData(
   }
 }
 
-async function getFromCache(
+async function getV2FromCache(
   dataSourceId: string,
   type: DataSource['type']
 ): Promise<DataSourceStructureStateV2 | null> {
@@ -138,7 +145,9 @@ async function getFromCache(
     return null
   }
 
-  const parsed = jsonString.pipe(DataSourceStructureState).safeParse(decrypted)
+  const parsed = jsonString
+    .pipe(z.union([DataSourceStructureStateV1, DataSourceStructureStateV2]))
+    .safeParse(decrypted)
   if (!parsed.success) {
     logger().error(
       {
@@ -154,10 +163,270 @@ async function getFromCache(
   return dataSourceStructureStateToV2(parsed.data)
 }
 
+async function v2ToV3(
+  dataSourceId: string,
+  type: DataSource['type'],
+  v2: DataSourceStructureStateV2 | null
+): Promise<DataSourceStructureStateV3 | null> {
+  if (!v2) {
+    return null
+  }
+
+  const refreshPing: Date | null = (() => {
+    switch (v2.status) {
+      case 'success': {
+        if (v2.refreshPing) {
+          return new Date(v2.refreshPing)
+        }
+        return null
+      }
+      case 'loading':
+        return new Date(v2.loadingPing)
+      case 'failed':
+        return null
+    }
+  })()
+
+  const dbSchema = await prisma().dataSourceSchema.create({
+    data: {
+      status: v2.status,
+      refreshPing,
+      startedAt: 'startedAt' in v2 ? new Date(v2.startedAt) : null,
+      finishedAt: 'updatedAt' in v2 ? new Date(v2.updatedAt) : null,
+      failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
+      error: 'error' in v2 ? v2.error : undefined,
+      defaultSchema:
+        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
+    },
+  })
+
+  if ('structure' in v2 && v2.structure) {
+    await prisma().dataSourceSchemaTable.createMany({
+      data: Object.entries(v2.structure.schemas).flatMap(([schema, tables]) => {
+        return Object.entries(tables.tables).map(([tableName, table]) => {
+          return {
+            schema,
+            name: tableName,
+            columns: table.columns,
+            dataSourceSchemaId: dbSchema.id,
+          }
+        })
+      }),
+    })
+  }
+
+  await assignDataSourceSchemaId(dataSourceId, type, dbSchema)
+
+  return dataSourceStructureStateToV3(dbSchema.id, v2)
+}
+
+async function assignDataSourceSchemaId(
+  dataSourceId: string,
+  type: DataSource['type'],
+  dbSchema: DBDataSourceSchema
+): Promise<string> {
+  switch (type) {
+    case 'psql':
+      await prisma().postgreSQLDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'mysql':
+      await prisma().mySQLDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'sqlserver':
+      await prisma().sQLServerDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'trino':
+      await prisma().trinoDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'athena':
+      await prisma().athenaDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'oracle':
+      await prisma().oracleDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'redshift':
+      await prisma().redshiftDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'bigquery':
+      await prisma().bigQueryDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+    case 'snowflake':
+      await prisma().snowflakeDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
+  }
+}
+
+async function getFromCache(
+  dataSourceId: string,
+  type: DataSource['type']
+): Promise<DataSourceStructureStateV3 | null> {
+  const select = {
+    dataSourceSchema: true,
+  }
+  let schema: DBDataSourceSchema | null
+  switch (type) {
+    case 'psql':
+      schema = (
+        await prisma().postgreSQLDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'mysql':
+      schema = (
+        await prisma().mySQLDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'sqlserver':
+      schema = (
+        await prisma().sQLServerDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'trino':
+      schema = (
+        await prisma().trinoDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'athena':
+      schema = (
+        await prisma().athenaDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'oracle':
+      schema = (
+        await prisma().oracleDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'redshift':
+      schema = (
+        await prisma().redshiftDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'bigquery':
+      schema = (
+        await prisma().bigQueryDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'snowflake':
+      schema = (
+        await prisma().snowflakeDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+  }
+
+  if (schema === null) {
+    return await v2ToV3(
+      dataSourceId,
+      type,
+      await getV2FromCache(dataSourceId, type)
+    )
+  }
+
+  switch (schema.status) {
+    case 'loading': {
+      if (!schema.startedAt || !schema.refreshPing) {
+        return null
+      }
+
+      return {
+        id: schema.id,
+        status: 'loading',
+        startedAt: schema.startedAt.getTime(),
+        loadingPing: schema.refreshPing.getTime(),
+        version: 3,
+      }
+    }
+    case 'failed': {
+      if (!schema.failedAt) {
+        return null
+      }
+      const error = parseOrElse(DataSourceStructureError, schema.error, {
+        type: 'unknown',
+        message: JSON.stringify(schema.error),
+      })
+
+      return {
+        id: schema.id,
+        status: 'failed',
+        failedAt: schema.failedAt.getTime(),
+        previousSuccessAt: schema.finishedAt?.getTime() ?? null,
+        error,
+        version: 3,
+      }
+    }
+    case 'success': {
+      if (!schema.finishedAt || !schema.defaultSchema) {
+        return null
+      }
+
+      return {
+        id: schema.id,
+        status: 'success',
+        updatedAt: schema.finishedAt.getTime(),
+        refreshPing: schema.refreshPing?.getTime() ?? null,
+        defaultSchema: schema.defaultSchema,
+        version: 3,
+      }
+    }
+  }
+}
+
 const TIME_TO_LIVE = 1000 * 60 * 60 * 24 // 24 hours
 const PING_TIMEOUT = 1000 * 20 // 20 seconds
 
-function isExpired(state: DataSourceStructureStateV2): boolean {
+function isExpired(state: DataSourceStructureStateV3): boolean {
   switch (state.status) {
     case 'failed':
       return state.failedAt + TIME_TO_LIVE < Date.now()
@@ -178,7 +447,7 @@ export async function fetchDataSourceStructure(
   socketServer: IOServer,
   dsConfig: DataSource,
   { forceRefresh }: { forceRefresh: boolean }
-): Promise<DataSourceStructureStateV2> {
+): Promise<DataSourceStructureStateV3> {
   const currentStructure = await getFromCache(dsConfig.data.id, dsConfig.type)
 
   if (
@@ -205,13 +474,13 @@ export type OnTable = (
 async function refreshDataSourceStructure(
   socketServer: IOServer,
   dsConfig: DataSource,
-  currentStructure: DataSourceStructureStateV2 | null
-): Promise<DataSourceStructureStateV2> {
+  currentStructure: DataSourceStructureStateV3 | null
+): Promise<DataSourceStructureStateV3> {
   const dataSource: APIDataSource = await updateToLoading(
     dsConfig,
     currentStructure
   )
-  await broadcastDataSource(socketServer, dataSource)
+  broadcastDataSource(socketServer, dataSource)
 
   // do not await this function, let this run in the background
   _refreshDataSourceStructure(socketServer, dataSource)
@@ -224,46 +493,54 @@ async function _refreshDataSourceStructure(
   dataSource: APIDataSource
 ) {
   const updateQueue = new PQueue({ concurrency: 1 })
+  const tables: { schema: string; table: string }[] = []
+  let defaultSchema = ''
   const onTable: OnTable = (schema, tableName, table, defaultSchema) => {
+    defaultSchema = defaultSchema || schema
+    tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
-      switch (dataSource.structure.status) {
-        case 'failed':
-          return
-        case 'loading':
-        case 'success': {
-          if (!dataSource.structure.structure) {
-            dataSource.structure.structure = {
-              dataSourceId: dataSource.config.data.id,
-              schemas: {},
-              defaultSchema,
-            }
-          }
+      await prisma().dataSourceSchema.update({
+        where: { id: dataSource.structure.id },
+        data: { defaultSchema },
+      })
 
-          if (!dataSource.structure.structure.schemas[schema]) {
-            dataSource.structure.structure.schemas[schema] = { tables: {} }
-          }
+      await prisma().dataSourceSchemaTable.upsert({
+        where: {
+          dataSourceSchemaId_schema_name: {
+            dataSourceSchemaId: dataSource.structure.id,
+            schema: schema,
+            name: tableName,
+          },
+        },
+        create: {
+          schema,
+          name: tableName,
+          columns: table.columns,
+          dataSourceSchemaId: dataSource.structure.id,
+        },
+        update: {
+          columns: table.columns,
+        },
+      })
 
-          dataSource.structure.structure.schemas[schema] = {
-            tables: {
-              ...dataSource.structure.structure.schemas[schema].tables,
-              [tableName]: table,
-            },
-          }
-          break
-        }
-      }
-
-      await broadcastDataSource(socketServer, dataSource)
+      broadcastDataSource(socketServer, dataSource)
+      broadcastDataSourceSchemaTableUpdate(
+        socketServer,
+        dataSource.config.data.workspaceId,
+        dataSource.config.data.id,
+        schema,
+        tableName,
+        table
+      )
     })
   }
 
   const interval = startPingInterval(dataSource.config)
   try {
-    let finalStructure: DataSourceStructure
     switch (dataSource.config.type) {
       case 'psql':
       case 'redshift':
-        finalStructure = await getPSQLSchema(
+        await getPSQLSchema(
           dataSource.config.data,
           dataSource.config.type,
           config().DATASOURCES_ENCRYPTION_KEY,
@@ -271,37 +548,37 @@ async function _refreshDataSourceStructure(
         )
         break
       case 'oracle':
-        finalStructure = await getOracleSchema(
+        await getOracleSchema(
           dataSource.config.data,
           config().DATASOURCES_ENCRYPTION_KEY,
           onTable
         )
         break
       case 'athena':
-        finalStructure = await getAthenaSchema(dataSource.config.data, onTable)
+        await getAthenaSchema(dataSource.config.data, onTable)
         break
       case 'sqlserver':
-        finalStructure = await getSqlServerSchema(dataSource.config.data)
+        await getSqlServerSchema(dataSource.config.data, onTable)
         break
       case 'trino':
-        finalStructure = await getTrinoSchema(
+        await getTrinoSchema(
           dataSource.config.data,
           config().DATASOURCES_ENCRYPTION_KEY,
           onTable
         )
         break
       case 'bigquery':
-        finalStructure = await getBigQuerySchema(
+        await getBigQuerySchema(
           dataSource.config.data,
           config().DATASOURCES_ENCRYPTION_KEY,
           onTable
         )
         break
       case 'mysql':
-        finalStructure = await getMySQLSchema(dataSource.config.data, onTable)
+        await getMySQLSchema(dataSource.config.data, onTable)
         break
       case 'snowflake':
-        finalStructure = await getSnowflakeSchema(
+        await getSnowflakeSchema(
           dataSource.config.data,
           config().DATASOURCES_ENCRYPTION_KEY,
           onTable
@@ -311,16 +588,43 @@ async function _refreshDataSourceStructure(
 
     await updateQueue.onIdle()
     clearInterval(interval)
-    dataSource = await persist({
-      config: dataSource.config,
-      structure: {
-        status: 'success',
-        updatedAt: Date.now(),
-        refreshPing: null,
-        structure: finalStructure,
-      },
+    dataSource.structure = await persist({
+      id: dataSource.structure.id,
+      status: 'success',
+      updatedAt: Date.now(),
+      refreshPing: null,
+      defaultSchema,
+      version: 3,
     })
-    await broadcastDataSource(socketServer, dataSource)
+    const tablesToDelete = await prisma().dataSourceSchemaTable.findMany({
+      where: {
+        dataSourceSchemaId: dataSource.structure.id,
+        NOT: {
+          schema: { in: tables.map((t) => t.schema) },
+          name: { in: tables.map((t) => t.table) },
+        },
+      },
+      select: { id: true, schema: true, name: true },
+    })
+
+    for (const batch of splitEvery(100, tablesToDelete)) {
+      await prisma().dataSourceSchemaTable.deleteMany({
+        where: {
+          id: { in: batch.map((t) => t.id) },
+        },
+      })
+      for (const table of tablesToDelete) {
+        broadcastDataSourceSchemaTableRemoved(
+          socketServer,
+          dataSource.config.data.workspaceId,
+          dataSource.config.data.id,
+          table.schema,
+          table.name
+        )
+      }
+    }
+
+    broadcastDataSource(socketServer, dataSource)
   } catch (err) {
     clearInterval(interval)
     logger().error(
@@ -341,128 +645,115 @@ async function _refreshDataSourceStructure(
       error = { type: 'unknown', message: String(err ?? 'Unknown error') }
     }
 
-    dataSource = await persist({
-      config: dataSource.config,
-      structure: {
-        status: 'failed',
-        failedAt: Date.now(),
-        previousSuccess:
-          dataSource.structure.status === 'success'
-            ? dataSource.structure
-            : null,
-        error,
-      },
+    dataSource.structure = await persist({
+      id: dataSource.structure.id,
+      status: 'failed',
+      failedAt: Date.now(),
+      previousSuccessAt:
+        dataSource.structure.status === 'success'
+          ? dataSource.structure.updatedAt
+          : null,
+      error,
+      version: 3,
     })
-    await broadcastDataSource(socketServer, dataSource)
+    broadcastDataSource(socketServer, dataSource)
   }
 }
 
 async function updateToLoading(
   dsConfig: DataSource,
-  currentStructure: DataSourceStructureStateV2 | null
+  currentStructure: DataSourceStructureStateV3 | null
 ): Promise<APIDataSource> {
-  let state: DataSourceStructureStateV2
-  if (currentStructure !== null) {
-    switch (currentStructure.status) {
-      case 'failed':
-        state = {
-          status: 'loading',
-          startedAt: Date.now(),
-          loadingPing: Date.now(),
-          structure: currentStructure.previousSuccess?.structure ?? null,
-        }
-        break
-      case 'loading':
-        state = {
-          ...currentStructure,
-          startedAt: Date.now(),
-          loadingPing: Date.now(),
-        }
-        break
-      case 'success':
-        state = {
-          ...currentStructure,
-          refreshPing: Date.now(),
-        }
-        break
-    }
-  } else {
-    state = {
-      status: 'loading',
-      startedAt: Date.now(),
-      loadingPing: Date.now(),
-      structure: null,
+  if (currentStructure === null) {
+    const now = new Date()
+    const schema = await prisma().dataSourceSchema.create({
+      data: {
+        status: 'loading',
+        startedAt: now,
+        refreshPing: now,
+      },
+    })
+    await assignDataSourceSchemaId(dsConfig.data.id, dsConfig.type, schema)
+    return {
+      config: dsConfig,
+      structure: {
+        id: schema.id,
+        status: 'loading',
+        startedAt: now.getTime(),
+        loadingPing: now.getTime(),
+        version: 3,
+      },
     }
   }
 
-  return persist({ config: dsConfig, structure: state })
+  let state: DataSourceStructureStateV3
+  switch (currentStructure.status) {
+    case 'failed':
+      state = {
+        id: currentStructure.id,
+        status: 'loading',
+        startedAt: Date.now(),
+        loadingPing: Date.now(),
+        version: 3,
+      }
+      break
+    case 'loading':
+      state = {
+        ...currentStructure,
+        startedAt: Date.now(),
+        loadingPing: Date.now(),
+      }
+      break
+    case 'success':
+      state = {
+        ...currentStructure,
+        refreshPing: Date.now(),
+      }
+      break
+  }
+
+  return {
+    config: dsConfig,
+    structure: await persist(state),
+  }
 }
 
-async function persist(ds: APIDataSource): Promise<APIDataSource> {
-  const structure = encrypt(
-    JSON.stringify(ds.structure),
-    config().DATASOURCES_ENCRYPTION_KEY
-  )
-
-  return (async (): Promise<APIDataSource> => {
-    switch (ds.config.type) {
-      case 'psql':
-        await prisma().postgreSQLDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'oracle':
-        await prisma().oracleDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'athena':
-        await prisma().athenaDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'sqlserver': {
-        await prisma().sQLServerDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      }
-      case 'trino':
-        await prisma().trinoDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'redshift':
-        await prisma().redshiftDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'bigquery':
-        await prisma().bigQueryDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'mysql':
-        await prisma().mySQLDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-      case 'snowflake':
-        await prisma().snowflakeDataSource.update({
-          where: { id: ds.config.data.id },
-          data: { structure },
-        })
-        return ds
-    }
-  })()
+async function persist(
+  state: DataSourceStructureStateV3
+): Promise<DataSourceStructureStateV3> {
+  switch (state.status) {
+    case 'loading':
+      await prisma().dataSourceSchema.update({
+        where: { id: state.id },
+        data: {
+          status: state.status,
+          startedAt: new Date(state.startedAt),
+          refreshPing: new Date(state.loadingPing),
+        },
+      })
+      return state
+    case 'failed':
+      await prisma().dataSourceSchema.update({
+        where: { id: state.id },
+        data: {
+          status: state.status,
+          failedAt: new Date(state.failedAt),
+          error: state.error,
+        },
+      })
+      return state
+    case 'success':
+      await prisma().dataSourceSchema.update({
+        where: { id: state.id },
+        data: {
+          status: state.status,
+          finishedAt: new Date(state.updatedAt),
+          refreshPing: state.refreshPing ? new Date(state.refreshPing) : null,
+          defaultSchema: state.defaultSchema,
+        },
+      })
+      return state
+  }
 }
 
 function startPingInterval(dsConfig: DataSource): NodeJS.Timeout {
@@ -474,24 +765,18 @@ function startPingInterval(dsConfig: DataSource): NodeJS.Timeout {
 
     switch (currentStructure.status) {
       case 'loading':
-        await persist({
-          config: dsConfig,
-          structure: {
-            ...currentStructure,
-            loadingPing: Date.now(),
-          },
+        await prisma().dataSourceSchema.update({
+          where: { id: currentStructure.id },
+          data: { refreshPing: new Date() },
         })
         break
       case 'success':
         if (currentStructure.refreshPing === null) {
           return
         }
-        await persist({
-          config: dsConfig,
-          structure: {
-            ...currentStructure,
-            refreshPing: Date.now(),
-          },
+        await prisma().dataSourceSchema.update({
+          where: { id: currentStructure.id },
+          data: { refreshPing: new Date() },
         })
     }
   }, 5000)

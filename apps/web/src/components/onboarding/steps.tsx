@@ -55,7 +55,7 @@ export const DataSourceStep = () => {
   const workspaceId = useStringQuery('workspaceId') ?? ''
   const [isUsingCsv, setIsUsingCsv] = useState(false)
 
-  const [{ data: dataSources }] = useDataSources(workspaceId)
+  const [{ datasources: dataSources }] = useDataSources(workspaceId)
 
   if (dataSources.size > 0) {
     return (

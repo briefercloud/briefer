@@ -12,6 +12,7 @@ export type SQLServerDataSource = Omit<
   | 'password'
   | 'cert'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -109,7 +110,12 @@ export async function updateSQLServerDataSource(
 export async function createSQLServerDataSource(
   data: Omit<
     PrismaSQLServerDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<SQLServerDataSource> {

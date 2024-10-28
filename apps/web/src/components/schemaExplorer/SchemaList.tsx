@@ -8,6 +8,7 @@ import { useMemo } from 'react'
 import { SchemaInfo } from './SchemaInfo'
 
 interface Props {
+  schemaNames: string[]
   dataSource: APIDataSource
   onSelectSchema: (schemaName: string) => void
   onBack: () => void
@@ -15,22 +16,10 @@ interface Props {
   canRetrySchema: boolean
 }
 export default function SchemaList(props: Props) {
-  const schemaNames: string[] = useMemo(() => {
-    switch (props.dataSource.structure.status) {
-      case 'success':
-        return Object.keys(props.dataSource.structure.structure.schemas)
-      case 'loading':
-        return Object.keys(props.dataSource.structure.structure?.schemas ?? {})
-      case 'failed':
-        return Object.keys(
-          props.dataSource.structure.previousSuccess?.structure.schemas ?? {}
-        )
-    }
-  }, [props.dataSource.structure])
-
-  const sortedSchemaNames = useMemo(() => {
-    return schemaNames.sort((a, b) => a.localeCompare(b))
-  }, [schemaNames])
+  const sortedSchemaNames = useMemo(
+    () => props.schemaNames.sort((a, b) => a.localeCompare(b)),
+    [props.schemaNames]
+  )
 
   return (
     <div className="flex flex-col h-full">

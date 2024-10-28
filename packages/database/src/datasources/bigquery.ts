@@ -11,6 +11,7 @@ export type BigQueryDataSource = Omit<
   | 'lastConnection'
   | 'serviceAccountKey'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -84,7 +85,12 @@ export async function listBigQueryDataSources(
 export async function createBigQueryDataSource(
   data: Omit<
     PrismaBigQueryDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<BigQueryDataSource> {

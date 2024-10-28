@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { TrinoDataSource, getDatabaseURL } from '@briefer/database'
 import {
-  DataSourceStructure,
   PythonErrorOutput,
   RunQueryResult,
   SuccessRunQueryResult,
@@ -91,7 +90,7 @@ export async function getTrinoSchema(
   ds: TrinoDataSource,
   encryptionKey: string,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   const databaseUrl = await getDatabaseURL(
     { type: 'trino', data: ds },
     encryptionKey
@@ -111,13 +110,11 @@ def get_catalog_structure(catalog):
     else:
         engine = create_engine(f"${databaseUrl}")
 
-    schemas = {}
     inspector = inspect(engine)
     for schema_name in inspector.get_schema_names():
         actual_schema_name = schema_name if catalog is None else f"{catalog}.{schema_name}"
 
         print(json.dumps({"log": f"Getting tables for schema {actual_schema_name}"}))
-        tables = {}
         for table_name in inspector.get_table_names(schema=schema_name):
             print(json.dumps({"log": f"Getting schema for table {table_name}"}))
             columns = []
@@ -126,9 +123,6 @@ def get_catalog_structure(catalog):
                     "name": column["name"],
                     "type": str(column["type"])
                 })
-            tables[table_name] = {
-                "columns": columns
-            }
 
             progress = {
                 "type": "progress",
@@ -141,76 +135,45 @@ def get_catalog_structure(catalog):
             }
             print(json.dumps(progress, default=str))
 
-        schemas[actual_schema_name] = {
-            "tables": tables
-        }
-
-    return schemas
-
-
 catalogs_to_ignore = set(['jmx', 'system', 'memory'])
 def get_data_source_structure(data_source_id, single_catalog):
     if single_catalog:
-        schemas = get_catalog_structure(None)
+        get_catalog_structure(None)
     else:
         engine = create_engine("${databaseUrl}")
         conn = engine.connect()
         catalogs = [row[0] for row in conn.execute(text("SHOW CATALOGS")).fetchall()]
-        schemas = {}
 
         for catalog in catalogs:
             if catalog in catalogs_to_ignore:
                 continue
             print(json.dumps({"log": f"Getting schema for catalog {catalog}"}))
             try:
-                catalog_schema = get_catalog_structure(catalog)
-                schemas.update(catalog_schema)
+                get_catalog_structure(catalog)
             except:
                 raise
 
-    data_source_structure = {
-        "dataSourceId": data_source_id,
-        "schemas": schemas,
-        "defaultSchema": ""
-    }
-    
-    return data_source_structure
 
-
-structure = get_data_source_structure("${ds.id}", ${
-    singleCatalog ? 'True' : 'False'
-  })
-print(json.dumps(structure, default=str))`
+get_data_source_structure("${ds.id}", ${singleCatalog ? 'True' : 'False'})`
 
   let pythonError: PythonErrorOutput | null = null
   const onError = (output: PythonErrorOutput) => {
     pythonError = output
   }
 
-  let structure: DataSourceStructure | null = null
-  const onStructure = (schema: DataSourceStructure) => {
-    structure = schema
-  }
+  let gotOutput = false
   return executeCode(
     ds.workspaceId,
     `schema-trino-${ds.id}`,
     code,
-    (outputs) =>
-      onSchemaOutputs(
-        { type: 'trino', data: ds },
-        outputs,
-        onError,
-        onStructure,
-        onTable
-      ),
+    (outputs) => {
+      gotOutput = true
+      onSchemaOutputs({ type: 'trino', data: ds }, outputs, onError, onTable)
+    },
     { storeHistory: false }
   )
     .then(({ promise }) => promise)
     .then(() => {
-      if (structure) {
-        return structure
-      }
-
       if (pythonError) {
         throw new PythonExecutionError(
           pythonError.type,
@@ -220,8 +183,10 @@ print(json.dumps(structure, default=str))`
         )
       }
 
-      throw new Error(
-        `Failed to get schema for datasource ${ds.id}. Got no output.`
-      )
+      if (!gotOutput) {
+        throw new Error(
+          `Failed to get schema for datasource ${ds.id}. Got no output.`
+        )
+      }
     })
 }
