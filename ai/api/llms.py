@@ -31,7 +31,7 @@ def initialize_llm(model_id=None, openai_api_key=None):
         llm = AzureOpenAI(
             temperature=0,
             verbose=False,
-            azure_api_key=openai_api_key,
+            openai_api_key=openai_api_key,
             model_name=model_id if model_id else config("OPENAI_DEFAULT_MODEL_NAME"),
             azure_deployment=config("AZURE_DEPLOYMENT", default=""),
             api_version=config("AZURE_API_VERSION", default=""),
