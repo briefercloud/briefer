@@ -6,12 +6,13 @@ import { Grid3x3Icon } from 'lucide-react'
 import { useMemo } from 'react'
 import TableDetails from './TableDetails'
 import type { APIDataSource, DataSource } from '@briefer/database'
-import { DataSourceColumn, DataSourceStructure } from '@briefer/types'
+import { DataSourceColumn, DataSourceSchema } from '@briefer/types'
 import { SchemaInfo } from './SchemaInfo'
 
 interface Props {
   dataSource: APIDataSource
-  schema: string
+  schemaName: string
+  schema: DataSourceSchema
   onBack: () => void
   onSelectTable: (tableName: string | null) => void
   selectedTable: string | null
@@ -21,21 +22,7 @@ interface Props {
 export default function TableList(props: Props) {
   const tables: { name: string; columns: DataSourceColumn[] }[] =
     useMemo(() => {
-      let schemas: DataSourceStructure['schemas']
-      switch (props.dataSource.structure.status) {
-        case 'loading':
-        case 'success':
-          schemas = props.dataSource.structure.structure?.schemas ?? {}
-          break
-        case 'failed':
-          schemas =
-            props.dataSource.structure.previousSuccess?.structure.schemas ?? {}
-          break
-      }
-
-      const schema = schemas[props.schema] ?? { tables: {} }
-
-      return Object.entries(schema.tables)
+      return Object.entries(props.schema.tables)
         .map(([tableName, table]) => {
           return {
             name: tableName,
@@ -43,7 +30,7 @@ export default function TableList(props: Props) {
           }
         })
         .sort((a, b) => a.name.localeCompare(b.name))
-    }, [props.dataSource.structure, props.schema])
+    }, [props.schema])
 
   const columns = useMemo(
     () =>
@@ -69,7 +56,7 @@ export default function TableList(props: Props) {
           <div className="flex gap-x-1.5 items-center">
             <ChevronLeftIcon className="h-3 w-3 text-gray-500 group-hover:text-gray-700" />
             <h4>
-              {props.dataSource.config.data.name}.{props.schema}
+              {props.dataSource.config.data.name}.{props.schemaName}
             </h4>
           </div>
 

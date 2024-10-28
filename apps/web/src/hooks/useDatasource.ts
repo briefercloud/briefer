@@ -29,7 +29,7 @@ export const useDataSource = (
   workspaceId: string,
   dataSourceId: string
 ): UseDataSource => {
-  const [{ data, isLoading }] = useDataSources(workspaceId)
+  const [{ datasources: data, isLoading }] = useDataSources(workspaceId)
   const dataSource = useMemo(
     () => data?.find((d) => d.config.data.id === dataSourceId) ?? null,
     [data, dataSourceId]

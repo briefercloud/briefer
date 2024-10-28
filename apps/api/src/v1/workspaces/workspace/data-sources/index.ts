@@ -1,3 +1,4 @@
+import { NIL as nilUuid } from 'uuid'
 import { Router, Request, Response, NextFunction } from 'express'
 import {
   createBigQueryDataSource,
@@ -327,10 +328,12 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         ping(socketServer, {
           config: ds,
           structure: {
+            // placeholder id 00000000-0000-0000-0000-000000000000
+            id: nilUuid,
             status: 'loading',
             startedAt: Date.now(),
             loadingPing: 0,
-            structure: null,
+            version: 3,
           },
         })
       )

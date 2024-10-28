@@ -773,13 +773,14 @@ export const DataSourceSchema = z.object({
 })
 export type DataSourceSchema = z.infer<typeof DataSourceSchema>
 
-export const DataSourceStructure = z.object({
+const DataSourceStructure = z.object({
   dataSourceId: z.string(),
   schemas: z.record(DataSourceSchema),
   defaultSchema: z.string(),
 })
-export type DataSourceStructure = z.infer<typeof DataSourceStructure>
+type DataSourceStructure = z.infer<typeof DataSourceStructure>
 
+// TODO: remove this after 2024-12-31
 export const DataSourceStructureStateV1 = z.object({
   updatedAt: z.string().nullable(),
   structure: DataSourceStructure,
@@ -796,6 +797,7 @@ export const DataSourceStructureError = z.union([
 
 export type DataSourceStructureError = z.infer<typeof DataSourceStructureError>
 
+// TODO: remove this after 2024-12-31
 export const DataSourceStructureStateV2 = z.union([
   z.object({
     status: z.literal('success'),
@@ -826,15 +828,51 @@ export type DataSourceStructureStateV2 = z.infer<
   typeof DataSourceStructureStateV2
 >
 
+const SuccessDataSourceStructureStateV3 = z.object({
+  id: uuidSchema,
+  status: z.literal('success'),
+  updatedAt: z.number(),
+  refreshPing: z.number().nullable(),
+  defaultSchema: z.string(),
+  version: z.literal(3),
+})
+
+const FailedDataSourceStructureStateV3 = z.object({
+  id: uuidSchema,
+  status: z.literal('failed'),
+  failedAt: z.number(),
+  previousSuccessAt: z.number().nullable(),
+  error: DataSourceStructureError,
+  version: z.literal(3),
+})
+
+const LoadingDataSourceStructureStateV3 = z.object({
+  id: uuidSchema,
+  status: z.literal('loading'),
+  startedAt: z.number(),
+  loadingPing: z.number(),
+  version: z.literal(3),
+})
+export const DataSourceStructureStateV3 = z.union([
+  SuccessDataSourceStructureStateV3,
+  FailedDataSourceStructureStateV3,
+  LoadingDataSourceStructureStateV3,
+])
+
+export type DataSourceStructureStateV3 = z.infer<
+  typeof DataSourceStructureStateV3
+>
+
 export const DataSourceStructureState = z.union([
   DataSourceStructureStateV1,
   DataSourceStructureStateV2,
+  DataSourceStructureStateV3,
 ])
 
 export type DataSourceStructureState = z.infer<typeof DataSourceStructureState>
 
 export function dataSourceStructureStateToV2(
-  state: DataSourceStructureState
+  state: DataSourceStructureStateV1 | DataSourceStructureStateV2
 ): DataSourceStructureStateV2 {
   if ('status' in state) {
     return state
@@ -860,20 +898,44 @@ export function dataSourceStructureStateToV2(
   }
 }
 
-export function getDataSourceStructureFromState(
-  state: DataSourceStructureStateV2
-): DataSourceStructure | null {
-  switch (state.status) {
+export function dataSourceStructureStateToV3(
+  schemaId: string,
+  state: DataSourceStructureStateV1 | DataSourceStructureStateV2
+): DataSourceStructureStateV3 {
+  const v2 = dataSourceStructureStateToV2(state)
+
+  switch (v2.status) {
     case 'success':
-    case 'loading':
-      return state.structure
+      return {
+        id: schemaId,
+        status: 'success',
+        updatedAt: v2.updatedAt,
+        refreshPing: v2.refreshPing,
+        defaultSchema: v2.structure.defaultSchema,
+        version: 3,
+      }
     case 'failed':
-      return state.previousSuccess?.structure ?? null
+      return {
+        id: schemaId,
+        status: 'failed',
+        failedAt: v2.failedAt,
+        previousSuccessAt: v2.previousSuccess?.updatedAt ?? null,
+        error: v2.error,
+        version: 3,
+      }
+    case 'loading':
+      return {
+        id: schemaId,
+        status: 'loading',
+        startedAt: v2.startedAt,
+        loadingPing: v2.loadingPing,
+        version: 3,
+      }
   }
 }
 
 export function isDataSourceStructureLoading(
-  state: DataSourceStructureStateV2
+  state: DataSourceStructureStateV3
 ): boolean {
   switch (state.status) {
     case 'loading':

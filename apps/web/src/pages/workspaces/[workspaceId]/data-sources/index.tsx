@@ -35,7 +35,7 @@ export default function DataSourcesPage() {
   const [showMoreInfo, setShowMoreInfo] = useState(false)
   const workspaceId = useStringQuery('workspaceId')
 
-  const [{ data: dataSources }, { ping, remove }] = useDataSources(workspaceId)
+  const [{ datasources: dataSources }, { ping, remove }] = useDataSources(workspaceId)
 
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
   const closeInfo = useCallback(() => setShowMoreInfo(false), [setShowMoreInfo])

@@ -10,7 +10,7 @@ import * as mysql from './mysql.js'
 import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
-import { DataSourceStructureStateV2 } from '@briefer/types'
+import { DataSourceStructureStateV3 } from '@briefer/types'
 import { z } from 'zod'
 
 export * from './bigquery.js'
@@ -23,6 +23,7 @@ export * from './sqlserver.js'
 export * from './crypto.js'
 export * from './trino.js'
 export * from './snowflake.js'
+export { DataSourceSchema, DataSourceSchemaTable } from '@prisma/client'
 
 export type BigQueryDataSource = bq.BigQueryDataSource
 export type PostgreSQLDataSource = psql.PostgreSQLDataSource
@@ -371,5 +372,5 @@ export async function getCredentialsInfo(
 
 export type APIDataSource = {
   config: DataSource
-  structure: DataSourceStructureStateV2
+  structure: DataSourceStructureStateV3
 }

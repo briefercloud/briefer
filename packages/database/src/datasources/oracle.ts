@@ -6,7 +6,12 @@ import { decrypt, encrypt } from './crypto.js'
 
 export type OracleDataSource = Omit<
   PrismaOracleDataSource,
-  'createdAt' | 'updatedAt' | 'lastConnection' | 'password' | 'structure'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'lastConnection'
+  | 'password'
+  | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -86,7 +91,12 @@ export async function updateOracleDataSource(
 export async function createOracleDataSource(
   data: Omit<
     PrismaOracleDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<OracleDataSource> {

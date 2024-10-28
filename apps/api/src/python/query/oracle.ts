@@ -1,10 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { OracleDataSource, getDatabaseURL } from '@briefer/database'
-import {
-  DataSourceStructure,
-  RunQueryResult,
-  SuccessRunQueryResult,
-} from '@briefer/types'
+import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
 import {
   getSQLAlchemySchema,
   makeSQLAlchemyQuery,
@@ -54,7 +50,7 @@ export function getOracleSchema(
   ds: OracleDataSource,
   encryptionKey: string,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   return getSQLAlchemySchema(
     { type: 'oracle', data: ds },
     encryptionKey,

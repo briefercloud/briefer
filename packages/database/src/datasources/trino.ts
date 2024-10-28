@@ -6,7 +6,12 @@ import { decrypt, encrypt } from './crypto.js'
 
 export type TrinoDataSource = Omit<
   PrismaTrinoDataSource,
-  'createdAt' | 'updatedAt' | 'lastConnection' | 'password' | 'structure'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'lastConnection'
+  | 'password'
+  | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -85,7 +90,12 @@ export async function updateTrinoDataSource(
 export async function createTrinoDataSource(
   data: Omit<
     PrismaTrinoDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<TrinoDataSource> {

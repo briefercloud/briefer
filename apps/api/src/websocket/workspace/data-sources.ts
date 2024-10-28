@@ -1,4 +1,4 @@
-import {
+import prisma, {
   APIDataSource,
   DataSourceType,
   getDatasource,
@@ -8,7 +8,8 @@ import { IOServer, Socket } from '../index.js'
 import { z } from 'zod'
 import { Session } from '../../types.js'
 import { fetchDataSourceStructure } from '../../datasources/structure.js'
-import { uuidSchema } from '@briefer/types'
+import { DataSourceColumn, DataSourceTable, uuidSchema } from '@briefer/types'
+import { logger } from '../../logger.js'
 
 export function refreshDataSources(
   socketServer: IOServer,
@@ -88,6 +89,62 @@ export async function emitDataSources(
   )
 
   socket.emit('workspace-datasources', { workspaceId, dataSources: result })
+  emitSchemas(socket, workspaceId, result)
+}
+
+async function emitSchemas(
+  socket: Socket,
+  workspaceId: string,
+  dataSources: APIDataSource[]
+) {
+  const schemaToDataSourceId = new Map(
+    dataSources.map((d) => [d.structure.id, d.config.data.id])
+  )
+  const schemaIds = dataSources.map((d) => d.structure.id)
+
+  const batchSize = 100
+  let skip = 0
+  let hasMoreResults = true
+
+  while (hasMoreResults) {
+    const tables = await prisma().dataSourceSchemaTable.findMany({
+      where: { dataSourceSchemaId: { in: schemaIds } },
+      skip,
+      take: batchSize,
+      orderBy: { createdAt: 'asc' },
+    })
+
+    skip += batchSize
+    hasMoreResults = tables.length === batchSize // If fewer than 100 results are returned, we're done
+
+    for (const table of tables) {
+      const dataSourceId = schemaToDataSourceId.get(table.dataSourceSchemaId)
+      if (!dataSourceId) {
+        continue
+      }
+
+      const columns = z.array(DataSourceColumn).safeParse(table.columns)
+      if (!columns.success) {
+        logger().error(
+          {
+            tableId: table.id,
+            dataSourceId,
+            workspaceId,
+          },
+          'Error parsing columns for table'
+        )
+        continue
+      }
+
+      socket.emit('workspace-datasource-schema-table-update', {
+        workspaceId,
+        dataSourceId,
+        schemaName: table.schema,
+        tableName: table.name,
+        table: { columns: columns.data },
+      })
+    }
+  }
 }
 
 export function broadcastDataSource(
@@ -100,6 +157,21 @@ export function broadcastDataSource(
       workspaceId: dataSource.config.data.workspaceId,
       dataSource,
     })
+}
+
+export function broadcastDataSourceSchemaTableRemoved(
+  socket: IOServer,
+  workspaceId: string,
+  dataSourceId: string,
+  schemaName: string,
+  tableName: string
+) {
+  socket.to(workspaceId).emit('workspace-datasource-schema-table-removed', {
+    workspaceId,
+    dataSourceId,
+    schemaName,
+    tableName,
+  })
 }
 
 export async function broadcastDataSources(
@@ -120,5 +192,22 @@ export async function broadcastDataSources(
   socket.to(workspaceId).emit('workspace-datasources', {
     workspaceId,
     dataSources: result,
+  })
+}
+
+export async function broadcastDataSourceSchemaTableUpdate(
+  socket: IOServer,
+  workspaceId: string,
+  dataSourceId: string,
+  schemaName: string,
+  tableName: string,
+  table: DataSourceTable
+) {
+  socket.to(workspaceId).emit('workspace-datasource-schema-table-update', {
+    workspaceId,
+    dataSourceId,
+    schemaName,
+    tableName,
+    table,
   })
 }

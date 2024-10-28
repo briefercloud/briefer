@@ -4,11 +4,7 @@ import {
   RedshiftDataSource,
   getDatabaseURL,
 } from '@briefer/database'
-import {
-  DataSourceStructure,
-  RunQueryResult,
-  SuccessRunQueryResult,
-} from '@briefer/types'
+import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
 import {
   getSQLAlchemySchema,
   makeSQLAlchemyQuery,
@@ -61,6 +57,6 @@ export function getPSQLSchema(
   type: 'psql' | 'redshift',
   encryptionKey: string,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   return getSQLAlchemySchema({ type, data: ds }, encryptionKey, null, onTable)
 }

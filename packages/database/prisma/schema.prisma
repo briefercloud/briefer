@@ -109,6 +109,9 @@ model PostgreSQLDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -131,6 +134,9 @@ model MySQLDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -152,6 +158,10 @@ model SQLServerDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId    String     @db.Uuid
   workspace      Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -175,6 +185,9 @@ model OracleDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -194,6 +207,9 @@ model AthenaDataSource {
   connStatus        ConnStatus @default(online)
   connError         String?
   lastConnection    DateTime?
+
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
 
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -217,6 +233,9 @@ model SnowflakeDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -234,6 +253,9 @@ model BigQueryDataSource {
   connStatus        ConnStatus @default(online)
   connError         String?
   lastConnection    DateTime?
+
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
 
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -258,6 +280,9 @@ model RedshiftDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
@@ -280,8 +305,59 @@ model TrinoDataSource {
   connError      String?
   lastConnection DateTime?
 
+  dataSourceSchemaId String? @db.Uuid @unique
+  dataSourceSchema DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
+
   workspaceId String    @db.Uuid
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+enum DataSourceSchemaStatus {
+  success
+  failed
+  loading
+}
+
+model DataSourceSchema {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status         DataSourceSchemaStatus
+
+  refreshPing    DateTime?
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  failedAt       DateTime?
+  error          Json?
+  defaultSchema  String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  dataSourceSchemaTables DataSourceSchemaTable[]
+
+  postgresDataSource  PostgreSQLDataSource?
+  mySQLDataSource     MySQLDataSource?
+  sqlServerDataSource SQLServerDataSource?
+  oracleDataSource    OracleDataSource?
+  athenaDataSource    AthenaDataSource?
+  snowflakeDataSource SnowflakeDataSource?
+  bigQueryDataSource  BigQueryDataSource?
+  redshiftDataSource  RedshiftDataSource?
+  trinoDataSource     TrinoDataSource?
+}
+
+model DataSourceSchemaTable {
+  id                   String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                 String
+  schema               String
+  columns              Json
+  dataSourceSchemaId   String   @db.Uuid
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  dataSourceSchema DataSourceSchema @relation(fields: [dataSourceSchemaId], references: [id], onDelete: Cascade)
+
+  @@unique([dataSourceSchemaId, schema, name], map: "unique_dataSourceSchemaId_name")
 }
 
 model User {

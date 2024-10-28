@@ -288,7 +288,7 @@ export type DraggingBlock = {
   height: number
 }
 function DashboardContent(props: Props & { yDoc: Y.Doc }) {
-  const [{ data: dataSources }] = useDataSources(props.document.workspaceId)
+  const [{ datasources: dataSources }] = useDataSources(props.document.workspaceId)
   const [draggingBlock, setDraggingBlock] = useState<DraggingBlock | null>(null)
   const [latestBlockId, setLatestBlockId] = useState<string | null>(null)
 

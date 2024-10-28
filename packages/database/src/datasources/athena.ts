@@ -12,6 +12,7 @@ export type AthenaDataSource = Omit<
   | 'accessKeyId'
   | 'secretAccessKeyId'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -72,7 +73,12 @@ export async function updateAthenaDataSource(
 export async function createAthenaDataSource(
   data: Omit<
     PrismaAthenaDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<AthenaDataSource> {

@@ -1,3 +1,4 @@
+import { Map } from 'immutable'
 import { Extension } from '@codemirror/state'
 import { LanguageSupport } from '@codemirror/language'
 import { useDataSources } from '@/hooks/useDatasources'
@@ -13,10 +14,7 @@ import {
 } from '@codemirror/lang-sql'
 import { useMemo } from 'react'
 import { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
-import {
-  DataSourceStructure,
-  getDataSourceStructureFromState,
-} from '@briefer/types'
+import { DataSourceSchema } from '@briefer/types'
 import { APIDataSource } from '@briefer/database'
 
 function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
@@ -41,13 +39,18 @@ function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
   }
 }
 
-async function computeCompletion(dataSource: APIDataSource) {
-  const structure = getDataSourceStructureFromState(dataSource.structure)
-  const schema = getSchemaFromStructure(structure)
+async function computeCompletion(
+  dataSource: APIDataSource,
+  schemas: Map<string, DataSourceSchema>
+) {
+  const schema = getSchemaFromSchemas(schemas)
   return schemaCompletionSource({
     dialect: getDialect(dataSource.config.type),
     schema,
-    defaultSchema: structure?.defaultSchema ?? '',
+    defaultSchema:
+      'defaultSchema' in dataSource.structure
+        ? dataSource.structure.defaultSchema
+        : '',
   })
 }
 
@@ -89,15 +92,11 @@ function adjustCasing(currentWord: string, suggestion: string): string {
   return suggestion
 }
 
-function getSchemaFromStructure(
-  structure: DataSourceStructure | null
+function getSchemaFromSchemas(
+  schemas: Map<string, DataSourceSchema>
 ): SQLNamespace {
-  if (structure === null) {
-    return {}
-  }
-
   const namespace: SQLNamespace = {}
-  for (const [schemaName, schema] of Object.entries(structure.schemas)) {
+  for (const [schemaName, schema] of Array.from(schemas.entries())) {
     for (const [tableName, table] of Object.entries(schema.tables)) {
       namespace[`${schemaName}.${tableName}`] = table.columns.map(
         (column) => column.name
@@ -108,7 +107,10 @@ function getSchemaFromStructure(
   return namespace
 }
 
-function language(dataSource: APIDataSource | null): Extension {
+function language(
+  dataSource: APIDataSource | null,
+  schemas: Map<string, DataSourceSchema>
+): Extension {
   const dialect = getDialect(dataSource?.config.type)
 
   const keywordSource = keywordCompletionSource(dialect, true)
@@ -141,7 +143,7 @@ function language(dataSource: APIDataSource | null): Extension {
     ])
   }
 
-  const completionSource = computeCompletion(dataSource)
+  const completionSource = computeCompletion(dataSource, schemas)
   const schemaCompletion = async (
     context: CompletionContext
   ): Promise<CompletionResult | null> => (await completionSource)(context)
@@ -160,11 +162,20 @@ export function useSQLExtension(
   workspaceId: string,
   dataSourceId: string | null
 ): Extension {
-  const [{ data: dataSources }] = useDataSources(workspaceId)
-  const dataSource = useMemo(
-    () => dataSources?.find((ds) => ds.config.data.id === dataSourceId) ?? null,
-    [dataSources, dataSourceId]
+  const [{ datasources, schemas }] = useDataSources(workspaceId)
+  const { datasource, schema } = useMemo(
+    () => ({
+      datasource:
+        datasources?.find((ds) => ds.config.data.id === dataSourceId) ?? null,
+      schema: dataSourceId
+        ? schemas.get(dataSourceId)
+        : Map<string, DataSourceSchema>(),
+    }),
+    [datasources, schemas, dataSourceId]
   )
 
-  return useMemo(() => language(dataSource), [dataSource])
+  return useMemo(
+    () => language(datasource, schema ?? Map()),
+    [datasource, schema]
+  )
 }

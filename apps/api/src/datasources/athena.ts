@@ -2,14 +2,10 @@ import aws from 'aws-sdk'
 import prisma, { AthenaDataSource, decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
 import { logger } from '../logger.js'
-import {
-  DataSourceColumn,
-  DataSourceConnectionError,
-  DataSourceSchema,
-  DataSourceStructure,
-  DataSourceTable,
-} from '@briefer/types'
+import { DataSourceColumn, DataSourceConnectionError } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
+import { OnTable } from './structure.js'
+import PQueue from 'p-queue'
 
 async function getAthenaClient(
   ds: AthenaDataSource
@@ -137,50 +133,77 @@ export async function ping(ds: AthenaDataSource): Promise<AthenaDataSource> {
 }
 
 export async function getAthenaSchema(
-  ds: AthenaDataSource
-): Promise<DataSourceStructure> {
+  ds: AthenaDataSource,
+  onTable: OnTable
+): Promise<void> {
   const { glue } = await getAthenaClient(ds)
-  const databases = await glue.getDatabases().promise()
-  const schemas: Record<string, DataSourceSchema> = {}
+  const pQueue = new PQueue({ concurrency: 5 })
+  let remaining = 0
+  let promises: Promise<void>[] = []
 
-  await Promise.all(
-    databases.DatabaseList.map(async (database) => {
-      const databaseName = database.Name
-      const tablesResponse = await glue
-        .getTables({ DatabaseName: databaseName })
-        .promise()
-      const tables: Record<string, DataSourceTable> = {}
+  let nextToken: string | undefined = undefined
+  do {
+    const databases = await glue
+      .getDatabases({ NextToken: nextToken })
+      .promise()
+    remaining += databases.DatabaseList?.length ?? 0
 
-      for (const table of tablesResponse.TableList ?? []) {
-        // Retrieve regular columns
-        const columns: DataSourceColumn[] = (
-          table.StorageDescriptor?.Columns ?? []
-        ).map((column) => ({
-          name: column.Name,
-          type: column.Type ?? 'unknown',
-        }))
+    logger().info(
+      {
+        schemaCount: databases.DatabaseList?.length,
+        dataSourceId: ds.id,
+        workspaceId: ds.workspaceId,
+      },
+      'Fetched schemas for Athena data source'
+    )
 
-        // Retrieve partition columns (partition keys)
-        const partitionColumns: DataSourceColumn[] = (
-          table.PartitionKeys ?? []
-        ).map((partitionKey) => ({
-          name: partitionKey.Name,
-          type: partitionKey.Type ?? 'unknown',
-        }))
+    databases.DatabaseList.forEach((database) => {
+      promises.push(
+        pQueue.add(async () => {
+          const databaseName = database.Name
+          const tablesResponse = await glue
+            .getTables({ DatabaseName: databaseName })
+            .promise()
+          logger().info(
+            {
+              tableCount: tablesResponse.TableList?.length,
+              schema: databaseName,
+              dataSourceId: ds.id,
+              workspaceId: ds.workspaceId,
+              remaining: --remaining,
+            },
+            `Fetched tables of schema ${databaseName} for Athena data source`
+          )
 
-        // Merge regular columns and partition columns
-        tables[table.Name] = { columns: [...columns, ...partitionColumns] }
-      }
+          for (const table of tablesResponse.TableList ?? []) {
+            // Retrieve regular columns
+            const columns: DataSourceColumn[] = (
+              table.StorageDescriptor?.Columns ?? []
+            ).map((column) => ({
+              name: column.Name,
+              type: column.Type ?? 'unknown',
+            }))
 
-      schemas[databaseName] = { tables }
+            // Retrieve partition columns (partition keys)
+            const partitionColumns: DataSourceColumn[] = (
+              table.PartitionKeys ?? []
+            ).map((partitionKey) => ({
+              name: partitionKey.Name,
+              type: partitionKey.Type ?? 'unknown',
+            }))
+
+            const tableSchema = { columns: [...columns, ...partitionColumns] }
+            onTable(databaseName, table.Name, tableSchema, 'default')
+          }
+        })
+      )
     })
-  )
 
-  return {
-    dataSourceId: ds.id,
-    schemas,
-    defaultSchema: 'default',
-  }
+    nextToken = databases.NextToken
+  } while (nextToken !== undefined)
+
+  await Promise.all(promises)
+  await pQueue.onIdle()
 }
 
 export async function updateConnStatus(

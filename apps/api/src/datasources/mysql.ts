@@ -6,7 +6,7 @@ import prisma, {
 } from '@briefer/database'
 import mysql, { RowDataPacket } from 'mysql2/promise'
 import { logger } from '../logger.js'
-import { DataSourceConnectionError, DataSourceStructure } from '@briefer/types'
+import { DataSourceColumn, DataSourceConnectionError } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
 import { OnTable } from './structure.js'
 
@@ -116,10 +116,8 @@ interface InformationSchemaColumn extends RowDataPacket {
 export async function getMySQLSchemaFromConfig(
   datasourceId: string,
   mySQLConfig: mysql.ConnectionOptions,
-
-  // since we gather the whole thing at once, we don't need to call this
-  _onTable: OnTable
-): Promise<DataSourceStructure> {
+  onTable: OnTable
+): Promise<void> {
   const connection = await mysql.createConnection(mySQLConfig)
 
   // select all tables with their column names and types from all schemas
@@ -128,12 +126,12 @@ export async function getMySQLSchemaFromConfig(
     FROM information_schema.columns
     WHERE table_schema NOT IN ('information_schema', 'performance_schema', 'mysql', 'sys')
   `)
+  await connection.end()
 
-  const info: DataSourceStructure = {
-    dataSourceId: datasourceId,
-    schemas: {},
-    defaultSchema: 'public',
-  }
+  const schemas: Record<
+    string,
+    Record<string, { columns: DataSourceColumn[] }>
+  > = {}
 
   for (const row of rows) {
     const schemaName = row.TABLE_SCHEMA
@@ -141,29 +139,34 @@ export async function getMySQLSchemaFromConfig(
     const columnName = row.COLUMN_NAME
     const dataType = row.DATA_TYPE
 
-    const schema = info.schemas[schemaName] ?? {
-      tables: {},
+    let schema = schemas[schemaName]
+    if (!schema) {
+      schema = {}
+      schemas[schemaName] = schema
     }
 
-    const table = schema.tables[tableName] ?? {
-      columns: [],
+    let table = schema[tableName]
+    if (!table) {
+      table = {
+        columns: [],
+      }
+      schema[tableName] = table
     }
 
     table.columns.push({ name: columnName, type: dataType })
-
-    schema.tables[tableName] = table
-    info.schemas[schemaName] = schema
   }
 
-  await connection.end()
-
-  return info
+  for (const [schemaName, schema] of Object.entries(schemas)) {
+    for (const [tableName, table] of Object.entries(schema)) {
+      onTable(schemaName, tableName, table, datasourceId)
+    }
+  }
 }
 
 export async function getMySQLSchema(
   datasource: MySQLDataSource,
   onTable: OnTable
-): Promise<DataSourceStructure> {
+): Promise<void> {
   const mySQLConfig = await getMySQLConfig(datasource)
 
   return getMySQLSchemaFromConfig(datasource.id, mySQLConfig, onTable)

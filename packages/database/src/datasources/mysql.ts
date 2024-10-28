@@ -12,6 +12,7 @@ export type MySQLDataSource = Omit<
   | 'password'
   | 'cert'
   | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -109,7 +110,12 @@ export async function updateMySQLDataSource(
 export async function createMySQLDataSource(
   data: Omit<
     PrismaMySQLDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<MySQLDataSource> {

@@ -6,8 +6,9 @@ import prisma, {
 } from '@briefer/database'
 import sql from 'mssql'
 import { logger } from '../logger.js'
-import { DataSourceConnectionError, DataSourceStructure } from '@briefer/types'
+import { DataSourceColumn, DataSourceConnectionError } from '@briefer/types'
 import { DataSourceStatus } from './index.js'
+import { OnTable } from './structure.js'
 
 type ConnectionConfig = {
   user: string
@@ -136,8 +137,9 @@ async function pingSQLServerFromConfig(
 
 export async function getSQLServerSchemaFromConfig(
   datasourceId: string,
-  sqlServerConfig: ConnectionConfig
-): Promise<DataSourceStructure> {
+  sqlServerConfig: ConnectionConfig,
+  onTable: OnTable
+): Promise<void> {
   const connection = await createConnection(sqlServerConfig)
 
   // select all tables with their column names and types from all schemas
@@ -146,12 +148,12 @@ export async function getSQLServerSchemaFromConfig(
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA NOT IN ('information_schema', 'sys', 'master', 'tempdb', 'model', 'msdb');
   `)
+  await connection.close()
 
-  const info: DataSourceStructure = {
-    dataSourceId: datasourceId,
-    schemas: {},
-    defaultSchema: 'public',
-  }
+  const schemas: Record<
+    string,
+    Record<string, { columns: DataSourceColumn[] }>
+  > = {}
 
   for (const row of result.recordset) {
     const schemaName = row.TABLE_SCHEMA
@@ -159,31 +161,37 @@ export async function getSQLServerSchemaFromConfig(
     const columnName = row.COLUMN_NAME
     const dataType = row.DATA_TYPE
 
-    const schema = info.schemas[schemaName] ?? {
-      tables: {},
+    let schema = schemas[schemaName]
+    if (!schema) {
+      schema = {}
+      schemas[schemaName] = schema
     }
 
-    const table = schema.tables[tableName] ?? {
-      columns: [],
+    let table = schema[tableName]
+    if (!table) {
+      table = {
+        columns: [],
+      }
+      schema[tableName] = table
     }
 
     table.columns.push({ name: columnName, type: dataType })
-
-    schema.tables[tableName] = table
-    info.schemas[schemaName] = schema
   }
 
-  await connection.close()
-
-  return info
+  for (const [schemaName, schema] of Object.entries(schemas)) {
+    for (const [tableName, table] of Object.entries(schema)) {
+      onTable(schemaName, tableName, table, datasourceId)
+    }
+  }
 }
 
 export async function getSqlServerSchema(
-  datasource: SQLServerDataSource
-): Promise<DataSourceStructure> {
+  datasource: SQLServerDataSource,
+  onTable: OnTable
+): Promise<void> {
   const SQLServerConfig = await getSQLServerConfig(datasource)
 
-  return getSQLServerSchemaFromConfig(datasource.id, SQLServerConfig)
+  return getSQLServerSchemaFromConfig(datasource.id, SQLServerConfig, onTable)
 }
 
 export async function updateConnStatus(

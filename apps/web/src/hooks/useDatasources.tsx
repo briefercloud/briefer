@@ -10,6 +10,8 @@ import {
 } from 'react'
 import useWebsocket from './useWebsocket'
 import type { APIDataSource, DataSourceType } from '@briefer/database'
+import { DataSourceSchema, DataSourceTable } from '@briefer/types'
+import { omit } from 'ramda'
 
 export type APIDataSources = List<APIDataSource>
 
@@ -31,7 +33,24 @@ type API = {
   ) => void
 }
 
-type State = Map<string, APIDataSources>
+// {
+//   [dataSourceId]: {
+//     [schemaName]: {
+//       tables: {
+//         [tableName]: DataSourceTable
+//       }
+//     }
+//   }
+// }
+type Schemas = Map<string, Map<string, DataSourceSchema>>
+
+type State = Map<
+  string,
+  {
+    datasources: APIDataSources
+    schemas: Schemas
+  }
+>
 
 const Context = createContext<[State, API]>([
   Map(),
@@ -59,12 +78,22 @@ const Context = createContext<[State, API]>([
   },
 ])
 
-type UseDataSources = [{ data: APIDataSources; isLoading: boolean }, API]
+type UseDataSources = [
+  {
+    datasources: APIDataSources
+    schemas: Schemas
+    isLoading: boolean
+  },
+  API
+]
 export const useDataSources = (workspaceId: string): UseDataSources => {
   const [state, api] = useContext(Context)
   return useMemo(() => {
-    const data = state.get(workspaceId)
-    return [{ data: data ?? List(), isLoading: !data }, api]
+    const data = state.get(workspaceId) ?? {
+      datasources: List(),
+      schemas: Map(),
+    }
+    return [{ ...data, isLoading: !state.has(workspaceId) }, api]
   }, [state, workspaceId, api])
 }
 
@@ -84,9 +113,13 @@ export function DataSourcesProvider(props: Props) {
       workspaceId: string
       dataSources: APIDataSource[]
     }) => {
-      setState((state) => state.set(data.workspaceId, List(data.dataSources)))
+      setState((state) =>
+        state.set(data.workspaceId, {
+          datasources: List(data.dataSources),
+          schemas: state.get(data.workspaceId)?.schemas ?? Map(),
+        })
+      )
     }
-
     socket.on('workspace-datasources', onDataSources)
 
     const onDataSourceUpdate = ({
@@ -97,25 +130,94 @@ export function DataSourcesProvider(props: Props) {
       dataSource: APIDataSource
     }) => {
       setState((state) => {
-        const datasources = state.get(workspaceId, List<APIDataSource>())
+        const datasources =
+          state.get(workspaceId)?.datasources ?? List<APIDataSource>()
         const index = datasources.findIndex(
           (ds) => ds.config.data.id === dataSource.config.data.id
         )
 
-        return state.set(
-          workspaceId,
-          index === -1
-            ? datasources.push(dataSource)
-            : datasources.set(index, dataSource)
-        )
+        return state.set(workspaceId, {
+          datasources:
+            index === -1
+              ? datasources.push(dataSource)
+              : datasources.set(index, dataSource),
+          schemas: state.get(workspaceId)?.schemas ?? Map(),
+        })
       })
     }
-
     socket.on('workspace-datasource-update', onDataSourceUpdate)
 
+    const onDataSourceSchemaTableUpdate = ({
+      workspaceId,
+      dataSourceId,
+      schemaName,
+      tableName,
+      table,
+    }: {
+      workspaceId: string
+      dataSourceId: string
+      schemaName: string
+      tableName: string
+      table: DataSourceTable
+    }) => {
+      setState((state) => {
+        const datasources = state.get(workspaceId)?.datasources ?? List()
+        const allSchemas = state.get(workspaceId)?.schemas ?? Map()
+        const dataSourceSchemas = allSchemas.get(dataSourceId) ?? Map()
+        const schema = dataSourceSchemas.get(schemaName)
+        const tables = {
+          ...(schema?.tables ?? {}),
+          [tableName]: table,
+        }
+        return state.set(workspaceId, {
+          datasources,
+          schemas: allSchemas.setIn([dataSourceId, schemaName], { tables }),
+        })
+      })
+    }
+    socket.on(
+      'workspace-datasource-schema-table-update',
+      onDataSourceSchemaTableUpdate
+    )
+
+    const onDataSourceSchemaTableRemoved = ({
+      workspaceId,
+      dataSourceId,
+      schemaName,
+      tableName,
+    }: {
+      workspaceId: string
+      dataSourceId: string
+      schemaName: string
+      tableName: string
+    }) => {
+      setState((state) => {
+        const datasources = state.get(workspaceId)?.datasources ?? List()
+        const allSchemas = state.get(workspaceId)?.schemas ?? Map()
+        const dataSourceSchemas = allSchemas.get(dataSourceId) ?? Map()
+        const schema = dataSourceSchemas.get(schemaName)
+        const tables = omit([tableName], schema?.tables ?? {})
+        return state.set(workspaceId, {
+          datasources,
+          schemas: allSchemas.setIn([dataSourceId, schemaName], { tables }),
+        })
+      })
+    }
+    socket.on(
+      'workspace-datasource-schema-table-removed',
+      onDataSourceSchemaTableRemoved
+    )
     return () => {
       socket.off('workspace-datasources', onDataSources)
       socket.off('workspace-datasource-update', onDataSourceUpdate)
+      socket.off(
+        'workspace-datasource-schema-table-update',
+        onDataSourceSchemaTableUpdate
+      )
+      socket.off(
+        'workspace-datasource-schema-table-removed',
+        onDataSourceSchemaTableRemoved
+      )
     }
   }, [socket])
 

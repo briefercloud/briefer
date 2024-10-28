@@ -6,7 +6,12 @@ import { encrypt } from './crypto.js'
 
 export type SnowflakeDataSource = Omit<
   PrismaSnowflakeDataSource,
-  'createdAt' | 'updatedAt' | 'lastConnection' | 'password' | 'structure'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'lastConnection'
+  | 'password'
+  | 'structure'
+  | 'dataSourceSchemaId'
 > & {
   createdAt: string
   updatedAt: string
@@ -67,7 +72,12 @@ export async function updateSnowflakeDataSource(
 export async function createSnowflakeDataSource(
   data: Omit<
     PrismaSnowflakeDataSource,
-    'id' | 'createdAt' | 'updatedAt' | 'structure' | 'isDemo'
+    | 'id'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'structure'
+    | 'isDemo'
+    | 'dataSourceSchemaId'
   >,
   encryptionKey: string
 ): Promise<SnowflakeDataSource> {

@@ -28,7 +28,8 @@ function BlinkingSignal(props: Props) {
 
 export const DataSourceBlinkingSignal = () => {
   const workspaceId = useStringQuery('workspaceId') ?? ''
-  const [{ data: allDataSources, isLoading }] = useDataSources(workspaceId)
+  const [{ datasources: allDataSources, isLoading }] =
+    useDataSources(workspaceId)
 
   const userDataSources = allDataSources.filter((ds) => !ds.config.data.isDemo)
 
