@@ -435,7 +435,16 @@ function PythonBlock(props: Props) {
             >
               {isResultHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
             </button>
-            <span>{isResultHidden ? 'Output collapsed' : 'Output'}</span>
+            <div className="flex justify-between items-center w-full">
+              <span className="font-sans">
+                {isResultHidden ? 'Output collapsed' : 'Output'}
+              </span>
+              {results.some((r) => r.type === 'error') && (
+                <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10">
+                  contains errors
+                </span>
+              )}
+            </div>
           </div>
 
           <ScrollBar
