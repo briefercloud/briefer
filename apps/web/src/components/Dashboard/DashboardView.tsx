@@ -187,6 +187,7 @@ function DashboardViewInner(props: InnerProps) {
           ? [
               BlockType.Input,
               BlockType.DropdownInput,
+              BlockType.DateInput,
               BlockType.DashboardHeader,
             ].includes(type)
           : false
