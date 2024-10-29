@@ -23,6 +23,7 @@ import { DataFrame } from '@briefer/types'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { Combobox } from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid'
+import ReactDOM from 'react-dom'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -162,6 +163,8 @@ function DropdownInputBlock(props: Props) {
     []
   )
 
+  const dropdownWrapperRef = useRef<HTMLDivElement>(null)
+
   return (
     <div
       className={clsx(
@@ -218,6 +221,7 @@ function DropdownInputBlock(props: Props) {
                     onChange={onChangeVariable}
                     onBlur={onBlurVariable}
                     disabled={dropdownInputVariableExecStatus !== 'idle'}
+                    ref={dropdownWrapperRef}
                   />
                   <div className="absolute inset-y-0 pl-1 flex items-center group z-10">
                     {(attrs.variable.error ||
@@ -267,8 +271,8 @@ function DropdownInputBlock(props: Props) {
                 (!props.isEditable && !props.isApp)
               }
             >
-              <Combobox.Button as="div" className="block w-full">
-                <div className="relative">
+              <Combobox.Button as="div" className="block w-full relative">
+                <div className="relative" ref={dropdownWrapperRef}>
                   <Combobox.Input
                     onFocus={onFocus}
                     onBlur={editorAPI.blur}
@@ -296,53 +300,64 @@ function DropdownInputBlock(props: Props) {
                   </div>
                 </div>
               </Combobox.Button>
-              <Combobox.Options
-                ref={selectRef}
-                onKeyDown={unfocusOnEscape}
-                className={
-                  'absolute mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm z-10'
-                }
-              >
-                {filteredOptions.map((option) => (
-                  <Combobox.Option
-                    key={option}
-                    value={option}
-                    className={({ active }) =>
-                      clsx(
-                        'cursor-default select-none relative py-2 pl-10 pr-4',
-                        active ? 'bg-ceramic-100 text-black' : 'text-gray-900'
-                      )
-                    }
-                  >
-                    {({ selected, active }) => (
-                      <>
-                        <span
-                          className={clsx(
-                            'block truncate',
-                            selected ? 'font-medium' : 'font-normal'
-                          )}
-                        >
-                          {option}
-                        </span>
-                        {selected ? (
+              {ReactDOM.createPortal(
+                <Combobox.Options
+                  ref={selectRef}
+                  style={{
+                    top: dropdownWrapperRef.current?.getBoundingClientRect()
+                      .bottom,
+                    left: dropdownWrapperRef.current?.getBoundingClientRect()
+                      .left,
+                    width:
+                      dropdownWrapperRef.current?.getBoundingClientRect().width,
+                  }}
+                  onKeyDown={unfocusOnEscape}
+                  className={
+                    'absolute mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm z-10'
+                  }
+                >
+                  {filteredOptions.map((option) => (
+                    <Combobox.Option
+                      key={option}
+                      value={option}
+                      className={({ active }) =>
+                        clsx(
+                          'cursor-default select-none relative py-2 pl-10 pr-4',
+                          active ? 'bg-ceramic-100 text-black' : 'text-gray-900'
+                        )
+                      }
+                    >
+                      {({ selected, active }) => (
+                        <>
                           <span
                             className={clsx(
-                              'absolute inset-y-0 left-0 flex items-center pl-3',
-                              active ? 'text-white' : 'text-blue-600'
+                              'block truncate',
+                              selected ? 'font-medium' : 'font-normal'
                             )}
                           >
-                            <CheckIcon
-                              className="w-4 h-4"
-                              aria-hidden="true"
-                              color="black"
-                            />
+                            {option}
                           </span>
-                        ) : null}
-                      </>
-                    )}
-                  </Combobox.Option>
-                ))}
-              </Combobox.Options>
+                          {selected ? (
+                            <span
+                              className={clsx(
+                                'absolute inset-y-0 left-0 flex items-center pl-3',
+                                active ? 'text-white' : 'text-blue-600'
+                              )}
+                            >
+                              <CheckIcon
+                                className="w-4 h-4"
+                                aria-hidden="true"
+                                color="black"
+                              />
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </Combobox.Option>
+                  ))}
+                </Combobox.Options>,
+                document.body
+              )}
             </Combobox>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 group">
               {(attrs.value.error || dropdownInputValueExecStatus !== 'idle') &&
