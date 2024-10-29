@@ -1,6 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
 import { AthenaDataSource } from '@briefer/database/types/datasources/athena'
-import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
+import {
+  RunQueryResult,
+  SQLQueryConfiguration,
+  SuccessRunQueryResult,
+} from '@briefer/types'
 import { getDatabaseURL } from '@briefer/database'
 import { makeQuery } from './index.js'
 import { renderJinja } from '../index.js'
@@ -13,7 +17,8 @@ export async function makeAthenaQuery(
   datasource: AthenaDataSource,
   encryptionKey: string,
   sql: string,
-  onProgress: (result: SuccessRunQueryResult) => void
+  onProgress: (result: SuccessRunQueryResult) => void,
+  configuration: SQLQueryConfiguration | null
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const databaseURL = await getDatabaseURL(
     { type: 'athena', data: datasource },
@@ -55,6 +60,18 @@ export async function makeAthenaQuery(
       }),
       async () => {},
     ]
+  }
+
+  let resultReuseByAgeConfigurationMaxAgeInMinutes = configuration?.athena
+    ?.resultReuseConfiguration.resultReuseByAgeConfiguration.enabled
+    ? configuration?.athena?.resultReuseConfiguration
+        .resultReuseByAgeConfiguration.maxAgeInMinutes
+    : null
+  if (resultReuseByAgeConfigurationMaxAgeInMinutes !== null) {
+    resultReuseByAgeConfigurationMaxAgeInMinutes = Math.min(
+      1440,
+      Math.max(1, resultReuseByAgeConfigurationMaxAgeInMinutes)
+    )
   }
 
   const code = `
@@ -185,12 +202,25 @@ def briefer_make_athena_query():
             region_name="${datasource.region}",
         )
 
+        result_reuse_configuration = {"ResultReuseByAgeConfiguration": {"Enabled": False}}
+        result_reuse_by_age_configuration_max_age_in_minutes = ${
+          resultReuseByAgeConfigurationMaxAgeInMinutes
+            ? resultReuseByAgeConfigurationMaxAgeInMinutes
+            : 'None'
+        }
+        if result_reuse_by_age_configuration_max_age_in_minutes:
+            result_reuse_configuration["ResultReuseByAgeConfiguration"] = {
+              "Enabled": True,
+              "MaxAgeInMinutes": result_reuse_by_age_configuration_max_age_in_minutes,
+            }
+
         query_response = athena_client.start_query_execution(
             QueryString=${JSON.stringify(renderedQuery)},
             QueryExecutionContext={"Database": "default"},
             ResultConfiguration={
                 "OutputLocation": s3_staging_dir,
             },
+            ResultReuseConfiguration=result_reuse_configuration,
         )
 
         query_id = query_response["QueryExecutionId"]
@@ -265,8 +295,14 @@ def briefer_make_athena_query():
             s3_bucket = s3_url.netloc
             s3_dir = s3_url.path[1:]
 
-            print(json.dumps({"type": "log", "message": f"Downloading s3://{s3_bucket}/{s3_dir}{query_id}.csv"}))
-            s3.download_file(s3_bucket, f"{s3_dir}{query_id}.csv", f"{tmpdir}/{query_id}.csv")
+            output_location = query_status.get("QueryExecution", {}).get("ResultConfiguration", {}).get("OutputLocation", None)
+            if output_location:
+                # remove s3://bucket_name/ prefix
+                output_location = urlparse(output_location).path[1:]
+            else:
+                output_location= f"{s3_dir}{query_id}.csv"
+            print(json.dumps({"type": "log", "message": f"Downloading s3://{s3_bucket}/{output_location}"}))
+            s3.download_file(s3_bucket, output_location, f"{tmpdir}/{query_id}.csv")
             if not os.path.exists(flag_file_path):
                 result = {
                     "type": "abort-error",

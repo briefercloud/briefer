@@ -61,6 +61,8 @@ import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { CodeEditor } from '../../CodeEditor'
+import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
+import { SQLQueryConfiguration } from '@briefer/types'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -155,6 +157,11 @@ function SQLBlock(props: Props) {
     componentId,
   } = getSQLAttributes(props.block, props.blocks)
 
+  const dataSource = useMemo(
+    () => props.dataSources.find((d) => d.config.data.id === dataSourceId),
+    [props.dataSources, dataSourceId]
+  )
+
   const [
     { data: components },
     { create: createReusableComponent, update: updateReusableComponent },
@@ -203,7 +210,7 @@ function SQLBlock(props: Props) {
     }
   }, [status, props.block, onRun])
 
-  const { source } = getSQLAttributes(props.block, props.blocks)
+  const { source, configuration } = getSQLAttributes(props.block, props.blocks)
   const lastQuery = props.block.getAttribute('lastQuery')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
   const queryStatusText = useMemo(() => {
@@ -345,6 +352,13 @@ function SQLBlock(props: Props) {
     isComponentInstance,
     props.document.title,
   ])
+
+  const onChangeConfiguration = useCallback(
+    (value: SQLQueryConfiguration) => {
+      props.block.setAttribute('configuration', value)
+    },
+    [props.block]
+  )
 
   if (props.dashboardMode !== 'none') {
     if (!result) {
@@ -670,6 +684,15 @@ function SQLBlock(props: Props) {
           disabled={!props.isEditable || isComponentInstance}
           isComponentInstance={isComponentInstance}
         />
+
+        {dataSource?.config.type === 'athena' && (
+          <SQLQueryConfigurationButton
+            dataSource={dataSource}
+            value={configuration}
+            onChange={onChangeConfiguration}
+            disabled={!props.isEditable}
+          />
+        )}
       </div>
     </div>
   )

@@ -12,6 +12,7 @@ import { DataSource } from '@briefer/database'
 import {
   DataFrame,
   RunQueryResult,
+  SQLQueryConfiguration,
   SuccessRunQueryResult,
 } from '@briefer/types'
 import { SQLEvents } from '../../../../events/index.js'
@@ -119,7 +120,8 @@ describe('SQLExecutor', () => {
           _datasource: DataSource | 'duckdb',
           _encryptionKey: string,
           _sql: string,
-          onProgress: (result: SuccessRunQueryResult) => void
+          onProgress: (result: SuccessRunQueryResult) => void,
+          _configuration: SQLQueryConfiguration | null
         ) => {
           onProgress(result)
           return Promise.resolve([Promise.resolve(result), jest.fn()])
@@ -140,7 +142,8 @@ describe('SQLExecutor', () => {
         datasource,
         'dataSourcesEncryptionKey',
         'print("3")',
-        expect.any(Function)
+        expect.any(Function),
+        null
       )
       expect(block.getAttribute('result')).toEqual(result)
       expect(Array.from(dataframes.entries())).toEqual([
@@ -179,7 +182,8 @@ describe('SQLExecutor', () => {
           _datasource: DataSource | 'duckdb',
           _encryptionKey: string,
           _sql: string,
-          onProgress: (result: SuccessRunQueryResult) => void
+          onProgress: (result: SuccessRunQueryResult) => void,
+          _configuration: SQLQueryConfiguration | null
         ) => {
           onProgress(result)
           return Promise.resolve([Promise.resolve(result), jest.fn()])
@@ -201,7 +205,8 @@ describe('SQLExecutor', () => {
         datasource,
         'dataSourcesEncryptionKey',
         'print("1337")',
-        expect.any(Function)
+        expect.any(Function),
+        null
       )
       expect(block.getAttribute('result')).toEqual(result)
       expect(Array.from(dataframes.entries())).toEqual([
