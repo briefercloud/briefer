@@ -98,6 +98,7 @@ export function updateBlockFromComponent(
       dataframeName: clone(compAttrs.dataframeName),
       dataSourceId: compAttrs.dataSourceId,
       isFileDataSource: compAttrs.isFileDataSource,
+      configuration: clone(compAttrs.configuration),
     }
     for (const [key, value] of Object.entries(nextAttrs)) {
       block.setAttribute(

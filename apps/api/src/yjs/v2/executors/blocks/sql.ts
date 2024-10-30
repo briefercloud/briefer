@@ -211,9 +211,10 @@ export class SQLExecutor implements ISQLExecutor {
           block.removeAttribute('result')
 
           const {
+            id: blockId,
             aiSuggestions,
             source,
-            id: blockId,
+            configuration,
           } = getSQLAttributes(block, this.blocks)
 
           const actualSource =
@@ -231,7 +232,8 @@ export class SQLExecutor implements ISQLExecutor {
               actualSource,
               (result) => {
                 block.setAttribute('result', result)
-              }
+              },
+              configuration
             )
             runningQuery.abort = abort
             if (signal?.aborted) {

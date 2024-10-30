@@ -61,6 +61,8 @@ import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { CodeEditor } from '../../CodeEditor'
+import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
+import { SQLQueryConfiguration } from '@briefer/types'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -155,6 +157,11 @@ function SQLBlock(props: Props) {
     componentId,
   } = getSQLAttributes(props.block, props.blocks)
 
+  const dataSource = useMemo(
+    () => props.dataSources.find((d) => d.config.data.id === dataSourceId),
+    [props.dataSources, dataSourceId]
+  )
+
   const [
     { data: components },
     { create: createReusableComponent, update: updateReusableComponent },
@@ -203,7 +210,7 @@ function SQLBlock(props: Props) {
     }
   }, [status, props.block, onRun])
 
-  const { source } = getSQLAttributes(props.block, props.blocks)
+  const { source, configuration } = getSQLAttributes(props.block, props.blocks)
   const lastQuery = props.block.getAttribute('lastQuery')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
   const queryStatusText = useMemo(() => {
@@ -345,6 +352,13 @@ function SQLBlock(props: Props) {
     isComponentInstance,
     props.document.title,
   ])
+
+  const onChangeConfiguration = useCallback(
+    (value: SQLQueryConfiguration) => {
+      props.block.setAttribute('configuration', value)
+    },
+    [props.block]
+  )
 
   if (props.dashboardMode !== 'none') {
     if (!result) {
@@ -641,35 +655,52 @@ function SQLBlock(props: Props) {
             <MissingDataSourceTooltip />
           )}
         </button>
-        <ToChartButton
-          layout={props.layout}
-          block={props.block}
-          blocks={props.blocks}
-        />
+        {((result && !isResultHidden) || !isCodeHidden) && (
+          <ToChartButton
+            layout={props.layout}
+            block={props.block}
+            blocks={props.blocks}
+          />
+        )}
 
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
         />
-        <button
-          className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
-          onClick={onSchemaExplorer}
-        >
-          <BookOpenIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-          <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
-            <span className="inline-flex items-center text-gray-400">
-              Explore schema of selected data source.
-            </span>
-          </div>
-        </button>
 
-        <SaveReusableComponentButton
-          isComponent={blockId === component?.blockId}
-          onSave={onSaveReusableComponent}
-          disabled={!props.isEditable || isComponentInstance}
-          isComponentInstance={isComponentInstance}
-        />
+        {((result && !isResultHidden) || !isCodeHidden) && (
+          <button
+            className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
+            onClick={onSchemaExplorer}
+          >
+            <BookOpenIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
+            <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
+              <span className="inline-flex items-center text-gray-400">
+                Explore schema of selected data source.
+              </span>
+            </div>
+          </button>
+        )}
+
+        {((result && !isResultHidden) || !isCodeHidden) && (
+          <SaveReusableComponentButton
+            isComponent={blockId === component?.blockId}
+            onSave={onSaveReusableComponent}
+            disabled={!props.isEditable || isComponentInstance}
+            isComponentInstance={isComponentInstance}
+          />
+        )}
+
+        {((result && !isResultHidden) || !isCodeHidden) &&
+          dataSource?.config.type === 'athena' && (
+            <SQLQueryConfigurationButton
+              dataSource={dataSource}
+              value={configuration}
+              onChange={onChangeConfiguration}
+              disabled={!props.isEditable}
+            />
+          )}
       </div>
     </div>
   )

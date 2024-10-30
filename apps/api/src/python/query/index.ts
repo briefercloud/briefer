@@ -5,6 +5,7 @@ import {
   DataFrameColumn,
   DataFrameStringColumn,
   RunQueryResult,
+  SQLQueryConfiguration,
   SuccessRunQueryResult,
   jsonString,
 } from '@briefer/types'
@@ -30,7 +31,8 @@ export async function makeSQLQuery(
   datasource: DataSource | 'duckdb',
   encryptionKey: string,
   sql: string,
-  onProgress: (result: SuccessRunQueryResult) => void
+  onProgress: (result: SuccessRunQueryResult) => void,
+  configuration: SQLQueryConfiguration | null
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   if (datasource === 'duckdb') {
     return makeDuckDBQuery(
@@ -80,7 +82,8 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
-        onProgress
+        onProgress,
+        configuration
       )
       break
     case 'oracle':

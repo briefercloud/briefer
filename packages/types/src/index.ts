@@ -1167,3 +1167,15 @@ export type Comment = {
   createdAt: string
   updatedAt: string
 }
+
+export type SQLQueryConfiguration = {
+  version: 1
+  athena?: {
+    resultReuseConfiguration: {
+      resultReuseByAgeConfiguration: {
+        enabled: boolean
+        maxAgeInMinutes: number
+      }
+    }
+  }
+}
