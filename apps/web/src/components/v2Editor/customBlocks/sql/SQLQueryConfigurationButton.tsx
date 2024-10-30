@@ -15,10 +15,6 @@ interface Props {
   disabled: boolean
 }
 function SQLQueryConfigurationButton(props: Props) {
-  if (props.dataSource.config.type !== 'athena') {
-    return null
-  }
-
   const onToggleResultReuseByAgeConfiguration = useCallback(
     (checked: boolean) => {
       props.onChange({
@@ -141,6 +137,10 @@ function SQLQueryConfigurationButton(props: Props) {
     props.value,
     athenaResultReuseConfigurationResultReuseByAgeConfigurationEnabled,
   ])
+
+  if (props.dataSource.config.type !== 'athena') {
+    return null
+  }
 
   return (
     <>
