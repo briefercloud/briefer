@@ -163,7 +163,7 @@ function DropdownInputBlock(props: Props) {
     []
   )
 
-  const dropdownWrapperRef = useRef<HTMLDivElement>(null)
+  const dropdownWrapperRef = useRef<HTMLInputElement>(null)
 
   return (
     <div
