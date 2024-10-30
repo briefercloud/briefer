@@ -78,10 +78,10 @@ export default function AxisSelector(props: AxisSelectorProps) {
     [props.columns, props.value]
   )
   useEffect(() => {
-    if (value === null && props.defaultValue !== null) {
+    if (value === null && props.defaultValue !== null && !props.disabled) {
       props.onChange(props.defaultValue)
     }
-  }, [props.defaultValue, value, props.onChange])
+  }, [props.defaultValue, value, props.onChange, props.disabled])
 
   return (
     <Combobox<DataFrameColumn | null>
