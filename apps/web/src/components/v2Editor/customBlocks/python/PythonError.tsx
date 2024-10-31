@@ -42,7 +42,7 @@ interface PythonErrorUIProps {
 }
 export function PythonErrorUI(props: PythonErrorUIProps) {
   return (
-    <div className="text-xs pt-4">
+    <div className="text-xs">
       <div className="flex border border-red-300 p-2 gap-x-3 text-xs overflow-hidden">
         <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
         <div>

@@ -450,7 +450,7 @@ function PythonBlock(props: Props) {
           <ScrollBar
             className={clsx('overflow-scroll ph-no-capture', {
               hidden: isResultHidden,
-              'px-4 pt-5 pb-2': !props.isPDF,
+              'px-0.5 pt-3.5 pb-2': !props.isPDF,
             })}
           >
             <PythonOutputs
