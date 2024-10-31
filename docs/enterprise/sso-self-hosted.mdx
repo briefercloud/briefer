@@ -1,0 +1,40 @@
+---
+title: Configuring SSO on a self-hosted instance
+description: Configure Briefer to use your single sign-on provider on your self-hosted Briefer instance.
+icon: lock
+---
+
+<Note>
+  SSO is an enterprise feature. This page covers how to configure SSO on your self-hosted Briefer instance.
+</Note>
+
+Configuring SS0 on your self-hosted Briefer instance allows you to use your own Identity Provider (IdP) to authenticate users. This way, you can have your users log in to Briefer using their existing credentials.
+
+## Configuring SSO
+
+Assuming you already have an IdP set up, you can configure Briefer to use it by setting the following environment variables:
+
+- `OIDC_ISSUER_URL` is the URL of your IdP. For example, `https://keycloak.example.com/realms/your-realm`.
+- `OIDC_CLIENT_ID` is the client ID that Briefer will use to authenticate with your IdP.
+  Please use a confidential client so that a client secret is available.
+- `OIDC_CLIENT_SECRET` is the client secret for the client whose ID is specified in `OIDC_CLIENT_ID`.
+- `OIDC_REDIRECT_TIMEOUT` is the time in seconds that Briefer will wait for the user to authenticate with the IdP. The default is 1 hour.
+  <Info>
+  This timeout determines the time-to-live of the cookies necessary for the SSO flow.
+  </Info>
+
+When using SSO you probably also want to set `DISABLE_EMAIL_LOGIN` to true so that users can _only_ log in using SSO.
+
+After setting these variables, you should see a "Log in with SSO" button on the login page.
+
+## Managing users
+
+Once you have SSO set up, you can manage users in Briefer by inviting them to your workspace using the same email they use in your IdP.
+
+After authenticating through your IdP, Briefer will use the authenticated user's email to determine which workspaces they have access to.
+
+Once you remove users from your IdP, they will no longer be able to log in to Briefer.
+
+<Note>
+  If you need to automatically create users in Briefer when they log in for the first time, please let us know. This is a new feature that we'd love to improve based on your feedback.
+</Note>

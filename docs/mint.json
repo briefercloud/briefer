@@ -89,6 +89,10 @@
         "settings/workspace-settings",
         "settings/page-settings"
       ]
+    },
+    {
+      "group": "Enterprise",
+      "pages": ["enterprise/sso-self-hosted"]
     }
   ],
   "footerSocials": {
