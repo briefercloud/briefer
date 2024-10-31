@@ -227,14 +227,14 @@ function PrivateDocumentPageInner(
   const topBarContent = (
     <div className="flex items-center w-full justify-between gap-x-6">
       <div className="w-full overflow-hidden flex items-center gap-x-1.5 text-sm text-gray-400 font-sans">
-        {props.isApp ? (
+        {props.isApp || props.user.roles[props.workspaceId] === 'viewer' ? (
           <EyeIcon className="w-4 h-4" />
         ) : (
           <PencilIcon className="w-4 h-4" />
         )}
         <span className="w-full truncate">
           <span className="font-semibold">
-            {props.isApp ? (
+            {props.isApp || props.user.roles[props.workspaceId] === 'viewer' ? (
               <span className="text-ceramic-500">Viewing</span>
             ) : (
               'Editing'
@@ -248,6 +248,8 @@ function PrivateDocumentPageInner(
         documentId={props.documentId}
         current="notebook"
         isEditing={!props.isApp}
+        userRole={props.user.roles[props.workspaceId]}
+        isPublished={props.document.publishedAt !== null}
       />
 
       <div className="w-full justify-end flex items-center gap-x-2 h-[30px]">
@@ -270,7 +272,9 @@ function PrivateDocumentPageInner(
           isDashboard={false}
           isApp={props.isApp}
         />
-        {props.isApp ? (
+
+        {props.user.roles[props.workspaceId] ===
+        'viewer' ? null : props.isApp ? (
           <Link
             className="flex gap-x-2 items-center rounded-sm px-3 py-1 text-sm text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-1.5 justify-center"
             href={`/workspaces/${props.document.workspaceId}/documents/${props.document.id}/notebook/edit`}
@@ -335,7 +339,9 @@ function PrivateDocumentPageInner(
           isPublicViewer={false}
           isDeleted={isDeleted}
           onRestoreDocument={onRestoreDocument}
-          isEditable={!props.isApp}
+          isEditable={
+            !props.isApp && props.user.roles[props.workspaceId] !== 'viewer'
+          }
           isPDF={false}
           isApp={props.isApp}
           userId={props.user.id}

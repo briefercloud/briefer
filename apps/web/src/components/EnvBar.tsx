@@ -17,6 +17,7 @@ interface Props {
   onOpenFiles: () => void
   publishedAt: string | null
   lastUpdatedAt: string | null
+  isViewer: boolean
 }
 function EnvBar(props: Props) {
   const workspaceId = useStringQuery('workspaceId')
@@ -52,7 +53,7 @@ function EnvBar(props: Props) {
             <div>
               <EnvironmentButton name="Python 3.9" workspaceId={workspaceId} />
             </div>
-            <div>
+            <div className={clsx(props.isViewer ? 'hidden' : '')}>
               <Link
                 href={`/workspaces/${workspaceId}/environments/current/variables`}
                 className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
@@ -62,7 +63,10 @@ function EnvBar(props: Props) {
               </Link>
             </div>
             <button
-              className="border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2"
+              className={clsx(
+                props.isViewer ? 'hidden' : '',
+                'border border-gray-200 rounded-sm text-sm px-3 py-1 hover:bg-gray-50 cursor-pointer flex items-center gap-x-2'
+              )}
               onClick={props.onOpenFiles}
             >
               <FolderIcon className="h-4 w-4 text-gray-600" />
@@ -72,7 +76,12 @@ function EnvBar(props: Props) {
         )}
       </div>
       <div className="flex items-center">
-        <StatusBadge loading={loading} status={status} onRestart={restart} />
+        <StatusBadge
+          loading={loading}
+          status={status}
+          onRestart={restart}
+          canRestart={!props.isViewer}
+        />
       </div>
     </div>
   )
@@ -100,10 +109,12 @@ const StatusBadge = ({
   loading,
   status,
   onRestart,
+  canRestart,
 }: {
   loading: boolean
   status: EnvironmentStatus | null
   onRestart: () => void
+  canRestart: boolean
 }) => {
   if (loading) {
     return <LoadingBadge>Loading</LoadingBadge>
@@ -117,18 +128,22 @@ const StatusBadge = ({
         <GreenBadge>
           <div className="flex items-center gap-x-2">
             <div>Running</div>
-            <div className="w-[1px] h-4 bg-green-700 opacity-50" />
-            <div className="flex items-center group relative">
-              <button
-                onClick={onRestart}
-                className="text-green-700 hover:text-green-900"
-              >
-                <ArrowPathIcon className="h-3 w-3" />
-              </button>
-              <div className="right-0 font-sans pointer-events-none absolute -top-2 -translate-y-full w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex items-center justify-center gap-y-1">
-                Restart environment
-              </div>
-            </div>
+            {canRestart && (
+              <>
+                <div className="w-[1px] h-4 bg-green-700 opacity-50" />
+                <div className="flex items-center group relative">
+                  <button
+                    onClick={onRestart}
+                    className="text-green-700 hover:text-green-900"
+                  >
+                    <ArrowPathIcon className="h-3 w-3" />
+                  </button>
+                  <div className="right-0 font-sans pointer-events-none absolute -top-2 -translate-y-full w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex items-center justify-center gap-y-1">
+                    Restart environment
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </GreenBadge>
       )
