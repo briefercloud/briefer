@@ -16,6 +16,7 @@ import { useMemo } from 'react'
 import { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
 import { DataSourceSchema } from '@briefer/types'
 import { APIDataSource } from '@briefer/database'
+import useDebouncedMemo from '@/hooks/useDebouncedMemo'
 
 function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
   if (!type) {
@@ -174,8 +175,9 @@ export function useSQLExtension(
     [datasources, schemas, dataSourceId]
   )
 
-  return useMemo(
+  return useDebouncedMemo(
     () => language(datasource, schema ?? Map()),
-    [datasource, schema]
+    [datasource, schema],
+    5000
   )
 }
