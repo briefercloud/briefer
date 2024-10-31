@@ -271,7 +271,7 @@ async function executeNotebook(
   scheduleId: string,
   socketServer: IOServer,
   doc: Document,
-  app?: YjsAppDocument
+  app: YjsAppDocument
 ): Promise<YBlock | null> {
   const events = new ScheduleNotebookEvents()
 
@@ -304,11 +304,8 @@ async function executeNotebook(
           const tr = new Y.Transaction(ydoc.ydoc, { scheduleId }, true)
           const failedBlock = await executor.run(tr)
           runAll.setAttribute('status', 'idle')
-          await ydoc.persist(false)
 
-          if (app) {
-            await updateAppState(ydoc, app, socketServer)
-          }
+          await updateAppState(ydoc, app, socketServer)
 
           return failedBlock
         } catch (e) {

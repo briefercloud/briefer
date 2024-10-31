@@ -122,8 +122,9 @@ async function main() {
     res.end(res.sentry + '\n')
   })
 
-  server.listen(8080, () => {
-    logger().info('Server is running on port 8080')
+  const port = process.env['PORT'] || 8080
+  server.listen(port, () => {
+    logger().info(`Server is running on port ${port}`)
   })
 
   const jupyterManager = getJupyterManager()

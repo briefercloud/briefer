@@ -49,6 +49,7 @@ model YjsDocument {
   updatedAt  DateTime @default(now()) @updatedAt
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  yjsUpdates YjsUpdate[]
 }
 
 model YjsAppDocument {
@@ -62,6 +63,7 @@ model YjsAppDocument {
 
   document            Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userYjsAppDocuments UserYjsAppDocument[]
+  yjsUpdates          YjsUpdate[]
 }
 
 model UserYjsAppDocument {
@@ -75,6 +77,7 @@ model UserYjsAppDocument {
 
   yjsAppDocument YjsAppDocument @relation(fields: [yjsAppDocumentId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  yjsUpdates     YjsUpdate[]
 
   @@id([yjsAppDocumentId, userId])
 }
@@ -588,4 +591,23 @@ model ReusableComponent {
   updatedAt  DateTime              @default(now()) @updatedAt
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model YjsUpdate {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  update     Bytes
+  clock      Int
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  yjsDocumentId String?   @db.Uuid
+  yjsDocument   YjsDocument? @relation(fields: [yjsDocumentId], references: [id], onDelete: Cascade)
+
+  yjsAppDocumentId String?   @db.Uuid
+  yjsAppDocument   YjsAppDocument? @relation(fields: [yjsAppDocumentId], references: [id], onDelete: Cascade)
+
+  userYjsAppDocumentYjsAppDocumentId String? @db.Uuid
+  userYjsAppDocumentUserId           String? @db.Uuid
+  userYjsAppDocument UserYjsAppDocument? @relation(fields: [userYjsAppDocumentYjsAppDocumentId, userYjsAppDocumentUserId], references: [yjsAppDocumentId, userId], onDelete: Cascade)
 }

@@ -77,6 +77,26 @@ services:
     volumes:
       - ./data/mysql/ecommerce/data:/var/lib/mysql
 
+  api-nginx:
+    image: nginx:1.27
+    command: /bin/sh -c "/generate-nginx-config.sh && nginx -g 'daemon off;'"
+    ports:
+      - '8080:8080'
+    environment:
+      MULTI_INSTANCE: ${MULTI_INSTANCE:-false}
+    volumes:
+      - type: bind
+        source: ./dev/nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        volume:
+          nocopy: true
+      - type: bind
+        source: ./dev/nginx/generate-nginx-config.sh
+        target: /generate-nginx-config.sh
+        volume:
+          nocopy: true
+    restart: always
+
 volumes:
   postgres_dev_data:
   ecommerce_data:

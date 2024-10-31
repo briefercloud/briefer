@@ -1,7 +1,6 @@
 // adapted from: https://github.com/yjs/y-websocket/tree/master/bin
 
 import { LRUCache } from 'lru-cache'
-import pAll from 'p-all'
 import * as Y from 'yjs'
 import qs from 'querystring'
 import cookie from 'cookie'
@@ -18,6 +17,8 @@ import prisma, {
   Document,
   ApiUser,
   getDocument,
+  subscribe,
+  publish,
 } from '@briefer/database'
 import { decoding, encoding } from 'lib0'
 import { logger } from '../../logger.js'
@@ -248,20 +249,16 @@ export function setupYJSSocketServerV2(
             { docsCount: docs.size },
             '[shutdown] Waiting for YJS docs to close'
           )
-          await pAll(
-            Array.from(docs.values()).map((doc) => async () => {
-              await doc.persist(false)
-              if (doc.conns.size > 0) {
-                doc.conns.forEach((_, conn) => {
-                  closeConn(doc, conn)
-                })
-              } else if (doc.canCollect()) {
-                doc.destroy()
-                docs.delete(doc.id)
-              }
-            }),
-            { concurrency: 10 }
-          )
+          for (const doc of docs.values()) {
+            if (doc.conns.size > 0) {
+              doc.conns.forEach((_, conn) => {
+                closeConn(doc, conn)
+              })
+            } else if (doc.canCollect()) {
+              doc.destroy()
+              docs.delete(doc.id)
+            }
+          }
           await new Promise((resolve) => setTimeout(resolve, 200))
         }
 
@@ -313,33 +310,13 @@ function startDocumentCollection() {
         logger().trace({ docId }, 'Checking if doc can be collected')
         if (doc.canCollect()) {
           logger().trace({ docId }, 'Doc can be collected')
-          queue.add(async () => {
-            if (!doc.canCollect()) {
-              logger().trace(
-                { docId },
-                'Doc was referenced again, collectiong aborted'
-              )
-              return
-            }
-
-            logger().trace({ docId }, 'Persisting doc state')
-            await doc.persist(false)
-            if (!doc.canCollect()) {
-              logger().trace(
-                { docId },
-                'Doc was referenced again while persisting, collection aborted'
-              )
-              return
-            }
-
-            docs.delete(docId)
-            if (!docsCache.has(docId)) {
-              // only destroy if the doc is not in cache
-              doc.destroy()
-            }
-            logger().trace({ docId }, 'Doc collected')
-            collected++
-          })
+          docs.delete(docId)
+          if (!docsCache.has(docId)) {
+            // only destroy if the doc is not in cache
+            doc.destroy()
+          }
+          logger().trace({ docId }, 'Doc collected')
+          collected++
         }
       }
 
@@ -429,10 +406,75 @@ export class WSSharedDocV2 {
     )
   }
 
-  public init() {
-    this.ydoc.on('update', this.updateHandler)
+  private getPubSubChannel() {
+    return `yjs-updates-${this.id}`
+  }
+
+  public async init() {
+    await subscribe(this.getPubSubChannel(), this.handleForeignUpdate)
+
+    this.ydoc.on('update', (update, arg1, arg2, tr) =>
+      this.updateHandler(update, tr)
+    )
     this.awareness.on('update', this.awarenessHandler)
     this.observer.start()
+  }
+
+  private handleForeignUpdate = async (message?: string) => {
+    logger().trace(
+      {
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+      },
+      'Handling foreign update'
+    )
+
+    if (!message) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+        },
+        'Received empty message from foreign update'
+      )
+      return
+    }
+
+    const id = uuidSchema.safeParse(message)
+    if (!id.success) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          err: id.error,
+        },
+        'Received invalid message from foreign update'
+      )
+      return
+    }
+
+    const update = await prisma().yjsUpdate.findUnique({
+      where: {
+        id: id.data,
+      },
+    })
+    if (!update) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          updateId: id.data,
+        },
+        'Could not find foreign update in database'
+      )
+      return
+    }
+
+    Y.applyUpdate(this.ydoc, update.update)
   }
 
   public async replaceState(state: Uint8Array | Buffer): Promise<void> {
@@ -539,23 +581,6 @@ export class WSSharedDocV2 {
     this.ydoc.destroy()
   }
 
-  public async persist(cleanHistory: boolean) {
-    await this.serialUpdatesQueue.add(async () => {
-      if (cleanHistory) {
-        const result = await this.persistor.cleanHistory(this)
-
-        this.reset(result.ydoc, result.clock, result.byteLength)
-        await broadcastDocument(
-          this.socketServer,
-          this.workspaceId,
-          this.documentId
-        )
-      }
-
-      this.byteLength = await this.persistor.persist(this)
-    })
-  }
-
   private get refs() {
     return this.conns.size + this.updating
   }
@@ -579,12 +604,40 @@ export class WSSharedDocV2 {
     return this.byteLength
   }
 
-  private updateHandler = async (update: Uint8Array) => {
+  private updateHandler = async (update: Uint8Array, tr: Y.Transaction) => {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     syncProtocol.writeUpdate(encoder, update)
     const message = encoding.toUint8Array(encoder)
     this.conns.forEach((_, conn) => send(this, conn, message))
+
+    // only call this when the update originates from this connection
+    if ('user' in tr.origin) {
+      try {
+        const updateId = await this.persistor.persistUpdate(this, update)
+        await publish(this.getPubSubChannel(), updateId)
+        logger().trace(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            updateId,
+          },
+          'Published Yjs update'
+        )
+      } catch (err) {
+        logger().error(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            err,
+          },
+          'Failed to persist Yjs update'
+        )
+        throw err
+      }
+    }
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
 
@@ -731,7 +784,7 @@ export class WSSharedDocV2 {
       loadStateResult,
       persistor
     )
-    doc.init()
+    await doc.init()
     return doc
   }
 }
@@ -1070,7 +1123,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? doc.userAppClock[user.id] ?? doc.appClock
+          ? (doc.userAppClock[user.id] ?? doc.appClock)
           : doc.clock
 
         if (dbClock !== clock) {

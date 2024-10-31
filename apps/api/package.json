@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node ./dist/index.js",
-    "dev": "nodemon",
+    "dev": "node nodemon.js",
     "build": "tsc",
     "test": "jest"
   },

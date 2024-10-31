@@ -1,5 +1,0 @@
-{
-  "watch": ["src", ".env", "package.json"],
-  "ext": "ts",
-  "exec": "node --max-old-space-size=16384 --inspect --loader ts-node/esm ./src/index.ts | pino-pretty"
-}

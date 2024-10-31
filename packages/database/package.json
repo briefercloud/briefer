@@ -13,6 +13,7 @@
     "@aws-sdk/rds-signer": "^3.465.0",
     "@briefer/types": "*",
     "@prisma/client": "^5.4.2",
+    "pg": "^8.13.1",
     "prisma": "^5.4.2",
     "zod": "^3.23.8"
   },
