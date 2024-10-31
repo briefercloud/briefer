@@ -53,6 +53,8 @@ def briefer_make_sqlalchemy_query():
     import json
     from psycopg2.errors import QueryCanceled
     import time
+    from datetime import datetime
+    from datetime import timedelta
 
     print(json.dumps({"type": "log", "message": "Starting SQLAlchemy query"}))
 
@@ -193,6 +195,33 @@ def briefer_make_sqlalchemy_query():
                     print(json.dumps(result, ensure_ascii=False, default=str))
                     last_emitted_at = now
 
+            duration_ms = None
+            # query trino to get query execution time
+            if ${JSON.stringify(dataSourceType)} == "trino":
+                start_time = datetime.now()
+
+                with engine.connect() as conn:
+                    while datetime.now() - start_time < timedelta(seconds=5):
+                        try:
+                            execution_time_query = f"""
+                            SELECT created, "end"
+                            FROM system.runtime.queries
+                            WHERE query LIKE '%{job_id}%'
+                            """
+                            result = conn.execute(text(execution_time_query)).fetchone()
+                            if not result[1]:
+                                print(json.dumps({"type": "log", "message": f"Query execution time not available yet"}))
+                                time.sleep(0.2)
+                                continue
+
+                            time_span = result[1] - result[0]
+                            duration_ms = int(time_span.total_seconds() * 1000)
+                            break
+                        except Exception as e:
+                            print(json.dumps({"type": "log", "message": f"Failed to get query execution time: {str(e)}"}))
+                            break
+
+
             # make sure .briefer directory exists
             os.makedirs('/home/jupyteruser/.briefer', exist_ok=True)
 
@@ -217,7 +246,8 @@ def briefer_make_sqlalchemy_query():
                 "type": "success",
                 "rows": rows,
                 "columns": columns,
-                "count": count
+                "count": count,
+                "durationMs": duration_ms,
             }
             print(json.dumps(result, ensure_ascii=False, default=str))
         finally:
