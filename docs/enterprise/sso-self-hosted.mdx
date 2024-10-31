@@ -18,7 +18,7 @@ Assuming you already have an IdP set up, you can configure Briefer to use it by 
 - `OIDC_CLIENT_ID` is the client ID that Briefer will use to authenticate with your IdP.
   Please use a confidential client so that a client secret is available.
 - `OIDC_CLIENT_SECRET` is the client secret for the client whose ID is specified in `OIDC_CLIENT_ID`.
-- `OIDC_REDIRECT_TIMEOUT` is the time in seconds that Briefer will wait for the user to authenticate with the IdP. The default is 1 hour.
+- `OIDC_REDIRECT_TIMEOUT` is the time that Briefer will wait for the user to authenticate with the IdP. The default is `1h` (1 hour), but you can set it to `Xm` (minutes) or `Xs` (seconds) too.
   <Info>
   This timeout determines the time-to-live of the cookies necessary for the SSO flow.
   </Info>
