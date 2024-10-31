@@ -1,3 +1,4 @@
+import * as dfns from 'date-fns'
 import Ansi from '@cocalc/ansi-to-react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import PageButtons from '@/components/PageButtons'
@@ -23,6 +24,18 @@ import {
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
+
+function formatMs(ms: number) {
+  if (ms < 1000) {
+    return `${ms}ms`
+  }
+
+  if (ms < 60000) {
+    return `${(ms / 1000).toFixed(2)}s`
+  }
+
+  return `${(ms / 60000).toFixed(2)}m`
+}
 
 interface Props {
   blockId: string
@@ -342,6 +355,8 @@ function SQLSuccess(props: SQLSuccessProps) {
 
             <span>
               {props.result.count} {props.result.count === 1 ? 'row' : 'rows'}
+              {typeof props.result.durationMs === 'number' &&
+                ` · ${formatMs(props.result.durationMs)}`}
             </span>
           </div>
         )}

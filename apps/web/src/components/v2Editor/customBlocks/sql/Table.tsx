@@ -53,7 +53,7 @@ function Table(props: Props) {
                   >
                     {typeof cell === 'object'
                       ? JSON.stringify(cell)
-                      : cell.toString()}
+                      : cell?.toString()}
                   </td>
                 )
               })}

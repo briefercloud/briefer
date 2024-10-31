@@ -311,6 +311,7 @@ export const SuccessRunQueryResult = z.object({
   columns: z.array(DataFrameColumn),
   rows: z.array(z.record(z.string(), Json)),
   count: z.number(),
+  durationMs: z.number().optional(),
 })
 export type SuccessRunQueryResult = z.infer<typeof SuccessRunQueryResult>
 
