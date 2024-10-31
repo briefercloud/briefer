@@ -234,12 +234,10 @@ function PrivateDocumentPageInner(
         )}
         <span className="w-full truncate">
           <span className="font-semibold">
-            {props.isApp ? (
+            {props.isApp || props.user.roles[props.workspaceId] === 'viewer' ? (
               <span className="text-ceramic-500">Viewing</span>
-            ) : props.user.roles[props.workspaceId] === 'viewer' ? (
-              'Viewing'
             ) : (
-              'Editing'
+              <span className="text-ceramic-500">Editing</span>
             )}
           </span>{' '}
           {documentTitle}
