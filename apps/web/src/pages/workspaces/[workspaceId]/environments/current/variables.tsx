@@ -21,6 +21,7 @@ import EnvBar from '@/components/EnvBar'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { useRouter } from 'next/router'
 import Files from '@/components/Files'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -60,6 +61,7 @@ function errorToMessage(error: ErrorType): string {
 }
 
 export default function EnvirontVariablesPage() {
+  const session = useSession()
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
   const [saving, setSaving] = useState(false)
@@ -240,6 +242,7 @@ export default function EnvirontVariablesPage() {
           onHide={() => setFilesOpen(false)}
         />
         <EnvBar
+          isViewer={session.data?.roles[workspaceId] === 'viewer'}
           onOpenFiles={onToggleFilesOpen}
           publishedAt={null}
           lastUpdatedAt={null}
