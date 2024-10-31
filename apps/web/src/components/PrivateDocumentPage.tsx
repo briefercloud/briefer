@@ -237,7 +237,7 @@ function PrivateDocumentPageInner(
             {props.isApp || props.user.roles[props.workspaceId] === 'viewer' ? (
               <span className="text-ceramic-500">Viewing</span>
             ) : (
-              <span className="text-ceramic-500">Editing</span>
+              'Editing'
             )}
           </span>{' '}
           {documentTitle}
