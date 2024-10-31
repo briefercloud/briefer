@@ -393,6 +393,14 @@ export type VisualizationStringFilterSingleValueOperator = z.infer<
   typeof VisualizationStringFilterSingleValueOperator
 >
 
+export const VisualizationOperatorWithoutValue = z.union([
+  z.literal('isNull'),
+  z.literal('isNotNull'),
+])
+export type VisualizationOperatorWithoutValue = z.infer<
+  typeof VisualizationOperatorWithoutValue
+>
+
 export const VisualizationStringFilterMultiValuesOperator = z.union([
   z.literal('in'),
   z.literal('notIn'),
@@ -737,6 +745,10 @@ export function isInvalidVisualizationFilter(
       .success
   ) {
     return !Array.isArray(filter.value) || filter.value.length === 0
+  }
+
+  if (VisualizationOperatorWithoutValue.safeParse(filter.operator).success) {
+    return false
   }
 
   return (
