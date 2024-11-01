@@ -336,6 +336,7 @@ def briefer_make_athena_query():
                 "rows": json.loads(df.head(250).to_json(orient='records', date_format="iso")),
                 "columns": get_columns_result(columns),
                 "count": len(df),
+                "durationMs": query_status.get("QueryExecution", {}).get("Statistics", {}).get("TotalExecutionTimeInMillis", None),
             }
             print(json.dumps(result, ensure_ascii=False, default=str))
 
