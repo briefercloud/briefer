@@ -101,6 +101,7 @@ api:
     postgresPort: 5432
     postgresDatabase: briefer
     aiApiUrl: http://ai:8080
+    allowHttp: 'false'
 
   secrets:
     postgresUsername: postgres

@@ -44,7 +44,7 @@ spec:
         {{- end }}
         livenessProbe:
           exec:
-            command: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+            command: ['sh', '-c', 'curl -f http://localhost:8888/api || exit 1']
           initialDelaySeconds: 5
           periodSeconds: 5
           failureThreshold: 5
