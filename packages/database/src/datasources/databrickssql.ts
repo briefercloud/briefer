@@ -2,14 +2,14 @@ import { DatabricksSQLDataSource as PrismaDatabricksSQLDataSource } from '@prism
 
 import { DataSource } from './index.js'
 import prisma from '../index.js'
-import { decrypt, encrypt } from './crypto.js'
+import { encrypt } from './crypto.js'
 
 export type DatabricksSQLDataSource = Omit<
   PrismaDatabricksSQLDataSource,
   | 'createdAt'
   | 'updatedAt'
   | 'lastConnection'
-  | 'password'
+  | 'token'
   | 'structure'
   | 'dataSourceSchemaId'
 > & {
@@ -28,7 +28,6 @@ function toDatabricksSQLDataSource(
     http_path: pdataSource.isDemo ? '' : pdataSource.http_path,
     catalog: pdataSource.isDemo ? '' : pdataSource.catalog,
     schema: pdataSource.isDemo ? '' : pdataSource.schema,
-    token: pdataSource.isDemo ? '' : pdataSource.token,
     notes: pdataSource.notes,
     workspaceId: pdataSource.workspaceId,
     isDemo: pdataSource.isDemo,
