@@ -320,7 +320,7 @@ export default function Layout({
       />
 
       {isSideBarOpen && (
-        <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-scroll border-r border-gray-200">
+        <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-auto border-r border-gray-200">
           <div className="flex items-center justify-between pt-4 px-5">
             <span className="font-trap tracking-tight font-semibold text-2xl antialiased text-gray-800">
               briefer

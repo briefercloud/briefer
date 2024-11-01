@@ -16,7 +16,7 @@ export default function TableDetails(props: Props) {
       <div className="relative flex px-4 py-2 text-xs font-medium border-b bg-gray-50 text-gray-600 items-center justify-between font-mono group w-full gap-x-1.5">
         <Columns3Icon className="h-3 w-3 text-gray-500" />
         <div className="pr-2 flex-grow overflow-x-hidden">
-          <h4 className="overflow-x-scroll">{props.tableName}</h4>
+          <h4 className="overflow-x-auto">{props.tableName}</h4>
         </div>
         <button
           onMouseEnter={() => setHovering(true)}
@@ -40,7 +40,7 @@ export default function TableDetails(props: Props) {
               >
                 <div className="pr-2 flex-grow overflow-x-hidden">
                   {/* TODO we need to figure out all possible type names to select appropriate icons every time */}
-                  <h5 className="font-mono text-xs text-gray-600 overflow-x-scroll">
+                  <h5 className="font-mono text-xs text-gray-600 overflow-x-auto">
                     {column.name}
                   </h5>
                 </div>

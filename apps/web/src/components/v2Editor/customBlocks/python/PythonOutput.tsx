@@ -82,7 +82,7 @@ export function PythonOutputs(props: Props) {
           key={i}
           className={clsx(
             ['plotly'].includes(output.type) ? 'flex-grow' : '',
-            'bg-white overflow-x-scroll'
+            'bg-white overflow-x-auto'
           )}
         >
           <PythonOutput
