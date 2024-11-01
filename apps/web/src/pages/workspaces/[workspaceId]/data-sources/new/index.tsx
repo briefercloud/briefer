@@ -32,10 +32,10 @@ const DataSourceBlock = ({ name, icon, href }: DataSourceBlockProps) => {
   return (
     <Link
       href={href}
-      className="py-5 px-6 w-36 h-36 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
+      className="py-5 px-3 w-32 h-32 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
     >
-      <img src={icon} alt="" className="h-16 w-16" />
-      <span className="text-md">{name}</span>
+      <img src={icon} alt="" className="h-12 w-12" />
+      <span className="text-sm">{name}</span>
     </Link>
   )
 }
@@ -111,9 +111,9 @@ export default function DataSourcesPage() {
 
             <button
               onClick={onToggleFiles}
-              className="py-5 px-6 w-36 h-36 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
+              className="py-5 px-3 w-32 h-32 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
             >
-              <img src="/icons/csv.png" alt="" className="h-16 w-16" />
+              <img src="/icons/csv.png" alt="" className="h-12 w-12" />
               <span className="text-md">Files</span>
             </button>
           </div>

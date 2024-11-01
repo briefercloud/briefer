@@ -46,11 +46,12 @@ export default function DatabricksSQLForm({
       <div className="space-y-12">
         <div className="border-b border-gray-900/10 pb-8">
           <h2 className="text-lg font-semibold leading-7 text-gray-900">
-            {databricksSQLDataSource ? 'Edit' : 'New'} Databricks SQL data source
+            {databricksSQLDataSource ? 'Edit' : 'New'} Databricks SQL data
+            source
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-500">
-            {databricksSQLDataSource ? 'Edit' : 'Add'} a Databricks SQL database for
-            Briefer to pull data from. Our fixed IP address is {''}
+            {databricksSQLDataSource ? 'Edit' : 'Add'} a Databricks SQL database
+            for Briefer to pull data from. Our fixed IP address is {''}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
               {GATEWAY_IP()}
             </code>
@@ -83,7 +84,7 @@ export default function DatabricksSQLForm({
               </div>
             </div>
 
-            <div className="col-span-4">
+            <div className="col-span-10">
               <label
                 htmlFor="hostname"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -108,7 +109,7 @@ export default function DatabricksSQLForm({
               </div>
             </div>
 
-            <div className="col-span-3">
+            <div className="col-span-5">
               <label
                 htmlFor="http_path"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -133,7 +134,7 @@ export default function DatabricksSQLForm({
               </div>
             </div>
 
-            <div className="col-span-3">
+            <div className="col-span-5">
               <label
                 htmlFor="token"
                 className="block text-sm font-medium leading-6 text-gray-900"
@@ -158,41 +159,40 @@ export default function DatabricksSQLForm({
               </div>
             </div>
 
-              <div className="col-span-5">
-                <label
-                  htmlFor="catalog"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Catalog
-                </label>
-                <div className="mt-2">
-                  <input
-                    {...register('catalog', { required:  false })}
-                    type="text"
-                    name="catalog"
-                    placeholder="hive_metastore"
-                    className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                  />
-                </div>
+            <div className="col-span-5">
+              <label
+                htmlFor="catalog"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Catalog
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register('catalog', { required: false })}
+                  type="text"
+                  name="catalog"
+                  placeholder="hive_metastore"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
               </div>
+            </div>
 
-              <div className="col-span-5">
-                <label
-                  htmlFor="schema"
-                  className="block text-sm font-medium leading-6 text-gray-900"
-                >
-                  Schema
-                </label>
-                <div className="mt-2">
-                  <input
-                    {...register('schema', { required:  false })}
-                    type="text"
-                    name="schema"
-                    placeholder="default"
-                    className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                  />
-                </div>
-
+            <div className="col-span-5">
+              <label
+                htmlFor="schema"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Schema
+              </label>
+              <div className="mt-2">
+                <input
+                  {...register('schema', { required: false })}
+                  type="text"
+                  name="schema"
+                  placeholder="default"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+              </div>
             </div>
             <div className="col-span-full">
               <label
