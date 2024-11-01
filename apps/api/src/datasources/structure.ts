@@ -31,6 +31,7 @@ import { getTrinoSchema } from '../python/query/trino.js'
 import { getSnowflakeSchema } from '../python/query/snowflake.js'
 import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
+import { getDatabricksSQLSchema } from '../python/query/databrickssql.js'
 import { PythonExecutionError } from '../python/index.js'
 import { getSqlServerSchema } from './sqlserver.js'
 import { z } from 'zod'
@@ -129,6 +130,14 @@ async function getV2FromCache(
     case 'snowflake':
       encrypted = (
         await prisma().snowflakeDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select: { structure: true },
+        })
+      ).structure
+      break
+    case 'databrickssql':
+      encrypted = (
+        await prisma().databricksSQLDataSource.findUniqueOrThrow({
           where: { id: dataSourceId },
           select: { structure: true },
         })
@@ -280,6 +289,12 @@ async function assignDataSourceSchemaId(
         data: { dataSourceSchemaId: dbSchema.id },
       })
       return dbSchema.id
+    case 'databrickssql':
+      await prisma().databricksSQLDataSource.update({
+        where: { id: dataSourceId },
+        data: { dataSourceSchemaId: dbSchema.id },
+      })
+      return dbSchema.id
   }
 }
 
@@ -359,6 +374,14 @@ async function getFromCache(
     case 'snowflake':
       schema = (
         await prisma().snowflakeDataSource.findUniqueOrThrow({
+          where: { id: dataSourceId },
+          select,
+        })
+      ).dataSourceSchema
+      break
+    case 'databrickssql':
+      schema = (
+        await prisma().databricksSQLDataSource.findUniqueOrThrow({
           where: { id: dataSourceId },
           select,
         })
@@ -579,6 +602,13 @@ async function _refreshDataSourceStructure(
         break
       case 'snowflake':
         await getSnowflakeSchema(
+          dataSource.config.data,
+          config().DATASOURCES_ENCRYPTION_KEY,
+          onTable
+        )
+        break
+      case 'databrickssql':
+        await getDatabricksSQLSchema(
           dataSource.config.data,
           config().DATASOURCES_ENCRYPTION_KEY,
           onTable

@@ -13,6 +13,7 @@
     "@briefer/database": "*",
     "@briefer/editor": "*",
     "@briefer/types": "*",
+    "@databricks/sql": "^1.8.4",
     "@grpc/grpc-js": "^1.11.1",
     "@jupyterlab/services": "^7.1.1",
     "@kubernetes/client-node": "^0.20.0",

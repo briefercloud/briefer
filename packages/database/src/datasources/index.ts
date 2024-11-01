@@ -11,6 +11,7 @@ import * as trino from './trino.js'
 import * as sqlserver from './sqlserver.js'
 import * as snowflake from './snowflake.js'
 import { DataSourceStructureStateV3 } from '@briefer/types'
+import * as databrickssql from './databrickssql.js'
 import { z } from 'zod'
 
 export * from './bigquery.js'
@@ -23,6 +24,8 @@ export * from './sqlserver.js'
 export * from './crypto.js'
 export * from './trino.js'
 export * from './snowflake.js'
+export * from './databrickssql.js'
+
 export { DataSourceSchema, DataSourceSchemaTable } from '@prisma/client'
 
 export type BigQueryDataSource = bq.BigQueryDataSource
@@ -34,6 +37,7 @@ export type MySQLDataSource = mysql.MySQLDataSource
 export type TrinoDataSource = trino.TrinoDataSource
 export type SQLServerDataSource = sqlserver.SQLServerDataSource
 export type SnowflakeDataSource = snowflake.SnowflakeDataSource
+export type DatabricksSQLDataSource = databrickssql.DatabricksSQLDataSource
 
 export type DataSource =
   | { type: 'psql'; data: PostgreSQLDataSource }
@@ -45,6 +49,7 @@ export type DataSource =
   | { type: 'trino'; data: TrinoDataSource }
   | { type: 'sqlserver'; data: SQLServerDataSource }
   | { type: 'snowflake'; data: SnowflakeDataSource }
+  | { type: 'databrickssql'; data: DatabricksSQLDataSource }
 
 export type DataSourceType = DataSource['type']
 
@@ -58,6 +63,7 @@ export const DataSourceType = z.enum([
   'sqlserver',
   'trino',
   'snowflake',
+  'databrickssql',
 ] as const)
 
 // Ensure Zod enum stays in sync with `DataSourceType`
@@ -87,6 +93,7 @@ export async function listDataSources(
     sqlserver.listSQLServerDataSources(workspaceId),
     trino.listTrinoDataSources(workspaceId),
     snowflake.listSnowflakeDataSources(workspaceId),
+    databrickssql.listDatabricksSQLDataSources(workspaceId),
   ])
 
   return dbs.reduce((acc, cur) => acc.concat(cur), [])
@@ -152,6 +159,12 @@ export async function getDatasource(
         .then((data): DataSource | null =>
           data ? { type: 'snowflake', data } : null
         )
+    case 'databrickssql':
+      return databrickssql
+        .getDatabricksSQLDataSource(workspaceId, id)
+        .then((data): DataSource | null =>
+          data ? { type: 'databrickssql', data } : null
+        )
   }
 }
 
@@ -216,6 +229,13 @@ export async function getDatasourcePassword(
           select: { password: true },
         })
         .then((row) => decrypt(row.password, encryptionKey))
+    case 'databrickssql':
+      return prisma()
+        .databricksSQLDataSource.findFirstOrThrow({
+          where: { id: datasource.data.id },
+          select: { token: true },
+        })
+        .then((row) => decrypt(row.token, encryptionKey))
   }
 }
 
@@ -311,6 +331,12 @@ export async function getDatabaseURL(
       )
       return `snowflake://${ds.data.user}:${password}@${ds.data.account}.${ds.data.region}/${ds.data.database}?warehouse=${ds.data.warehouse}`
     }
+    case 'databrickssql': {
+      const token = encodeURIComponent(
+        await getDatasourcePassword(ds, encryptionKey)
+      )
+      return `databricks://token:${token}@${ds.data.hostname}?http_path=${ds.data.http_path}&catalog=${ds.data.catalog}&schema=${ds.data.schema}`
+    }
   }
 }
 
@@ -366,6 +392,8 @@ export async function getCredentialsInfo(
       }
     }
     case 'snowflake':
+      return null
+    case 'databrickssql':
       return null
   }
 }

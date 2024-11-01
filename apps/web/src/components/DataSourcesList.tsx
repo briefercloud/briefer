@@ -27,6 +27,8 @@ export const dataSourcePrettyName = (t: DataSourceType): string => {
       return 'Trino'
     case 'snowflake':
       return 'Snowflake'
+    case 'databrickssql':
+      return 'Databricks SQL'
   }
 }
 
@@ -50,6 +52,8 @@ export const databaseImages = (t: DataSourceType): string => {
       return '/icons/trino.png'
     case 'snowflake':
       return '/icons/snowflake.png'
+    case 'databrickssql':
+      return '/icons/databrickssql.png'
   }
 }
 
@@ -74,6 +78,8 @@ const databaseUrl = (ds: DataSource): string => {
         return 'trino://demodb'
       case 'snowflake':
         return 'snowflake://demodb'
+      case 'databrickssql':
+        return 'databricks://demodb'
     }
   } else {
     switch (ds.type) {
@@ -98,6 +104,8 @@ const databaseUrl = (ds: DataSource): string => {
         )
       case 'snowflake':
         return `snowflake://${ds.data.account}/${ds.data.database}?warehouse=${ds.data.warehouse}`
+      case 'databrickssql':
+        return `databricks://token:dapi*****@${ds.data.hostname}?http_path=${ds.data.http_path}`
     }
   }
 }

@@ -29,6 +29,7 @@ function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
     case 'oracle':
     case 'trino':
     case 'athena':
+    case 'databrickssql':
       return StandardSQL
     case 'mysql':
       return MySQL

@@ -12,6 +12,7 @@ import {
   createTrinoDataSource,
   createSQLServerDataSource,
   createSnowflakeDataSource,
+  createDatabricksSQLDataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -110,6 +111,18 @@ const dataSourcePayload = z.union([
       database: z.string().min(1),
       region: z.string().min(1),
       host: z.string().optional(),
+      notes: z.string(),
+    }),
+  }),
+  z.object({
+    type: z.literal('databrickssql'),
+    data: z.object({
+      name: z.string().min(1),
+      hostname: z.string().min(1),
+      http_path: z.string().min(1),
+      token: z.string().min(1),
+      catalog: z.string(),
+      schema: z.string(),
       notes: z.string(),
     }),
   }),
@@ -288,6 +301,22 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             dsRes = { type: 'snowflake', data: ds }
             break
           }
+          case 'databrickssql': {
+            const payload = {
+              ...data.data,
+              workspaceId,
+              connStatus: 'offline' as const,
+              connError: JSON.stringify(neverPingedError),
+              lastConnection: null,
+            }
+
+            const ds = await createDatabricksSQLDataSource(
+              payload,
+              config().DATASOURCES_ENCRYPTION_KEY
+            )
+            dsRes = { type: 'databrickssql', data: ds }
+            break
+          }
         }
 
         return dsRes
@@ -302,6 +331,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           case 'athena':
           case 'sqlserver':
           case 'snowflake':
+          case 'databrickssql':
           case 'trino':
             return null
           case 'oracle': {
@@ -386,6 +416,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         getDatasource(workspaceId, dataSourceId, 'sqlserver'),
         getDatasource(workspaceId, dataSourceId, 'trino'),
         getDatasource(workspaceId, dataSourceId, 'snowflake'),
+        getDatasource(workspaceId, dataSourceId, 'databrickssql'),
       ])
     ).find((e) => e !== null)
 
