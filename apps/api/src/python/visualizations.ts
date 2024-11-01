@@ -780,7 +780,7 @@ def _briefer_create_visualization(
             x_axis_type,
             x_axis_group_func,
             x_axis_sort,
-            y_axis['name'],
+            y_axis.get('name', None),
             series['column']['name'],
             series['column']['type'],
             series['aggregateFunction'],
