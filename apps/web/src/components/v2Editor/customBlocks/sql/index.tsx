@@ -235,7 +235,14 @@ function SQLBlock(props: Props) {
           )
         }
     }
-  }, [execStatus, source, lastQuery, lastQueryTime, startQueryTime, envStatus])
+  }, [
+    execStatus,
+    source.toJSON(),
+    lastQuery,
+    lastQueryTime,
+    startQueryTime,
+    envStatus,
+  ])
 
   const onSubmitEditWithAI = useCallback(() => {
     requestSQLEditWithAI(props.block)

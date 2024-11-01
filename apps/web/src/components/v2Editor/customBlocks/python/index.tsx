@@ -161,7 +161,14 @@ function PythonBlock(props: Props) {
     }
 
     return null
-  }, [status, lastQuery, lastQueryTime, source, envStatus])
+  }, [
+    status,
+    startQueryTime,
+    lastQuery,
+    lastQueryTime,
+    source.toJSON(),
+    envStatus,
+  ])
 
   const isCodeHidden = props.block.getAttribute('isCodeHidden')
   const isResultHidden = props.block.getAttribute('isResultHidden')
