@@ -140,13 +140,17 @@ function PythonBlock(props: Props) {
 
   const { source } = getPythonAttributes(props.block)
   const lastQuery = props.block.getAttribute('lastQuery')
+  const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
+
   const queryStatusText = useMemo(() => {
     if (status === 'running' || status === 'running-suggestion') {
       if (envStatus === 'Starting') {
         return <LoadingEnvText />
       } else {
-        return <ExecutingPythonText />
+        return (
+          <ExecutingPythonText startExecutionTime={startQueryTime ?? null} />
+        )
       }
     }
 
@@ -157,7 +161,14 @@ function PythonBlock(props: Props) {
     }
 
     return null
-  }, [status, lastQuery, lastQueryTime, source, envStatus])
+  }, [
+    status,
+    startQueryTime,
+    lastQuery,
+    lastQueryTime,
+    source.toJSON(),
+    envStatus,
+  ])
 
   const isCodeHidden = props.block.getAttribute('isCodeHidden')
   const isResultHidden = props.block.getAttribute('isResultHidden')

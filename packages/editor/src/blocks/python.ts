@@ -34,6 +34,7 @@ export type PythonBlock = BaseBlock<BlockType.Python> & {
   isCodeHidden: boolean
   lastQuery: string
   lastQueryTime: string
+  startQueryTime: string
   editWithAIPrompt: Y.Text
   isEditWithAIPromptOpen: boolean
   aiSuggestions: Y.Text | null
@@ -61,6 +62,7 @@ export const makePythonBlock = (
     isCodeHidden: false,
     lastQuery: '',
     lastQueryTime: '',
+    startQueryTime: '',
     editWithAIPrompt: new Y.Text(''),
     isEditWithAIPromptOpen: false,
     aiSuggestions: null,
@@ -87,6 +89,7 @@ export function getPythonAttributes(
     isCodeHidden: getAttributeOr(block, 'isCodeHidden', false),
     lastQuery: getAttributeOr(block, 'lastQuery', ''),
     lastQueryTime: getAttributeOr(block, 'lastQueryTime', ''),
+    startQueryTime: getAttributeOr(block, 'startQueryTime', ''),
     editWithAIPrompt: getPythonBlockEditWithAIPrompt(block),
     isEditWithAIPromptOpen: isPythonBlockEditWithAIPromptOpen(block),
     aiSuggestions: getPythonAISuggestions(block),
@@ -110,6 +113,7 @@ export function duplicatePythonBlock(
     isCodeHidden: options?.noState ? false : prevAttributes.isCodeHidden,
     lastQuery: options?.noState ? '' : prevAttributes.lastQuery,
     lastQueryTime: options?.noState ? '' : prevAttributes.lastQueryTime,
+    startQueryTime: options?.noState ? '' : prevAttributes.startQueryTime,
     editWithAIPrompt: options?.noState
       ? new Y.Text()
       : duplicateYText(prevAttributes.editWithAIPrompt),

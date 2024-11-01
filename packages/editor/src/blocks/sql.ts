@@ -42,6 +42,7 @@ export type SQLBlock = BaseBlock<BlockType.SQL> & {
   result: RunQueryResult | null
   lastQuery: string | null
   lastQueryTime: string | null
+  startQueryTime: string | null
   isCodeHidden: boolean
   isResultHidden: boolean
   editWithAIPrompt: Y.Text
@@ -80,6 +81,7 @@ export const makeSQLBlock = (
     result: null,
     lastQuery: null,
     lastQueryTime: null,
+    startQueryTime: null,
     isCodeHidden: false,
     isResultHidden: false,
     editWithAIPrompt: new Y.Text(''),
@@ -115,6 +117,7 @@ export function getSQLAttributes(
     result: getAttributeOr(block, 'result', null),
     lastQuery: getAttributeOr(block, 'lastQuery', null),
     lastQueryTime: getAttributeOr(block, 'lastQueryTime', null),
+    startQueryTime: getAttributeOr(block, 'startQueryTime', null),
     isCodeHidden: getAttributeOr(block, 'isCodeHidden', false),
     isResultHidden: getAttributeOr(block, 'isResultHidden', false),
     editWithAIPrompt: getSQLBlockEditWithAIPrompt(block),
@@ -154,6 +157,7 @@ export function duplicateSQLBlock(
     result: options?.noState ? null : clone(prevAttributes.result),
     lastQuery: options?.noState ? null : prevAttributes.lastQuery,
     lastQueryTime: options?.noState ? null : prevAttributes.lastQueryTime,
+    startQueryTime: options?.noState ? null : prevAttributes.startQueryTime,
     isCodeHidden: options?.noState ? false : prevAttributes.isCodeHidden,
     isResultHidden: options?.noState ? false : prevAttributes.isResultHidden,
     editWithAIPrompt: options?.noState

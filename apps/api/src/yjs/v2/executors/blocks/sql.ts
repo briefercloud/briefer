@@ -175,6 +175,8 @@ export class SQLExecutor implements ISQLExecutor {
 
       await this.executionQueue.add(
         async ({ signal }) => {
+          block.setAttribute('startQueryTime', new Date().toISOString())
+
           logger().trace(
             {
               workspaceId: this.workspaceId,
