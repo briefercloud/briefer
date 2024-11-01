@@ -230,10 +230,12 @@ function SQLBlock(props: Props) {
         if (envStatus === 'Starting') {
           return <LoadingEnvText />
         } else {
-          return <LoadingQueryText startExecutionTime={startQueryTime} />
+          return (
+            <LoadingQueryText startExecutionTime={startQueryTime ?? null} />
+          )
         }
     }
-  }, [execStatus, lastQuery, lastQueryTime, source, envStatus])
+  }, [execStatus, source, lastQuery, lastQueryTime, startQueryTime, envStatus])
 
   const onSubmitEditWithAI = useCallback(() => {
     requestSQLEditWithAI(props.block)

@@ -4,9 +4,10 @@ import {
   CloudArrowDownIcon,
   Cog8ToothIcon,
 } from '@heroicons/react/20/solid'
+import { useEffect, useState } from 'react'
 
 type StartExecutionStatusTextProps = {
-  startExecutionTime: string
+  startExecutionTime: string | null
 }
 
 type LastExecutedStatusTextProps = {
@@ -30,12 +31,27 @@ export const QuerySucceededText = ({
 export const LoadingQueryText = ({
   startExecutionTime,
 }: StartExecutionStatusTextProps) => {
+  const [showStartTime, setShowStartTime] = useState(false)
+  useEffect(() => {
+    if (startExecutionTime) {
+      const interval = setInterval(() => {
+        setShowStartTime(true)
+      }, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [startExecutionTime])
+
   return (
     <span className="font-syne text-gray-400 text-xs flex items-center select-none">
       <CloudArrowDownIcon className="w-4 h-4 mr-1" />
       <span className="pt-0.5">
-        Executing query, started at{' '}
-        {format(new Date(startExecutionTime), "h:mm a 'on' do MMM, yyyy")}
+        Executing query
+        {showStartTime && startExecutionTime
+          ? ` since ${format(
+              new Date(startExecutionTime),
+              'h:mm a - do MMM, yyyy'
+            )}...`
+          : '...'}
       </span>
     </span>
   )
@@ -53,12 +69,27 @@ export const LoadingEnvText = () => {
 export const ExecutingPythonText = ({
   startExecutionTime,
 }: StartExecutionStatusTextProps) => {
+  const [showStartTime, setShowStartTime] = useState(false)
+  useEffect(() => {
+    if (startExecutionTime) {
+      const interval = setInterval(() => {
+        setShowStartTime(true)
+      }, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [startExecutionTime])
+
   return (
     <span className="font-syne text-gray-400 text-xs flex items-center select-none">
       <CloudArrowDownIcon className="w-4 h-4 mr-1" />
       <span className="pt-0.5">
-        Executing Python code, started at{' '}
-        {format(new Date(startExecutionTime), "h:mm a 'on' do MMM, yyyy")}
+        Executing Python code
+        {showStartTime && startExecutionTime
+          ? ` since ${format(
+              new Date(startExecutionTime),
+              'h:mm a - do MMM, yyyy'
+            )}...`
+          : '...'}
       </span>
     </span>
   )
