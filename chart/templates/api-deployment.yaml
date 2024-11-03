@@ -178,6 +178,9 @@ spec:
             - name: YJS_DOCS_CACHE_SIZE_MB
               value: '{{ .Values.api.env.yjsDocsCacheSizeMB | default "1024" }}'
 
+            - name: ALLOW_HTTP
+              value: '{{ .Values.api.env.allowHttp | default "false" }}'
+
           readinessProbe:
             httpGet:
               path: /readyz
