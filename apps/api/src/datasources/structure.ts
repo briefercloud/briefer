@@ -205,7 +205,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
+        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
     },
   })
 
@@ -430,7 +430,7 @@ async function getFromCache(
       }
     }
     case 'success': {
-      if (!schema.finishedAt || !schema.defaultSchema) {
+      if (!schema.finishedAt || schema.defaultSchema === null) {
         return null
       }
 
