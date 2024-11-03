@@ -1,3 +1,4 @@
+import { createAdapter } from '@socket.io/postgres-adapter'
 import http from 'http'
 import { config } from '../config/index.js'
 import { sessionFromCookies } from '../auth/token.js'
@@ -8,6 +9,7 @@ import {
   ApiDocument,
   APIReusableComponent,
   EnvironmentStatus,
+  getPGPool,
 } from '@briefer/database'
 import {
   Comment,
@@ -107,10 +109,20 @@ type Server = {
   shutdown: () => Promise<void>
 }
 
-export function createSocketServer(server: http.Server): Server {
+export async function createSocketServer(server: http.Server): Promise<Server> {
   const io: IOServer = new BaseServer(server, {
     cors: { credentials: true, origin: config().FRONTEND_URL },
   })
+
+  const pgPool = await getPGPool()
+  io.adapter(
+    createAdapter(pgPool, {
+      tableName: 'socket_io_attachments',
+      errorHandler: (err) => {
+        logger().error({ err }, 'Error in @socket.io/postgres-adapter adapter')
+      },
+    })
+  )
 
   io.use(async (socket: Socket, next) => {
     try {

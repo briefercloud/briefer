@@ -58,20 +58,23 @@ export async function recoverFromNotFound<A>(
   }
 }
 
-let pgClient: pg.Client | null = null
+let pgInstance: { pubSubClient: pg.PoolClient; pool: pg.Pool } | null = null
 let subscribers: Record<string, Set<(message?: string) => void>> = {}
-async function getPGClient(): Promise<pg.Client> {
+export async function getPGInstance(): Promise<{
+  pubSubClient: pg.PoolClient
+  pool: pg.Pool
+}> {
   if (!connectionString) {
     throw new Error(`Access db before calling init()`)
   }
 
-  if (pgClient) {
-    return pgClient
+  if (pgInstance) {
+    return pgInstance
   }
 
-  pgClient = new pg.Client({ connectionString })
-  await pgClient.connect()
-  pgClient.on('notification', (notification) => {
+  const pgPool = new pg.Pool({ connectionString })
+  const pubSubClient = await pgPool.connect()
+  pubSubClient.on('notification', (notification) => {
     const subs = subscribers[notification.channel]
     if (!subs) {
       return
@@ -82,21 +85,23 @@ async function getPGClient(): Promise<pg.Client> {
     })
   })
 
-  return pgClient
+  pgInstance = { pubSubClient, pool: pgPool }
+
+  return pgInstance
 }
 
 export async function subscribe(
   channel: string,
   onNotification: (message?: string) => void
 ): Promise<() => Promise<void>> {
-  const client = await getPGClient()
+  const { pubSubClient } = await getPGInstance()
   const subs = subscribers[channel]
   if (subs) {
     subs.add(onNotification)
   } else {
     subscribers[channel] = new Set([onNotification])
     try {
-      await client.query(`LISTEN ${JSON.stringify(channel)}`)
+      await pubSubClient.query(`LISTEN ${JSON.stringify(channel)}`)
     } catch (e) {
       subscribers[channel].delete(onNotification)
       throw e
@@ -110,15 +115,19 @@ export async function subscribe(
     }
 
     if (subs.size === 1) {
-      await client.query(`UNLISTEN ${JSON.stringify(channel)}`)
+      await pubSubClient.query(`UNLISTEN ${JSON.stringify(channel)}`)
     }
     subs.delete(onNotification)
   }
 }
 
+export async function getPGPool(): Promise<pg.Pool> {
+  return (await getPGInstance()).pool
+}
+
 export async function publish(channel: string, message: string): Promise<void> {
-  const client = await getPGClient()
-  await client.query('SELECT pg_notify($1, $2)', [channel, message])
+  const { pubSubClient } = await getPGInstance()
+  await pubSubClient.query('SELECT pg_notify($1, $2)', [channel, message])
 }
 
 export default prisma

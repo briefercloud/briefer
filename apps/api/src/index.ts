@@ -52,7 +52,7 @@ async function main() {
   const server = http.createServer(app)
 
   let shutdownFunctions: (() => Promise<void> | void)[] = []
-  const socketServer = createSocketServer(server)
+  const socketServer = await createSocketServer(server)
   shutdownFunctions.push(() => socketServer.shutdown())
 
   const stopSchedules = await runSchedule(socketServer.io)
