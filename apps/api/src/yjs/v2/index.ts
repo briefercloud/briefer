@@ -612,7 +612,7 @@ export class WSSharedDocV2 {
     this.conns.forEach((_, conn) => send(this, conn, message))
 
     // only call this when the update originates from this connection
-    if ('user' in tr.origin) {
+    if (tr.origin && 'user' in tr.origin) {
       try {
         const updateId = await this.persistor.persistUpdate(this, update)
         await publish(this.getPubSubChannel(), updateId)
