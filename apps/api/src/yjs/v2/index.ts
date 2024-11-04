@@ -1,5 +1,6 @@
 // adapted from: https://github.com/yjs/y-websocket/tree/master/bin
 
+import { v4 as uuidv4 } from 'uuid'
 import { LRUCache } from 'lru-cache'
 import * as Y from 'yjs'
 import qs from 'querystring'
@@ -48,7 +49,7 @@ import {
   getRunAll,
 } from '@briefer/editor'
 import { UserNotebookEvents } from '../../events/user.js'
-import { uuidSchema } from '@briefer/types'
+import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 
 type Role = UserWorkspaceRole
@@ -376,6 +377,8 @@ export class WSSharedDocV2 {
   private persistor: Persistor
   private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
   private byteLength: number = 0
+  private publisherId: string
+  private subscription?: () => Promise<void>
 
   private constructor(
     id: string,
@@ -404,6 +407,7 @@ export class WSSharedDocV2 {
       this,
       events
     )
+    this.publisherId = uuidv4()
   }
 
   private getPubSubChannel() {
@@ -411,25 +415,19 @@ export class WSSharedDocV2 {
   }
 
   public async init() {
-    await subscribe(this.getPubSubChannel(), this.handleForeignUpdate)
+    this.subscription = await subscribe(
+      this.getPubSubChannel(),
+      this.onSubMessage
+    )
 
-    this.ydoc.on('update', (update, arg1, arg2, tr) =>
+    this.ydoc.on('update', (update, _arg1, _arg2, tr) =>
       this.updateHandler(update, tr)
     )
     this.awareness.on('update', this.awarenessHandler)
     this.observer.start()
   }
 
-  private handleForeignUpdate = async (message?: string) => {
-    logger().trace(
-      {
-        id: this.id,
-        documentId: this.documentId,
-        workspaceId: this.workspaceId,
-      },
-      'Handling foreign update'
-    )
-
+  private onSubMessage = async (message?: string) => {
     if (!message) {
       logger().error(
         {
@@ -437,28 +435,43 @@ export class WSSharedDocV2 {
           documentId: this.documentId,
           workspaceId: this.workspaceId,
         },
-        'Received empty message from foreign update'
+        'Received empty sub message'
       )
       return
     }
 
-    const id = uuidSchema.safeParse(message)
-    if (!id.success) {
+    const parsedMessage = jsonString
+      .pipe(z.object({ publisherId: uuidSchema, message: uuidSchema }))
+      .safeParse(message)
+    if (!parsedMessage.success) {
       logger().error(
         {
           id: this.id,
           documentId: this.documentId,
           workspaceId: this.workspaceId,
-          err: id.error,
+          err: parsedMessage.error,
         },
-        'Received invalid message from foreign update'
+        'Received invalid sub message'
       )
       return
     }
 
+    if (parsedMessage.data.publisherId === this.publisherId) {
+      return
+    }
+
+    logger().trace(
+      {
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+      },
+      'Handling foreign sub message'
+    )
+
     const update = await prisma().yjsUpdate.findUnique({
       where: {
-        id: id.data,
+        id: parsedMessage.data.message,
       },
     })
     if (!update) {
@@ -467,7 +480,7 @@ export class WSSharedDocV2 {
           id: this.id,
           documentId: this.documentId,
           workspaceId: this.workspaceId,
-          updateId: id.data,
+          updateId: parsedMessage.data.message,
         },
         'Could not find foreign update in database'
       )
@@ -612,10 +625,13 @@ export class WSSharedDocV2 {
     this.conns.forEach((_, conn) => send(this, conn, message))
 
     // only call this when the update originates from this connection
-    if (tr.origin && 'user' in tr.origin) {
+    if (tr.local || (tr.origin && 'user' in tr.origin)) {
       try {
         const updateId = await this.persistor.persistUpdate(this, update)
-        await publish(this.getPubSubChannel(), updateId)
+        await publish(
+          this.getPubSubChannel(),
+          JSON.stringify({ publisherId: this.publisherId, message: updateId })
+        )
         logger().trace(
           {
             id: this.id,
