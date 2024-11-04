@@ -1,6 +1,11 @@
 import * as Y from 'yjs'
 import { useCallback, useEffect, useRef } from 'react'
-import { Annotation, ChangeSpec, EditorState } from '@codemirror/state'
+import {
+  Annotation,
+  ChangeSpec,
+  Compartment,
+  EditorState,
+} from '@codemirror/state'
 import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { basicSetup } from 'codemirror'
@@ -162,6 +167,12 @@ function brieferKeyMaps(cbs: {
   ]
 }
 
+const sqlCompartment = new Compartment()
+const pythonCompartment = new Compartment()
+const readonlyCompartment = new Compartment()
+const themeCompartment = new Compartment()
+const keymapsCompartment = new Compartment()
+
 interface Props {
   workspaceId: string
   documentId: string
@@ -202,24 +213,28 @@ export function CodeEditor(props: Props) {
 
     function getExtensions(source: Y.Text, disabled: boolean) {
       return [
-        ...brieferKeyMaps({
-          onBlur: editorAPI.blur,
-          onEditWithAI: props.onEditWithAI,
-          onRun: props.onRun,
-          onRunSelectNext,
-          onRunInsertBlock,
-        }),
+        keymapsCompartment.of(
+          brieferKeyMaps({
+            onBlur: editorAPI.blur,
+            onEditWithAI: props.onEditWithAI,
+            onRun: props.onRun,
+            onRunSelectNext,
+            onRunInsertBlock,
+          })
+        ),
         basicSetup,
         EditorView.lineWrapping,
         ...(props.language === 'python'
-          ? [python]
+          ? [pythonCompartment.of(python)]
           : props.language === 'sql'
-          ? [sql]
+          ? [sqlCompartment.of(sql)]
           : []),
         keymap.of(vscodeKeymap),
-        EditorState.readOnly.of(props.disabled || props.readOnly),
+        readonlyCompartment.of(
+          EditorState.readOnly.of(props.disabled || props.readOnly)
+        ),
         createTextSync(source),
-        materialLight(disabled),
+        themeCompartment.of(materialLight(disabled)),
       ]
     }
 
@@ -324,17 +339,116 @@ export function CodeEditor(props: Props) {
     } else {
       viewRef.current = initializeEditorView(editorRef.current)
     }
+  }, [viewRef, mergeRef, props.source, props.diff, props.language, editorRef])
+
+  useEffect(() => {
+    const effect = sqlCompartment.reconfigure(sql)
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+      return
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+      mergeRef.current.view.b.dispatch({
+        effects: effect,
+      })
+    }
+  }, [sql])
+
+  useEffect(() => {
+    const effect = pythonCompartment.reconfigure(python)
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+      return
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+      mergeRef.current.view.b.dispatch({
+        effects: effect,
+      })
+    }
+  }, [python])
+
+  useEffect(() => {
+    const effect = readonlyCompartment.reconfigure(
+      EditorState.readOnly.of(props.disabled || props.readOnly)
+    )
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+      return
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+      mergeRef.current.view.b.dispatch({
+        effects: effect,
+      })
+    }
+  }, [props.disabled, props.readOnly])
+
+  useEffect(() => {
+    const effect = themeCompartment.reconfigure(materialLight(props.disabled))
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+      mergeRef.current.view.b.dispatch({
+        effects: effect,
+      })
+    }
+  }, [props.disabled])
+
+  useEffect(() => {
+    const effect = keymapsCompartment.reconfigure(
+      brieferKeyMaps({
+        onBlur: editorAPI.blur,
+        onEditWithAI: props.onEditWithAI,
+        onRun: props.onRun,
+        onRunSelectNext,
+        onRunInsertBlock,
+      })
+    )
+
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+      mergeRef.current.view.b.dispatch({
+        effects: effect,
+      })
+    }
   }, [
-    viewRef,
-    mergeRef,
-    props.source,
-    props.diff,
-    props.language,
-    props.readOnly,
-    editorRef,
-    sql,
-    python,
-    props.disabled,
+    editorAPI.blur,
+    props.onEditWithAI,
+    props.onRun,
+    onRunSelectNext,
+    onRunInsertBlock,
   ])
 
   useEffect(() => {
