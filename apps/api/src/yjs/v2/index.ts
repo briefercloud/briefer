@@ -256,7 +256,7 @@ export function setupYJSSocketServerV2(
                 closeConn(doc, conn)
               })
             } else if (doc.canCollect()) {
-              doc.destroy()
+              await doc.destroy()
               docs.delete(doc.id)
             }
           }
@@ -589,7 +589,8 @@ export class WSSharedDocV2 {
     return getRunAll(this.ydoc)
   }
 
-  public destroy() {
+  public async destroy() {
+    await this.subscription?.()
     this.observer.stop()
     this.ydoc.destroy()
   }
