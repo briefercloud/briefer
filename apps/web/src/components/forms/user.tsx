@@ -1,4 +1,3 @@
-import { UserWorkspaceRole } from '@briefer/database'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -9,7 +8,7 @@ import Spin from '../Spin'
 export const UserFormValues = z.object({
   name: z.string(),
   email: z.string(),
-  role: z.nativeEnum(UserWorkspaceRole),
+  role: z.enum(['viewer', 'editor', 'admin']),
 })
 
 export type UserFormValues = z.infer<typeof UserFormValues>
@@ -118,9 +117,9 @@ export default function UserForm({ workspaceId, onSubmit }: UserFormProps) {
                   required
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 >
-                  <option value={UserWorkspaceRole.viewer}>Viewer</option>
-                  <option value={UserWorkspaceRole.editor}>Editor</option>
-                  <option value={UserWorkspaceRole.admin}>Admin</option>
+                  <option value={'viewer'}>Viewer</option>
+                  <option value={'editor'}>Editor</option>
+                  <option value={'admin'}>Admin</option>
                 </select>
                 <FormError msg={formState.errors.role?.message} />
               </div>

@@ -8,7 +8,7 @@ import React, { useMemo, useState } from 'react'
 import Layout from '@/components/Layout'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useSession } from '@/hooks/useAuth'
-import { ApiWorkspace, UserWorkspaceRole } from '@briefer/database'
+import type { ApiWorkspace } from '@briefer/database'
 import clsx from 'clsx'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useUsers } from '@/hooks/useUsers'
@@ -50,7 +50,7 @@ export default function SettingsPage() {
     newOpenAIKey: '',
   })
 
-  const isAdmin = session.data?.roles[workspaceId] === UserWorkspaceRole.admin
+  const isAdmin = session.data?.roles[workspaceId] === 'admin'
   const [workspaces, { updateSettings }] = useWorkspaces()
   const currentWorkspace: ApiWorkspace | undefined = useMemo(
     () => workspaces.data.find((w) => w.id === workspaceId),
