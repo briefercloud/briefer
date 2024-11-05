@@ -8,6 +8,7 @@ import TableDetails from './TableDetails'
 import type { APIDataSource, DataSource } from '@briefer/database'
 import { DataSourceColumn, DataSourceSchema } from '@briefer/types'
 import { SchemaInfo } from './SchemaInfo'
+import ScrollBar from '../ScrollBar'
 
 interface Props {
   dataSource: APIDataSource
@@ -67,7 +68,7 @@ export default function TableList(props: Props) {
           />
         </button>
 
-        <div className="text-xs text-gray-500 font-mono overflow-x-hidden overflow-y-scroll flex-grow">
+        <ScrollBar className="text-xs text-gray-500 font-mono overflow-x-hidden overflow-y-auto flex-grow">
           <SchemaInfo
             dataSource={props.dataSource}
             onRetrySchema={props.onRetrySchema}
@@ -82,16 +83,19 @@ export default function TableList(props: Props) {
                 >
                   <Grid3x3Icon className="text-gray-400 min-h-4 min-w-4 h-4 w-4" />
                   <div className="pr-2 flex-grow overflow-x-hidden">
-                    <h4 className="overflow-x-scroll" title={table.name}>
+                    <ScrollBar
+                      className="overflow-auto horizontal-only whitespace-nowrap"
+                      title={table.name}
+                    >
                       {table.name}
-                    </h4>
+                    </ScrollBar>
                   </div>
                   <ChevronRightIcon className="h-3 w-3 text-gray-500" />
                 </li>
               )
             })}
           </ul>
-        </div>
+        </ScrollBar>
       </div>
       {props.selectedTable && (
         <TableDetails

@@ -9,6 +9,7 @@ import TrinoForm, { TrinoDataSourceInput } from '@/components/forms/trino'
 import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -52,9 +53,9 @@ export default function NewDataSourceTrinoPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId)} hideOnboarding>
-      <div className="w-full overflow-scroll">
+      <ScrollBar className="w-full overflow-auto">
         <TrinoForm workspaceId={workspaceId} onSubmit={onSubmit} />
-      </div>
+      </ScrollBar>
     </Layout>
   )
 }

@@ -179,7 +179,7 @@ function DashboardControls(props: Props) {
         <ChevronDoubleRightIcon className="w-3 h-3" />
       </button>
 
-      <ScrollBar className="bg-white border-l border-gray-200 overflow-y-scroll relative h-full pt-6 pb-20 px-4 flex flex-col space-y-6">
+      <div className="bg-white border-l border-gray-200 overflow-y-auto relative h-full pt-6 pb-20 px-4 flex flex-col space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="font-syne text-lg font-medium text-gray-900">
             Blocks
@@ -192,16 +192,18 @@ function DashboardControls(props: Props) {
             <span>Add heading</span>
           </button>
         </div>
-        <BlocksList
-          document={props.document}
-          list={blocksList}
-          dataSources={props.dataSources}
-          dataframes={dataframes.value}
-          blocks={blocks.value}
-          layout={layout.value}
-          onDragStart={props.onDragStart}
-        />
-      </ScrollBar>
+        <ScrollBar className="overflow-auto">
+          <BlocksList
+            document={props.document}
+            list={blocksList}
+            dataSources={props.dataSources}
+            dataframes={dataframes.value}
+            blocks={blocks.value}
+            layout={layout.value}
+            onDragStart={props.onDragStart}
+          />
+        </ScrollBar>
+      </div>
     </div>
   )
 }

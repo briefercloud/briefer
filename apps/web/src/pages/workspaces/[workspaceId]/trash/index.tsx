@@ -10,6 +10,7 @@ import Layout from '@/components/Layout'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useDocuments } from '@/hooks/useDocuments'
 import { ApiDeletedDocument } from '@briefer/database'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -50,7 +51,7 @@ export default function TrashPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId ?? '')}>
-      <div className="w-full bg-white h-full overflow-scroll">
+      <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -69,7 +70,7 @@ export default function TrashPage() {
             />
           )}
         </div>
-      </div>
+      </ScrollBar>
     </Layout>
   )
 }

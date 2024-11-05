@@ -18,6 +18,7 @@ import copy from 'copy-to-clipboard'
 import { PortalTooltip } from '@/components/Tooltips'
 import useResettableState from '@/hooks/useResettableState'
 import { UserRoundCheck } from 'lucide-react'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -67,9 +68,9 @@ export default function NewUserPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId)}>
-      <div className="w-full overflow-scroll">
+      <ScrollBar className="w-full overflow-auto">
         <UserForm workspaceId={workspaceId} onSubmit={onSubmit} />
-      </div>
+      </ScrollBar>
       <PasswordDialog
         user={user}
         onClose={onClosePasswordDialog}

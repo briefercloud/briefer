@@ -24,7 +24,9 @@ function useDropdownPosition(
 
     if (currentButtonRef) {
       const buttonRect = currentButtonRef.getBoundingClientRect()
-      const scrollableAncestor = currentButtonRef.closest('.overflow-scroll')
+      const scrollableAncestor =
+        currentButtonRef.closest('.overflow-scroll') ??
+        currentButtonRef.closest('.overflow-auto')
 
       if (scrollableAncestor) {
         const scrollableRect = scrollableAncestor.getBoundingClientRect()

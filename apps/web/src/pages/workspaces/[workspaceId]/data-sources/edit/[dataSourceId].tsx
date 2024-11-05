@@ -27,8 +27,9 @@ import SnowflakeForm, {
   SnowflakeDataSourceInput,
 } from '@/components/forms/snowflake'
 import DatabricksSQLForm, {
-  DatabricksSQLDataSourceInput
+  DatabricksSQLDataSourceInput,
 } from '@/components/forms/databrickssql'
+import ScrollBar from '@/components/ScrollBar'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -93,7 +94,7 @@ export default function EditDataSourcePostgresSQLPage() {
 
   return (
     <Layout pagePath={pagePath} hideOnboarding>
-      <div className="w-full overflow-scroll">
+      <ScrollBar className="w-full overflow-auto">
         {data && data.config.type === 'psql' ? (
           <PostgreSQLForm
             workspaceId={workspaceId}
@@ -155,7 +156,7 @@ export default function EditDataSourcePostgresSQLPage() {
             databricksSQLDataSource={data.config.data}
           />
         ) : null}
-      </div>
+      </ScrollBar>
     </Layout>
   )
 }

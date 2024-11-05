@@ -106,7 +106,7 @@ function Profile(props: Props) {
   return (
     <Layout pagePath={pagePath}>
       <div className="w-full flex justify-center">
-        <div className="w-full overflow-scroll">
+        <div className="w-full scrollable-div">
           <form
             className="px-4 sm:p-6 lg:p-12"
             onSubmit={handleSubmit(onSubmitHandler)}

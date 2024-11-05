@@ -62,7 +62,7 @@ const MonthDaySelector = (props: WeekdaySelectorProps) => {
           >
             <Menu.Items
               static
-              className="absolute w-56 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none  max-h-56 overflow-y-scroll"
+              className="absolute w-56 mt-2 origin-top-right bg-white border border-gray-200 divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none  max-h-56 overflow-y-auto"
             >
               <div className="px-1 py-1">
                 {monthDays.map((day, dayIndex) => (

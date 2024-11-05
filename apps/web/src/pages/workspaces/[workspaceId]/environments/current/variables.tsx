@@ -22,6 +22,7 @@ import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { useRouter } from 'next/router'
 import Files from '@/components/Files'
 import { useSession } from '@/hooks/useAuth'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -164,7 +165,7 @@ export default function EnvirontVariablesPage() {
   return (
     <Layout pagePath={pagePath(workspaceId)}>
       <div className="flex flex-col flex-grow h-full">
-        <div className="w-full bg-white h-full overflow-scroll">
+        <ScrollBar className="w-full bg-white h-full overflow-auto">
           <div className="px-4 sm:p-6 lg:p-8">
             <div className="border-b border-gray-200 pb-4">
               <h2 className="text-lg font-semibold leading-7 text-gray-900">
@@ -235,7 +236,7 @@ export default function EnvirontVariablesPage() {
               </div>
             </form>
           </div>
-        </div>
+        </ScrollBar>
         <Files
           workspaceId={workspaceId}
           visible={filesOpen}

@@ -305,3 +305,9 @@ body {
     display: none !important;
   }
 }
+
+.simplebar-horizontal-only {
+  .simplebar-track.simplebar-vertical {
+    display: none !important;
+  }
+}

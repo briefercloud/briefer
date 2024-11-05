@@ -187,7 +187,7 @@ const RichTextBlock = (props: Props) => {
       }}
       className={clsx(
         'ring-outline ring-offset-4',
-        props.isDashboard ? 'px-4 py-3 h-full overflow-y-scroll' : '',
+        props.isDashboard ? 'px-4 py-3 h-full overflow-y-auto' : '',
         {
           'ring-1 ring-ceramic-400':
             editor?.isFocused &&

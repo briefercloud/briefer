@@ -11,6 +11,7 @@ import {
   WeeklyScheduleFields,
 } from './ScheduleFields'
 import { Tooltip } from '../Tooltips'
+import ScrollBar from '../ScrollBar'
 
 interface ScheduleConfigFormProps {
   onClose: () => void
@@ -48,7 +49,7 @@ function ScheduleConfigForm({
         </button>
       </div>
 
-      <div className="sm:px-4 xl:px-6 py-6 flex-1 flex flex-col overflow-y-scroll">
+      <ScrollBar className="sm:px-4 xl:px-6 py-6 flex-1 flex flex-col overflow-y-auto">
         <div className="flex flex-col space-y-2">
           <div>
             <label
@@ -154,7 +155,7 @@ function ScheduleConfigForm({
             </div>
           </div>
         </div>
-      </div>
+      </ScrollBar>
 
       <div className="flex bg-white px-2 py-4 justify-end space-x-2 sm:px-4 xl:px-6">
         <button

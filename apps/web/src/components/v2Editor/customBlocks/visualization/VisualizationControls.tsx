@@ -26,6 +26,7 @@ import YAxisPicker from './YAxisPicker'
 import VisualizationToggle from './VisualizationToggle'
 import { PortalTooltip } from '@/components/Tooltips'
 import { sortWith, ascend, GT } from 'ramda'
+import ScrollBar from '@/components/ScrollBar'
 
 interface Props {
   isHidden: boolean
@@ -349,9 +350,9 @@ function VisualizationControls(props: Props) {
   )
 
   return (
-    <div
+    <ScrollBar
       className={clsx(
-        'h-full relative shadow-[2px_0_5px_-4px_#888] overflow-y-scroll',
+        'h-full relative shadow-[2px_0_5px_-4px_#888] overflow-y-auto',
         props.isHidden ? 'w-0' : 'w-1/3 border-r border-gray-200'
       )}
     >
@@ -662,7 +663,7 @@ function VisualizationControls(props: Props) {
           )}
         </div>
       </div>
-    </div>
+    </ScrollBar>
   )
 }
 

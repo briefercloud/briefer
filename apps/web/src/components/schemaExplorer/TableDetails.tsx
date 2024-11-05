@@ -1,6 +1,7 @@
 import { Columns3Icon } from 'lucide-react'
 import { XIcon } from 'lucide-react'
 import { useState } from 'react'
+import ScrollBar from '../ScrollBar'
 
 type Props = {
   tableName: string
@@ -30,7 +31,7 @@ export default function TableDetails(props: Props) {
         </button>
       </div>
 
-      <div className="text-xs text-gray-500 font-mono overflow-y-scroll flex-grow">
+      <ScrollBar className="text-xs text-gray-500 font-mono overflow-y-auto flex-grow">
         <ul className="flex flex-col">
           {props.columns.map((column) => {
             return (
@@ -51,7 +52,7 @@ export default function TableDetails(props: Props) {
             )
           })}
         </ul>
-      </div>
+      </ScrollBar>
     </div>
   )
 }
