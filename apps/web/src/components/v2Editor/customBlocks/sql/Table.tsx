@@ -26,7 +26,7 @@ function Table(props: Props) {
   // Calculate minimum column widths based on column names
   const columnWidths = useMemo(() => {
     return columnOrder.map(index => {
-      const columnName = props.columns[index].name
+      const columnName = props.columns[index].name as string
       return Math.max(MIN_COLUMN_WIDTH, columnName.length * CHAR_WIDTH_PX + COLUMN_PADDING_PX)
     })
   }, [columnOrder, props.columns])
@@ -95,7 +95,7 @@ function Table(props: Props) {
       const column = props.columns[columnOrder[columnIndex]]
       return (
         <ColumnHeaderCell
-          name={column.name}
+          name={column.name as string}
           className="bg-gray-50 px-4 py-2"
           nameRenderer={(name) => (
             <div className="font-semibold text-sm text-gray-900">
@@ -140,7 +140,6 @@ function Table(props: Props) {
         enableMultipleSelection={true}
         columnWidths={columnWidths}
         onColumnsReordered={handleColumnsReordered}
-        loadingOptions={TableLoadingOption.NONE}
         className="!w-full text-xs font-mono"
         cellRendererDependencies={[columnOrder]}
       >
@@ -149,7 +148,7 @@ function Table(props: Props) {
           return (
             <Column
               key={`${column.name}-${orderIndex}`}
-              name={column.name}
+              name={column.name as string}
               cellRenderer={(rowIndex) => cellRenderer(rowIndex, visibleIndex)}
               columnHeaderCellRenderer={() => columnHeaderRenderer(visibleIndex)}
             />

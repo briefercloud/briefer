@@ -223,12 +223,12 @@ function HTMLOutput(props: { output: PythonHTMLOutput }) {
             .map(td => td.textContent?.trim() ?? ''));
 
         // Convert to format expected by Table component
-        const columns = headers.map(name => ({ name, type: 'string' }));
+        const columns = headers.map(name => ({ name, type: 'string' as const }));
         const data = rows.map(row => 
           Object.fromEntries(headers.map((header, i) => [header, row[i]]))
         );
 
-        return <Table columns={columns} rows={data} />;
+        return <Table isDashboard={false} columns={columns} rows={data} />;
       }
     } catch (error) {
       console.error('Failed to parse DataFrame HTML:', error);
