@@ -37,6 +37,7 @@ model Document {
   reusableComponents ReusableComponent[]
 
   runUnexecutedBlocks Boolean @default(false)
+  runSQLSelection     Boolean @default(false)
 }
 
 model YjsDocument {

@@ -1,5 +1,4 @@
 import * as Y from 'yjs'
-import { useState } from 'react'
 import { Switch } from '@headlessui/react'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
 import { Transition } from '@headlessui/react'
@@ -55,6 +54,12 @@ export default function PageSettingsPanel(props: Props) {
               description="Whether Briefer should automatically run unexecuted preceding blocks when a block is executed."
               enabled={document?.runUnexecutedBlocks ?? false}
               onToggle={api.toggleRunUnexecutedBlocks}
+            />
+            <PageSettingToggle
+              name="Run selected SQL only"
+              description="Whether Briefer should only run selected code when a SQL block is executed."
+              enabled={document?.runSQLSelection ?? false}
+              onToggle={api.toggleRunSQLSelection}
             />
           </div>
         </div>

@@ -42,6 +42,7 @@ describe('SQLExecutor', () => {
       listDataSources: jest.fn(),
       listDataFrames: jest.fn(),
       editWithAI: jest.fn(),
+      documentHasRunSQLSelectionEnabled: jest.fn(),
     }
     events = {
       aiUsage: jest.fn(),

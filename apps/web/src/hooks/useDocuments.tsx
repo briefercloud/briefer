@@ -73,7 +73,8 @@ function upsertDocumentInMemory(
       clock: 0,
       appClock: 0,
       userAppClock: {},
-      runUnexecutedBlocks: true,
+      runUnexecutedBlocks: false,
+      runSQLSelection: false,
       hasDashboard: false,
     })
   }
@@ -206,7 +207,7 @@ type API = {
   ) => Promise<void>
   updateDocumentSettings: (
     id: string,
-    settings: { runUnexecutedBlocks: boolean }
+    settings: { runUnexecutedBlocks?: boolean; runSQLSelection?: boolean }
   ) => Promise<void>
   publish: (id: string) => Promise<void>
 }
@@ -738,7 +739,10 @@ export function useDocuments(workspaceId: string): UseDocuments {
   )
 
   const updateDocumentSettings = useCallback(
-    async (id: string, settings: { runUnexecutedBlocks: boolean }) => {
+    async (
+      id: string,
+      settings: { runUnexecutedBlocks?: boolean; runSQLSelection?: boolean }
+    ) => {
       const document = documents.find((doc) => doc.id === id)
       if (!document) {
         return
