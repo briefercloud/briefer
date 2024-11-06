@@ -161,7 +161,7 @@ export class PythonExecutor implements IPythonExecutor {
 
           await promise
           await this.updateDataFrames(blockId)
-
+ 
           block.setAttribute('status', 'idle')
           block.setAttribute(
             'lastQuery',

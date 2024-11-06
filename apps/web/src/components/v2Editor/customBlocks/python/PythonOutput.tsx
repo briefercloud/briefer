@@ -15,6 +15,7 @@ import useResettableState from '@/hooks/useResettableState'
 import { downloadFile } from '@/utils/file'
 import debounce from 'lodash.debounce'
 import { PythonBlock } from '@briefer/editor'
+import Table from '../sql/Table'  // Import your existing Table component
 
 interface Props {
   className?: string
@@ -204,33 +205,45 @@ export function PythonOutputWrapper(props: PythonOutputWrapperProps) {
 }
 
 function HTMLOutput(props: { output: PythonHTMLOutput }) {
-  const clean = useMemo(
-    () =>
-      getDomPurify().sanitize(props.output.html, {
-        ALLOWED_TAGS: [
-          'table',
-          'caption',
-          'tr',
-          'th',
-          'td',
-          'thead',
-          'tbody',
-          'tfoot',
-          'colgroup',
-          'col',
-        ],
-      }),
-    [props.output.html]
-  )
+  const html = props.output.html;
 
+  // Check if this is a pandas DataFrame table
+  if (html.includes('dataframe')) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const table = doc.querySelector('table.dataframe');
+      
+      if (table) {
+        const headers = Array.from(table.querySelectorAll('thead th'))
+          .map(th => th.textContent?.trim() ?? '');
+        
+        const rows = Array.from(table.querySelectorAll('tbody tr'))
+          .map(tr => Array.from(tr.querySelectorAll('td'))
+            .map(td => td.textContent?.trim() ?? ''));
+
+        // Convert to format expected by Table component
+        const columns = headers.map(name => ({ name, type: 'string' }));
+        const data = rows.map(row => 
+          Object.fromEntries(headers.map((header, i) => [header, row[i]]))
+        );
+
+        return <Table columns={columns} rows={data} />;
+      }
+    } catch (error) {
+      console.error('Failed to parse DataFrame HTML:', error);
+    }
+  }
+
+  // Default HTML rendering for non-DataFrame content
   return (
     <div
-      className="python-html-output printable-block"
-      dangerouslySetInnerHTML={{ __html: clean }}
+      dangerouslySetInnerHTML={{
+        __html: getDomPurify().sanitize(html),
+      }}
     />
-  )
+  );
 }
-
 const MAX_PIE_LABELS = 1000
 
 function PythonPlotOutput(props: {

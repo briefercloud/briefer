@@ -106,7 +106,7 @@ interface SQLSuccessProps {
 }
 function SQLSuccess(props: SQLSuccessProps) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const rowsPerPage = 50
+  const rowsPerPage = 250
   const totalPages = Math.ceil(props.result.count / rowsPerPage)
   const [pages, setPages] = useResettableState(
     () =>
@@ -362,6 +362,7 @@ function SQLSuccess(props: SQLSuccessProps) {
         )}
         {props.isResultHidden && props.dashboardMode === 'none' ? null : (
           <Table
+            key={currentPageIndex}
             rows={currentRows}
             columns={props.result.columns}
             isDashboard={props.dashboardMode !== 'none'}

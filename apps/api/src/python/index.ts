@@ -107,6 +107,27 @@ async function innerExecuteCode(
   onOutputs: (outputs: Output[]) => void,
   { storeHistory }: { storeHistory: boolean }
 ): Promise<void> {
+
+  const setupCode = `
+import pandas as pd
+# Display all rows
+pd.set_option('display.max_rows', None)
+# Display all columns
+pd.set_option('display.max_columns', None)
+# Don't wrap long strings
+pd.set_option('display.max_colwidth', None)
+
+# Override the DataFrame _repr_html_ method to exclude index
+def custom_repr_html(self):
+    return self.to_html(index=False)
+pd.DataFrame._repr_html_ = custom_repr_html
+`;
+  
+    const wrappedCode = `
+${setupCode}
+${code}
+`
+
   logger().trace(
     { workspaceId, sessionId },
     'Starting Jupyter for code execution.'
@@ -117,7 +138,7 @@ async function innerExecuteCode(
 
   const { kernel } = await getSession(workspaceId, sessionId)
   const future = kernel.requestExecute({
-    code,
+    code: wrappedCode,
     allow_stdin: true,
     store_history: storeHistory,
   })
@@ -130,6 +151,8 @@ async function innerExecuteCode(
   })
 
   future.onIOPub = (message) => {
+
+
     switch (message.header.msg_type) {
       case 'status':
         if ('execution_state' in message.content) {
