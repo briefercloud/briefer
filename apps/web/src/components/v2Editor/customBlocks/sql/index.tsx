@@ -9,7 +9,7 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Y from 'yjs'
 import {
   type SQLBlock,
@@ -114,6 +114,13 @@ function SQLBlock(props: Props) {
       props.block.setAttribute('isCodeHidden', !currentIsCodeHidden)
     })
   }, [props.block])
+
+  const onSQLSelectionChanged = useCallback(
+    (selectedCode: string | null) => {
+      props.block.setAttribute('selectedCode', selectedCode)
+    },
+    [props.block]
+  )
 
   const onRun = useCallback(() => {
     props.onRun(props.block)
@@ -531,6 +538,7 @@ function SQLBlock(props: Props) {
                 diff={aiSuggestions ?? undefined}
                 dataSourceId={dataSourceId}
                 disabled={statusIsDisabled}
+                onSelectionChanged={onSQLSelectionChanged}
               />
             </div>
           </div>

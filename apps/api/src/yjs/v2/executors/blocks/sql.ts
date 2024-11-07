@@ -9,7 +9,7 @@ import {
 } from '@briefer/editor'
 import PQueue from 'p-queue'
 import * as Y from 'yjs'
-import {
+import prisma, {
   getCredentialsInfo,
   getDatabaseURL,
   listDataSources,
@@ -94,6 +94,7 @@ export type SQLEffects = {
   listDataSources: typeof listDataSources
   listDataFrames: typeof listDataFrames
   editWithAI: typeof editWithAI
+  documentHasRunSQLSelectionEnabled: (id: string) => Promise<boolean>
 }
 
 type RunninQuery = {
@@ -106,7 +107,8 @@ export interface ISQLExecutor {
   runQuery(
     block: Y.XmlElement<SQLBlock>,
     tr: Y.Transaction,
-    isSuggestion: boolean
+    isSuggestion: boolean,
+    isRunAll: boolean
   ): Promise<void>
   abortQuery(block: Y.XmlElement<SQLBlock>): Promise<void>
   renameDataFrame(block: Y.XmlElement<SQLBlock>): Promise<void>
@@ -155,7 +157,8 @@ export class SQLExecutor implements ISQLExecutor {
   public async runQuery(
     block: Y.XmlElement<SQLBlock>,
     tr: Y.Transaction,
-    isSuggestion: boolean
+    isSuggestion: boolean,
+    isRunAll: boolean
   ) {
     this.events.sqlRun(EventContext.fromYTransaction(tr))
     const abortController = new AbortController()
@@ -186,8 +189,16 @@ export class SQLExecutor implements ISQLExecutor {
             'executing query'
           )
 
-          const { dataSourceId, dataframeName, isFileDataSource } =
-            getSQLAttributes(block, this.blocks)
+          const {
+            id: blockId,
+            aiSuggestions,
+            source,
+            configuration,
+            dataSourceId,
+            dataframeName,
+            isFileDataSource,
+            selectedCode,
+          } = getSQLAttributes(block, this.blocks)
           if ((!dataSourceId && !isFileDataSource) || !dataframeName) {
             return
           }
@@ -212,15 +223,17 @@ export class SQLExecutor implements ISQLExecutor {
 
           block.removeAttribute('result')
 
-          const {
-            id: blockId,
-            aiSuggestions,
-            source,
-            configuration,
-          } = getSQLAttributes(block, this.blocks)
-
-          const actualSource =
-            (isSuggestion ? aiSuggestions : source)?.toJSON()?.trim() ?? ''
+          let actualSource =
+            (isSuggestion ? aiSuggestions : source)?.toJSON().trim() ?? ''
+          if (!isRunAll && selectedCode) {
+            const hasRunSQLSelection =
+              await this.effects.documentHasRunSQLSelectionEnabled(
+                this.documentId
+              )
+            if (hasRunSQLSelection) {
+              actualSource = selectedCode.trim()
+            }
+          }
 
           let resultType: RunQueryResult['type'] | 'empty-query' = 'empty-query'
           if (actualSource !== '') {
@@ -552,6 +565,13 @@ export class SQLExecutor implements ISQLExecutor {
         listDataSources,
         listDataFrames,
         editWithAI,
+        documentHasRunSQLSelectionEnabled: (id: string) =>
+          prisma()
+            .document.findFirst({
+              where: { id },
+              select: { runSQLSelection: true },
+            })
+            .then((doc) => doc?.runSQLSelection ?? false),
       },
       events
     )

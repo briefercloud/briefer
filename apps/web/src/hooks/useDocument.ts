@@ -6,6 +6,7 @@ type API = {
   setIcon: (icon: string) => Promise<void>
   publish: () => Promise<void>
   toggleRunUnexecutedBlocks: () => Promise<void>
+  toggleRunSQLSelection: () => Promise<void>
 }
 
 type UseDocument = [
@@ -59,12 +60,34 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
     api.updateDocumentSettings,
   ])
 
+  const toggleRunSQLSelection = useCallback(async () => {
+    const newRunSQLSelection = !document?.runSQLSelection
+    try {
+      await api.updateDocumentSettings(documentId, {
+        runSQLSelection: newRunSQLSelection,
+      })
+    } catch (err) {
+      alert('Failed to update document settings')
+    }
+  }, [
+    workspaceId,
+    documentId,
+    document?.runSQLSelection,
+    api.updateDocumentSettings,
+  ])
+
   return useMemo(
     () => [
       { document, loading, publishing },
-      { setIcon, publish, toggleRunUnexecutedBlocks },
+      { setIcon, publish, toggleRunUnexecutedBlocks, toggleRunSQLSelection },
     ],
-    [loading, setIcon, publish, toggleRunUnexecutedBlocks]
+    [
+      loading,
+      setIcon,
+      publish,
+      toggleRunUnexecutedBlocks,
+      toggleRunSQLSelection,
+    ]
   )
 }
 

@@ -6,7 +6,8 @@ import prisma, { recoverFromNotFound } from '@briefer/database'
 import { broadcastDocument } from '../../../../../websocket/workspace/documents.js'
 
 const DocumentSettings = z.object({
-  runUnexecutedBlocks: z.boolean(),
+  runUnexecutedBlocks: z.boolean().optional(),
+  runSQLSelection: z.boolean().optional(),
 })
 
 export default function settingsRouter(socketServer: IOServer) {
@@ -21,13 +22,13 @@ export default function settingsRouter(socketServer: IOServer) {
       return
     }
 
-    const runUnexecutedBlocks = body.data.runUnexecutedBlocks
+    const { runUnexecutedBlocks, runSQLSelection } = body.data
 
     try {
       const doc = await recoverFromNotFound(
         prisma().document.update({
           where: { id: documentId },
-          data: { runUnexecutedBlocks },
+          data: { runUnexecutedBlocks, runSQLSelection },
         })
       )
       if (!doc) {

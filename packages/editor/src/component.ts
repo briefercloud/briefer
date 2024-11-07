@@ -55,6 +55,7 @@ type SQLComponentAttrs = Omit<
   | 'index'
   | 'type'
   | 'status'
+  | 'selectedCode'
   | 'result'
   | 'lastQuery'
   | 'lastQueryTime'

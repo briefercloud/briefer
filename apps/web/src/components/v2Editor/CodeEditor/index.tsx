@@ -17,6 +17,16 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useSQLExtension } from './sql'
 import { usePythonExtension } from './python'
 
+function getSelectedCodeFromState(e: EditorState): string | null {
+  const { from, to } = e.selection.main
+  const selection = e.sliceDoc(from, to)
+  if (selection === '') {
+    return null
+  }
+
+  return selection
+}
+
 function createTextSync(source: Y.Text) {
   const plugin = ViewPlugin.fromClass(
     class YTextSync {
@@ -172,6 +182,32 @@ const pythonCompartment = new Compartment()
 const readonlyCompartment = new Compartment()
 const themeCompartment = new Compartment()
 const keymapsCompartment = new Compartment()
+const watchSelectionCompartment = new Compartment()
+
+const createWatchSelectionPlugin = (
+  callback: (selectedCode: string | null) => void
+) =>
+  ViewPlugin.fromClass(
+    class WatchSelection {
+      private selectedCode: string | null = null
+      constructor(view: EditorView) {
+        this.selectedCode = getSelectedCodeFromState(view.state)
+      }
+
+      public update(update: ViewUpdate) {
+        if (!update.selectionSet) {
+          return
+        }
+
+        const selectedCode = getSelectedCodeFromState(update.state)
+        if (selectedCode === this.selectedCode) {
+          return
+        }
+        this.selectedCode = selectedCode
+        callback(selectedCode)
+      }
+    }
+  )
 
 interface Props {
   workspaceId: string
@@ -186,6 +222,7 @@ interface Props {
   diff?: Y.Text
   dataSourceId?: string | null
   disabled: boolean
+  onSelectionChanged?: (selectedCode: string | null) => void
 }
 export function CodeEditor(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
@@ -211,7 +248,13 @@ export function CodeEditor(props: Props) {
       return
     }
 
-    function getExtensions(source: Y.Text, disabled: boolean) {
+    function getExtensions(
+      source: Y.Text,
+      {
+        disabled,
+        watchSelection,
+      }: { disabled: boolean; watchSelection: boolean }
+    ) {
       return [
         keymapsCompartment.of(
           brieferKeyMaps({
@@ -235,6 +278,15 @@ export function CodeEditor(props: Props) {
         ),
         createTextSync(source),
         themeCompartment.of(materialLight(disabled)),
+        ...(watchSelection
+          ? [
+              watchSelectionCompartment.of(
+                createWatchSelectionPlugin(
+                  props.onSelectionChanged ?? (() => {})
+                )
+              ),
+            ]
+          : []),
       ]
     }
 
@@ -267,7 +319,10 @@ export function CodeEditor(props: Props) {
     function initializeEditorView(parent: Element) {
       const selection = getSelection()
       const config = {
-        extensions: getExtensions(props.source, props.disabled),
+        extensions: getExtensions(props.source, {
+          disabled: props.disabled,
+          watchSelection: true,
+        }),
         doc: props.source.toString(),
         selection,
       }
@@ -315,12 +370,18 @@ export function CodeEditor(props: Props) {
       destroyCurrent()
 
       const a = {
-        extensions: getExtensions(props.source, props.disabled),
+        extensions: getExtensions(props.source, {
+          disabled: props.disabled,
+          watchSelection: false,
+        }),
         doc: props.source.toString(),
         selection,
       }
       const b = {
-        extensions: getExtensions(diff, props.disabled),
+        extensions: getExtensions(diff, {
+          disabled: props.disabled,
+          watchSelection: true,
+        }),
         doc: diff.toString(),
       }
 
@@ -450,6 +511,24 @@ export function CodeEditor(props: Props) {
     onRunSelectNext,
     onRunInsertBlock,
   ])
+
+  useEffect(() => {
+    const effect = watchSelectionCompartment.reconfigure(
+      createWatchSelectionPlugin(props.onSelectionChanged ?? (() => {}))
+    )
+
+    if (viewRef.current) {
+      viewRef.current.dispatch({
+        effects: effect,
+      })
+    }
+
+    if (mergeRef.current) {
+      mergeRef.current.view.a.dispatch({
+        effects: effect,
+      })
+    }
+  }, [viewRef, mergeRef, props.onSelectionChanged])
 
   useEffect(() => {
     if (

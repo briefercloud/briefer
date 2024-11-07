@@ -36,6 +36,7 @@ export type SQLBlock = BaseBlock<BlockType.SQL> & {
     | 'edit-with-ai-running'
     | 'fix-with-ai-requested'
     | 'fix-with-ai-running'
+  selectedCode: string | null
   dataframeName: DataframeName
   dataSourceId: string | null
   isFileDataSource: boolean
@@ -74,6 +75,7 @@ export const makeSQLBlock = (
     type: BlockType.SQL,
     title: '',
     source: new Y.Text(opts?.source ?? ''),
+    selectedCode: null,
     status: 'idle',
     dataframeName: getDataframeName(blocks),
     dataSourceId: opts?.dataSourceId ?? null,
@@ -107,6 +109,7 @@ export function getSQLAttributes(
     ...getBaseAttributes(block),
     source: getSQLSource(block),
     status: getAttributeOr(block, 'status', 'idle'),
+    selectedCode: getAttributeOr(block, 'selectedCode', null),
     dataframeName: getAttributeOr(
       block,
       'dataframeName',
@@ -148,6 +151,7 @@ export function duplicateSQLBlock(
     ...duplicateBaseAttributes(newId, prevAttributes),
     source: duplicateYText(prevAttributes.source),
     status: options?.noState ? 'idle' : prevAttributes.status,
+    selectedCode: prevAttributes.selectedCode,
     dataframeName: clone(prevAttributes.dataframeName),
     dataSourceId: prevAttributes.dataSourceId
       ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
