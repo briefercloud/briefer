@@ -17,3 +17,11 @@ Everytime your Briefer environment restarts, it will discard the in-memory state
 Therefore, Briefer automatically tries to run blcoks before the one you're currently running. That way, we can regenerate the state of previous variables.
 
 If you don't want this behavior, you can disable it by toggling the "Auto-run pending blocks" switch to off.
+
+## Run selected SQL only
+
+When you run a SQL block, Briefer will run its entire content by default.
+
+If you only want to run a specific part of the SQL block, you need to enable the "Run selected SQL only" switch.
+
+After enabling this setting, Briefer will only run the SQL code you've selected. If you haven't selected any code, Briefer will run the entire block.
