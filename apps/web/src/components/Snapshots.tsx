@@ -4,6 +4,7 @@ import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
 import { Transition } from '@headlessui/react'
 import { QuestionMarkCircleIcon } from '@heroicons/react/20/solid'
 import { Tooltip } from './Tooltips'
+import ScrollBar from './ScrollBar'
 
 interface Props {
   workspaceId: string
@@ -60,10 +61,9 @@ export default function Snapshots(props: Props) {
             </button>
           </Tooltip>
         </div>
-        <ul
-          role="list"
-          className="flex-1 divide-y divide-solid overflow-y-scroll"
-        ></ul>
+        <ScrollBar className="overflow-auto">
+          <ul role="list" className="flex-1 divide-y divide-solid"></ul>
+        </ScrollBar>
       </div>
     </Transition>
   )

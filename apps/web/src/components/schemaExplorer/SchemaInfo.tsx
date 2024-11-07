@@ -5,6 +5,7 @@ import Spin from '../Spin'
 import { DataSourceStructureError } from '@briefer/types'
 import { useCallback, useMemo, useState } from 'react'
 import { dataSourcePrettyName } from '../DataSourcesList'
+import ScrollBar from '../ScrollBar'
 
 interface SchemaInfoProps {
   dataSource: APIDataSource
@@ -65,21 +66,21 @@ function SchemaError(props: SchemaErrorProps) {
       case 'error':
         return (
           <div>
-            <div className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-scroll">
+            <ScrollBar className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-auto max-h-56">
               <pre className="whitespace-pre-wrap">
                 {props.error.ename} - {props.error.evalue}
               </pre>
-            </div>
+            </ScrollBar>
           </div>
         )
       case 'unknown':
         return (
           <div>
-            <div className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-scroll">
+            <ScrollBar className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-auto max-h-56">
               <pre className="whitespace-pre-wrap">
                 Unknown - {props.error.message}
               </pre>
-            </div>
+            </ScrollBar>
           </div>
         )
     }
@@ -139,13 +140,13 @@ function SchemaError(props: SchemaErrorProps) {
                         schema.
                       </Dialog.Title>
                       <div className="flex flex-col gap-y-2 text-gray-500 text-sm">
-                        <p className="py-1 pb-2">
+                        <p className="py-1 pb-1">
                           {
                             'We tried to fetch your data source schema but we got an error.'
                           }
                         </p>
                         {error}
-                        <p>
+                        <p className="pt-1">
                           Please double check your credentials and permissions.
                         </p>
                       </div>

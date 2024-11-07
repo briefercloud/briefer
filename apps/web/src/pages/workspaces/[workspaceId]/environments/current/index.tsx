@@ -33,7 +33,7 @@ export default function CurrentEnvironmentPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId ?? '')}>
-      <ScrollBar className="w-full bg-white h-full overflow-scroll">
+      <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 flex items-center justify-between">
             <div>
@@ -145,7 +145,7 @@ export default function CurrentEnvironmentPage() {
                       </span>
                     </dt>
                     <dd className="mt-1 text-xs text-gray-900 py-1">
-                      <pre className="bg-gray-50 rounded-sm max-h-96 p-4 overflow-scroll border border-gray-200">
+                      <pre className="bg-gray-50 rounded-sm max-h-96 p-4 overflow-y-scroll overflow-x-auto border border-gray-200">
                         {requirements}
                       </pre>
                     </dd>

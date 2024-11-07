@@ -20,6 +20,7 @@ import { DataSourceConnectionError, jsonString } from '@briefer/types'
 import { GATEWAY_IP } from '@/utils/info'
 import { useRouter } from 'next/router'
 import SchemaExplorer from '@/components/schemaExplorer'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -35,7 +36,8 @@ export default function DataSourcesPage() {
   const [showMoreInfo, setShowMoreInfo] = useState(false)
   const workspaceId = useStringQuery('workspaceId')
 
-  const [{ datasources: dataSources }, { ping, remove }] = useDataSources(workspaceId)
+  const [{ datasources: dataSources }, { ping, remove }] =
+    useDataSources(workspaceId)
 
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
   const closeInfo = useCallback(() => setShowMoreInfo(false), [setShowMoreInfo])
@@ -112,7 +114,7 @@ export default function DataSourcesPage() {
         onClose={onCloseOfflineDialog}
       />
 
-      <div className="w-full bg-white h-full overflow-scroll">
+      <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -144,7 +146,7 @@ export default function DataSourcesPage() {
             onSchemaExplorer={onSchemaExplorer}
           />
         </div>
-      </div>
+      </ScrollBar>
       <SchemaExplorer
         workspaceId={workspaceId}
         visible={schemaExplorerDataSourceId !== null}
@@ -232,7 +234,7 @@ function OfflineDataSourceDialog(props: OfflineDataSourceDialogProps) {
                               'We tried to ping your data source but we got an error.'
                             }
                           </p>
-                          <div className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-scroll">
+                          <div className="px-4 py-4 bg-gray-100 w-full rounded-md overflow-auto">
                             <pre className="whitespace-pre-wrap">
                               {error.name}
                             </pre>

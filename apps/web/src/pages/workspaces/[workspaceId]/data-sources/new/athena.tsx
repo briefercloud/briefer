@@ -52,9 +52,9 @@ export default function NewDataSourceAthenaPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId)} hideOnboarding>
-      <div className="w-full overflow-scroll">
+      <ScrollBar className="w-full overflow-auto">
         <AthenaForm workspaceId={workspaceId} onSubmit={onSubmit} />
-      </div>
+      </ScrollBar>
     </Layout>
   )
 }

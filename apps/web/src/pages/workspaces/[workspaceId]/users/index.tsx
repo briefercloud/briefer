@@ -13,6 +13,7 @@ import clsx from 'clsx'
 import { Tooltip } from '@/components/Tooltips'
 import { PasswordDialog } from './new'
 import { useRouter } from 'next/router'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -67,7 +68,7 @@ export default function UsersPage() {
 
   return (
     <Layout pagePath={pagePath(workspaceId ?? '')}>
-      <div className="w-full bg-white h-full overflow-scroll">
+      <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">
             <h3 className="text-lg font-medium leading-6 text-gray-900">
@@ -108,7 +109,7 @@ export default function UsersPage() {
             role={session.data?.roles[workspaceId] ?? UserWorkspaceRole.viewer}
           />
         </div>
-      </div>
+      </ScrollBar>
       <PasswordDialog
         user={newPassword}
         onClose={onClosePasswordDialog}

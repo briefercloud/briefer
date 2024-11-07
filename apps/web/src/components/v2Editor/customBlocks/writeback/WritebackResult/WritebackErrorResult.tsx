@@ -2,6 +2,7 @@ import { getPrettyStep, getValidationErrorMessage } from '@briefer/editor'
 import { XCircleIcon } from '@heroicons/react/24/outline'
 import Ansi from '@cocalc/ansi-to-react'
 import { PythonErrorOutput, WriteBackErrorResult } from '@briefer/types'
+import ScrollBar from '@/components/ScrollBar'
 
 function renderError(result: WriteBackErrorResult): JSX.Element {
   if (result.reason === 'python-error') {
@@ -54,7 +55,7 @@ function renderError(result: WriteBackErrorResult): JSX.Element {
 
 function InvalidTemplateError(props: { error: PythonErrorOutput }) {
   return (
-    <div className="overflow-scroll max-h-96">
+    <ScrollBar className="overflow-auto max-h-96">
       <p className="pb-4 text-xs text-gray-800">
         Fail to render the table name, we received the following error:
       </p>
@@ -66,7 +67,7 @@ function InvalidTemplateError(props: { error: PythonErrorOutput }) {
           <Ansi>{line}</Ansi>
         </pre>
       ))}
-    </div>
+    </ScrollBar>
   )
 }
 
@@ -78,7 +79,7 @@ function PythonError(props: {
   const prettyStep = getPrettyStep(props.step)
 
   return (
-    <div className="overflow-scroll max-h-96">
+    <ScrollBar className="overflow-auto max-h-96">
       <p className="pb-4 text-xs text-gray-800">
         {props.step === 'unknown'
           ? 'Fail to complete writeback,'
@@ -88,7 +89,7 @@ function PythonError(props: {
       <pre className="whitespace-pre-wrap text-xs">
         {props.ename} - {props.evalue}
       </pre>
-    </div>
+    </ScrollBar>
   )
 }
 

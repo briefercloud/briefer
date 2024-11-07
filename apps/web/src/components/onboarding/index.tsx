@@ -96,7 +96,7 @@ function Onboarding() {
                     />
                   </div>
 
-                  <div className="flex flex-col justify-between h-full py-6 px-8 w-[96rem] overflow-scroll">
+                  <div className="flex flex-col justify-between h-full py-6 px-8 w-[96rem] overflow-auto">
                     {StepContent && (
                       <StepContent
                         currentStepId={currentStepId ?? 'intro'}

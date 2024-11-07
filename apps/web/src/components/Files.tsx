@@ -53,13 +53,13 @@ export default function Files(props: Props) {
         file.mimeType === 'application/json'
           ? 'json'
           : file.mimeType === 'text/csv'
-            ? 'csv'
-            : file.mimeType === 'application/vnd.ms-excel'
-              ? 'xls'
-              : file.mimeType ===
-                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-                ? 'xlsx'
-                : ''
+          ? 'csv'
+          : file.mimeType === 'application/vnd.ms-excel'
+          ? 'xls'
+          : file.mimeType ===
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          ? 'xlsx'
+          : ''
 
       const source =
         fileExtension !== ''
@@ -252,7 +252,7 @@ file`
               </div>
               <ul
                 role="list"
-                className="divide-y divide-solid overflow-y-scroll border-b"
+                className="divide-y divide-solid overflow-y-auto border-b"
               >
                 {results.map((result, i) => (
                   <li>
@@ -297,7 +297,7 @@ file`
               {actualFiles.length > 0 ? (
                 <ul
                   role="list"
-                  className="flex-1 divide-y divide-solid overflow-y-scroll"
+                  className="flex-1 divide-y divide-solid overflow-y-auto"
                 >
                   {actualFiles
                     .filter((f) => !f.isDirectory)

@@ -11,6 +11,7 @@ import { useState } from 'react'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { APIReusableComponent, ReusableComponentType } from '@briefer/database'
 import { addComponentToDocument, decodeComponentState } from '@briefer/editor'
+import ScrollBar from './ScrollBar'
 
 interface Props {
   workspaceId: string
@@ -79,22 +80,24 @@ export default function ReusableComponents(props: Props) {
                     <Spin />
                   </div>
                 )}
-                <ul role="list" className="flex-1 overflow-y-scroll">
-                  {data.map((component) => (
-                    <li
-                      key={component.id}
-                      className={clsx('border-gray-200 border-b')}
-                    >
-                      <ReusableComponentItem
-                        workspaceId={props.workspaceId}
-                        component={component}
-                        onUse={onUse}
-                        onRemove={onRemove}
-                        canUse={props.yDoc !== undefined}
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <ScrollBar className="overflow-y-auto">
+                  <ul role="list" className="flex-1">
+                    {data.map((component) => (
+                      <li
+                        key={component.id}
+                        className={clsx('border-gray-200 border-b')}
+                      >
+                        <ReusableComponentItem
+                          workspaceId={props.workspaceId}
+                          component={component}
+                          onUse={onUse}
+                          onRemove={onRemove}
+                          canUse={props.yDoc !== undefined}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollBar>
               </>
             ) : (
               <div className="flex-1 p-4">

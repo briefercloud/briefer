@@ -11,6 +11,7 @@ import { UserIcon, ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
 import timeAgo from '@/utils/timeAgo'
 import { useSession } from '@/hooks/useAuth'
 import { useComments } from '@/hooks/useComments'
+import ScrollBar from './ScrollBar'
 
 interface Props {
   workspaceId: string
@@ -75,8 +76,8 @@ export default function Comments(props: Props) {
       >
         <ChevronDoubleRightIcon className="w-3 h-3" />
       </button>
-      <div
-        className="w-[324px] flex flex-col overflow-y-scroll border-l border-gray-200 h-full bg-white"
+      <ScrollBar
+        className="w-[324px] flex flex-col overflow-y-auto border-l border-gray-200 h-full bg-white"
         ref={ref}
       >
         <h3 className="text-lg font-medium leading-6 text-gray-900 px-2 px-4 pt-6 xl:px-6">
@@ -171,7 +172,7 @@ export default function Comments(props: Props) {
             </div>
           </div>
         </form>
-      </div>
+      </ScrollBar>
     </Transition>
   )
 }

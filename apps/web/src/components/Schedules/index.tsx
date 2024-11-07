@@ -20,6 +20,7 @@ import { useSchedules } from '@/hooks/useSchedules'
 import AddScheduleForm from './AddScheduleForm'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
 import { Tooltip } from '../Tooltips'
+import ScrollBar from '../ScrollBar'
 
 interface Props {
   workspaceId: string
@@ -246,7 +247,7 @@ interface ScheduleListProps {
 }
 function ScheduleList(props: ScheduleListProps) {
   return (
-    <div className="w-[324px] h-full flex flex-col overflow-y-scroll border-l border-gray-200">
+    <div className="w-[324px] h-full flex flex-col overflow-y-auto border-l border-gray-200">
       <div className="px-4 xl:px-6 pt-6 pb-5">
         <div className="flex justify-between">
           <div>
@@ -292,36 +293,40 @@ function ScheduleList(props: ScheduleListProps) {
       </div>
 
       {props.isPublished ? (
-        <ul
-          role="list"
-          className="flex-1 text-xs font-primary overflow-visible"
-        >
-          {props.schedules.map((scheduledRun, i) => {
-            return (
-              <li
-                key={scheduledRun.id}
-                className={clsx(
-                  {
-                    'border-b': i === props.schedules.length - 1,
-                  },
-                  'flex border-t border-gray-200 px-4 xl:px-6 py-6'
-                )}
-              >
-                <div className="flex flex-1 items-center justify-between">
-                  <div className="w-3/4">{getScheduleBlock(scheduledRun)}</div>
-                  <div className="w-1/4 flex items-center justify-end">
-                    <div
-                      className="p-1 hover:cursor-pointer hover:bg-gray-200 hover:text-gray-900 text-gray-400 rounded-sm"
-                      onClick={props.onDeleteSchedule(scheduledRun.id)}
-                    >
-                      <XMarkIcon className="h-4 w-4" />
+        <ScrollBar className="overflow-auto">
+          <ul
+            role="list"
+            className="flex-1 text-xs font-primary overflow-visible"
+          >
+            {props.schedules.map((scheduledRun, i) => {
+              return (
+                <li
+                  key={scheduledRun.id}
+                  className={clsx(
+                    {
+                      'border-b': i === props.schedules.length - 1,
+                    },
+                    'flex border-t border-gray-200 px-4 xl:px-6 py-6'
+                  )}
+                >
+                  <div className="flex flex-1 items-center justify-between">
+                    <div className="w-3/4">
+                      {getScheduleBlock(scheduledRun)}
+                    </div>
+                    <div className="w-1/4 flex items-center justify-end">
+                      <div
+                        className="p-1 hover:cursor-pointer hover:bg-gray-200 hover:text-gray-900 text-gray-400 rounded-sm"
+                        onClick={props.onDeleteSchedule(scheduledRun.id)}
+                      >
+                        <XMarkIcon className="h-4 w-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+                </li>
+              )
+            })}
+          </ul>
+        </ScrollBar>
       ) : (
         <div className="px-4 xl:px-6 py-6">
           <div className="flex flex-col gap-y-1 bg-ceramic-50/60 p-4 rounded-xl border-2 border-gray-100 border-dashed">

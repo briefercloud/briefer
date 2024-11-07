@@ -137,8 +137,8 @@ const renderHeaders = (
           sortDirection === 'none'
             ? 'desc'
             : sortDirection === 'desc'
-              ? 'asc'
-              : 'none'
+            ? 'asc'
+            : 'none'
 
         const hasChildren = node.children.length > 0
         return (
@@ -363,7 +363,7 @@ function PivotTable(props: Props) {
   )
 
   return (
-    <ScrollBar className="w-full overflow-scroll h-full">
+    <ScrollBar className="w-full overflow-auto h-full">
       <table className="!w-full text-xs text-left table-auto border-spacing-0 border-separate font-mono">
         <thead className="bg-gray-50 sticky top-0">
           {renderAllHeaders(

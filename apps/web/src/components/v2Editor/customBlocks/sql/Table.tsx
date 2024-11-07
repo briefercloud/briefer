@@ -12,7 +12,7 @@ function Table(props: Props) {
     <ScrollBar
       className={clsx(
         props.isDashboard ? 'h-full' : 'max-h-[290px]',
-        'overflow-scroll ph-no-capture'
+        'overflow-auto ph-no-capture'
       )}
     >
       <table

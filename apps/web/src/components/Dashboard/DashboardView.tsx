@@ -326,7 +326,7 @@ export default function DashboardView(props: Props) {
     <ScrollBar
       id="dashboard-wrapper"
       data-dashboard-ready="true"
-      className={clsx('px-8 overflow-y-scroll font-sans', props.className)}
+      className={clsx('px-8 overflow-y-auto font-sans', props.className)}
     >
       <div className="pt-6 pb-8 px-1">
         <Title

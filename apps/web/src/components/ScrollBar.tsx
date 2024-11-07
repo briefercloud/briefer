@@ -11,13 +11,15 @@ const ScrollBar = forwardRef<HTMLDivElement, Props>(function ScrollBar(
   props,
   ref
 ) {
-  if (
-    props.disabled ||
-    (typeof window !== 'undefined' &&
-      window.navigator.userAgent.toUpperCase().includes('MAC OS'))
-  ) {
-    return <div {...props} ref={ref} />
-  }
+  // This is actually not ideal because some MacOS systems may be
+  // configured to always show scrollbars.
+  // if (
+  //   props.disabled ||
+  //   (typeof window !== 'undefined' &&
+  //     window.navigator.userAgent.toUpperCase().includes('MAC OS'))
+  // ) {
+  //   return <div {...props} ref={ref} />
+  // }
 
   return (
     <SimpleBar
