@@ -1,45 +1,7 @@
-import {
-  Bars3BottomLeftIcon,
-  CalendarIcon,
-  FlagIcon,
-  HashtagIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/24/outline'
 import Combobox from './v2Editor/customBlocks/visualization/Combobox'
 import { useEffect, useMemo } from 'react'
-import {
-  DataFrameColumn,
-  NumpyBoolTypes,
-  NumpyDateTypes,
-  NumpyJsonTypes,
-  NumpyNumberTypes,
-  NumpyStringTypes,
-  NumpyTimeDeltaTypes,
-} from '@briefer/types'
-
-function getColumnsIcon(type: DataFrameColumn['type']) {
-  if (NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(type).success) {
-    return HashtagIcon
-  }
-
-  if (NumpyStringTypes.safeParse(type).success) {
-    return Bars3BottomLeftIcon
-  }
-
-  if (NumpyJsonTypes.safeParse(type).success) {
-    return Bars3BottomLeftIcon
-  }
-
-  if (NumpyBoolTypes.safeParse(type).success) {
-    return FlagIcon
-  }
-
-  if (NumpyDateTypes.safeParse(type).success) {
-    return CalendarIcon
-  }
-
-  return QuestionMarkCircleIcon
-}
+import { DataFrameColumn } from '@briefer/types'
+import { getColumnTypeIcon } from './v2Editor/customBlocks/sql/Table'
 
 function ColumnIcon({
   type,
@@ -48,7 +10,7 @@ function ColumnIcon({
   type: DataFrameColumn['type']
   className?: string
 }) {
-  const Icon = getColumnsIcon(type)
+  const Icon = getColumnTypeIcon(type)
   if (!Icon) {
     return null
   }
