@@ -4,21 +4,27 @@ import { PlayIcon, StopIcon } from '@heroicons/react/20/solid'
 import { useYDocState } from '@/hooks/useYDoc'
 import {
   YRunAll,
+  getBlocks,
+  getLayout,
+  getResultStatus,
   getRunAll,
   getRunAllAttributes,
   isRunAllLoading,
 } from '@briefer/editor'
 import { useCallback } from 'react'
 import clsx from 'clsx'
+import usePreviousEffect from '@/hooks/usePreviousEffect'
+import useEditorAwareness from '@/hooks/useEditorAwareness'
 
 interface Props {
   disabled: boolean
   yDoc: Y.Doc
   primary: boolean
 }
-
 export default function RunAllV2(props: Props) {
   const { state } = useYDocState<YRunAll>(props.yDoc, getRunAll)
+  const { state: layout } = useYDocState(props.yDoc, getLayout)
+  const { state: blocks } = useYDocState(props.yDoc, getBlocks)
 
   const run = useCallback(() => {
     state.value.setAttribute('status', 'run-requested')
@@ -44,6 +50,45 @@ export default function RunAllV2(props: Props) {
   const current = total - remaining
 
   const loading = isRunAllLoading(state.value)
+  const [, editorAPI] = useEditorAwareness()
+
+  usePreviousEffect(
+    (prevStatus) => {
+      if (docRunStatus !== 'idle') {
+        return
+      }
+
+      if (prevStatus === 'running') {
+        let failedBlockId: string | null = null
+        for (const blockGroup of layout.value.toArray()) {
+          for (const tab of blockGroup.getAttribute('tabs')?.toArray() ?? []) {
+            const blockId = tab.getAttribute('id')
+            if (!blockId) {
+              continue
+            }
+
+            const block = blocks.value.get(blockId)
+            if (!block) {
+              continue
+            }
+
+            const status = getResultStatus(block, blocks.value)
+            if (status === 'error') {
+              blockGroup.setAttribute('current', tab.clone())
+              failedBlockId = blockId
+              break
+            }
+          }
+        }
+
+        if (failedBlockId) {
+          editorAPI.focus(failedBlockId, { scrollIntoView: true })
+        }
+      }
+    },
+    docRunStatus,
+    [docRunStatus, layout, blocks, editorAPI]
+  )
 
   return (
     <button
@@ -75,8 +120,8 @@ export default function RunAllV2(props: Props) {
           {docRunStatus === 'run-requested' || docRunStatus === 'running'
             ? `Running (${current}/${total})`
             : docRunStatus === 'schedule-running'
-              ? `Running schedule (${current}/${total})`
-              : 'Stopping'}
+            ? `Running schedule (${current}/${total})`
+            : 'Stopping'}
         </>
       ) : (
         <>
