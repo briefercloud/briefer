@@ -48,7 +48,7 @@ export default function PageSettingsPanel(props: Props) {
               </p>
             </div>
           </div>
-          <div className="h-full w-full px-6">
+          <div className="w-full divide-y divide-gray-200 border-b border-gray-200">
             <PageSettingToggle
               name="Auto-run pending blocks"
               description="Whether Briefer should automatically run unexecuted preceding blocks when a block is executed."
@@ -80,7 +80,7 @@ export function PageSettingToggle(props: PageSettingToggleProps) {
   return (
     <Switch.Group
       as="div"
-      className="flex flex-col items-center justify-between py-4 gap-x-16 gap-y-2"
+      className="flex flex-col items-center justify-between py-4 gap-x-16 gap-y-2 w-full px-4"
     >
       <span className="flex flex-grow items-center justify-between w-full">
         <Switch.Label
