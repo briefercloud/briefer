@@ -210,7 +210,12 @@ describe.only('SQLObserver', () => {
             tr
           )
 
-          expect(executorMock.runQuery).toHaveBeenCalledWith(block, tr, false)
+          expect(executorMock.runQuery).toHaveBeenCalledWith(
+            block,
+            tr,
+            false,
+            false
+          )
           expect(block.getAttribute('status')).toEqual('idle')
         })
 
@@ -227,7 +232,12 @@ describe.only('SQLObserver', () => {
             tr
           )
 
-          expect(executorMock.runQuery).toHaveBeenCalledWith(block, tr, false)
+          expect(executorMock.runQuery).toHaveBeenCalledWith(
+            block,
+            tr,
+            false,
+            false
+          )
           expect(block.getAttribute('status')).toEqual('idle')
         })
       })
@@ -246,7 +256,12 @@ describe.only('SQLObserver', () => {
             tr
           )
 
-          expect(executorMock.runQuery).toHaveBeenCalledWith(block, tr, true)
+          expect(executorMock.runQuery).toHaveBeenCalledWith(
+            block,
+            tr,
+            true,
+            false
+          )
           expect(block.getAttribute('status')).toEqual('idle')
         })
 
@@ -263,7 +278,12 @@ describe.only('SQLObserver', () => {
             tr
           )
 
-          expect(executorMock.runQuery).toHaveBeenCalledWith(block, tr, true)
+          expect(executorMock.runQuery).toHaveBeenCalledWith(
+            block,
+            tr,
+            true,
+            false
+          )
           expect(block.getAttribute('status')).toEqual('idle')
         })
       })

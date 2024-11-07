@@ -132,6 +132,7 @@ describe('SQLExecutor', () => {
       await blocksExecutor.runQuery(
         block,
         new Y.Transaction(ydoc, {}, true),
+        false,
         false
       )
 
@@ -195,7 +196,8 @@ describe('SQLExecutor', () => {
       await blocksExecutor.runQuery(
         block,
         new Y.Transaction(ydoc, {}, true),
-        true
+        true,
+        false
       )
 
       expect(effects.makeSQLQuery).toHaveBeenCalledWith(
@@ -238,6 +240,7 @@ describe('SQLExecutor', () => {
       const runningPromise = blocksExecutor.runQuery(
         block,
         new Y.Transaction(ydoc, {}, true),
+        false,
         false
       )
       await blocksExecutor.abortQuery(block)
@@ -281,6 +284,7 @@ describe('SQLExecutor', () => {
         block,
 
         new Y.Transaction(ydoc, {}, true),
+        false,
         false
       )
 

@@ -147,11 +147,11 @@ export class SQLObserver implements ISQLObserver {
           block.setAttribute('status', 'idle')
           break
         case 'running':
-          await this.executor.runQuery(block, tr, false)
+          await this.executor.runQuery(block, tr, false, false)
           block.setAttribute('status', 'idle')
           break
         case 'running-suggestion':
-          await this.executor.runQuery(block, tr, true)
+          await this.executor.runQuery(block, tr, true, false)
           block.setAttribute('status', 'idle')
           break
         case 'idle':

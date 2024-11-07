@@ -107,7 +107,8 @@ export interface ISQLExecutor {
   runQuery(
     block: Y.XmlElement<SQLBlock>,
     tr: Y.Transaction,
-    isSuggestion: boolean
+    isSuggestion: boolean,
+    isRunAll: boolean
   ): Promise<void>
   abortQuery(block: Y.XmlElement<SQLBlock>): Promise<void>
   renameDataFrame(block: Y.XmlElement<SQLBlock>): Promise<void>
@@ -156,7 +157,8 @@ export class SQLExecutor implements ISQLExecutor {
   public async runQuery(
     block: Y.XmlElement<SQLBlock>,
     tr: Y.Transaction,
-    isSuggestion: boolean
+    isSuggestion: boolean,
+    isRunAll: boolean
   ) {
     this.events.sqlRun(EventContext.fromYTransaction(tr))
     const abortController = new AbortController()
@@ -221,15 +223,17 @@ export class SQLExecutor implements ISQLExecutor {
 
           block.removeAttribute('result')
 
-          const hasRunSQLSelection =
-            await this.effects.documentHasRunSQLSelectionEnabled(
-              this.documentId
-            )
-
-          const actualSource =
-            (hasRunSQLSelection ? selectedCode : null) ??
-            (isSuggestion ? aiSuggestions : source)?.toJSON()?.trim() ??
-            ''
+          let actualSource =
+            (isSuggestion ? aiSuggestions : source)?.toJSON().trim() ?? ''
+          if (!isRunAll && selectedCode) {
+            const hasRunSQLSelection =
+              await this.effects.documentHasRunSQLSelectionEnabled(
+                this.documentId
+              )
+            if (hasRunSQLSelection) {
+              actualSource = selectedCode.trim()
+            }
+          }
 
           let resultType: RunQueryResult['type'] | 'empty-query' = 'empty-query'
           if (actualSource !== '') {

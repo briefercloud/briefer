@@ -400,7 +400,7 @@ export class RunAllExecutor implements IRunAllExecutor {
     await switchBlockType(block, {
       onRichText: () => Promise.resolve(),
       onPython: (block) => this.executors.python.run(block, tr, false),
-      onSQL: (block) => this.executors.sql.runQuery(block, tr, false),
+      onSQL: (block) => this.executors.sql.runQuery(block, tr, false, true),
       onVisualization: (block) => this.executors.visualization.run(block, tr),
       onInput: (block) => this.executors.input.saveValue(block),
       onDropdownInput: (block) => this.executors.dropdownInput.saveValue(block),
