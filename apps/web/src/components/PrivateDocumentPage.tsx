@@ -352,10 +352,11 @@ function PrivateDocumentPageInner(
           isSyncing={syncing}
           onOpenFiles={onToggleFiles}
           onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
-        />
-        {!isViewer && (
-          <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
-        )}
+        >
+          {!isViewer && (
+            <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
+          )}
+        </V2Editor>
 
         <Comments
           workspaceId={props.workspaceId}

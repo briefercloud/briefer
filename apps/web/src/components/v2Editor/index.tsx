@@ -1,6 +1,13 @@
 import { Awareness } from 'y-protocols/awareness'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   ConnectDragPreview,
   DropTargetMonitor,
@@ -1788,11 +1795,14 @@ function TabRef(props: TabRefProps) {
   )
 }
 
-export default function V2Editor(props: Omit<Props, 'scrollViewRef'>) {
+export default function V2Editor(
+  props: Omit<Props, 'scrollViewRef'> & { children?: ReactNode }
+) {
   const scrollViewRef = useRef<HTMLDivElement>(null)
   return (
     <EditorAwarenessProvider scrollViewRef={scrollViewRef} yDoc={props.yDoc}>
       <Editor {...props} scrollViewRef={scrollViewRef} />
+      {props.children}
     </EditorAwarenessProvider>
   )
 }
