@@ -9,6 +9,7 @@ import AthenaForm, { AthenaDataSourceInput } from '@/components/forms/athena'
 import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
+import ScrollBar from '@/components/ScrollBar'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
