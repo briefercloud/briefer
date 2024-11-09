@@ -51,6 +51,7 @@ import {
 import { UserNotebookEvents } from '../../events/user.js'
 import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
+import { Executor } from './executor/index.js'
 
 type Role = UserWorkspaceRole
 
@@ -304,6 +305,7 @@ function startDocumentCollection() {
   async function collectDocs() {
     const start = Date.now()
     try {
+      console.log('DOCS SIZE', docs.size)
       logger().trace({ docsCount: docs.size }, 'Collecting docs')
       const queue = new PQueue({ concurrency: 6 })
       let collected = 0
@@ -374,6 +376,7 @@ export class WSSharedDocV2 {
   private socketServer: IOServer
   private title: string = ''
   private observer: MainObserver
+  private executor: Executor
   private persistor: Persistor
   private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
   private byteLength: number = 0
@@ -407,6 +410,7 @@ export class WSSharedDocV2 {
       this,
       events
     )
+    this.executor = Executor.fromWSSharedDocV2(this)
     this.publisherId = uuidv4()
   }
 
@@ -424,7 +428,8 @@ export class WSSharedDocV2 {
       this.updateHandler(update, tr)
     )
     this.awareness.on('update', this.awarenessHandler)
-    this.observer.start()
+    this.executor.start()
+    // this.observer.start()
   }
 
   private onSubMessage = async (message?: string) => {
@@ -589,9 +594,14 @@ export class WSSharedDocV2 {
     return getRunAll(this.ydoc)
   }
 
+  public get executionQueue() {
+    return this.ydoc.getArray('executionQueue')
+  }
+
   public async destroy() {
     await this.subscription?.()
-    this.observer.stop()
+    // this.observer.stop()
+    await this.executor.stop()
     this.ydoc.destroy()
   }
 
@@ -1140,7 +1150,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? (doc.userAppClock[user.id] ?? doc.appClock)
+          ? doc.userAppClock[user.id] ?? doc.appClock
           : doc.clock
 
         if (dbClock !== clock) {

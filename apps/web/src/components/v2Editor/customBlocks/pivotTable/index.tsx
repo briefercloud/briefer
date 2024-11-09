@@ -458,8 +458,16 @@ function PivotTableBlock(props: Props) {
               <PivotTableExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={attrs.status}
+                execStatus={
+                  attrs.status === 'run-requested' ||
+                  attrs.status === 'run-all-enqueued'
+                    ? 'enqueued'
+                    : 'running'
+                }
+                runningAll={
+                  attrs.status === 'run-all-enqueued' ||
+                  attrs.status === 'run-all-running'
+                }
               />
             </div>
           ) : (

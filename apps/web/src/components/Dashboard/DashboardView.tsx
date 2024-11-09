@@ -19,6 +19,7 @@ import {
   mergeGridLayoutIntoYDashboard,
   BlockType,
   removeDashboardBlock,
+  ExecutionQueue,
 } from '@briefer/editor'
 import GridElement from './GridElement'
 import Title from '../v2Editor/Title'
@@ -122,8 +123,9 @@ interface InnerProps {
   dataSources: APIDataSources
   document: ApiDocument
   draggingBlock: DraggingBlock | null
-
+  userId: string | null
   isEditing: boolean
+  executionQueue: ExecutionQueue
 
   // We use this to trigger actions when a new block is added
   latestBlockId: string | null
@@ -206,6 +208,8 @@ function DashboardViewInner(props: InnerProps) {
                 item={item}
                 isEditingDashboard={props.isEditing}
                 latestBlockId={props.latestBlockId}
+                userId={props.userId}
+                executionQueue={props.executionQueue}
               />
             </WrapperCard>
           </div>
@@ -220,6 +224,8 @@ function DashboardViewInner(props: InnerProps) {
       props.dataSources,
       props.isEditing,
       layout,
+      props.userId,
+      props.executionQueue,
     ]
   )
 
@@ -320,6 +326,8 @@ interface Props {
   noBottomPadding?: boolean
   latestBlockId: string | null
   userRole: string
+  userId: string | null
+  executionQueue: ExecutionQueue
 }
 export default function DashboardView(props: Props) {
   return (

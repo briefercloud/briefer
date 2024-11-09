@@ -237,8 +237,10 @@ function WritebackBlock(props: Props) {
               <WritebackExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={status}
+                execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={
+                  status === 'run-all-enqueued' || status === 'run-all-running'
+                }
               />
             </div>
           ) : (

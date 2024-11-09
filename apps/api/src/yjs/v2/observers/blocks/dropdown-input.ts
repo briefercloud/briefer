@@ -12,7 +12,7 @@ import { logger } from '../../../../logger.js'
 import {
   IDropdownInputExecutor,
   DropdownInputExecutor,
-} from '../../executors/blocks/dropdown-input.js'
+} from '../../executors_/blocks/dropdown-input.js'
 
 export interface IDropdownInputObserver
   extends IBlockObserver<DropdownInputBlock> {}

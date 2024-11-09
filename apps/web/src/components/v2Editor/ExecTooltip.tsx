@@ -1,11 +1,10 @@
 import type { EnvironmentStatus } from '@briefer/database'
-import { ExecStatus } from '@briefer/editor'
 
 interface Props {
   envStatus: EnvironmentStatus
   envLoading: boolean
-  execStatus: ExecStatus
-  status: string | undefined
+  execStatus: 'enqueued' | 'running'
+  runningAll: boolean
 }
 export function SQLExecTooltip(props: Props) {
   return (
@@ -66,33 +65,34 @@ function Tooltip(props: { title: string; message: string }) {
 interface ExecTooltipProps extends Props {
   envStartingMessage: string
 }
-function ExecTooltip(props: ExecTooltipProps) {
-  if (props.execStatus === 'enqueued') {
-    return (
-      <Tooltip
-        title="This block is enqueued."
-        message="It will run once the previous blocks finish executing."
-      />
-    )
-  }
+function ExecTooltip(props: ExecTooltipProps): JSX.Element | null {
+  switch (props.execStatus) {
+    case 'enqueued':
+      return (
+        <Tooltip
+          title="This block is enqueued."
+          message="It will run once the previous blocks finish executing."
+        />
+      )
+    case 'running':
+      if (props.envStatus !== 'Running' && !props.envLoading) {
+        return (
+          <Tooltip
+            title="Your environment is starting"
+            message={props.envStartingMessage}
+          />
+        )
+      }
 
-  if (props.envStatus !== 'Running' && !props.envLoading) {
-    return (
-      <Tooltip
-        title="Your environment is starting"
-        message={props.envStartingMessage}
-      />
-    )
-  }
+      if (props.runningAll) {
+        return (
+          <Tooltip
+            title="This block is running."
+            message="When running entire documents, you cannot stop individual blocks."
+          />
+        )
+      }
 
-  if (props.status === 'run-all-running') {
-    return (
-      <Tooltip
-        title="This block is running."
-        message="When running entire documents, you cannot stop individual blocks."
-      />
-    )
+      return null
   }
-
-  return null
 }

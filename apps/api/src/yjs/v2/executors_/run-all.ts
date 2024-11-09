@@ -290,13 +290,16 @@ export class RunAllExecutor implements IRunAllExecutor {
     switchBlockType(block, {
       onRichText: () => {},
       onPython: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
       onSQL: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
       onVisualization: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
       onInput: (block) => {
         updateInputValue(block, {
@@ -326,13 +329,16 @@ export class RunAllExecutor implements IRunAllExecutor {
     switchBlockType(block, {
       onRichText: () => {},
       onPython: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
       onSQL: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
       onVisualization: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
       onInput: (block) => {
         updateInputValue(block, {
@@ -362,13 +368,16 @@ export class RunAllExecutor implements IRunAllExecutor {
     switchBlockType(block, {
       onRichText: () => {},
       onPython: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
       onSQL: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
       onVisualization: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
       onInput: (block) => {
         updateInputValue(block, {

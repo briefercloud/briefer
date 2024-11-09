@@ -92,7 +92,7 @@ describe('VisualizationExecutor', () => {
     it('should create the visualization by performing the createVisualization effect', async () => {
       const prevUpdatedAt = new Date(Date.now() - 1000 * 60).toISOString()
       block.setAttribute('updatedAt', prevUpdatedAt)
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const spec = {
         a: 'cool',
         chart: '=]',
@@ -143,7 +143,7 @@ describe('VisualizationExecutor', () => {
     })
 
     it('should set error when createVisualization fails with dataframe-not-found', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       effects.createVisualization.mockResolvedValue({
         promise: Promise.resolve({
           success: false,
@@ -158,7 +158,7 @@ describe('VisualizationExecutor', () => {
     })
 
     it('should do nothing when createVisualization fails with aborted', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
 
       const prevAttributes = block.getAttributes()
       effects.createVisualization.mockResolvedValue({

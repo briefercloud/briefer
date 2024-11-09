@@ -9,7 +9,7 @@ import {
   getInputAttributes,
 } from '@briefer/editor'
 import { clone } from 'ramda'
-import { IInputExecutor } from '../../executors/blocks/input.js'
+import { IInputExecutor } from '../../executors_/blocks/input.js'
 
 describe('InputObserver', () => {
   let executorMock: jest.Mocked<IInputExecutor>

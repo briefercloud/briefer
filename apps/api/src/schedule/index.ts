@@ -10,7 +10,6 @@ import { CronJob } from 'cron'
 import { logger } from '../logger.js'
 import { IOServer } from '../websocket/index.js'
 import * as yjs from '../yjs/v2/index.js'
-import { RunAllExecutor } from '../yjs/v2/executors/run-all.js'
 import PQueue from 'p-queue'
 import { AppPersistor, DocumentPersistor } from '../yjs/v2/persistors.js'
 import { YBlock } from '@briefer/editor'
@@ -290,19 +289,22 @@ async function executeNotebook(
           return undefined
         }
 
-        const executor = RunAllExecutor.make(
-          doc.workspaceId,
-          doc.id,
-          ydoc.blocks,
-          ydoc.layout,
-          ydoc.runAll,
-          ydoc.dataframes,
-          new PQueue({ concurrency: 1 }),
-          events
-        )
+        // TODO: implement schedule after executionQueue introduction
+        // const executor = RunAllExecutor.make(
+        //   doc.workspaceId,
+        //   doc.id,
+        //   ydoc.blocks,
+        //   ydoc.layout,
+        //   ydoc.runAll,
+        //   ydoc.dataframes,
+        //   new PQueue({ concurrency: 1 }),
+        //   events
+        // )
         try {
           const tr = new Y.Transaction(ydoc.ydoc, { scheduleId }, true)
-          const failedBlock = await executor.run(tr)
+          // TODO: implement schedule after executionQueue introduction
+          // const failedBlock = await executor.run(tr)
+          const failedBlock = null
           runAll.setAttribute('status', 'idle')
 
           await updateAppState(ydoc, app, socketServer)

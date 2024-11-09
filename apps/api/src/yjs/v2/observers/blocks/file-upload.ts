@@ -9,7 +9,7 @@ import { IBlockObserver } from './index.js'
 import {
   IFileUploadExecutor,
   FileUploadExecutor,
-} from '../../executors/blocks/file-upload.js'
+} from '../../executors_/blocks/file-upload.js'
 import { logger } from '../../../../logger.js'
 import { equals } from 'ramda'
 

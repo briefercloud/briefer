@@ -22,21 +22,6 @@ export type DataframeName = {
 
 export type SQLBlock = BaseBlock<BlockType.SQL> & {
   source: Y.Text
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'try-suggestion-requested'
-    | 'running'
-    | 'running-suggestion'
-    | 'abort-requested'
-    | 'aborting'
-    | 'run-all-enqueued'
-    | 'run-all-running'
-    | 'edit-with-ai-requested'
-    | 'edit-with-ai-running'
-    | 'fix-with-ai-requested'
-    | 'fix-with-ai-running'
-  selectedCode: string | null
   dataframeName: DataframeName
   dataSourceId: string | null
   isFileDataSource: boolean
@@ -75,8 +60,6 @@ export const makeSQLBlock = (
     type: BlockType.SQL,
     title: '',
     source: new Y.Text(opts?.source ?? ''),
-    selectedCode: null,
-    status: 'idle',
     dataframeName: getDataframeName(blocks),
     dataSourceId: opts?.dataSourceId ?? null,
     isFileDataSource: opts?.isFileDataSource ?? false,
@@ -108,8 +91,6 @@ export function getSQLAttributes(
   return {
     ...getBaseAttributes(block),
     source: getSQLSource(block),
-    status: getAttributeOr(block, 'status', 'idle'),
-    selectedCode: getAttributeOr(block, 'selectedCode', null),
     dataframeName: getAttributeOr(
       block,
       'dataframeName',
@@ -150,8 +131,6 @@ export function duplicateSQLBlock(
   const nextAttributes: SQLBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
     source: duplicateYText(prevAttributes.source),
-    status: options?.noState ? 'idle' : prevAttributes.status,
-    selectedCode: prevAttributes.selectedCode,
     dataframeName: clone(prevAttributes.dataframeName),
     dataSourceId: prevAttributes.dataSourceId
       ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
@@ -205,31 +184,6 @@ function getDataframeName(blocks: Y.Map<YBlock>): DataframeName {
   }
 }
 
-export function getSQLBlockExecStatus(
-  block: Y.XmlElement<SQLBlock>
-): ExecStatus {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case undefined:
-    case 'idle':
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-      return getSQLBlockResultStatus(block)
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-running':
-      return 'loading'
-  }
-}
-
 export function getSQLBlockResultStatus(
   block: Y.XmlElement<SQLBlock>
 ): ExecStatus {
@@ -261,28 +215,6 @@ export function getSQLAISuggestions(
   block: Y.XmlElement<SQLBlock>
 ): Y.Text | null {
   return getAttributeOr(block, 'aiSuggestions', null)
-}
-
-export function isSQLBlockAIEditing(block: Y.XmlElement<SQLBlock>): boolean {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-      return true
-    case 'idle':
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-enqueued':
-    case 'run-all-running':
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-    case undefined:
-      return false
-  }
 }
 
 export function getSQLBlockEditWithAIPrompt(
@@ -330,10 +262,6 @@ export function closeSQLEditWithAIPrompt(
   }
 }
 
-export function requestSQLEditWithAI(block: Y.XmlElement<SQLBlock>) {
-  block.setAttribute('status', 'edit-with-ai-requested')
-}
-
 export function updateSQLAISuggestions(
   block: Y.XmlElement<SQLBlock>,
   suggestions: string
@@ -345,32 +273,6 @@ export function updateSQLAISuggestions(
   }
 
   updateYText(aiSuggestions, suggestions)
-}
-
-export function requestSQLFixWithAI(block: Y.XmlElement<SQLBlock>) {
-  block.setAttribute('status', 'fix-with-ai-requested')
-}
-
-export function isFixingSQLWithAI(block: Y.XmlElement<SQLBlock>): boolean {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-      return true
-    case 'idle':
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-enqueued':
-    case 'run-all-running':
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-    case undefined:
-      return false
-  }
 }
 
 export function getSQLBlockExecutedAt(

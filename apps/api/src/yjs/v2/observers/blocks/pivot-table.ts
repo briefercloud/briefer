@@ -7,7 +7,7 @@ import PQueue from 'p-queue'
 import {
   IPivotTableExecutor,
   PivotTableExecutor,
-} from '../../executors/blocks/pivot-table.js'
+} from '../../executors_/blocks/pivot-table.js'
 
 export interface IPivotTableObserver extends IBlockObserver<PivotTableBlock> {}
 

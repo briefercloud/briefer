@@ -10,7 +10,7 @@ import { ApiDocument, UserWorkspaceRole } from '@briefer/database'
 import DashboardView from './DashboardView'
 import DashboardControls from './DashboardControls'
 import { useDataSources } from '@/hooks/useDatasources'
-import { BlockType } from '@briefer/editor'
+import { BlockType, ExecutionQueue } from '@briefer/editor'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import DashboardSkeleton from './DashboardSkeleton'
@@ -294,6 +294,10 @@ export type DraggingBlock = {
   height: number
 }
 function DashboardContent(props: Props & { yDoc: Y.Doc }) {
+  const executionQueue = useMemo(
+    () => ExecutionQueue.fromYjs(props.yDoc),
+    [props.yDoc]
+  )
   const [{ datasources: dataSources }] = useDataSources(
     props.document.workspaceId
   )
@@ -322,6 +326,8 @@ function DashboardContent(props: Props & { yDoc: Y.Doc }) {
         latestBlockId={latestBlockId}
         isEditing={props.isEditing}
         userRole={props.role}
+        userId={props.userId}
+        executionQueue={executionQueue}
       />
       {props.isEditing && (
         <DashboardControls
@@ -330,6 +336,8 @@ function DashboardContent(props: Props & { yDoc: Y.Doc }) {
           yDoc={props.yDoc}
           onDragStart={onDragStart}
           onAddBlock={onAddBlock}
+          userId={props.userId}
+          executionQueue={executionQueue}
         />
       )}
     </div>

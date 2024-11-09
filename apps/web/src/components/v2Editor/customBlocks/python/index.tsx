@@ -10,22 +10,17 @@ import * as Y from 'yjs'
 import {
   type PythonBlock,
   setTitle,
-  getPythonBlockExecStatus,
-  execStatusIsDisabled,
   getPythonAISuggestions,
   isPythonBlockEditWithAIPromptOpen,
-  isPythonBlockAIEditing,
   getPythonBlockEditWithAIPrompt,
-  requestPythonFixWithAI,
-  requestPythonEditWithAI,
   closePythonEditWithAIPrompt,
-  isFixingPythonWithAI,
   togglePythonEditWithAIPromptOpen,
   getBaseAttributes,
   getPythonAttributes,
   createComponentState,
   YBlock,
   updateYText,
+  ExecutionQueue,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
@@ -49,6 +44,9 @@ import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { CodeEditor } from '../../CodeEditor'
+import { exhaustiveCheck } from '@briefer/types'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
 
 interface Props {
   document: ApiDocument
@@ -56,7 +54,6 @@ interface Props {
   blocks: Y.Map<YBlock>
   isEditable: boolean
   dragPreview: ConnectDragPreview | null
-  onRun: (block: Y.XmlElement<PythonBlock>) => void
   onTry: (block: Y.XmlElement<PythonBlock>) => void
   isPublicMode: boolean
   isPDF: boolean
@@ -65,6 +62,8 @@ interface Props {
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   insertBelow?: () => void
+  executionQueue: ExecutionQueue
+  userId: string | null
 }
 function PythonBlock(props: Props) {
   const properties = useProperties()
@@ -99,26 +98,54 @@ function PythonBlock(props: Props) {
     })
   }, [props.block])
 
-  const status = props.block.getAttribute('status')
+  const executions = useBlockExecutions(props.executionQueue, props.block)
+  const execution = head(executions) ?? null
+  const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 
+  const { id: blockId, componentId } = getPythonAttributes(props.block)
   const onRun = useCallback(() => {
-    props.onRun(props.block)
-  }, [props.block, props.onRun])
+    props.executionQueue.enqueueBlock(blockId, props.userId, {
+      _tag: 'python',
+      isSuggestion: false,
+    })
+  }, [props.executionQueue, blockId, props.userId])
 
   const onTry = useCallback(() => {
     props.onTry(props.block)
   }, [props.block, props.onTry])
 
   const onRunAbort = useCallback(() => {
-    if (status === 'running' || status === 'running-suggestion') {
-      props.block.setAttribute('status', 'abort-requested')
-    } else {
-      onRun()
+    switch (status._tag) {
+      case 'enqueued':
+      case 'running':
+        execution?.item.setAborting()
+        break
+      case 'idle':
+      case 'error':
+      case 'success':
+      case 'aborted':
+        onRun()
+        break
+      case 'aborting':
+        break
+      default:
+        exhaustiveCheck(status)
     }
-  }, [status, props.block, onRun])
+  }, [status, execution, onRun])
 
-  const execStatus = getPythonBlockExecStatus(props.block)
-  const statusIsDisabled = execStatusIsDisabled(execStatus)
+  const statusIsDisabled: boolean = (() => {
+    switch (status._tag) {
+      case 'error':
+      case 'success':
+      case 'idle':
+      case 'aborted':
+        return false
+      case 'running':
+      case 'enqueued':
+      case 'aborting':
+        return false
+    }
+  })()
 
   const onToggleEditWithAIPromptOpen = useCallback(() => {
     if (!hasOaiKey) {
@@ -128,7 +155,6 @@ function PythonBlock(props: Props) {
     togglePythonEditWithAIPromptOpen(props.block)
   }, [props.block, hasOaiKey])
 
-  const { id: blockId, componentId } = getPythonAttributes(props.block)
   const [
     { data: components },
     { create: createReusableComponent, update: updateReusableComponent },
@@ -143,24 +169,28 @@ function PythonBlock(props: Props) {
   const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
 
-  const queryStatusText = useMemo(() => {
-    if (status === 'running' || status === 'running-suggestion') {
-      if (envStatus === 'Starting') {
-        return <LoadingEnvText />
-      } else {
+  const queryStatusText: JSX.Element | null = useMemo(() => {
+    switch (status._tag) {
+      case 'idle':
+      case 'success':
+        if (source?.toJSON() === lastQuery && lastQueryTime) {
+          return <PythonSucceededText lastExecutionTime={lastQueryTime} />
+        }
+        return null
+      case 'running':
+      case 'enqueued':
+      case 'aborting':
+        if (envStatus === 'Starting') {
+          return <LoadingEnvText />
+        }
+
         return (
           <ExecutingPythonText startExecutionTime={startQueryTime ?? null} />
         )
-      }
+      case 'error':
+      case 'aborted':
+        return null
     }
-
-    if (status === 'idle') {
-      if (source?.toJSON() === lastQuery && lastQueryTime) {
-        return <PythonSucceededText lastExecutionTime={lastQueryTime} />
-      }
-    }
-
-    return null
   }, [
     status,
     startQueryTime,
@@ -184,7 +214,8 @@ function PythonBlock(props: Props) {
   const results = props.block.getAttribute('result') ?? []
   const aiSuggestions = getPythonAISuggestions(props.block)
   const editWithAIPrompt = getPythonBlockEditWithAIPrompt(props.block)
-  const isAIEditing = isPythonBlockAIEditing(props.block)
+  // TODO
+  const isAIEditing = false // isPythonBlockAIEditing(props.block)
 
   const [editorState, editorAPI] = useEditorAwareness()
 
@@ -194,7 +225,8 @@ function PythonBlock(props: Props) {
   }, [props.block, editorAPI.insert])
 
   const onSubmitEditWithAI = useCallback(() => {
-    requestPythonEditWithAI(props.block)
+    // TODO
+    // requestPythonEditWithAI(props.block)
   }, [props.block])
 
   const onAcceptAISuggestion = useCallback(() => {
@@ -214,14 +246,12 @@ function PythonBlock(props: Props) {
       return
     }
 
-    requestPythonFixWithAI(props.block)
+    // TODO
+    // requestPythonFixWithAI(props.block)
   }, [props.block, hasOaiKey])
 
   const diffButtonsVisible =
-    aiSuggestions !== null &&
-    (status === 'idle' ||
-      status === 'running-suggestion' ||
-      status === 'try-suggestion-requested')
+    !props.isPublicMode && aiSuggestions !== null && status._tag === 'idle'
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(blockId)
@@ -277,7 +307,8 @@ function PythonBlock(props: Props) {
       <PythonOutputs
         className="flex flex-col h-full ph-no-capture"
         outputs={results}
-        isFixWithAILoading={isFixingPythonWithAI(props.block)}
+        // TODO
+        isFixWithAILoading={false} //isFixingPythonWithAI(props.block)}
         onFixWithAI={onFixWithAI}
         isPDF={props.isPDF}
         isDashboardView={props.dashboardPlace === 'view'}
@@ -364,7 +395,7 @@ function PythonBlock(props: Props) {
           </div>
           <ApproveDiffButons
             visible={diffButtonsVisible}
-            canTry={status === 'idle'}
+            canTry={status._tag === 'idle'}
             onTry={onTry}
             onAccept={onAcceptAISuggestion}
             onReject={onRejectAISuggestion}
@@ -389,7 +420,9 @@ function PythonBlock(props: Props) {
                 {aiSuggestions === null &&
                   !props.isPublicMode &&
                   props.isEditable &&
-                  !isFixingPythonWithAI(props.block) && (
+                  // TODO
+                  // !isFixingPythonWithAI(props.block) &&
+                  false && (
                     <button
                       disabled={!props.isEditable}
                       onClick={onToggleEditWithAIPromptOpen}
@@ -466,7 +499,8 @@ function PythonBlock(props: Props) {
           >
             <PythonOutputs
               outputs={results}
-              isFixWithAILoading={isFixingPythonWithAI(props.block)}
+              // TODO
+              isFixWithAILoading={false} // isFixingPythonWithAI(props.block)}
               onFixWithAI={onFixWithAI}
               canFixWithAI={hasOaiKey}
               isPDF={props.isPDF}
@@ -487,21 +521,23 @@ function PythonBlock(props: Props) {
       >
         <button
           onClick={onRunAbort}
-          disabled={status !== 'idle' && status !== 'running'}
+          disabled={status._tag !== 'idle' && status._tag !== 'running'}
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
+                status._tag !== 'idle' && status._tag !== 'running',
+              'bg-red-200':
+                status._tag === 'running' && envStatus === 'Running',
+              'bg-yellow-300':
+                status._tag === 'running' && envStatus !== 'Running',
+              'bg-primary-200': status._tag === 'idle',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
         >
-          {status !== 'idle' ? (
+          {status._tag !== 'idle' ? (
             <div>
-              {execStatus === 'enqueued' ? (
+              {status._tag === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
               ) : (
                 <StopIcon className="w-3 h-3 text-gray-500" />
@@ -509,8 +545,8 @@ function PythonBlock(props: Props) {
               <PythonExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={status}
+                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>
           ) : (

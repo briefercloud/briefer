@@ -22,14 +22,6 @@ import {
 import { clone } from 'ramda'
 
 export type VisualizationBlock = BaseBlock<BlockType.Visualization> & {
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'running'
-    | 'run-all-enqueued'
-    | 'run-all-running'
-    | 'abort-requested'
-    | 'aborting'
   dataframeName: string | null
   spec: JsonObject | null
   chartType: ChartType
@@ -75,7 +67,6 @@ export const makeVisualizationBlock = (
     index: null,
     title: '',
     type: BlockType.Visualization,
-    status: 'idle',
     dataframeName: null,
     spec: null,
     chartType: 'groupedColumn',
@@ -181,7 +172,6 @@ export function getVisualizationAttributes(
 
   return {
     ...getBaseAttributes(block),
-    status: getAttributeOr(block, 'status', 'idle'),
     dataframeName: getAttributeOr(block, 'dataframeName', null),
     spec: getAttributeOr(block, 'spec', null),
     chartType: getAttributeOr(block, 'chartType', 'groupedColumn'),
@@ -224,7 +214,6 @@ export function duplicateVisualizationBlock(
 
   const nextAttributes: VisualizationBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
-    status: prevAttributes.status,
     dataframeName: prevAttributes.dataframeName,
     spec: clone(prevAttributes.spec),
     chartType: prevAttributes.chartType,
@@ -254,26 +243,6 @@ export function duplicateVisualizationBlock(
   }
 
   return nextBlock
-}
-
-export function getVisualizationBlockExecStatus(
-  block: Y.XmlElement<VisualizationBlock>
-): ExecStatus {
-  const status = block.getAttribute('status')
-
-  switch (status) {
-    case undefined:
-    case 'idle':
-      return getVisualizationBlockResultStatus(block)
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-requested':
-    case 'running':
-    case 'run-all-running':
-    case 'abort-requested':
-    case 'aborting':
-      return 'loading'
-  }
 }
 
 export function getVisualizationBlockResultStatus(

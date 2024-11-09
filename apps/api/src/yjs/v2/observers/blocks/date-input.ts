@@ -6,7 +6,7 @@ import { logger } from '../../../../logger.js'
 import {
   IDateInputExecutor,
   DateInputExecutor,
-} from '../../executors/blocks/date-input.js'
+} from '../../executors_/blocks/date-input.js'
 
 export interface IDateInputObserver extends IBlockObserver<DateInputBlock> {}
 

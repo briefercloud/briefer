@@ -4,31 +4,16 @@ import {
   BlockType,
   BaseBlock,
   YBlock,
-  ExecStatus,
   getAttributeOr,
   getBaseAttributes,
   duplicateBaseAttributes,
   duplicateYText,
 } from './index.js'
-import { updateYText } from '../index.js'
+import { ResultStatus, updateYText } from '../index.js'
 import { clone } from 'ramda'
 
 export type PythonBlock = BaseBlock<BlockType.Python> & {
   source: Y.Text
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'try-suggestion-requested'
-    | 'running'
-    | 'running-suggestion'
-    | 'abort-requested'
-    | 'aborting'
-    | 'run-all-enqueued'
-    | 'run-all-running'
-    | 'edit-with-ai-requested'
-    | 'edit-with-ai-running'
-    | 'fix-with-ai-requested'
-    | 'fix-with-ai-running'
   result: Output[]
   isResultHidden: boolean
   isCodeHidden: boolean
@@ -56,7 +41,6 @@ export const makePythonBlock = (
     title: '',
     type: BlockType.Python,
     source: new Y.Text(options?.source ?? ''),
-    status: 'idle',
     result: [],
     isResultHidden: false,
     isCodeHidden: false,
@@ -83,7 +67,6 @@ export function getPythonAttributes(
   return {
     ...getBaseAttributes(block),
     source: getPythonSource(block),
-    status: getAttributeOr(block, 'status', 'idle'),
     result: getPythonBlockResult(block),
     isResultHidden: getAttributeOr(block, 'isResultHidden', false),
     isCodeHidden: getAttributeOr(block, 'isCodeHidden', false),
@@ -107,7 +90,6 @@ export function duplicatePythonBlock(
   const nextAttributes: PythonBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
     source: duplicateYText(prevAttributes.source),
-    status: options?.noState ? 'idle' : prevAttributes.status,
     result: options?.noState ? [] : clone(prevAttributes.result),
     isResultHidden: options?.noState ? false : prevAttributes.isResultHidden,
     isCodeHidden: options?.noState ? false : prevAttributes.isCodeHidden,
@@ -136,34 +118,9 @@ export function duplicatePythonBlock(
   return yBlock
 }
 
-export function getPythonBlockExecStatus(
-  block: Y.XmlElement<PythonBlock>
-): ExecStatus {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case undefined:
-    case 'idle':
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-      return getPythonBlockResultStatus(block)
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-running':
-      return 'loading'
-  }
-}
-
 export function getPythonBlockResultStatus(
   block: Y.XmlElement<PythonBlock>
-): ExecStatus {
+): ResultStatus {
   const lastQueryTime = block.getAttribute('lastQueryTime')
   if (!lastQueryTime) {
     return 'idle'
@@ -190,30 +147,6 @@ export function getPythonAISuggestions(
   block: Y.XmlElement<PythonBlock>
 ): Y.Text | null {
   return getAttributeOr(block, 'aiSuggestions', null)
-}
-
-export function isPythonBlockAIEditing(
-  block: Y.XmlElement<PythonBlock>
-): boolean {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-      return true
-    case 'idle':
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-enqueued':
-    case 'run-all-running':
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-    case undefined:
-      return false
-  }
 }
 
 export function getPythonBlockEditWithAIPrompt(
@@ -263,10 +196,6 @@ export function closePythonEditWithAIPrompt(
   }
 }
 
-export function requestPythonEditWithAI(block: Y.XmlElement<PythonBlock>) {
-  block.setAttribute('status', 'edit-with-ai-requested')
-}
-
 export function updatePythonAISuggestions(
   block: Y.XmlElement<PythonBlock>,
   suggestions: string
@@ -278,34 +207,6 @@ export function updatePythonAISuggestions(
   }
 
   updateYText(aiSuggestions, suggestions)
-}
-
-export function requestPythonFixWithAI(block: Y.XmlElement<PythonBlock>) {
-  block.setAttribute('status', 'fix-with-ai-requested')
-}
-
-export function isFixingPythonWithAI(
-  block: Y.XmlElement<PythonBlock>
-): boolean {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case 'fix-with-ai-requested':
-    case 'fix-with-ai-running':
-      return true
-    case 'idle':
-    case 'run-requested':
-    case 'try-suggestion-requested':
-    case 'running':
-    case 'running-suggestion':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-enqueued':
-    case 'run-all-running':
-    case 'edit-with-ai-requested':
-    case 'edit-with-ai-running':
-    case undefined:
-      return false
-  }
 }
 
 export function getPythonBlockResult(

@@ -9,21 +9,15 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as Y from 'yjs'
 import {
   type SQLBlock,
   setTitle,
-  getSQLBlockExecStatus,
-  execStatusIsDisabled,
   getSQLSource,
-  isSQLBlockAIEditing,
   toggleSQLEditWithAIPromptOpen,
-  requestSQLEditWithAI,
   isSQLBlockEditWithAIPromptOpen,
   closeSQLEditWithAIPrompt,
-  isFixingSQLWithAI,
-  requestSQLFixWithAI,
   updateYText,
   YBlockGroup,
   YBlock,
@@ -31,6 +25,7 @@ import {
   addGroupedBlock,
   getSQLAttributes,
   createComponentState,
+  ExecutionQueue,
 } from '@briefer/editor'
 import SQLResult from './SQLResult'
 import type {
@@ -62,7 +57,9 @@ import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { CodeEditor } from '../../CodeEditor'
 import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
-import { SQLQueryConfiguration } from '@briefer/types'
+import { exhaustiveCheck, SQLQueryConfiguration } from '@briefer/types'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -76,7 +73,6 @@ interface Props {
   isEditable: boolean
   isPublicMode: boolean
   dragPreview: ConnectDragPreview | null
-  onRun: (block: Y.XmlElement<SQLBlock>) => void
   onTry: (block: Y.XmlElement<SQLBlock>) => void
   dashboardMode: 'live' | 'editing' | 'none'
   hasMultipleTabs: boolean
@@ -84,8 +80,9 @@ interface Props {
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
+  executionQueue: ExecutionQueue
+  userId: string | null
 }
-
 function SQLBlock(props: Props) {
   const properties = useProperties()
   const [workspaces] = useWorkspaces()
@@ -115,25 +112,54 @@ function SQLBlock(props: Props) {
     })
   }, [props.block])
 
-  const onSQLSelectionChanged = useCallback(
-    (selectedCode: string | null) => {
-      props.block.setAttribute('selectedCode', selectedCode)
-    },
-    [props.block]
-  )
+  const [selectedCode, setSelectedCode] = useState<string | null>(null)
+  const onSQLSelectionChanged = useCallback((selectedCode: string | null) => {
+    setSelectedCode(selectedCode)
+  }, [])
+
+  const {
+    dataframeName,
+    id: blockId,
+    title,
+    result,
+    isCodeHidden,
+    isResultHidden,
+    editWithAIPrompt,
+    aiSuggestions,
+    dataSourceId,
+    isFileDataSource,
+    componentId,
+  } = getSQLAttributes(props.block, props.blocks)
 
   const onRun = useCallback(() => {
-    props.onRun(props.block)
-  }, [props.onRun, props.block])
+    props.executionQueue.enqueueBlock(blockId, props.userId, {
+      _tag: 'sql',
+      isSuggestion: false,
+      selectedCode,
+    })
+  }, [props.executionQueue, blockId, props.userId, selectedCode])
 
   const onTry = useCallback(() => {
     props.onTry(props.block)
   }, [props.onTry, props.block])
 
-  const status = props.block.getAttribute('status')
+  const executions = useBlockExecutions(props.executionQueue, props.block)
+  const execution = head(executions) ?? null
+  const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 
-  const execStatus = getSQLBlockExecStatus(props.block)
-  const statusIsDisabled = execStatusIsDisabled(execStatus)
+  const statusIsDisabled: boolean = (() => {
+    switch (status._tag) {
+      case 'error':
+      case 'success':
+      case 'idle':
+      case 'aborted':
+        return false
+      case 'running':
+      case 'enqueued':
+      case 'aborting':
+        return false
+    }
+  })()
 
   const onToggleEditWithAIPromptOpen = useCallback(() => {
     if (!hasOaiKey) {
@@ -149,20 +175,6 @@ function SQLBlock(props: Props) {
       updateYText(getSQLSource(props.block), NO_DS_TEXT)
     }
   }, [props.dataSources, props.block])
-
-  const {
-    dataframeName,
-    id: blockId,
-    title,
-    result,
-    isCodeHidden,
-    isResultHidden,
-    editWithAIPrompt,
-    aiSuggestions,
-    dataSourceId,
-    isFileDataSource,
-    componentId,
-  } = getSQLAttributes(props.block, props.blocks)
 
   const dataSource = useMemo(
     () => props.dataSources.find((d) => d.config.data.id === dataSourceId),
@@ -210,19 +222,30 @@ function SQLBlock(props: Props) {
   )
 
   const onRunAbort = useCallback(() => {
-    if (status === 'running') {
-      props.block.setAttribute('status', 'abort-requested')
-    } else {
-      onRun()
+    switch (status._tag) {
+      case 'enqueued':
+      case 'running':
+        execution?.item.setAborting()
+        break
+      case 'idle':
+      case 'error':
+      case 'success':
+      case 'aborted':
+        onRun()
+        break
+      case 'aborting':
+        break
+      default:
+        exhaustiveCheck(status)
     }
-  }, [status, props.block, onRun])
+  }, [status, execution, onRun])
 
   const { source, configuration } = getSQLAttributes(props.block, props.blocks)
   const lastQuery = props.block.getAttribute('lastQuery')
   const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
   const queryStatusText = useMemo(() => {
-    switch (execStatus) {
+    switch (status._tag) {
       case 'idle':
       case 'error':
       case 'success': {
@@ -232,27 +255,29 @@ function SQLBlock(props: Props) {
 
         return null
       }
+      case 'running':
       case 'enqueued':
-      case 'loading':
+      case 'aborting':
         if (envStatus === 'Starting') {
           return <LoadingEnvText />
-        } else {
-          return (
-            <LoadingQueryText startExecutionTime={startQueryTime ?? null} />
-          )
         }
+        return <LoadingQueryText startExecutionTime={startQueryTime ?? null} />
+      case 'error':
+      case 'aborted':
+        return null
     }
   }, [
-    execStatus,
-    source.toJSON(),
+    status,
+    startQueryTime,
     lastQuery,
     lastQueryTime,
-    startQueryTime,
+    source.toJSON(),
     envStatus,
   ])
 
   const onSubmitEditWithAI = useCallback(() => {
-    requestSQLEditWithAI(props.block)
+    // TODO
+    // requestSQLEditWithAI(props.block)
   }, [props.block])
 
   const onAcceptAISuggestion = useCallback(() => {
@@ -272,15 +297,17 @@ function SQLBlock(props: Props) {
       return
     }
 
-    const status = props.block.getAttribute('status')
-    if (status === 'fix-with-ai-running') {
-      props.block.setAttribute('status', 'idle')
-    } else {
-      requestSQLFixWithAI(props.block)
-    }
+    // TODO
+    // const status = props.block.getAttribute('status')
+    // if (status === 'fix-with-ai-running') {
+    //   props.block.setAttribute('status', 'idle')
+    // } else {
+    //   requestSQLFixWithAI(props.block)
+    // }
   }, [props.block, hasOaiKey])
 
-  const isAIEditing = isSQLBlockAIEditing(props.block)
+  // TODO
+  const isAIEditing = false // isSQLBlockAIEditing(props.block)
 
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -293,11 +320,7 @@ function SQLBlock(props: Props) {
   }, [copied, setCopied])
 
   const diffButtonsVisible =
-    !props.isPublicMode &&
-    aiSuggestions !== null &&
-    (status === 'idle' ||
-      status === 'running-suggestion' ||
-      status === 'try-suggestion-requested')
+    !props.isPublicMode && aiSuggestions !== null && status._tag === 'idle'
 
   const router = useRouter()
   const onAddDataSource = useCallback(() => {
@@ -381,7 +404,7 @@ function SQLBlock(props: Props) {
     if (!result) {
       return (
         <div className="flex items-center justify-center h-full">
-          {status !== 'idle' ? (
+          {status._tag !== 'idle' ? (
             <LargeSpinner color="#b8f229" />
           ) : (
             <div className="text-gray-500">No query results</div>
@@ -400,7 +423,8 @@ function SQLBlock(props: Props) {
         dataframeName={dataframeName?.value ?? ''}
         isResultHidden={isResultHidden ?? false}
         toggleResultHidden={toggleResultHidden}
-        isFixingWithAI={isFixingSQLWithAI(props.block)}
+        // TODO
+        isFixingWithAI={false} // isFixingSQLWithAI(props.block)}
         onFixWithAI={onFixWithAI}
         dashboardMode={props.dashboardMode}
         canFixWithAI={hasOaiKey}
@@ -544,7 +568,7 @@ function SQLBlock(props: Props) {
           </div>
           <ApproveDiffButons
             visible={diffButtonsVisible}
-            canTry={status === 'idle'}
+            canTry={status._tag === 'idle'}
             onTry={onTry}
             onAccept={onAcceptAISuggestion}
             onReject={onRejectAISuggestion}
@@ -570,7 +594,9 @@ function SQLBlock(props: Props) {
                 {!props.isPublicMode &&
                   aiSuggestions === null &&
                   props.isEditable &&
-                  !isFixingSQLWithAI(props.block) && (
+                  // TODO
+                  // !isFixingPythonWithAI(props.block) &&
+                  false && (
                     <button
                       disabled={!props.isEditable}
                       onClick={onToggleEditWithAIPromptOpen}
@@ -625,7 +651,8 @@ function SQLBlock(props: Props) {
             dataframeName={dataframeName?.value ?? ''}
             isResultHidden={isResultHidden ?? false}
             toggleResultHidden={toggleResultHidden}
-            isFixingWithAI={isFixingSQLWithAI(props.block)}
+            // TODO
+            isFixingWithAI={false} // isFixingSQLWithAI(props.block)}
             onFixWithAI={onFixWithAI}
             dashboardMode={props.dashboardMode}
             canFixWithAI={hasOaiKey}
@@ -641,21 +668,23 @@ function SQLBlock(props: Props) {
       >
         <button
           onClick={onRunAbort}
-          disabled={status !== 'idle' && status !== 'running'}
+          disabled={status._tag !== 'idle' && status._tag !== 'running'}
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
+                status._tag !== 'idle' && status._tag !== 'running',
+              'bg-red-200':
+                status._tag === 'running' && envStatus === 'Running',
+              'bg-yellow-300':
+                status._tag === 'running' && envStatus !== 'Running',
+              'bg-primary-200': status._tag === 'idle',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
         >
-          {status !== 'idle' ? (
+          {status._tag !== 'idle' ? (
             <div>
-              {execStatus === 'enqueued' ? (
+              {status._tag === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
               ) : (
                 <StopIcon className="w-3 h-3 text-gray-500" />
@@ -663,8 +692,8 @@ function SQLBlock(props: Props) {
               <SQLExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={status}
+                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>
           ) : props.dataSources.size > 0 || headerSelectValue === 'duckdb' ? (

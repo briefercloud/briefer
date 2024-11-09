@@ -100,7 +100,7 @@ describe('SQLExecutor', () => {
 
   describe('runQuery', () => {
     it('should execute sql by performing makeSQLQuery effect', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const prevTime = new Date(Date.now() - 1000 * 60)
       block.setAttribute('lastQueryTime', prevTime.toISOString())
       // @ts-ignore
@@ -163,7 +163,7 @@ describe('SQLExecutor', () => {
     })
 
     it('should try AI suggestion for sql when calling run as a suggestion attempt', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const prevTime = new Date(Date.now() - 1000 * 60)
       block.setAttribute('lastQueryTime', prevTime.toISOString())
       // @ts-ignore
@@ -279,7 +279,7 @@ describe('SQLExecutor', () => {
         }),
         abort,
       ])
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const runningPromise = blocksExecutor.runQuery(
         block,
 
@@ -366,7 +366,7 @@ describe('SQLExecutor', () => {
         rows: [],
         count: 0,
       })
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
 
       await blocksExecutor.renameDataFrame(block)
 

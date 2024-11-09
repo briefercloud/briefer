@@ -10,7 +10,7 @@ import * as Y from 'yjs'
 import { IBlockObserver } from './index.js'
 import { logger } from '../../../../logger.js'
 import { setVariable } from '../../../../python/input.js'
-import { IInputExecutor, InputExecutor } from '../../executors/blocks/input.js'
+import { IInputExecutor, InputExecutor } from '../../executors_/blocks/input.js'
 
 export type InputEffects = {
   setVariable: typeof setVariable

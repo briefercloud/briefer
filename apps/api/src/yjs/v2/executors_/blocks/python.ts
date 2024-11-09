@@ -162,7 +162,7 @@ export class PythonExecutor implements IPythonExecutor {
           await promise
           await this.updateDataFrames(blockId)
 
-          block.setAttribute('status', 'idle')
+          // block.setAttribute('status', 'idle')
           block.setAttribute(
             'lastQuery',
             block.getAttribute('source')!.toJSON()
@@ -200,7 +200,7 @@ export class PythonExecutor implements IPythonExecutor {
 
     const running = this.runningCode.get(block)
     if (!running) {
-      block.setAttribute('status', 'idle')
+      // block.setAttribute('status', 'idle')
       return
     }
 

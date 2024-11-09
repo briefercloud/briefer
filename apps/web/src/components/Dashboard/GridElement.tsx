@@ -2,6 +2,7 @@ import * as Y from 'yjs'
 import {
   BlockType,
   DateInputBlock as DateInputBlockT,
+  ExecutionQueue,
   YBlock,
   getBlocks,
   getDataframes,
@@ -38,6 +39,8 @@ interface Props {
   dataSources: APIDataSources
   isEditingDashboard: boolean
   latestBlockId: string | null
+  userId: string | null
+  executionQueue: ExecutionQueue
 }
 
 const NO_TITLE_BLOCKS = [
@@ -109,7 +112,6 @@ function GridElement(props: Props) {
             dataSources={props.dataSources}
             isEditable={false}
             dragPreview={null}
-            onRun={() => {}}
             onTry={() => {}}
             isPublicMode={false}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
@@ -118,6 +120,8 @@ function GridElement(props: Props) {
             onToggleIsBlockHiddenInPublished={() => {}}
             onSchemaExplorer={() => {}}
             insertBelow={() => {}}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onPython: (block) => (
@@ -128,7 +132,6 @@ function GridElement(props: Props) {
             blocks={blocks.value}
             isEditable={false}
             dragPreview={null}
-            onRun={() => {}}
             onTry={() => {}}
             isPDF={false}
             dashboardPlace="view"
@@ -136,6 +139,8 @@ function GridElement(props: Props) {
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onVisualization: (block) => (
@@ -146,7 +151,6 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            onRun={() => {}}
             isDashboard={true}
             isPublicMode={false}
             hasMultipleTabs={false}
@@ -154,6 +158,8 @@ function GridElement(props: Props) {
             onToggleIsBlockHiddenInPublished={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onPivotTable: (block) => (
@@ -237,6 +243,8 @@ function GridElement(props: Props) {
       isEditingBlock,
       onRun,
       onSaveDateInput,
+      props.userId,
+      props.executionQueue,
     ]
   )
 

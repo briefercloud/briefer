@@ -5,7 +5,7 @@ import { logger } from '../../../../logger.js'
 import {
   IWritebackExecutor,
   WritebackExecutor,
-} from '../../executors/blocks/writeback.js'
+} from '../../executors_/blocks/writeback.js'
 import PQueue from 'p-queue'
 import { WritebackEvents } from '../../../../events/index.js'
 

@@ -2,7 +2,7 @@ import { DataframeName, SQLBlock, YBlock } from '@briefer/editor'
 import * as Y from 'yjs'
 import { IBlockObserver } from './index.js'
 import { logger } from '../../../../logger.js'
-import { ISQLExecutor, SQLExecutor } from '../../executors/blocks/sql.js'
+import { ISQLExecutor, SQLExecutor } from '../../executors_/blocks/sql.js'
 import { DataFrame } from '@briefer/types'
 import PQueue from 'p-queue'
 import { config } from '../../../../config/index.js'
@@ -26,29 +26,26 @@ export class SQLObserver implements ISQLObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<SQLBlock>) {
-    const status = block.getAttribute('status')
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        status,
-      },
-      'handling initial sql block state'
-    )
-
-    if (status !== 'idle') {
-      block.setAttribute('status', 'idle')
-    }
-
-    const dataframeName = block.getAttribute('dataframeName')
-    if (dataframeName && dataframeName?.status !== 'idle') {
-      block.setAttribute('dataframeName', {
-        ...dataframeName,
-        status: 'idle',
-      })
-    }
+    // const status = block.getAttribute('status')
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     status,
+    //   },
+    //   'handling initial sql block state'
+    // )
+    // if (status !== 'idle') {
+    //   block.setAttribute('status', 'idle')
+    // }
+    // const dataframeName = block.getAttribute('dataframeName')
+    // if (dataframeName && dataframeName?.status !== 'idle') {
+    //   block.setAttribute('dataframeName', {
+    //     ...dataframeName,
+    //     status: 'idle',
+    //   })
+    // }
   }
 
   public async handleBlockEvent(
@@ -118,83 +115,79 @@ export class SQLObserver implements ISQLObserver {
     block: Y.XmlElement<SQLBlock>,
     tr: Y.Transaction
   ) {
-    const blockId = block.getAttribute('id')
-    const status = block.getAttribute('status')
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status,
-      },
-      'handling block status change'
-    )
-
-    try {
-      switch (status) {
-        case 'run-requested':
-          block.setAttribute('status', 'running')
-          break
-        case 'try-suggestion-requested':
-          block.setAttribute('status', 'running-suggestion')
-          break
-        case 'abort-requested':
-          block.setAttribute('status', 'aborting')
-          break
-        case 'aborting':
-          await this.executor.abortQuery(block)
-          block.setAttribute('status', 'idle')
-          break
-        case 'running':
-          await this.executor.runQuery(block, tr, false, false)
-          block.setAttribute('status', 'idle')
-          break
-        case 'running-suggestion':
-          await this.executor.runQuery(block, tr, true, false)
-          block.setAttribute('status', 'idle')
-          break
-        case 'idle':
-          break
-        case 'edit-with-ai-requested':
-          block.setAttribute('status', 'edit-with-ai-running')
-          break
-        case 'edit-with-ai-running':
-          await this.executor.editWithAI(block, tr)
-          block.setAttribute('status', 'idle')
-          break
-        case 'fix-with-ai-requested':
-          block.setAttribute('status', 'fix-with-ai-running')
-          break
-        case 'fix-with-ai-running':
-          await this.executor.fixWithAI(block, tr)
-          block.setAttribute('status', 'idle')
-          break
-      }
-    } catch (err) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId,
-          status,
-          err,
-        },
-        'Error while handling block status change'
-      )
-
-      block.setAttribute('status', 'idle')
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status,
-      },
-      'finished handling block status change'
-    )
+    // const blockId = block.getAttribute('id')
+    // const status = block.getAttribute('status')
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status,
+    //   },
+    //   'handling block status change'
+    // )
+    // try {
+    //   switch (status) {
+    //     case 'run-requested':
+    //       block.setAttribute('status', 'running')
+    //       break
+    //     case 'try-suggestion-requested':
+    //       block.setAttribute('status', 'running-suggestion')
+    //       break
+    //     case 'abort-requested':
+    //       block.setAttribute('status', 'aborting')
+    //       break
+    //     case 'aborting':
+    //       await this.executor.abortQuery(block)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'running':
+    //       await this.executor.runQuery(block, tr, false, false)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'running-suggestion':
+    //       await this.executor.runQuery(block, tr, true, false)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'idle':
+    //       break
+    //     case 'edit-with-ai-requested':
+    //       block.setAttribute('status', 'edit-with-ai-running')
+    //       break
+    //     case 'edit-with-ai-running':
+    //       await this.executor.editWithAI(block, tr)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'fix-with-ai-requested':
+    //       block.setAttribute('status', 'fix-with-ai-running')
+    //       break
+    //     case 'fix-with-ai-running':
+    //       await this.executor.fixWithAI(block, tr)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //   }
+    // } catch (err) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId,
+    //       status,
+    //       err,
+    //     },
+    //     'Error while handling block status change'
+    //   )
+    //   block.setAttribute('status', 'idle')
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status,
+    //   },
+    //   'finished handling block status change'
+    // )
   }
 
   private async handleSQLBlockDataframeNameChange(

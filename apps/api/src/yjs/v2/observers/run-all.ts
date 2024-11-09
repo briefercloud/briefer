@@ -6,7 +6,7 @@ import {
   getRunAllAttributes,
   isRunAll,
 } from '@briefer/editor'
-import { IRunAllExecutor, RunAllExecutor } from '../executors/run-all.js'
+import { IRunAllExecutor, RunAllExecutor } from '../executors_/run-all.js'
 import { DataFrame } from '@briefer/types'
 import PQueue from 'p-queue'
 import { logger } from '../../../logger.js'

@@ -7,7 +7,7 @@ import { DataFrame } from '@briefer/types'
 import {
   IVisualizationExecutor,
   VisualizationExecutor,
-} from '../../executors/blocks/visualization.js'
+} from '../../executors_/blocks/visualization.js'
 import { VisEvents } from '../../../../events/index.js'
 
 export interface IVisualizationObserver
@@ -33,21 +33,19 @@ export class VisualizationObserver implements IVisualizationObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<VisualizationBlock>) {
-    const status = block.getAttribute('status')
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        status,
-      },
-      'handling initial visualization block state'
-    )
-
-    if (status !== 'idle') {
-      block.setAttribute('status', 'idle')
-    }
+    // const status = block.getAttribute('status')
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     status,
+    //   },
+    //   'handling initial visualization block state'
+    // )
+    // if (status !== 'idle') {
+    //   block.setAttribute('status', 'idle')
+    // }
   }
 
   public async handleBlockEvent(
@@ -116,64 +114,60 @@ export class VisualizationObserver implements IVisualizationObserver {
     block: Y.XmlElement<VisualizationBlock>,
     tr: Y.Transaction
   ) {
-    const blockId = block.getAttribute('id')
-    const status = block.getAttribute('status')
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status,
-      },
-      'Handling visualization block status change'
-    )
-
-    try {
-      switch (status) {
-        case 'run-requested':
-          await this.executor.abort(block)
-          block.setAttribute('status', 'running')
-          break
-        case 'running':
-          await this.executor.run(block, tr)
-          if (this.executor.isIdle()) {
-            block.setAttribute('status', 'idle')
-          }
-          break
-        case 'aborting':
-          await this.executor.abort(block)
-          block.setAttribute('status', 'idle')
-          break
-        case 'abort-requested':
-          block.setAttribute('status', 'aborting')
-          break
-      }
-    } catch (err) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId,
-          status,
-          err,
-        },
-        'Error while handling block status change'
-      )
-
-      // TODO: introduce an unexpetected error result
-      block.setAttribute('status', 'idle')
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status: block.getAttribute('status'),
-      },
-      'Finished handling visualization block status change'
-    )
+    // const blockId = block.getAttribute('id')
+    // const status = block.getAttribute('status')
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status,
+    //   },
+    //   'Handling visualization block status change'
+    // )
+    // try {
+    //   switch (status) {
+    //     case 'run-requested':
+    //       await this.executor.abort(block)
+    //       block.setAttribute('status', 'running')
+    //       break
+    //     case 'running':
+    //       await this.executor.run(block, tr)
+    //       if (this.executor.isIdle()) {
+    //         block.setAttribute('status', 'idle')
+    //       }
+    //       break
+    //     case 'aborting':
+    //       await this.executor.abort(block)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'abort-requested':
+    //       block.setAttribute('status', 'aborting')
+    //       break
+    //   }
+    // } catch (err) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId,
+    //       status,
+    //       err,
+    //     },
+    //     'Error while handling block status change'
+    //   )
+    //   // TODO: introduce an unexpetected error result
+    //   block.setAttribute('status', 'idle')
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status: block.getAttribute('status'),
+    //   },
+    //   'Finished handling visualization block status change'
+    // )
   }
 
   public static make(

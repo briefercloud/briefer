@@ -33,6 +33,5 @@ describe('makePythonBlock', () => {
     expect(pythonBlock.getAttribute('type')).toBe(BlockType.Python)
     expect(pythonBlock.getAttribute('id')).toBe('blockId')
     expect(pythonBlock.getAttribute('source')?.toString()).toBe('')
-    expect(pythonBlock.getAttribute('status')).toBe('idle')
   })
 })

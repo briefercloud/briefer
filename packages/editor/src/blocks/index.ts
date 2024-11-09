@@ -9,7 +9,6 @@ import {
   SQLBlock,
   duplicateSQLBlock,
   getSQLBlockErrorMessage,
-  getSQLBlockExecStatus,
   getSQLBlockExecutedAt,
   getSQLBlockResultStatus,
 } from './sql.js'
@@ -17,7 +16,6 @@ import {
   PythonBlock,
   duplicatePythonBlock,
   getPythonBlockErrorMessage,
-  getPythonBlockExecStatus,
   getPythonBlockExecutedAt,
   getPythonBlockResultStatus,
 } from './python.js'
@@ -25,7 +23,6 @@ import {
   VisualizationBlock,
   duplicateVisualizationBlock,
   getVisualizationBlockErrorMessage,
-  getVisualizationBlockExecStatus,
   getVisualizationBlockExecutedAt,
   getVisualizationBlockResultStatus,
 } from './visualization.js'
@@ -89,6 +86,7 @@ export enum BlockType {
 }
 
 export type ExecStatus = 'enqueued' | 'loading' | 'idle' | 'error' | 'success'
+export type ResultStatus = 'idle' | 'error' | 'success'
 
 export type BaseBlock<T extends BlockType> = {
   id: string
@@ -136,9 +134,12 @@ export const requestRun = <B extends YBlock>(
   }
   for (const block of queue) {
     switchBlockType<void>(block, {
-      onPython: (b) => b.setAttribute('status', 'run-requested'),
-      onSQL: (b) => b.setAttribute('status', 'run-requested'),
-      onVisualization: (b) => b.setAttribute('status', 'run-requested'),
+      // TODO
+      onPython: (b) => {}, // b.setAttribute('status', 'run-requested'),
+      // TODO
+      onSQL: (b) => {}, // b.setAttribute('status', 'run-requested'),
+      // TODO
+      onVisualization: (b) => {}, // b.setAttribute('status', 'run-requested'),
       onWriteback: (b) => b.setAttribute('status', 'run-requested'),
       onInput: inputRequestSaveValue,
       onDropdownInput: dropdownInputRequestSaveValue,
@@ -173,8 +174,10 @@ export const requestTrySuggestion = (
 
   for (const block of queue) {
     switchBlockType<void>(block, {
-      onPython: (b) => b.setAttribute('status', 'try-suggestion-requested'),
-      onSQL: (b) => b.setAttribute('status', 'try-suggestion-requested'),
+      // TODO
+      onPython: (b) => {}, // b.setAttribute('status', 'try-suggestion-requested'),
+      // TODO
+      onSQL: (b) => {}, // b.setAttribute('status', 'try-suggestion-requested'),
       onVisualization: noop,
       onInput: inputRequestSaveValue,
       onDropdownInput: dropdownInputRequestSaveValue,
@@ -197,9 +200,11 @@ export const getExecStatus = (
   blocks: Y.Map<YBlock>
 ): ExecStatus =>
   switchBlockType(block, {
-    onPython: getPythonBlockExecStatus,
-    onSQL: getSQLBlockExecStatus,
-    onVisualization: getVisualizationBlockExecStatus,
+    // TODO
+    onPython: () => 'idle', //getPythonBlockExecStatus,
+    // TODO
+    onSQL: () => 'idle', // getSQLBlockExecStatus,
+    onVisualization: () => 'idle', // getVisualizationBlockExecStatus,
     onInput: (block) => getInputBlockExecStatus(block, blocks),
     onDropdownInput: (block) => getDropdownInputBlockExecStatus(block, blocks),
     onDateInput: (block) => getDateInputBlockExecStatus(block),

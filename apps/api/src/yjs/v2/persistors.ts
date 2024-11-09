@@ -1018,8 +1018,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'source', 'editWithAIPrompt'], prevAttributes),
-      omit(['status', 'source', 'editWithAIPrompt'], nextAttributes)
+      omit(['source', 'editWithAIPrompt'], prevAttributes),
+      omit(['source', 'editWithAIPrompt'], nextAttributes)
     )
   }
 
@@ -1044,8 +1044,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'source', 'editWithAIPrompt'], prevAttributes),
-      omit(['status', 'source', 'editWithAIPrompt'], nextAttributes)
+      omit(['source', 'editWithAIPrompt'], prevAttributes),
+      omit(['source', 'editWithAIPrompt'], nextAttributes)
     )
   }
 
@@ -1056,10 +1056,7 @@ export class AppPersistor implements Persistor {
     const prevAttributes = prevBlock.getAttributes()
     const nextAttributes = nextBlock.getAttributes()
 
-    return equals(
-      omit(['status'], prevAttributes),
-      omit(['status'], nextAttributes)
-    )
+    return equals(prevAttributes, nextAttributes)
   }
 
   private isInputBlockAcceptable(

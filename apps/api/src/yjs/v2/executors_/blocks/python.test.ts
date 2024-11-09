@@ -66,7 +66,7 @@ describe('PythonExecutor', () => {
 
   describe('run', () => {
     it('should execute python by performing executePython effect', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const prevTime = new Date(Date.now() - 1000 * 60)
       block.setAttribute('lastQueryTime', prevTime.toISOString())
       const result: Output[] = [{ type: 'stdio', name: 'stdout', text: '3' }]
@@ -106,7 +106,7 @@ describe('PythonExecutor', () => {
         expect.any(Function),
         { storeHistory: true }
       )
-      expect(block.getAttribute('status')).toEqual('idle')
+      // expect(block.getAttribute('status')).toEqual('idle')
       expect(block.getAttribute('result')).toEqual(result)
       expect(
         new Date(block.getAttribute('lastQueryTime')!).getTime()
@@ -125,7 +125,7 @@ describe('PythonExecutor', () => {
     })
 
     it('should set error states when running python fails', async () => {
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const prevTime = new Date(Date.now() - 1000 * 60)
       block.setAttribute('lastQueryTime', prevTime.toISOString())
       const result: Output[] = [
@@ -187,7 +187,7 @@ describe('PythonExecutor', () => {
           })
       )
 
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const runP = blocksExecutor.run(
         block,
         new Y.Transaction(ydoc, {}, true),
@@ -219,7 +219,7 @@ describe('PythonExecutor', () => {
         }),
         abort,
       })
-      block.setAttribute('status', 'running')
+      // block.setAttribute('status', 'running')
       const runningPromise = blocksExecutor.run(
         block,
         new Y.Transaction(ydoc, {}, true),

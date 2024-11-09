@@ -224,7 +224,7 @@ export class JupyterManager implements IJupyterManager {
     const result = await this.jupyterExtension.deleteFile(
       await this.getFilepath(fileName)
     )
-    if (result._tag === 'error') {
+    if (result._tag === 'error' && result.reason !== 'not-found') {
       throw new Error(`Failed to delete file: ${result.reason}`)
     }
   }
