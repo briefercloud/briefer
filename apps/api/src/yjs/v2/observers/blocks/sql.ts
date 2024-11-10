@@ -194,68 +194,63 @@ export class SQLObserver implements ISQLObserver {
     block: Y.XmlElement<SQLBlock>,
     oldValue: DataframeName
   ) {
-    const dataframeName = block.getAttribute('dataframeName')
-    if (!dataframeName) {
-      return
-    }
-
-    if (dataframeName.status === oldValue.status) {
-      return
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        dataframeName,
-      },
-      'handling dataframe name change'
-    )
-
-    try {
-      if (dataframeName.status === 'loading') {
-        block.setAttribute('dataframeName', {
-          ...dataframeName,
-          status: 'running',
-        })
-      } else if (dataframeName.status === 'running') {
-        await this.executor.renameDataFrame(block)
-        const newDfName = block.getAttribute('dataframeName')
-        block.setAttribute('dataframeName', {
-          ...(newDfName ?? dataframeName),
-          status: 'idle',
-        })
-      }
-    } catch (err) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId: block.getAttribute('id'),
-          dataframeName,
-          err,
-        },
-        'Error while handling dataframe name change'
-      )
-
-      const newDfName = block.getAttribute('dataframeName')
-      block.setAttribute('dataframeName', {
-        ...(newDfName ?? dataframeName),
-        status: 'idle',
-        error: 'unexpected',
-      })
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        dataframeName,
-      },
-      'finished handling dataframe name change'
-    )
+    // const dataframeName = block.getAttribute('dataframeName')
+    // if (!dataframeName) {
+    //   return
+    // }
+    // if (dataframeName.status === oldValue.status) {
+    //   return
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     dataframeName,
+    //   },
+    //   'handling dataframe name change'
+    // )
+    // try {
+    //   if (dataframeName.status === 'loading') {
+    //     block.setAttribute('dataframeName', {
+    //       ...dataframeName,
+    //       status: 'running',
+    //     })
+    //   } else if (dataframeName.status === 'running') {
+    //     await this.executor.renameDataFrame(block)
+    //     const newDfName = block.getAttribute('dataframeName')
+    //     block.setAttribute('dataframeName', {
+    //       ...(newDfName ?? dataframeName),
+    //       status: 'idle',
+    //     })
+    //   }
+    // } catch (err) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId: block.getAttribute('id'),
+    //       dataframeName,
+    //       err,
+    //     },
+    //     'Error while handling dataframe name change'
+    //   )
+    //   const newDfName = block.getAttribute('dataframeName')
+    //   block.setAttribute('dataframeName', {
+    //     ...(newDfName ?? dataframeName),
+    //     status: 'idle',
+    //     error: 'unexpected',
+    //   })
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     dataframeName,
+    //   },
+    //   'finished handling dataframe name change'
+    // )
   }
 
   public static make(

@@ -14,6 +14,7 @@ import {
   isVisualizationBlock,
   ExecutionQueueItemVisualizationMetadata,
   VisualizationBlock,
+  ExecutionQueueItemSQLRenameDataframeMetadata,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -130,6 +131,9 @@ export class Executor {
       case 'sql':
         await this.sqlExecutor.run(item, data.block, data.metadata)
         break
+      case 'sql-rename-dataframe':
+        await this.sqlExecutor.renameDataframe(item, data.block, data.metadata)
+        break
       case 'visualization':
         await this.visExecutor.run(item, data.block, data.metadata)
         break
@@ -199,6 +203,34 @@ export class Executor {
 
         return { _tag: 'sql', metadata, block }
       }
+      case 'sql-rename-dataframe': {
+        const block = this.blocks.get(item.getBlockId())
+        if (!block) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Failed to find block for execution item'
+          )
+          return null
+        }
+
+        if (!isSQLBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for sql rename dataframe execution'
+          )
+          return null
+        }
+
+        return { _tag: 'sql-rename-dataframe', metadata, block }
+      }
       case 'visualization': {
         const block = this.blocks.get(item.getBlockId())
         if (!block) {
@@ -259,6 +291,11 @@ type ExecutionItemData =
   | {
       _tag: 'sql'
       metadata: ExecutionQueueItemSQLMetadata
+      block: Y.XmlElement<SQLBlock>
+    }
+  | {
+      _tag: 'sql-rename-dataframe'
+      metadata: ExecutionQueueItemSQLRenameDataframeMetadata
       block: Y.XmlElement<SQLBlock>
     }
   | {

@@ -158,7 +158,11 @@ function VisualizationBlock(props: Props) {
     [props.block]
   )
 
-  const executions = useBlockExecutions(props.executionQueue, props.block)
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'visualization'
+  )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 

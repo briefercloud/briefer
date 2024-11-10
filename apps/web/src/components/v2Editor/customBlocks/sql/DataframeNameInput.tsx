@@ -3,9 +3,11 @@ import {
   QuestionMarkCircleIcon,
 } from '@heroicons/react/24/solid'
 import * as Y from 'yjs'
-import { SQLBlock } from '@briefer/editor'
+import { ExecutionQueue, SQLBlock } from '@briefer/editor'
 import { useCallback } from 'react'
 import clsx from 'clsx'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
 
 function queryNameErrorMessage(
   err: SQLBlock['dataframeName']['error']
@@ -33,8 +35,16 @@ function queryNameErrorMessage(
 interface Props {
   block: Y.XmlElement<SQLBlock>
   disabled?: boolean
+  userId: string | null
+  executionQueue: ExecutionQueue
 }
 function DataframeNameInput(props: Props) {
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'sql-rename-dataframe'
+  )
+  const execution = head(executions)
   const dataframeName = props.block.getAttribute('dataframeName')
 
   const onChange = useCallback(
@@ -56,11 +66,13 @@ function DataframeNameInput(props: Props) {
       return
     }
 
-    props.block.setAttribute('dataframeName', {
-      ...dataframeName,
-      status: 'loading',
+    for (const { item } of executions) {
+      item.setAborting()
+    }
+    props.executionQueue.enqueueBlock(props.block, props.userId, {
+      _tag: 'sql-rename-dataframe',
     })
-  }, [props.block, dataframeName])
+  }, [props.block, dataframeName, props.executionQueue, props.userId])
 
   const onRetry = useCallback(() => {
     if (!dataframeName) {
@@ -69,10 +81,17 @@ function DataframeNameInput(props: Props) {
 
     props.block.setAttribute('dataframeName', {
       ...dataframeName,
-      status: 'loading',
       error: undefined,
     })
-  }, [props.block, dataframeName])
+    for (const { item } of executions) {
+      item.setAborting()
+    }
+    props.executionQueue.enqueueBlock(props.block, props.userId, {
+      _tag: 'sql-rename-dataframe',
+    })
+  }, [dataframeName, props.block, props.executionQueue, props.userId])
+
+  const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 
   if (!dataframeName) {
     return <div>Missing dataframe name in block</div>
@@ -91,7 +110,7 @@ function DataframeNameInput(props: Props) {
         placeholder="Dataframe name"
         value={dataframeName.newValue}
         onChange={onChange}
-        disabled={props.disabled || dataframeName.status !== 'idle'}
+        disabled={props.disabled || status._tag !== 'idle'}
         onBlur={onBlur}
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 group">

@@ -1,21 +1,29 @@
 import {
   ExecutionQueueItem,
   ExecutionQueueItemSQLMetadata,
+  ExecutionQueueItemSQLRenameDataframeMetadata,
   SQLBlock,
   YBlock,
   getSQLAttributes,
 } from '@briefer/editor'
 import * as Y from 'yjs'
 import prisma, { listDataSources } from '@briefer/database'
-import { makeSQLQuery } from '../../../python/query/index.js'
+import {
+  listDataFrames,
+  makeSQLQuery,
+  renameDataFrame,
+} from '../../../python/query/index.js'
 import { logger } from '../../../logger.js'
 import { DataFrame, RunQueryResult } from '@briefer/types'
 import { SQLEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
+import { updateDataframes } from './index.js'
 
 export type SQLEffects = {
   makeSQLQuery: typeof makeSQLQuery
   listDataSources: typeof listDataSources
+  renameDataFrame: typeof renameDataFrame
+  listDataFrames: typeof listDataFrames
   documentHasRunSQLSelectionEnabled: (id: string) => Promise<boolean>
 }
 
@@ -24,6 +32,11 @@ export interface ISQLExecutor {
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
     metadata: ExecutionQueueItemSQLMetadata
+  ): Promise<void>
+  renameDataframe(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<SQLBlock>,
+    metadata: ExecutionQueueItemSQLRenameDataframeMetadata
   ): Promise<void>
 }
 
@@ -248,6 +261,101 @@ export class SQLExecutor implements ISQLExecutor {
     }
   }
 
+  public async renameDataframe(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<SQLBlock>,
+    metadata: ExecutionQueueItemSQLRenameDataframeMetadata
+  ) {
+    // TODO
+    // this.events.sqlRenameDataFrame(EventContext.fromYTransaction(tr))
+
+    const {
+      id: blockId,
+      dataframeName,
+      result,
+    } = getSQLAttributes(block, this.blocks)
+    const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    if (!dfNameRegex.test(dataframeName.newValue)) {
+      block.setAttribute('dataframeName', {
+        ...dataframeName,
+        error: 'invalid-name',
+      })
+      executionItem.setError()
+      return
+    }
+
+    if (result?.type !== 'success') {
+      block.setAttribute('dataframeName', {
+        ...dataframeName,
+        value: dataframeName.newValue,
+      })
+      executionItem.setSuccess()
+      return
+    }
+
+    logger().trace(
+      {
+        workspaceId: this.workspaceId,
+        documentId: this.documentId,
+        blockId: block.getAttribute('id'),
+        dataframeName,
+      },
+      'renaming dataframe'
+    )
+
+    let abort = false
+    const cleanup = executionItem.observeStatus((status) => {
+      if (status._tag === 'aborting' || status._tag === 'aborted') {
+        abort = true
+      }
+    })
+
+    try {
+      await this.effects.renameDataFrame(
+        this.workspaceId,
+        this.documentId,
+        dataframeName.value,
+        dataframeName.newValue
+      )
+      if (abort) {
+        executionItem.setAborted()
+        cleanup()
+        return
+      }
+
+      const dataframes = await this.effects.listDataFrames(
+        this.workspaceId,
+        this.documentId
+      )
+
+      if (abort) {
+        executionItem.setAborted()
+        cleanup()
+        return
+      }
+
+      const blocks = new Set(Array.from(this.blocks.keys()))
+      updateDataframes(this.dataframes, dataframes, blockId, blocks)
+      block.setAttribute('dataframeName', {
+        ...dataframeName,
+        value: dataframeName.newValue,
+        error: undefined,
+      })
+      executionItem.setSuccess()
+    } catch (err) {
+      logger().error(
+        {
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId,
+          err,
+        },
+        'Error while renaming dataframe'
+      )
+      executionItem.setError()
+    }
+  }
+
   public static fromWSSharedDocV2(
     doc: WSSharedDocV2,
     dataSourcesEncryptionKey: string,
@@ -262,6 +370,8 @@ export class SQLExecutor implements ISQLExecutor {
       {
         makeSQLQuery,
         listDataSources,
+        renameDataFrame,
+        listDataFrames,
         documentHasRunSQLSelectionEnabled: (id: string) =>
           prisma()
             .document.findFirst({

@@ -16,7 +16,6 @@ import { clone } from 'ramda'
 export type DataframeName = {
   value: string
   newValue: string
-  status: 'idle' | 'loading' | 'running'
   error?: 'invalid-name' | 'unexpected'
 }
 
@@ -180,7 +179,6 @@ function getDataframeName(blocks: Y.Map<YBlock>): DataframeName {
   return {
     value: `query_${i}`,
     newValue: `query_${i}`,
-    status: 'idle',
   }
 }
 

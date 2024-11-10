@@ -303,156 +303,156 @@ describe('SQLExecutor', () => {
     })
   })
 
-  describe('renameDataFrame', () => {
-    it('should set error to invalid-name when newValue is invalid', async () => {
-      block.setAttribute('dataframeName', {
-        value: 'query_1',
-        newValue: 'invalid name',
-        status: 'loading',
-      })
+  // describe('renameDataFrame', () => {
+  //   it('should set error to invalid-name when newValue is invalid', async () => {
+  //     block.setAttribute('dataframeName', {
+  //       value: 'query_1',
+  //       newValue: 'invalid name',
+  //       status: 'loading',
+  //     })
 
-      await blocksExecutor.renameDataFrame(block)
+  //     await blocksExecutor.renameDataFrame(block)
 
-      expect(block.getAttribute('dataframeName')).toEqual({
-        value: 'query_1',
-        newValue: 'invalid name',
-        status: 'loading',
-        error: 'invalid-name',
-      })
-    })
+  //     expect(block.getAttribute('dataframeName')).toEqual({
+  //       value: 'query_1',
+  //       newValue: 'invalid name',
+  //       status: 'loading',
+  //       error: 'invalid-name',
+  //     })
+  //   })
 
-    it('should just update to new value when result is not success', async () => {
-      const nonSuccessResults: RunQueryResult[] = [
-        { type: 'abort-error', message: 'Query aborted' },
-        { type: 'syntax-error', message: 'Syntax error' },
-        {
-          type: 'python-error',
-          ename: 'NameError',
-          evalue: 'NameError: name "x" is not defined',
-          traceback: ['line 1', 'line 2'],
-        },
-      ]
+  //   it('should just update to new value when result is not success', async () => {
+  //     const nonSuccessResults: RunQueryResult[] = [
+  //       { type: 'abort-error', message: 'Query aborted' },
+  //       { type: 'syntax-error', message: 'Syntax error' },
+  //       {
+  //         type: 'python-error',
+  //         ename: 'NameError',
+  //         evalue: 'NameError: name "x" is not defined',
+  //         traceback: ['line 1', 'line 2'],
+  //       },
+  //     ]
 
-      for (const result of nonSuccessResults) {
-        block.setAttribute('dataframeName', {
-          value: 'old_value',
-          newValue: 'new_value',
-          status: 'loading',
-        })
-        block.setAttribute('result', result)
+  //     for (const result of nonSuccessResults) {
+  //       block.setAttribute('dataframeName', {
+  //         value: 'old_value',
+  //         newValue: 'new_value',
+  //         status: 'loading',
+  //       })
+  //       block.setAttribute('result', result)
 
-        await blocksExecutor.renameDataFrame(block)
+  //       await blocksExecutor.renameDataFrame(block)
 
-        expect(block.getAttribute('dataframeName')).toEqual({
-          value: 'new_value',
-          newValue: 'new_value',
-          status: 'loading',
-        })
-        expect(effects.makeSQLQuery).not.toHaveBeenCalled()
-        expect(effects.renameDataFrame).not.toHaveBeenCalled()
-        expect(effects.listDataSources).not.toHaveBeenCalled()
-      }
-    })
+  //       expect(block.getAttribute('dataframeName')).toEqual({
+  //         value: 'new_value',
+  //         newValue: 'new_value',
+  //         status: 'loading',
+  //       })
+  //       expect(effects.makeSQLQuery).not.toHaveBeenCalled()
+  //       expect(effects.renameDataFrame).not.toHaveBeenCalled()
+  //       expect(effects.listDataSources).not.toHaveBeenCalled()
+  //     }
+  //   })
 
-    it('should just update to new value when query is running', async () => {
-      block.setAttribute('dataframeName', {
-        value: 'old_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      block.setAttribute('result', {
-        type: 'success',
-        columns: [],
-        rows: [],
-        count: 0,
-      })
-      // block.setAttribute('status', 'running')
+  //   it('should just update to new value when query is running', async () => {
+  //     block.setAttribute('dataframeName', {
+  //       value: 'old_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     block.setAttribute('result', {
+  //       type: 'success',
+  //       columns: [],
+  //       rows: [],
+  //       count: 0,
+  //     })
+  //     // block.setAttribute('status', 'running')
 
-      await blocksExecutor.renameDataFrame(block)
+  //     await blocksExecutor.renameDataFrame(block)
 
-      expect(block.getAttribute('dataframeName')).toEqual({
-        value: 'new_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      expect(effects.makeSQLQuery).not.toHaveBeenCalled()
-      expect(effects.renameDataFrame).not.toHaveBeenCalled()
-      expect(effects.listDataSources).not.toHaveBeenCalled()
-    })
+  //     expect(block.getAttribute('dataframeName')).toEqual({
+  //       value: 'new_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     expect(effects.makeSQLQuery).not.toHaveBeenCalled()
+  //     expect(effects.renameDataFrame).not.toHaveBeenCalled()
+  //     expect(effects.listDataSources).not.toHaveBeenCalled()
+  //   })
 
-    it('should just update to new value in document when jupyter is not running', async () => {
-      block.setAttribute('dataframeName', {
-        value: 'old_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      block.setAttribute('result', {
-        type: 'success',
-        columns: [],
-        rows: [],
-        count: 0,
-      })
-      jupyterManager.isRunning.mockResolvedValue(false)
+  //   it('should just update to new value in document when jupyter is not running', async () => {
+  //     block.setAttribute('dataframeName', {
+  //       value: 'old_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     block.setAttribute('result', {
+  //       type: 'success',
+  //       columns: [],
+  //       rows: [],
+  //       count: 0,
+  //     })
+  //     jupyterManager.isRunning.mockResolvedValue(false)
 
-      await blocksExecutor.renameDataFrame(block)
+  //     await blocksExecutor.renameDataFrame(block)
 
-      expect(block.getAttribute('dataframeName')).toEqual({
-        value: 'new_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      expect(effects.makeSQLQuery).not.toHaveBeenCalled()
-      expect(effects.renameDataFrame).not.toHaveBeenCalled()
-      expect(jupyterManager.isRunning).toHaveBeenCalledWith('workspaceId')
-      expect(effects.listDataSources).not.toHaveBeenCalled()
-    })
+  //     expect(block.getAttribute('dataframeName')).toEqual({
+  //       value: 'new_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     expect(effects.makeSQLQuery).not.toHaveBeenCalled()
+  //     expect(effects.renameDataFrame).not.toHaveBeenCalled()
+  //     expect(jupyterManager.isRunning).toHaveBeenCalledWith('workspaceId')
+  //     expect(effects.listDataSources).not.toHaveBeenCalled()
+  //   })
 
-    it('should rename the dataframe in document and jupyter when jupyter is running', async () => {
-      block.setAttribute('dataframeName', {
-        value: 'old_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      block.setAttribute('result', {
-        type: 'success',
-        columns: [],
-        rows: [],
-        count: 0,
-      })
-      jupyterManager.isRunning.mockResolvedValue(true)
-      effects.renameDataFrame.mockResolvedValue()
-      effects.listDataFrames.mockResolvedValue([
-        {
-          name: 'new_value',
-          columns: [{ name: 'a column', type: 'int' }],
-        },
-      ])
+  //   it('should rename the dataframe in document and jupyter when jupyter is running', async () => {
+  //     block.setAttribute('dataframeName', {
+  //       value: 'old_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     block.setAttribute('result', {
+  //       type: 'success',
+  //       columns: [],
+  //       rows: [],
+  //       count: 0,
+  //     })
+  //     jupyterManager.isRunning.mockResolvedValue(true)
+  //     effects.renameDataFrame.mockResolvedValue()
+  //     effects.listDataFrames.mockResolvedValue([
+  //       {
+  //         name: 'new_value',
+  //         columns: [{ name: 'a column', type: 'int' }],
+  //       },
+  //     ])
 
-      await blocksExecutor.renameDataFrame(block)
+  //     await blocksExecutor.renameDataFrame(block)
 
-      expect(effects.renameDataFrame).toHaveBeenCalledWith(
-        'workspaceId',
-        'documentId',
-        'old_value',
-        'new_value'
-      )
-      expect(block.getAttribute('dataframeName')).toEqual({
-        value: 'new_value',
-        newValue: 'new_value',
-        status: 'loading',
-      })
-      expect(dataframes.get('new_value')).toEqual({
-        name: 'new_value',
-        columns: [{ name: 'a column', type: 'int' }],
-        blockId: getBaseAttributes(block).id,
-      })
-      expect(effects.makeSQLQuery).not.toHaveBeenCalled()
-      expect(jupyterManager.isRunning).toHaveBeenCalledWith('workspaceId')
-      expect(effects.listDataSources).not.toHaveBeenCalled()
-      expect(effects.listDataFrames).toHaveBeenCalledWith(
-        'workspaceId',
-        'documentId'
-      )
-    })
-  })
+  //     expect(effects.renameDataFrame).toHaveBeenCalledWith(
+  //       'workspaceId',
+  //       'documentId',
+  //       'old_value',
+  //       'new_value'
+  //     )
+  //     expect(block.getAttribute('dataframeName')).toEqual({
+  //       value: 'new_value',
+  //       newValue: 'new_value',
+  //       status: 'loading',
+  //     })
+  //     expect(dataframes.get('new_value')).toEqual({
+  //       name: 'new_value',
+  //       columns: [{ name: 'a column', type: 'int' }],
+  //       blockId: getBaseAttributes(block).id,
+  //     })
+  //     expect(effects.makeSQLQuery).not.toHaveBeenCalled()
+  //     expect(jupyterManager.isRunning).toHaveBeenCalledWith('workspaceId')
+  //     expect(effects.listDataSources).not.toHaveBeenCalled()
+  //     expect(effects.listDataFrames).toHaveBeenCalledWith(
+  //       'workspaceId',
+  //       'documentId'
+  //     )
+  //   })
+  // })
 })

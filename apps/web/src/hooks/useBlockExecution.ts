@@ -1,6 +1,7 @@
 import {
   Execution,
   ExecutionQueue,
+  ExecutionQueueItemMetadataWithoutNoop,
   getBaseAttributes,
   YBlock,
 } from '@briefer/editor'
@@ -8,22 +9,21 @@ import { useEffect, useState } from 'react'
 
 export function useBlockExecutions(
   queue: ExecutionQueue,
-  block: YBlock
+  block: YBlock,
+  tag: ExecutionQueueItemMetadataWithoutNoop['_tag']
 ): Execution[] {
   const blockId = getBaseAttributes(block).id
   const [executions, setExecutions] = useState(
-    queue.getBlockExecutions(blockId)
+    queue.getBlockExecutions(blockId, tag)
   )
 
   useEffect(() => {
-    console.log(JSON.stringify(queue, null, 2))
     const clean = queue.observe(() => {
-      console.log(JSON.stringify(queue, null, 2))
-      setExecutions(queue.getBlockExecutions(blockId))
+      setExecutions(queue.getBlockExecutions(blockId, tag))
     })
 
     return clean
-  }, [queue, blockId])
+  }, [queue, blockId, tag])
 
   return executions
 }

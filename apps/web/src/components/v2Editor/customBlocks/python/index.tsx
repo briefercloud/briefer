@@ -98,7 +98,11 @@ function PythonBlock(props: Props) {
     })
   }, [props.block])
 
-  const executions = useBlockExecutions(props.executionQueue, props.block)
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'python'
+  )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 

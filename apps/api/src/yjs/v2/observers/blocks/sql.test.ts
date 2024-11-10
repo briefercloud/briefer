@@ -60,24 +60,24 @@ describe.only('SQLObserver', () => {
       // expect(block.getAttribute('status')).toEqual('idle')
     })
 
-    it('should set dataframeName status to idle when status is not idle', () => {
-      block.setAttribute('dataframeName', {
-        value: 'query_1',
-        newValue: 'query_1',
-        status: 'loading',
-      })
-      const blocksExecutor = new SQLObserver(
-        'workspaceId',
-        'documentId',
-        executorMock
-      )
-      blocksExecutor.handleInitialBlockState(block)
-      expect(block.getAttribute('dataframeName')).toEqual({
-        value: 'query_1',
-        newValue: 'query_1',
-        status: 'idle',
-      })
-    })
+    // it('should set dataframeName status to idle when status is not idle', () => {
+    //   block.setAttribute('dataframeName', {
+    //     value: 'query_1',
+    //     newValue: 'query_1',
+    //     status: 'loading',
+    //   })
+    //   const blocksExecutor = new SQLObserver(
+    //     'workspaceId',
+    //     'documentId',
+    //     executorMock
+    //   )
+    //   blocksExecutor.handleInitialBlockState(block)
+    //   expect(block.getAttribute('dataframeName')).toEqual({
+    //     value: 'query_1',
+    //     newValue: 'query_1',
+    //     status: 'idle',
+    //   })
+    // })
   })
 
   describe('.handleBlockEvent', () => {
@@ -321,146 +321,146 @@ describe.only('SQLObserver', () => {
       })
     })
 
-    describe('when dataframeName key is updated', () => {
-      it('should do nothing when dataframeName status is not updated', async () => {
-        const prev: SQLBlock['dataframeName'] = {
-          value: 'query_1',
-          newValue: 'query_1',
-          status: 'running',
-        }
-        block.setAttribute('dataframeName', prev)
+    // describe('when dataframeName key is updated', () => {
+    //   it('should do nothing when dataframeName status is not updated', async () => {
+    //     const prev: SQLBlock['dataframeName'] = {
+    //       value: 'query_1',
+    //       newValue: 'query_1',
+    //       status: 'running',
+    //     }
+    //     block.setAttribute('dataframeName', prev)
 
-        block.setAttribute('dataframeName', {
-          value: 'query_1',
-          // newValue was updated but status kept the same
-          newValue: 'query_2',
-          status: 'running',
-        })
+    //     block.setAttribute('dataframeName', {
+    //       value: 'query_1',
+    //       // newValue was updated but status kept the same
+    //       newValue: 'query_2',
+    //       status: 'running',
+    //     })
 
-        await blocksExecutor.handleBlockEvent(
-          block,
-          'update',
-          prev,
-          'dataframeName',
-          new Y.Transaction(ydoc, {}, true)
-        )
+    //     await blocksExecutor.handleBlockEvent(
+    //       block,
+    //       'update',
+    //       prev,
+    //       'dataframeName',
+    //       new Y.Transaction(ydoc, {}, true)
+    //     )
 
-        expect(executorMock.runQuery).not.toHaveBeenCalled()
-        expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
-        expect(executorMock.abortQuery).not.toHaveBeenCalled()
-      })
+    //     expect(executorMock.runQuery).not.toHaveBeenCalled()
+    //     expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
+    //     expect(executorMock.abortQuery).not.toHaveBeenCalled()
+    //   })
 
-      it('should do nothing when dataframeName status is updated to idle', async () => {
-        const prev: SQLBlock['dataframeName'] = {
-          value: 'query_1',
-          newValue: 'query_1',
-          status: 'running',
-        }
-        block.setAttribute('dataframeName', prev)
-        block.setAttribute('dataframeName', {
-          value: 'query_1',
-          newValue: 'query_1',
-          status: 'idle',
-        })
-        await blocksExecutor.handleBlockEvent(
-          block,
-          'update',
-          prev,
-          'dataframeName',
-          new Y.Transaction(ydoc, {}, true)
-        )
+    //   it('should do nothing when dataframeName status is updated to idle', async () => {
+    //     const prev: SQLBlock['dataframeName'] = {
+    //       value: 'query_1',
+    //       newValue: 'query_1',
+    //       status: 'running',
+    //     }
+    //     block.setAttribute('dataframeName', prev)
+    //     block.setAttribute('dataframeName', {
+    //       value: 'query_1',
+    //       newValue: 'query_1',
+    //       status: 'idle',
+    //     })
+    //     await blocksExecutor.handleBlockEvent(
+    //       block,
+    //       'update',
+    //       prev,
+    //       'dataframeName',
+    //       new Y.Transaction(ydoc, {}, true)
+    //     )
 
-        expect(executorMock.runQuery).not.toHaveBeenCalled()
-        expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
-        expect(executorMock.abortQuery).not.toHaveBeenCalled()
-      })
+    //     expect(executorMock.runQuery).not.toHaveBeenCalled()
+    //     expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
+    //     expect(executorMock.abortQuery).not.toHaveBeenCalled()
+    //   })
 
-      it('should set dataframeName status to running when updated to loading', async () => {
-        const prev = { ...block.getAttribute('dataframeName'), status: 'idle' }
-        block.setAttribute('dataframeName', {
-          value: 'query_1',
-          newValue: 'query_2',
-          status: 'loading',
-        })
+    //   it('should set dataframeName status to running when updated to loading', async () => {
+    //     const prev = { ...block.getAttribute('dataframeName'), status: 'idle' }
+    //     block.setAttribute('dataframeName', {
+    //       value: 'query_1',
+    //       newValue: 'query_2',
+    //       status: 'loading',
+    //     })
 
-        await blocksExecutor.handleBlockEvent(
-          block,
-          'update',
-          prev,
-          'dataframeName',
-          new Y.Transaction(ydoc, {}, true)
-        )
+    //     await blocksExecutor.handleBlockEvent(
+    //       block,
+    //       'update',
+    //       prev,
+    //       'dataframeName',
+    //       new Y.Transaction(ydoc, {}, true)
+    //     )
 
-        expect(block.getAttribute('dataframeName')).toEqual({
-          value: 'query_1',
-          newValue: 'query_2',
-          status: 'running',
-        })
-        expect(executorMock.runQuery).not.toHaveBeenCalled()
-        expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
-        expect(executorMock.abortQuery).not.toHaveBeenCalled()
-      })
+    //     expect(block.getAttribute('dataframeName')).toEqual({
+    //       value: 'query_1',
+    //       newValue: 'query_2',
+    //       status: 'running',
+    //     })
+    //     expect(executorMock.runQuery).not.toHaveBeenCalled()
+    //     expect(executorMock.renameDataFrame).not.toHaveBeenCalled()
+    //     expect(executorMock.abortQuery).not.toHaveBeenCalled()
+    //   })
 
-      describe('when dataframeName status is running', () => {
-        it('should call renameDataFrame from executor and set status back to idle', async () => {
-          const prev = {
-            ...block.getAttribute('dataframeName'),
-            status: 'idle',
-          }
-          block.setAttribute('dataframeName', {
-            value: 'query_1',
-            newValue: 'query_1',
-            status: 'running',
-          })
-          executorMock.renameDataFrame.mockResolvedValue()
+    //   describe('when dataframeName status is running', () => {
+    //     it('should call renameDataFrame from executor and set status back to idle', async () => {
+    //       const prev = {
+    //         ...block.getAttribute('dataframeName'),
+    //         status: 'idle',
+    //       }
+    //       block.setAttribute('dataframeName', {
+    //         value: 'query_1',
+    //         newValue: 'query_1',
+    //         status: 'running',
+    //       })
+    //       executorMock.renameDataFrame.mockResolvedValue()
 
-          const tr = new Y.Transaction(ydoc, {}, true)
-          await blocksExecutor.handleBlockEvent(
-            block,
-            'update',
-            prev,
-            'dataframeName',
-            tr
-          )
+    //       const tr = new Y.Transaction(ydoc, {}, true)
+    //       await blocksExecutor.handleBlockEvent(
+    //         block,
+    //         'update',
+    //         prev,
+    //         'dataframeName',
+    //         tr
+    //       )
 
-          expect(executorMock.renameDataFrame).toHaveBeenCalledWith(block)
-          expect(block.getAttribute('dataframeName')).toEqual({
-            value: 'query_1',
-            newValue: 'query_1',
-            status: 'idle',
-          })
-        })
+    //       expect(executorMock.renameDataFrame).toHaveBeenCalledWith(block)
+    //       expect(block.getAttribute('dataframeName')).toEqual({
+    //         value: 'query_1',
+    //         newValue: 'query_1',
+    //         status: 'idle',
+    //       })
+    //     })
 
-        it('should set status back to idle and error to unexpected when renameDataFrame fails', async () => {
-          const prev = {
-            ...block.getAttribute('dataframeName'),
-            status: 'idle',
-          }
-          block.setAttribute('dataframeName', {
-            value: 'query_1',
-            newValue: 'query_1',
-            status: 'running',
-          })
-          executorMock.renameDataFrame.mockRejectedValue(new Error('error'))
+    //     it('should set status back to idle and error to unexpected when renameDataFrame fails', async () => {
+    //       const prev = {
+    //         ...block.getAttribute('dataframeName'),
+    //         status: 'idle',
+    //       }
+    //       block.setAttribute('dataframeName', {
+    //         value: 'query_1',
+    //         newValue: 'query_1',
+    //         status: 'running',
+    //       })
+    //       executorMock.renameDataFrame.mockRejectedValue(new Error('error'))
 
-          const tr = new Y.Transaction(ydoc, {}, true)
-          await blocksExecutor.handleBlockEvent(
-            block,
-            'update',
-            prev,
-            'dataframeName',
-            tr
-          )
+    //       const tr = new Y.Transaction(ydoc, {}, true)
+    //       await blocksExecutor.handleBlockEvent(
+    //         block,
+    //         'update',
+    //         prev,
+    //         'dataframeName',
+    //         tr
+    //       )
 
-          expect(executorMock.renameDataFrame).toHaveBeenCalledWith(block)
-          expect(block.getAttribute('dataframeName')).toEqual({
-            value: 'query_1',
-            newValue: 'query_1',
-            status: 'idle',
-            error: 'unexpected',
-          })
-        })
-      })
-    })
+    //       expect(executorMock.renameDataFrame).toHaveBeenCalledWith(block)
+    //       expect(block.getAttribute('dataframeName')).toEqual({
+    //         value: 'query_1',
+    //         newValue: 'query_1',
+    //         status: 'idle',
+    //         error: 'unexpected',
+    //       })
+    //     })
+    //   })
+    // })
   })
 })

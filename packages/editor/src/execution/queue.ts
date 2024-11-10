@@ -9,6 +9,7 @@ import {
   ExecutionQueueItem,
   ExecutionQueueItemMetadataWithoutNoop,
 } from './item.js'
+import { getBaseAttributes, YBlock } from '../index.js'
 
 export type YExecutionQueue = Y.Array<YExecutionQueueBatch>
 
@@ -39,21 +40,26 @@ export class ExecutionQueue {
   }
 
   public enqueueBlock(
-    blockId: string,
+    blockId: string | YBlock,
     userId: string | null,
     metadata: ExecutionQueueItemMetadataWithoutNoop
   ): void {
-    const item = createYExecutionQueueItem(blockId, userId, metadata)
+    const bId =
+      typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
+    const item = createYExecutionQueueItem(bId, userId, metadata)
     const batch = createYExecutionQueueBatch([item], { isRunAll: false })
     this.queue.push([batch])
   }
 
-  public getBlockExecutions(blockId: string): Execution[] {
+  public getBlockExecutions(
+    blockId: string,
+    tag: ExecutionQueueItemMetadataWithoutNoop['_tag']
+  ): Execution[] {
     const executions: Execution[] = []
     for (const yBatch of this.queue) {
       const batch = ExecutionQueueBatch.fromYjs(yBatch)
       for (const item of batch) {
-        if (item.getBlockId() === blockId) {
+        if (item.getBlockId() === blockId && item.getMetadata()._tag === tag) {
           executions.push({ item, batch })
         }
       }

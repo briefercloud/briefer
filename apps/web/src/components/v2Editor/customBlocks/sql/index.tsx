@@ -143,7 +143,11 @@ function SQLBlock(props: Props) {
     props.onTry(props.block)
   }, [props.onTry, props.block])
 
-  const executions = useBlockExecutions(props.executionQueue, props.block)
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'sql'
+  )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 
@@ -499,6 +503,8 @@ function SQLBlock(props: Props) {
                 <DataframeNameInput
                   disabled={!props.isEditable || statusIsDisabled}
                   block={props.block}
+                  userId={props.userId}
+                  executionQueue={props.executionQueue}
                 />
                 <HeaderSelect
                   hidden={props.isPublicMode}

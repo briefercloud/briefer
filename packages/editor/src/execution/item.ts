@@ -41,6 +41,13 @@ export type ExecutionQueueItemSQLMetadata = z.infer<
   typeof ExecutionQueueItemSQLMetadata
 >
 
+export const ExecutionQueueItemSQLRenameDataframeMetadata = z.object({
+  _tag: z.literal('sql-rename-dataframe'),
+})
+export type ExecutionQueueItemSQLRenameDataframeMetadata = z.infer<
+  typeof ExecutionQueueItemSQLRenameDataframeMetadata
+>
+
 export const ExecutionQueueItemVisualizationMetadata = z.object({
   _tag: z.literal('visualization'),
 })
@@ -58,6 +65,7 @@ export type ExecutionQueueItemNoopMetadata = z.infer<
 export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemPythonMetadata,
   ExecutionQueueItemSQLMetadata,
+  ExecutionQueueItemSQLRenameDataframeMetadata,
   ExecutionQueueItemVisualizationMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
