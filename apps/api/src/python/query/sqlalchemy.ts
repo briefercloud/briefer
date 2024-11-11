@@ -353,21 +353,43 @@ export async function getSQLAlchemySchema(
   const databaseUrl = await getDatabaseURL(ds, encryptionKey)
 
   const code = `
+import csv
 import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
+from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.exc import NoSuchTableError
 from psycopg2.errors import InsufficientPrivilege
 
+def get_columns(conn, inspector, table_name, schema_name):
+    if ${JSON.stringify(ds.type)} == "redshift":
+        columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
 
-def schema_from_tables(inspector, tables):
+        result = []
+        for row in columns:
+            try:
+                csv_reader = csv.reader([row[0].strip("()")])
+                column = next(csv_reader)
+                result.append({
+                    "name": column[2],
+                    "type": column[3]
+                })
+            except Exception as e:
+                print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
+                continue
+
+        return result
+
+    return inspector.get_columns(table_name, schema=schema_name)
+
+def schema_from_tables(conn, inspector, tables):
     for table in tables:
         schema_name, table_name = table.split(".")
         print(json.dumps({"log": f"Getting schema for table {table}"}))
         columns = []
         try:
-            for column in inspector.get_columns(table_name, schema=schema_name):
+            for column in get_columns(conn, inspector, table_name, schema_name):
                 columns.append({
                     "name": column["name"],
                     "type": str(column["type"])
@@ -400,22 +422,23 @@ def get_data_source_structure(data_source_id, credentials_info=None):
     else:
         engine = create_engine(f"${databaseUrl}")
 
-    # if oracle, initialize the oracle client
-    if ${JSON.stringify(ds.type)} == "oracle":
-        import oracledb
-        oracledb.init_oracle_client()
+    with engine.connect() as conn:
+        # if oracle, initialize the oracle client
+        if ${JSON.stringify(ds.type)} == "oracle":
+            import oracledb
+            oracledb.init_oracle_client()
 
-    inspector = inspect(engine)
-    if ${JSON.stringify(ds.type)} == "bigquery":
-        tables = inspector.get_table_names()
-        schema_from_tables(inspector, tables)
-    else:
-        tables = []
-        for schema_name in inspector.get_schema_names():
-            print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
-            schema_tables = inspector.get_table_names(schema=schema_name)
-            tables += [f"{schema_name}.{table}" for table in schema_tables]
-        schema_from_tables(inspector, tables)
+        inspector = inspect(engine)
+        if ${JSON.stringify(ds.type)} == "bigquery":
+            tables = inspector.get_table_names()
+            schema_from_tables(conn, inspector, tables)
+        else:
+            tables = []
+            for schema_name in inspector.get_schema_names():
+                print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
+                schema_tables = inspector.get_table_names(schema=schema_name)
+                tables += [f"{schema_name}.{table}" for table in schema_tables]
+            schema_from_tables(conn, inspector, tables)
 
 
 credentials_info = json.loads(${JSON.stringify(
