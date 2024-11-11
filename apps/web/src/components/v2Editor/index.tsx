@@ -505,25 +505,6 @@ const DraggableTabbedBlock = (props: {
     [executionQueue, props.userId]
   )
 
-  // const onRun = useCallback(
-  //   <B extends YBlock>(block: B, customCallback?: (block: B) => void) => {
-  //     requestRun(
-  //       block,
-  //       blocks.value,
-  //       layout.value,
-  //       environmentStartedAt,
-  //       !props.document.runUnexecutedBlocks,
-  //       customCallback
-  //     )
-  //   },
-  //   [
-  //     blocks.value,
-  //     layout.value,
-  //     props.document.runUnexecutedBlocks,
-  //     environmentStartedAt?.toISOString(),
-  //   ]
-  // )
-
   const onTry = useCallback(
     (block: YBlock) => {
       requestTrySuggestion(
@@ -750,23 +731,8 @@ file`
   }, [currentBlockId, props.id, props.onRemoveBlock])
 
   const runAllTabs = useCallback(() => {
-    tabRefs.forEach((tab, i) => {
-      const block = blocks.value.get(tab.blockId)
-      if (!block) {
-        return
-      }
-
-      if (!execStatusIsDisabled(getExecStatus(block, blocks.value))) {
-        requestRun(
-          block,
-          blocks.value,
-          layout.value,
-          environmentStartedAt,
-          i > 0
-        )
-      }
-    })
-  }, [blocks, layout, tabRefs, environmentStartedAt])
+    executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
+  }, [executionQueue, props.yDoc, props.id])
 
   const runBelowBlock = useCallback(() => {
     const currentBlockGroupIndex = layout.value.toArray().findIndex((bg) => {

@@ -8,8 +8,16 @@ import {
   createYExecutionQueueItem,
   ExecutionQueueItem,
   ExecutionQueueItemMetadataWithoutNoop,
+  YExecutionQueueItem,
 } from './item.js'
-import { getBaseAttributes, YBlock } from '../index.js'
+import {
+  getBaseAttributes,
+  getBlocks,
+  getLayout,
+  getTabsFromBlockGroupId,
+  switchBlockType,
+  YBlock,
+} from '../index.js'
 
 export type YExecutionQueue = Y.Array<YExecutionQueueBatch>
 
@@ -48,6 +56,55 @@ export class ExecutionQueue {
       typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
     const item = createYExecutionQueueItem(bId, userId, metadata)
     const batch = createYExecutionQueueBatch([item], { isRunAll: false })
+    this.queue.push([batch])
+  }
+
+  public enqueueBlockGroup(
+    yDoc: Y.Doc,
+    blockGroupId: string,
+    userId: string | null
+  ): void {
+    const blocks = getBlocks(yDoc)
+    const tabs = getTabsFromBlockGroupId(getLayout(yDoc), blocks, blockGroupId)
+    const items: YExecutionQueueItem[] = []
+    for (const tab of tabs) {
+      const block = blocks.get(tab.blockId)
+      if (!block) {
+        continue
+      }
+
+      const metadata =
+        switchBlockType<ExecutionQueueItemMetadataWithoutNoop | null>(block, {
+          onSQL: () => ({
+            _tag: 'sql',
+            isSuggestion: false,
+            selectedCode: null,
+          }),
+          onPython: () => ({ _tag: 'python', isSuggestion: false }),
+          onVisualization: () => ({ _tag: 'visualization' }),
+          // TODO
+          onInput: () => null,
+          // TODO
+          onDateInput: () => null,
+          // TODO
+          onDropdownInput: () => null,
+          // TODO
+          onWriteback: () => null,
+          // TODO
+          onPivotTable: () => null,
+          onFileUpload: () => null,
+          onRichText: () => null,
+          onDashboardHeader: () => null,
+        })
+
+      if (!metadata) {
+        continue
+      }
+
+      items.push(createYExecutionQueueItem(tab.blockId, userId, metadata))
+    }
+
+    const batch = createYExecutionQueueBatch(items, { isRunAll: false })
     this.queue.push([batch])
   }
 
