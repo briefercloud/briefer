@@ -238,11 +238,15 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           case 'athena': {
             const payload = {
               ...data.data,
+              s3OutputPath: data.data.s3OutputPath.endsWith('/')
+                ? data.data.s3OutputPath
+                : `${data.data.s3OutputPath}/`,
               workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
             }
+
             const ds = await createAthenaDataSource(
               payload,
               config().DATASOURCES_ENCRYPTION_KEY
