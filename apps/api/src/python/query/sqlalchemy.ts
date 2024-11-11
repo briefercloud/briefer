@@ -361,23 +361,31 @@ from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.exc import NoSuchTableError
 from psycopg2.errors import InsufficientPrivilege
+from redshift_connector.error import ProgrammingError as RedshiftProgrammingError
 
 def get_columns(conn, inspector, table_name, schema_name):
     if ${JSON.stringify(ds.type)} == "redshift":
-        columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
+        try:
+            columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
 
-        result = []
-        for row in columns:
-            try:
-                csv_reader = csv.reader([row[0].strip("()")])
-                column = next(csv_reader)
-                result.append({
-                    "name": column[2],
-                    "type": column[3]
-                })
-            except Exception as e:
-                print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
-                continue
+            result = []
+            for row in columns:
+                try:
+                    csv_reader = csv.reader([row[0].strip("()")])
+                    column = next(csv_reader)
+                    result.append({
+                        "name": column[2],
+                        "type": column[3]
+                    })
+                except Exception as e:
+                    print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
+                    continue
+        except ProgrammingError as e:
+            if isinstance(e.orig, RedshiftProgrammingError):
+                if "permission denied" in str(e.orig):
+                    print(json.dumps({"log": f"Insufficient privileges to access table {table_name}"}))
+                    return []
+            raise e
 
         return result
 
