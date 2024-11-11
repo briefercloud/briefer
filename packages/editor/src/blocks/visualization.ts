@@ -3,10 +3,10 @@ import {
   BlockType,
   BaseBlock,
   YBlock,
-  ExecStatus,
   getAttributeOr,
   getBaseAttributes,
   duplicateBaseAttributes,
+  ResultStatus,
 } from './index.js'
 import {
   AggregateFunction,
@@ -247,7 +247,7 @@ export function duplicateVisualizationBlock(
 
 export function getVisualizationBlockResultStatus(
   block: Y.XmlElement<VisualizationBlock>
-): ExecStatus {
+): ResultStatus {
   const error = block.getAttribute('error')
   const updatedAt = block.getAttribute('updatedAt')
 

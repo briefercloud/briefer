@@ -9,10 +9,10 @@ import { useEffect, useState } from 'react'
 
 export function useBlockExecutions(
   queue: ExecutionQueue,
-  block: YBlock,
-  tag: ExecutionQueueItemMetadataWithoutNoop['_tag']
+  block?: YBlock,
+  tag?: ExecutionQueueItemMetadataWithoutNoop['_tag']
 ): Execution[] {
-  const blockId = getBaseAttributes(block).id
+  const blockId = block ? getBaseAttributes(block).id : ''
   const [executions, setExecutions] = useState(
     queue.getBlockExecutions(blockId, tag)
   )

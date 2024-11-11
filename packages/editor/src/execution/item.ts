@@ -10,19 +10,31 @@ export const ExecutionQueueItemStatus = z.union([
     _tag: z.literal('aborting'),
   }),
   z.object({
-    _tag: z.literal('aborted'),
-  }),
-  z.object({
     _tag: z.literal('running'),
   }),
   z.object({
-    _tag: z.literal('error'),
+    _tag: z.literal('completed'),
   }),
   z.object({
-    _tag: z.literal('success'),
+    _tag: z.literal('unknown'),
   }),
 ])
 export type ExecutionQueueItemStatus = z.infer<typeof ExecutionQueueItemStatus>
+
+export type ExecutionStatus = ExecutionQueueItemStatus['_tag'] | 'idle'
+
+export function isExecutionStatusLoading(status: ExecutionStatus): boolean {
+  switch (status) {
+    case 'enqueued':
+    case 'running':
+    case 'aborting':
+      return true
+    case 'idle':
+    case 'completed':
+    case 'unknown':
+      return false
+  }
+}
 
 export const ExecutionQueueItemPythonMetadata = z.object({
   _tag: z.literal('python'),
@@ -55,6 +67,20 @@ export type ExecutionQueueItemVisualizationMetadata = z.infer<
   typeof ExecutionQueueItemVisualizationMetadata
 >
 
+export const ExecutionQueueItemTextInputSaveValueMetadata = z.object({
+  _tag: z.literal('text-input-save-value'),
+})
+export type ExecutionQueueItemTextInputSaveValueMetadata = z.infer<
+  typeof ExecutionQueueItemTextInputSaveValueMetadata
+>
+
+export const ExecutionQueueItemTextInputRenameVariableMetadata = z.object({
+  _tag: z.literal('text-input-rename-variable'),
+})
+export type ExecutionQueueItemTextInputRenameVariableMetadata = z.infer<
+  typeof ExecutionQueueItemTextInputRenameVariableMetadata
+>
+
 export const ExecutionQueueItemNoopMetadata = z.object({
   _tag: z.literal('noop'),
 })
@@ -67,6 +93,8 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemSQLMetadata,
   ExecutionQueueItemSQLRenameDataframeMetadata,
   ExecutionQueueItemVisualizationMetadata,
+  ExecutionQueueItemTextInputSaveValueMetadata,
+  ExecutionQueueItemTextInputRenameVariableMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
 export type ExecutionQueueItemMetadata = z.infer<
@@ -122,13 +150,12 @@ export class ExecutionQueueItem {
 
   public isComplete(): boolean {
     switch (this.getStatus()._tag) {
-      case 'success':
-      case 'error':
-      case 'aborted':
+      case 'completed':
         return true
       case 'enqueued':
       case 'running':
       case 'aborting':
+      case 'unknown':
         return false
     }
   }
@@ -145,31 +172,23 @@ export class ExecutionQueueItem {
     this.item.setAttribute('status', { _tag: 'running' })
   }
 
-  public setSuccess(): void {
-    this.item.setAttribute('status', { _tag: 'success' })
-  }
-
-  public setError(): void {
-    this.item.setAttribute('status', { _tag: 'error' })
-  }
-
   public setAborting(): void {
     this.item.setAttribute('status', { _tag: 'aborting' })
   }
 
-  public setAborted(): void {
-    this.item.setAttribute('status', { _tag: 'aborted' })
+  public setCompleted(): void {
+    this.item.setAttribute('status', { _tag: 'completed' })
   }
 
   public getStatus(): ExecutionQueueItemStatus {
     const raw = this.item.getAttribute('status')
     if (!raw) {
-      return { _tag: 'error' }
+      return { _tag: 'unknown' }
     }
 
     const parsed = ExecutionQueueItemStatus.safeParse(raw)
     if (!parsed.success) {
-      return { _tag: 'error' }
+      return { _tag: 'unknown' }
     }
 
     return parsed.data

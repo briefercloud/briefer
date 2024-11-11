@@ -6,10 +6,9 @@ import {
   YBlock,
   getAttributeOr,
   getBaseAttributes,
-  ExecStatus,
   duplicateBaseAttributes,
 } from './index.js'
-import { updateYText } from '../index.js'
+import { ExecutionStatus, ResultStatus, updateYText } from '../index.js'
 import { clone } from 'ramda'
 
 export type DateInputValue = {
@@ -220,23 +219,22 @@ export function duplicateDateInputBlock(
 
 export function getDateInputBlockExecStatus(
   block: Y.XmlElement<DateInputBlock>
-): ExecStatus {
+): ExecutionStatus {
   const status = getAttributeOr(block, 'status', 'idle')
   switch (status) {
     case 'idle':
-      return 'idle'
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-all-running':
-      return 'loading'
-    case 'run-requested':
-    case 'running':
-      return 'loading'
+      return 'completed'
     case 'invalid-value':
     case 'invalid-variable':
     case 'invalid-variable-and-value':
     case 'unexpected-error':
-      return 'error'
+      return 'completed'
+    case 'run-all-enqueued':
+    case 'run-requested':
+      return 'enqueued'
+    case 'run-all-running':
+    case 'running':
+      return 'running'
   }
 }
 
@@ -425,5 +423,25 @@ export function updateDateInputBlockDateType(
     block.doc.transact(operation)
   } else {
     operation()
+  }
+}
+
+export function getDateInputBlockResultStatus(
+  block: Y.XmlElement<DateInputBlock>,
+  blocks: Y.Map<YBlock>
+): ResultStatus {
+  const { status, executedAt } = getDateInputAttributes(block, blocks)
+  switch (status) {
+    case 'running':
+    case 'run-requested':
+    case 'run-all-running':
+    case 'run-all-enqueued':
+    case 'idle':
+      return executedAt ? 'success' : 'idle'
+    case 'invalid-variable-and-value':
+    case 'invalid-variable':
+    case 'invalid-value':
+    case 'unexpected-error':
+      return 'error'
   }
 }

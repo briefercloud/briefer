@@ -302,17 +302,19 @@ export class RunAllExecutor implements IRunAllExecutor {
         // block.setAttribute('status', 'run-all-enqueued')
       },
       onInput: (block) => {
-        updateInputValue(block, {
-          status: 'run-all-enqueued',
-        })
+        // TODO
+        // updateInputValue(block, {
+        //   status: 'run-all-enqueued',
+        // })
       },
       onWriteback: (block) => {
         block.setAttribute('status', 'run-all-enqueued')
       },
       onDropdownInput: (block) => {
-        updateDropdownInputValue(block, {
-          status: 'run-all-enqueued',
-        })
+        // TODO
+        // updateDropdownInputValue(block, {
+        //   status: 'run-all-enqueued',
+        // })
       },
       onDateInput: (block) => {
         block.setAttribute('status', 'run-all-enqueued')
@@ -341,14 +343,16 @@ export class RunAllExecutor implements IRunAllExecutor {
         // block.setAttribute('status', 'run-all-running')
       },
       onInput: (block) => {
-        updateInputValue(block, {
-          status: 'run-all-running',
-        })
+        // TODO
+        // updateInputValue(block, {
+        //   status: 'run-all-running',
+        // })
       },
       onDropdownInput: (block) => {
-        updateDropdownInputValue(block, {
-          status: 'run-all-running',
-        })
+        // TODO
+        // updateDropdownInputValue(block, {
+        //   status: 'run-all-running',
+        // })
       },
       onDateInput: (block) => {
         block.setAttribute('status', 'run-all-running')
@@ -380,14 +384,16 @@ export class RunAllExecutor implements IRunAllExecutor {
         // block.setAttribute('status', 'idle')
       },
       onInput: (block) => {
-        updateInputValue(block, {
-          status: 'idle',
-        })
+        // TODO
+        // updateInputValue(block, {
+        //   status: 'idle',
+        // })
       },
       onDropdownInput: (block) => {
-        updateDropdownInputValue(block, {
-          status: 'idle',
-        })
+        // TODO
+        // updateDropdownInputValue(block, {
+        //   status: 'idle',
+        // })
       },
       onDateInput: (block) => {
         block.setAttribute('status', 'idle')

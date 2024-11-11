@@ -104,7 +104,7 @@ export class SQLExecutor implements ISQLExecutor {
       } = getSQLAttributes(block, this.blocks)
 
       if ((!dataSourceId && !isFileDataSource) || !dataframeName) {
-        executionItem.setSuccess()
+        executionItem.setCompleted()
         return
       }
 
@@ -113,7 +113,7 @@ export class SQLExecutor implements ISQLExecutor {
       ).find((ds) => ds.data.id === dataSourceId)
 
       if (aborted) {
-        executionItem.setAborted()
+        executionItem.setCompleted()
         block.setAttribute('result', {
           type: 'abort-error',
           message: 'Query aborted',
@@ -126,7 +126,7 @@ export class SQLExecutor implements ISQLExecutor {
         // the selected datasource was deleted
         // recover this block state by removing the datasourceId
         block.removeAttribute('dataSourceId')
-        executionItem.setSuccess()
+        executionItem.setCompleted()
         cleanup()
         return
       }
@@ -161,7 +161,7 @@ export class SQLExecutor implements ISQLExecutor {
         cleanup()
 
         if (aborted) {
-          executionItem.setAborted()
+          executionItem.setCompleted()
           await abort()
           await promise
           block.setAttribute('result', {
@@ -181,7 +181,7 @@ export class SQLExecutor implements ISQLExecutor {
         const result = await promise
         aborted = await abortP
         if (aborted) {
-          executionItem.setAborted()
+          executionItem.setCompleted()
           cleanup()
           block.setAttribute('result', {
             type: 'abort-error',
@@ -232,11 +232,7 @@ export class SQLExecutor implements ISQLExecutor {
         resultType = result.type
       }
 
-      if (resultType === 'success') {
-        executionItem.setSuccess()
-      } else {
-        executionItem.setError()
-      }
+      executionItem.setCompleted()
 
       logger().trace(
         {
@@ -257,7 +253,7 @@ export class SQLExecutor implements ISQLExecutor {
         },
         'Error while executin sql block'
       )
-      executionItem.setError()
+      executionItem.setCompleted()
     }
   }
 
@@ -280,7 +276,7 @@ export class SQLExecutor implements ISQLExecutor {
         ...dataframeName,
         error: 'invalid-name',
       })
-      executionItem.setError()
+      executionItem.setCompleted()
       return
     }
 
@@ -289,7 +285,7 @@ export class SQLExecutor implements ISQLExecutor {
         ...dataframeName,
         value: dataframeName.newValue,
       })
-      executionItem.setSuccess()
+      executionItem.setCompleted()
       return
     }
 
@@ -303,13 +299,6 @@ export class SQLExecutor implements ISQLExecutor {
       'renaming dataframe'
     )
 
-    let abort = false
-    const cleanup = executionItem.observeStatus((status) => {
-      if (status._tag === 'aborting' || status._tag === 'aborted') {
-        abort = true
-      }
-    })
-
     try {
       await this.effects.renameDataFrame(
         this.workspaceId,
@@ -317,22 +306,11 @@ export class SQLExecutor implements ISQLExecutor {
         dataframeName.value,
         dataframeName.newValue
       )
-      if (abort) {
-        executionItem.setAborted()
-        cleanup()
-        return
-      }
 
       const dataframes = await this.effects.listDataFrames(
         this.workspaceId,
         this.documentId
       )
-
-      if (abort) {
-        executionItem.setAborted()
-        cleanup()
-        return
-      }
 
       const blocks = new Set(Array.from(this.blocks.keys()))
       updateDataframes(this.dataframes, dataframes, blockId, blocks)
@@ -341,7 +319,7 @@ export class SQLExecutor implements ISQLExecutor {
         value: dataframeName.newValue,
         error: undefined,
       })
-      executionItem.setSuccess()
+      executionItem.setCompleted()
     } catch (err) {
       logger().error(
         {
@@ -352,7 +330,7 @@ export class SQLExecutor implements ISQLExecutor {
         },
         'Error while renaming dataframe'
       )
-      executionItem.setError()
+      executionItem.setCompleted()
     }
   }
 

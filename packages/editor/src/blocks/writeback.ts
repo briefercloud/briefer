@@ -6,9 +6,11 @@ import {
   getBaseAttributes,
   duplicateBaseAttributes,
   duplicateYText,
-  ExecStatus,
+  ResultStatus,
 } from './index.js'
 import { WriteBackErrorResult, WriteBackResult } from '@briefer/types'
+import { ExecutionQueue } from '../execution/queue.js'
+import { ExecutionStatus } from '../execution/item.js'
 
 export type WritebackBlock = BaseBlock<BlockType.Writeback> & {
   status:
@@ -198,35 +200,34 @@ export function getWritebackBlockErrorMessage(
 
 export function getWritebackBlockExecStatus(
   block: Y.XmlElement<WritebackBlock>
-): ExecStatus {
+): ExecutionStatus {
   const status = block.getAttribute('status')
   switch (status) {
     case undefined:
     case 'idle':
-      return getWritebackBlockResultStatus(block)
+      return 'completed'
     case 'run-all-enqueued':
       return 'enqueued'
     case 'run-requested':
     case 'running':
+    case 'run-all-running':
+      return 'running'
     case 'abort-requested':
     case 'aborting':
-    case 'run-all-running':
-      return 'loading'
+      return 'aborting'
   }
 }
 
 export function getWritebackBlockResultStatus(
   block: Y.XmlElement<WritebackBlock>
-): ExecStatus {
+): ResultStatus {
   const result = block.getAttribute('result')
-  if (result) {
-    switch (result._tag) {
-      case 'success':
-        return 'success'
-      case 'error':
-        return 'error'
-    }
+  switch (result?._tag) {
+    case 'success':
+      return 'success'
+    case 'error':
+      return 'error'
+    case undefined:
+      return 'idle'
   }
-
-  return 'idle'
 }

@@ -82,7 +82,7 @@ export class PythonExecutor implements IPythonExecutor {
       await promise
       const aborted = await abortP
       if (aborted) {
-        executionItem.setAborted()
+        executionItem.setCompleted()
         cleanup()
         return
       }
@@ -99,7 +99,7 @@ export class PythonExecutor implements IPythonExecutor {
         },
         'python block executed'
       )
-      executionItem.setSuccess()
+      executionItem.setCompleted()
     } catch (err) {
       logger().error(
         {
@@ -110,7 +110,7 @@ export class PythonExecutor implements IPythonExecutor {
         },
         'Error while executing python block'
       )
-      executionItem.setError()
+      executionItem.setCompleted()
     }
   }
 

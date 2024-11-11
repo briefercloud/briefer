@@ -6,20 +6,18 @@ import {
   YBlock,
   getAttributeOr,
   getBaseAttributes,
-  ExecStatus,
   EditableField,
   duplicateBaseAttributes,
+  ResultStatus,
 } from './index.js'
+import { ExecutionStatus } from '../execution/item.js'
+import { ExecutionQueue } from '../execution/queue.js'
 
 export type DropdownType = 'static' | 'dynamic'
 
 export type DropdownInputBlock = BaseBlock<BlockType.DropdownInput> & {
   label: string
-  value: EditableField<
-    'invalid-value' | 'unexpected-error',
-    'run-all-enqueued' | 'run-all-running',
-    string | null
-  >
+  value: EditableField<'invalid-value' | 'unexpected-error', string | null>
   variable: EditableField<
     'invalid-value' | 'invalid-variable-name' | 'unexpected-error'
   >
@@ -52,7 +50,6 @@ export const makeDropdownInputBlock = (
     value: {
       value: null,
       newValue: null,
-      status: 'idle',
       error: null,
     },
     variable,
@@ -156,7 +153,6 @@ function getDropdownInputValue(
   return getAttributeOr(block, 'value', {
     value: '',
     newValue: '',
-    status: 'idle',
     error: null,
   })
 }
@@ -189,18 +185,9 @@ export function updateDropdownInputValue(
 
 export function getDropdownInputValueExecStatus(
   block: Y.XmlElement<DropdownInputBlock>
-): ExecStatus {
-  const value = getDropdownInputValue(block)
-  switch (value.status) {
-    case 'idle':
-      return value.error ? 'error' : 'idle'
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'save-requested':
-    case 'saving':
-    case 'run-all-running':
-      return 'loading'
-  }
+): ExecutionStatus {
+  // TODO:
+  return 'running'
 }
 
 function getDropdownInputVariable(
@@ -232,32 +219,26 @@ export function updateDropdownInputVariable(
 export function getDropdownInputVariableExecStatus(
   block: Y.XmlElement<DropdownInputBlock>,
   blocks: Y.Map<YBlock>
-): ExecStatus {
-  const variable = getDropdownInputVariable(block, blocks)
-  switch (variable.status) {
-    case 'idle':
-      return variable.error ? 'error' : 'idle'
-    case 'save-requested':
-    case 'saving':
-      return 'loading'
-  }
+): ExecutionStatus {
+  // TODO:
+  return 'running'
 }
 
 export function getDropdownInputBlockExecStatus(
   block: Y.XmlElement<DropdownInputBlock>,
   blocks: Y.Map<YBlock>
-): ExecStatus {
+): ExecutionStatus {
   const variableStatus = getDropdownInputVariableExecStatus(block, blocks)
 
   switch (variableStatus) {
-    case 'success':
+    case 'running':
+    case 'aborting':
+    case 'enqueued':
+      return variableStatus
+    case 'completed':
+    case 'unknown':
     case 'idle':
       return getDropdownInputValueExecStatus(block)
-    case 'loading':
-    case 'enqueued':
-      return 'loading'
-    case 'error':
-      return 'error'
   }
 }
 
@@ -277,7 +258,6 @@ function getAvailableDropdownInputVariable(
   return {
     value: `dropdown_${i}`,
     newValue: `dropdown_${i}`,
-    status: 'idle',
     error: null,
   }
 }
@@ -291,7 +271,7 @@ export function dropdownInputRequestSaveVariable(
       return
     }
 
-    block.setAttribute('variable', { ...oldVal, status: 'save-requested' })
+    block.setAttribute('variable', { ...oldVal })
   }
 
   if (block.doc) {
@@ -311,7 +291,7 @@ export function dropdownInputRequestSaveValue(
       return
     }
 
-    block.setAttribute('value', { ...oldVal, status: 'save-requested' })
+    block.setAttribute('value', { ...oldVal })
   }
 
   if (block.doc) {
@@ -461,4 +441,18 @@ export function setDropdownColumnName(
   name: string | null
 ) {
   block.setAttribute('columnName', name)
+}
+
+export function getDropdownInputBlockResultStatus(
+  block: Y.XmlElement<DropdownInputBlock>,
+  blocks: Y.Map<YBlock>
+): ResultStatus {
+  const variable = getDropdownInputVariable(block, blocks)
+  const value = getDropdownInputValue(block)
+
+  if (variable.error || value.error) {
+    return 'error'
+  }
+
+  return value.error ? 'error' : 'success'
 }

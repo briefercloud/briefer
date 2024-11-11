@@ -4,13 +4,12 @@ import {
   BlockType,
   BaseBlock,
   YBlock,
-  ExecStatus,
   getAttributeOr,
   getBaseAttributes,
   duplicateBaseAttributes,
   duplicateYText,
 } from './index.js'
-import { updateYText } from '../index.js'
+import { ResultStatus, updateYText } from '../index.js'
 import { clone } from 'ramda'
 
 export type DataframeName = {
@@ -184,7 +183,7 @@ function getDataframeName(blocks: Y.Map<YBlock>): DataframeName {
 
 export function getSQLBlockResultStatus(
   block: Y.XmlElement<SQLBlock>
-): ExecStatus {
+): ResultStatus {
   const lastQueryTime = block.getAttribute('lastQueryTime')
   if (!lastQueryTime) {
     return 'idle'

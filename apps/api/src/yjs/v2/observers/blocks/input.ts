@@ -41,32 +41,28 @@ export class InputObserver implements IInputObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<InputBlock>) {
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-      },
-      'handling initial input block state'
-    )
-
-    const value = block.getAttribute('value')
-    if (value && value.status !== 'idle') {
-      block.setAttribute('value', {
-        ...value,
-        status: 'idle',
-      })
-    }
-
-    const variable = block.getAttribute('variable')
-    if (variable && variable.status !== 'idle') {
-      block.setAttribute('variable', {
-        ...variable,
-        status: 'idle',
-      })
-    }
-
-    this.executor.saveValue(block)
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //   },
+    //   'handling initial input block state'
+    // )
+    // const value = block.getAttribute('value')
+    // if (value && value.status !== 'idle') {
+    //   block.setAttribute('value', {
+    //     ...value,
+    //     status: 'idle',
+    //   })
+    // }
+    // const variable = block.getAttribute('variable')
+    // if (variable && variable.status !== 'idle') {
+    //   block.setAttribute('variable', {
+    //     ...variable,
+    //     status: 'idle',
+    //   })
+    // }
   }
 
   public async handleBlockEvent(
@@ -120,121 +116,113 @@ export class InputObserver implements IInputObserver {
     block: Y.XmlElement<InputBlock>,
     oldValue: InputBlock['value']
   ) {
-    const attrs = getInputAttributes(block, this.blocks)
-    if (attrs.value.status === 'idle') {
-      return
-    }
-
-    if (attrs.value.status === oldValue.status) {
-      return
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: attrs.id,
-        status: attrs.value.status,
-      },
-      'Handling input block value status'
-    )
-
-    if (attrs.value.status === 'save-requested') {
-      updateInputValue(block, { status: 'saving' })
-    } else if (attrs.value.status === 'saving') {
-      await this.saveInputValue(block)
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        status: attrs.value.status,
-      },
-      'Handled input block value status'
-    )
+    // const attrs = getInputAttributes(block, this.blocks)
+    // if (attrs.value.status === 'idle') {
+    //   return
+    // }
+    // if (attrs.value.status === oldValue.status) {
+    //   return
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: attrs.id,
+    //     status: attrs.value.status,
+    //   },
+    //   'Handling input block value status'
+    // )
+    // if (attrs.value.status === 'save-requested') {
+    //   updateInputValue(block, { status: 'saving' })
+    // } else if (attrs.value.status === 'saving') {
+    //   await this.saveInputValue(block)
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     status: attrs.value.status,
+    //   },
+    //   'Handled input block value status'
+    // )
   }
 
   private async saveInputVariable(block: Y.XmlElement<InputBlock>) {
-    try {
-      await this.executor.saveVariable(block)
-      updateInputVariable(block, this.blocks, {
-        status: 'idle',
-      })
-    } catch (error) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId: block.getAttribute('id'),
-          error,
-        },
-        'Failed to save variable value'
-      )
-      updateInputVariable(block, this.blocks, {
-        status: 'idle',
-        error: 'unexpected-error',
-      })
-    }
+    // try {
+    //   await this.executor.saveVariable(block)
+    //   updateInputVariable(block, this.blocks, {
+    //     status: 'idle',
+    //   })
+    // } catch (error) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId: block.getAttribute('id'),
+    //       error,
+    //     },
+    //     'Failed to save variable value'
+    //   )
+    //   updateInputVariable(block, this.blocks, {
+    //     status: 'idle',
+    //     error: 'unexpected-error',
+    //   })
+    // }
   }
 
   private async handleBlockVariableChange(
     block: Y.XmlElement<InputBlock>,
     oldValue: InputBlock['variable']
   ) {
-    const attrs = getInputAttributes(block, this.blocks)
-    if (attrs.variable.status === 'idle') {
-      return
-    }
-
-    if (attrs.variable.status === oldValue.status) {
-      return
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: attrs.id,
-        status: attrs.variable.status,
-      },
-      'Handling input block variable status'
-    )
-
-    if (attrs.variable.status === 'save-requested') {
-      updateInputVariable(block, this.blocks, { status: 'saving' })
-    } else if (attrs.variable.status === 'saving') {
-      await this.saveInputVariable(block)
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        status: attrs.variable.status,
-      },
-      'Handled input block variable status'
-    )
+    // const attrs = getInputAttributes(block, this.blocks)
+    // if (attrs.variable.status === 'idle') {
+    //   return
+    // }
+    // if (attrs.variable.status === oldValue.status) {
+    //   return
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: attrs.id,
+    //     status: attrs.variable.status,
+    //   },
+    //   'Handling input block variable status'
+    // )
+    // if (attrs.variable.status === 'save-requested') {
+    //   updateInputVariable(block, this.blocks, { status: 'saving' })
+    // } else if (attrs.variable.status === 'saving') {
+    //   await this.saveInputVariable(block)
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //     status: attrs.variable.status,
+    //   },
+    //   'Handled input block variable status'
+    // )
   }
 
   private async saveInputValue(block: Y.XmlElement<InputBlock>) {
-    try {
-      await this.executor.saveValue(block)
-      updateInputValue(block, { status: 'idle', error: null })
-    } catch (error) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId: block.getAttribute('id'),
-          error,
-        },
-        'Failed to save input value'
-      )
-      updateInputValue(block, { status: 'idle', error: 'unexpected-error' })
-    }
+    // try {
+    //   await this.executor.saveValue(block)
+    //   updateInputValue(block, { status: 'idle', error: null })
+    // } catch (error) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId: block.getAttribute('id'),
+    //       error,
+    //     },
+    //     'Failed to save input value'
+    //   )
+    //   updateInputValue(block, { status: 'idle', error: 'unexpected-error' })
+    // }
   }
 
   public static make(

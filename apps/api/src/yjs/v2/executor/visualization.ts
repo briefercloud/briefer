@@ -4,7 +4,6 @@ import {
   VisualizationBlock,
   getVisualizationAttributes,
 } from '@briefer/editor'
-import PQueue from 'p-queue'
 import * as Y from 'yjs'
 import { logger } from '../../../logger.js'
 import {
@@ -81,7 +80,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         dataframeName,
       } = getVisualizationAttributes(block)
       if (!dataframeName) {
-        executionItem.setError()
+        executionItem.setCompleted()
         return
       }
       const dataframe = this.dataframes.get(dataframeName)
@@ -95,6 +94,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
         (!hasAValidYAxis && chartType !== 'histogram')
       ) {
+        executionItem.setCompleted()
         return
       }
 
@@ -159,19 +159,17 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       }
 
       if (aborted) {
-        executionItem.setAborted()
+        executionItem.setCompleted()
         block.setAttribute('spec', null)
         return
       }
 
       if (!result.success) {
         if (result.reason !== 'aborted') {
-          executionItem.setAborted()
           block.setAttribute('error', result.reason)
-        } else {
-          executionItem.setError()
         }
 
+        executionItem.setCompleted()
         block.setAttribute('spec', null)
         return
       }
@@ -185,7 +183,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       block.setAttribute('tooManyDataPointsHidden', !capped)
       block.setAttribute('updatedAt', new Date().toISOString())
       block.setAttribute('error', null)
-      executionItem.setSuccess()
+      executionItem.setCompleted()
 
       logger().trace(
         {
@@ -196,16 +194,19 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         'visualization block run completed'
       )
     } catch (err) {
-      logger().error({
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-        err,
-      })
+      logger().error(
+        {
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId: block.getAttribute('id'),
+          err,
+        },
+        'Failed to run visualization block'
+      )
 
       block.setAttribute('error', 'unknown')
       block.setAttribute('spec', null)
-      executionItem.setError()
+      executionItem.setCompleted()
     }
   }
 

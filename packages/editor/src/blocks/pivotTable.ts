@@ -2,12 +2,12 @@ import * as Y from 'yjs'
 import {
   BlockType,
   BaseBlock,
-  ExecStatus,
   getAttributeOr,
   getBaseAttributes,
   duplicateBaseAttributes,
   YBlock,
   EditableField,
+  ResultStatus,
 } from './index.js'
 import { clone } from 'ramda'
 import {
@@ -16,6 +16,7 @@ import {
   PivotTableResult,
   PivotTableSort,
 } from '@briefer/types'
+import { ExecutionStatus } from '../execution/item.js'
 
 export type PivotTableRow = {
   column: DataFrameColumn | null
@@ -156,29 +157,30 @@ export function duplicatePivotTableBlock(
 
 export function getPivotTableBlockExecStatus(
   block: Y.XmlElement<PivotTableBlock>
-): ExecStatus {
+): ExecutionStatus {
   const status = block.getAttribute('status')
 
   switch (status) {
     case undefined:
     case 'idle':
-      return getPivotTableBlockResultStatus(block)
+      return 'completed'
     case 'run-all-enqueued':
-      return 'enqueued'
     case 'run-requested':
+      return 'enqueued'
     case 'running':
     case 'run-all-running':
-    case 'abort-requested':
-    case 'aborting':
     case 'page-requested':
     case 'loading-page':
-      return 'loading'
+      return 'running'
+    case 'abort-requested':
+    case 'aborting':
+      return 'aborting'
   }
 }
 
 export function getPivotTableBlockResultStatus(
   block: Y.XmlElement<PivotTableBlock>
-): ExecStatus {
+): ResultStatus {
   const error = block.getAttribute('error')
   const updatedAt = block.getAttribute('updatedAt')
 
@@ -248,7 +250,8 @@ function getAvailablePivotVariable(
   return {
     value: `pivot_table_${i}`,
     newValue: `pivot_table_${i}`,
-    status: 'idle',
+    // TODO renaming of pivot table
+    // status: 'idle',
     error: null,
   }
 }

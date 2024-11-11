@@ -29,15 +29,11 @@ import {
   groupBlocks,
   BlockType,
   addGroupedBlock,
-  getExecStatus,
-  requestRun,
-  execStatusIsDisabled,
   switchBlockType,
   getPrettyTitle,
   duplicateTab,
   duplicateBlockGroup,
   removeBlock,
-  requestTrySuggestion,
   addBlockGroupAfterBlock,
   getBaseAttributes,
   TabRef as TabRefT,
@@ -213,6 +209,7 @@ export function getTabIcon(
 
 interface TabProps {
   tabRef: TabRefT
+  blocks: Y.Map<YBlock>
   onSwitchActiveTab: (tabId: string) => void
   onReorderTab: (
     blockGroupId: string,
@@ -228,6 +225,7 @@ interface TabProps {
   ) => boolean
   isFirst?: boolean
   isDraggable: boolean
+  executionQueue: ExecutionQueue
 }
 function Tab(props: TabProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -375,7 +373,11 @@ function Tab(props: TabProps) {
             </span>
           )}
         </div>
-        <ExecIndicator execStatus={props.tabRef.execStatus} />
+        <ExecIndicator
+          tabRef={props.tabRef}
+          blocks={props.blocks}
+          executionQueue={props.executionQueue}
+        />
       </button>
       {draggingSide === 'right' && isOver && canDrop && (
         <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
@@ -507,12 +509,13 @@ const DraggableTabbedBlock = (props: {
 
   const onTry = useCallback(
     (block: YBlock) => {
-      requestTrySuggestion(
-        block,
-        blocks.value,
-        layout.value,
-        environmentStartedAt
-      )
+      // TODO
+      // requestTrySuggestion(
+      //   block,
+      //   blocks.value,
+      //   layout.value,
+      //   environmentStartedAt
+      // )
     },
     [blocks.value, layout.value, environmentStartedAt]
   )
@@ -554,13 +557,14 @@ file`
         return
       }
 
-      requestRun(
-        pythonBlock,
-        blocks.value,
-        layout.value,
-        environmentStartedAt,
-        true
-      )
+      // TODO
+      // requestRun(
+      //   pythonBlock,
+      //   blocks.value,
+      //   layout.value,
+      //   environmentStartedAt,
+      //   true
+      // )
     },
     [blocks, layout, environmentStartedAt]
   )
@@ -598,13 +602,14 @@ file`
         return
       }
 
-      requestRun(
-        sqlBlock,
-        blocks.value,
-        layout.value,
-        environmentStartedAt,
-        true
-      )
+      // TODO
+      // requestRun(
+      //   sqlBlock,
+      //   blocks.value,
+      //   layout.value,
+      //   environmentStartedAt,
+      //   true
+      // )
     },
     []
   )
@@ -758,18 +763,19 @@ file`
           return
         }
 
-        if (!execStatusIsDisabled(getExecStatus(tabBlock, blocks.value))) {
-          requestRun(
-            tabBlock,
-            blocks.value,
-            layout.value,
-            environmentStartedAt,
-            // we must skip dependency checks because running any blocks above
-            // is counterintuitive given the user's intention is to run the
-            // blocks below
-            true
-          )
-        }
+        // TODO
+        // if (!execStatusIsDisabled(getExecStatus(tabBlock, blocks.value))) {
+        //   requestRun(
+        //     tabBlock,
+        //     blocks.value,
+        //     layout.value,
+        //     environmentStartedAt,
+        //     // we must skip dependency checks because running any blocks above
+        //     // is counterintuitive given the user's intention is to run the
+        //     // blocks below
+        //     true
+        //   )
+        // }
       })
     }
   }, [blocks, layout, tabRefs, environmentStartedAt])
@@ -883,6 +889,8 @@ file`
                   onReorderTab={onReorderTab}
                   onCheckCanReorderTab={onCheckCanReorderTab}
                   isDraggable={hasMultipleTabs && !props.isApp}
+                  blocks={blocks.value}
+                  executionQueue={executionQueue}
                 />
               ))}
               {isScrollable && !isScrolledAllTheWayRight && (
@@ -1688,11 +1696,11 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        // TODO
-        onRun={() => {}}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onDropdownInput: (block) => (

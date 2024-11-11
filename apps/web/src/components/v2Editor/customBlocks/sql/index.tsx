@@ -153,10 +153,9 @@ function SQLBlock(props: Props) {
 
   const statusIsDisabled: boolean = (() => {
     switch (status._tag) {
-      case 'error':
-      case 'success':
       case 'idle':
-      case 'aborted':
+      case 'completed':
+      case 'unknown':
         return false
       case 'running':
       case 'enqueued':
@@ -232,9 +231,8 @@ function SQLBlock(props: Props) {
         execution?.item.setAborting()
         break
       case 'idle':
-      case 'error':
-      case 'success':
-      case 'aborted':
+      case 'completed':
+      case 'unknown':
         onRun()
         break
       case 'aborting':
@@ -251,8 +249,7 @@ function SQLBlock(props: Props) {
   const queryStatusText = useMemo(() => {
     switch (status._tag) {
       case 'idle':
-      case 'error':
-      case 'success': {
+      case 'completed': {
         if (source?.toJSON() === lastQuery && lastQueryTime) {
           return <QuerySucceededText lastExecutionTime={lastQueryTime} />
         }
@@ -266,8 +263,7 @@ function SQLBlock(props: Props) {
           return <LoadingEnvText />
         }
         return <LoadingQueryText startExecutionTime={startQueryTime ?? null} />
-      case 'error':
-      case 'aborted':
+      case 'unknown':
         return null
     }
   }, [

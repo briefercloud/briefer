@@ -3,11 +3,11 @@ import {
   BlockType,
   BaseBlock,
   YBlock,
-  ExecStatus,
   getAttributeOr,
   getBaseAttributes,
   duplicateBaseAttributes,
 } from './index.js'
+import { ExecutionStatus } from '../execution/item.js'
 
 export type RichTextBlock = BaseBlock<BlockType.RichText> & {
   content: Y.XmlFragment
@@ -68,8 +68,8 @@ export function duplicateRichTextBlock(
 
 export function getRichTextBlockExecStatus(
   _block: Y.XmlElement<RichTextBlock>
-): ExecStatus {
-  return 'idle'
+): ExecutionStatus {
+  return 'completed'
 }
 
 function duplicateYXmlFragment(fragment: Y.XmlFragment): Y.XmlFragment {

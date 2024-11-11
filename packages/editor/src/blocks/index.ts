@@ -1,10 +1,6 @@
 import * as dfns from 'date-fns'
 import * as Y from 'yjs'
-import {
-  RichTextBlock,
-  duplicateRichTextBlock,
-  getRichTextBlockExecStatus,
-} from './richText.js'
+import { RichTextBlock, duplicateRichTextBlock } from './richText.js'
 import {
   SQLBlock,
   duplicateSQLBlock,
@@ -29,18 +25,20 @@ import {
 import {
   InputBlock,
   duplicateInputBlock,
-  getInputBlockExecStatus,
   getInputBlockExecutedAt,
-  inputRequestSaveValue,
 } from './input.js'
-import { YBlockGroup, isTextInputBlock, switchBlockType } from '../index.js'
+import {
+  ExecutionStatus,
+  YBlockGroup,
+  getInputBlockResultStatus,
+  switchBlockType,
+} from '../index.js'
 import { FileUploadBlock, duplicateFileUploadBlock } from './fileUpload.js'
 import {
   DropdownInputBlock,
-  dropdownInputRequestSaveValue,
   duplicateDropdownInputBlock,
-  getDropdownInputBlockExecStatus,
   getDropdownInputBlockExecutedAt,
+  getDropdownInputBlockResultStatus,
 } from './dropdownInput.js'
 import { clone } from 'ramda'
 import {
@@ -51,22 +49,19 @@ import {
   WritebackBlock,
   duplicateWritebackBlock,
   getWritebackBlockErrorMessage,
-  getWritebackBlockExecStatus,
   getWritebackBlockExecutedAt,
   getWritebackBlockResultStatus,
 } from './writeback.js'
 import {
   DateInputBlock,
   duplicateDateInputBlock,
-  getDateInputBlockExecStatus,
   getDateInputBlockExecutedAt,
-  requestDateInputRun,
+  getDateInputBlockResultStatus,
 } from './dateInput.js'
 import {
   PivotTableBlock,
   duplicatePivotTableBlock,
   getPivotTableBlockErrorMessage,
-  getPivotTableBlockExecStatus,
   getPivotTableBlockExecutedAt,
   getPivotTableBlockResultStatus,
 } from './pivotTable.js'
@@ -85,7 +80,6 @@ export enum BlockType {
   PivotTable = 'PIVOT_TABLE',
 }
 
-export type ExecStatus = 'enqueued' | 'loading' | 'idle' | 'error' | 'success'
 export type ResultStatus = 'idle' | 'error' | 'success'
 
 export type BaseBlock<T extends BlockType> = {
@@ -110,119 +104,19 @@ export type Block =
 
 export type YBlock = Y.XmlElement<Block>
 
-const noop = () => {}
-
-export const requestRun = <B extends YBlock>(
-  block: B,
-  blocks: Y.Map<YBlock>,
-  layout: Y.Array<YBlockGroup>,
-  environmentStartedAt: Date | null,
-  skipDependencyCheck: boolean,
-  customOnRequestRun?: (block: B) => void
-) => {
-  const dependencies = computeDepencyQueue(
-    block,
-    layout,
-    blocks,
-    environmentStartedAt,
-    skipDependencyCheck
-  )
-
-  const queue = dependencies
-  if (!customOnRequestRun) {
-    queue.push(block)
-  }
-  for (const block of queue) {
-    switchBlockType<void>(block, {
-      // TODO
-      onPython: (b) => {}, // b.setAttribute('status', 'run-requested'),
-      // TODO
-      onSQL: (b) => {}, // b.setAttribute('status', 'run-requested'),
-      // TODO
-      onVisualization: (b) => {}, // b.setAttribute('status', 'run-requested'),
-      onWriteback: (b) => b.setAttribute('status', 'run-requested'),
-      onInput: inputRequestSaveValue,
-      onDropdownInput: dropdownInputRequestSaveValue,
-      onDateInput: (b) => requestDateInputRun(b, blocks),
-      onRichText: noop,
-      onFileUpload: noop,
-      onDashboardHeader: noop,
-      onPivotTable: (b) => b.setAttribute('status', 'run-requested'),
-    })
-  }
-
-  if (customOnRequestRun) {
-    customOnRequestRun(block)
-  }
-}
-
-export const requestTrySuggestion = (
-  block: YBlock,
-  blocks: Y.Map<YBlock>,
-  layout: Y.Array<YBlockGroup>,
-  environmentStartedAt: Date | null,
-  skipDependencyCheck = false
-) => {
-  const dependencies = computeDepencyQueue(
-    block,
-    layout,
-    blocks,
-    environmentStartedAt,
-    skipDependencyCheck
-  )
-  const queue = dependencies.concat(block)
-
-  for (const block of queue) {
-    switchBlockType<void>(block, {
-      // TODO
-      onPython: (b) => {}, // b.setAttribute('status', 'try-suggestion-requested'),
-      // TODO
-      onSQL: (b) => {}, // b.setAttribute('status', 'try-suggestion-requested'),
-      onVisualization: noop,
-      onInput: inputRequestSaveValue,
-      onDropdownInput: dropdownInputRequestSaveValue,
-      onDateInput: (b) => b.setAttribute('status', 'run-requested'),
-      onRichText: noop,
-      onFileUpload: noop,
-      onDashboardHeader: noop,
-      onWriteback: noop,
-      onPivotTable: noop,
-    })
-  }
-}
-
 export const setTitle = (block: YBlock, title: string) => {
   block.setAttribute('title', title)
 }
 
-export const getExecStatus = (
-  block: YBlock,
-  blocks: Y.Map<YBlock>
-): ExecStatus =>
-  switchBlockType(block, {
-    // TODO
-    onPython: () => 'idle', //getPythonBlockExecStatus,
-    // TODO
-    onSQL: () => 'idle', // getSQLBlockExecStatus,
-    onVisualization: () => 'idle', // getVisualizationBlockExecStatus,
-    onInput: (block) => getInputBlockExecStatus(block, blocks),
-    onDropdownInput: (block) => getDropdownInputBlockExecStatus(block, blocks),
-    onDateInput: (block) => getDateInputBlockExecStatus(block),
-    onRichText: getRichTextBlockExecStatus,
-    onFileUpload: () => 'idle',
-    onDashboardHeader: () => 'idle',
-    onWriteback: getWritebackBlockExecStatus,
-    onPivotTable: getPivotTableBlockExecStatus,
-  })
-
-export const execStatusIsDisabled = (status: ExecStatus): boolean => {
+export const execStatusIsDisabled = (status: ExecutionStatus): boolean => {
   switch (status) {
+    case 'running':
+    case 'aborting':
     case 'enqueued':
-    case 'loading':
       return true
+    case 'completed':
+    case 'unknown':
     case 'idle':
-    case 'error':
-    case 'success':
       return false
   }
 }
@@ -230,15 +124,16 @@ export const execStatusIsDisabled = (status: ExecStatus): boolean => {
 export const getResultStatus = (
   block: YBlock,
   blocks: Y.Map<YBlock>
-): ExecStatus =>
+): ResultStatus =>
   switchBlockType(block, {
     onPython: getPythonBlockResultStatus,
     onSQL: getSQLBlockResultStatus,
     onVisualization: getVisualizationBlockResultStatus,
-    onInput: (block) => getInputBlockExecStatus(block, blocks),
-    onDropdownInput: (block) => getDropdownInputBlockExecStatus(block, blocks),
-    onDateInput: (block) => getDateInputBlockExecStatus(block),
-    onRichText: getRichTextBlockExecStatus,
+    onInput: (block) => getInputBlockResultStatus(block, blocks),
+    onDropdownInput: (block) =>
+      getDropdownInputBlockResultStatus(block, blocks),
+    onDateInput: (block) => getDateInputBlockResultStatus(block, blocks),
+    onRichText: () => 'idle',
     onFileUpload: () => 'idle',
     onDashboardHeader: () => 'idle',
     onWriteback: getWritebackBlockResultStatus,

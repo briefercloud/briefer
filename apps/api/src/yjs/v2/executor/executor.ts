@@ -15,6 +15,10 @@ import {
   ExecutionQueueItemVisualizationMetadata,
   VisualizationBlock,
   ExecutionQueueItemSQLRenameDataframeMetadata,
+  isInputBlock,
+  ExecutionQueueItemTextInputSaveValueMetadata,
+  InputBlock,
+  ExecutionQueueItemTextInputRenameVariableMetadata,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -25,6 +29,7 @@ import {
   IVisualizationExecutor,
   VisualizationExecutor,
 } from './visualization.js'
+import { ITextInputExecutor, TextInputExecutor } from './text-input.js'
 
 export class Executor {
   private isRunning: boolean = false
@@ -36,6 +41,7 @@ export class Executor {
     private readonly pythonExecutor: IPythonExecutor,
     private readonly sqlExecutor: ISQLExecutor,
     private readonly visExecutor: IVisualizationExecutor,
+    private readonly textInputExecutor: ITextInputExecutor,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private readonly blocks: Y.Map<YBlock>,
@@ -92,12 +98,12 @@ export class Executor {
       case 'running':
       case 'enqueued':
         await this.executeItem(current)
-      case 'error':
-      case 'success':
-      case 'aborted':
+      case 'completed':
         break
+      case 'unknown':
       case 'aborting':
-        current.setAborted()
+        // TODO: when getting here we should try to abort one more time
+        current.setCompleted()
         break
       default:
         exhaustiveCheck(status)
@@ -137,6 +143,16 @@ export class Executor {
       case 'visualization':
         await this.visExecutor.run(item, data.block, data.metadata)
         break
+      case 'text-input-save-value':
+        await this.textInputExecutor.saveValue(item, data.block, data.metadata)
+        break
+      case 'text-input-rename-variable':
+        await this.textInputExecutor.renameVariable(
+          item,
+          data.block,
+          data.metadata
+        )
+        break
       default:
         exhaustiveCheck(data)
     }
@@ -175,7 +191,8 @@ export class Executor {
 
         return { _tag: 'python', metadata, block }
       }
-      case 'sql': {
+      case 'sql':
+      case 'sql-rename-dataframe': {
         const block = this.blocks.get(item.getBlockId())
         if (!block) {
           logger().error(
@@ -201,35 +218,12 @@ export class Executor {
           return null
         }
 
-        return { _tag: 'sql', metadata, block }
-      }
-      case 'sql-rename-dataframe': {
-        const block = this.blocks.get(item.getBlockId())
-        if (!block) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Failed to find block for execution item'
-          )
-          return null
+        switch (metadata._tag) {
+          case 'sql':
+            return { _tag: 'sql', metadata, block }
+          case 'sql-rename-dataframe':
+            return { _tag: 'sql-rename-dataframe', metadata, block }
         }
-
-        if (!isSQLBlock(block)) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Got wrong block type for sql rename dataframe execution'
-          )
-          return null
-        }
-
-        return { _tag: 'sql-rename-dataframe', metadata, block }
       }
       case 'visualization': {
         const block = this.blocks.get(item.getBlockId())
@@ -259,6 +253,41 @@ export class Executor {
 
         return { _tag: 'visualization', metadata, block }
       }
+      case 'text-input-save-value':
+      case 'text-input-rename-variable': {
+        const block = this.blocks.get(item.getBlockId())
+        if (!block) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Failed to find block for execution item'
+          )
+          return null
+        }
+
+        if (!isInputBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for input execution'
+          )
+          return null
+        }
+
+        switch (metadata._tag) {
+          case 'text-input-save-value':
+            return { _tag: 'text-input-save-value', metadata, block }
+          case 'text-input-rename-variable':
+            return { _tag: 'text-input-rename-variable', metadata, block }
+        }
+      }
+
       case 'noop':
         return null
     }
@@ -274,6 +303,7 @@ export class Executor {
         events
       ),
       VisualizationExecutor.fromWSSharedDocV2(doc, events),
+      TextInputExecutor.fromWSSharedDocV2(doc),
       doc.workspaceId,
       doc.documentId,
       doc.blocks,
@@ -302,6 +332,16 @@ type ExecutionItemData =
       _tag: 'visualization'
       metadata: ExecutionQueueItemVisualizationMetadata
       block: Y.XmlElement<VisualizationBlock>
+    }
+  | {
+      _tag: 'text-input-save-value'
+      metadata: ExecutionQueueItemTextInputSaveValueMetadata
+      block: Y.XmlElement<InputBlock>
+    }
+  | {
+      _tag: 'text-input-rename-variable'
+      metadata: ExecutionQueueItemTextInputRenameVariableMetadata
+      block: Y.XmlElement<InputBlock>
     }
 
 function exhaustiveCheck(_param: never) {}
