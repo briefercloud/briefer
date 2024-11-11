@@ -365,10 +365,10 @@ from redshift_connector.error import ProgrammingError as RedshiftProgrammingErro
 
 def get_columns(conn, inspector, table_name, schema_name):
     if ${JSON.stringify(ds.type)} == "redshift":
+        result = []
         try:
             columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
 
-            result = []
             for row in columns:
                 try:
                     csv_reader = csv.reader([row[0].strip("()")])
@@ -380,12 +380,9 @@ def get_columns(conn, inspector, table_name, schema_name):
                 except Exception as e:
                     print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
                     continue
-        except ProgrammingError as e:
-            if isinstance(e.orig, RedshiftProgrammingError):
-                if "permission denied" in str(e.orig):
-                    print(json.dumps({"log": f"Insufficient privileges to access table {table_name}"}))
-                    return []
-            raise e
+        except Exception as e:
+            print(json.dumps({"log": f"Got error when trying to get columns for table {table_name}: {str(e)}"}))
+            pass
 
         return result
 
