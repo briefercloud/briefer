@@ -69,7 +69,7 @@ export default function SchemaList(props: Props) {
 
       <div className="pt-4 flex flex-col h-full overflow-hidden">
         <button
-          className="relative flex px-4 py-2 text-xs font-medium border-y bg-gray-50 text-gray-600 items-center justify-between font-mono hover:bg-gray-100 group w-full"
+          className="relative flex px-4 py-2 text-xs font-medium border-y bg-gray-50 items-center justify-between font-mono hover:bg-gray-100 group w-full"
           onClick={props.onBack}
         >
           <div className="flex gap-x-1.5 items-center overflow-hidden">
@@ -88,14 +88,15 @@ export default function SchemaList(props: Props) {
           </div>
         </button>
 
-        <div className="flex-grow text-xs text-gray-500 font-sans font-medium overflow-y-auto">
+        <div className="flex-grow text-xs font-sans font-medium overflow-y-auto">
           <SchemaInfo
             dataSource={props.dataSource}
             onRetrySchema={props.onRetrySchema}
           />
           <input
             type="text"
-            className="w-full h-8 border-b border-gray-200"
+            placeholder="Search..."
+            className="w-full h-8 border-0 border-b border-gray-200 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0"
             value={search}
             onChange={onChangeSearch}
           />
@@ -136,21 +137,21 @@ function SchemaItem(props: SchemaItemProps) {
   return (
     <li key={props.schemaName}>
       <button
-        className="px-4 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full"
+        className="px-3.5 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full font-normal"
         onClick={onToggleOpen}
       >
-        <div className="flex gap-x-1.5 items-center font-mono overflow-hidden">
+        <div className="flex gap-x-1.5 items-center overflow-hidden">
+          <ShapesIcon className="h-3.5 w-3.5 text-gray-400" />
+          <ScrollBar className="text-left overflow-auto horizontal-only whitespace-nowrap flex-auto">
+            <h4>{props.schemaName}</h4>
+          </ScrollBar>
+        </div>
+        <div className="pl-1">
           {open ? (
             <ChevronDownIcon className="h-3 w-3 text-gray-500" />
           ) : (
             <ChevronRightIcon className="h-3 w-3 text-gray-500" />
           )}
-          <ScrollBar className="text-left overflow-auto horizontal-only whitespace-nowrap">
-            <h4>{props.schemaName}</h4>
-          </ScrollBar>
-        </div>
-        <div className="pl-1">
-          <ShapesIcon className="text-gray-400 h-4 w-4" />
         </div>
       </button>
       <div className={open ? 'block' : 'hidden'}>

@@ -81,17 +81,13 @@ function TableItem(props: TableItemProps) {
   }, [props.search])
 
   return (
-    <li key={props.tableName} className="border-b border-gray-200">
+    <li key={props.tableName} className="">
       <button
-        className="pl-5 pr-4 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full"
+        className="pl-6 pr-3.5 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full font-normal"
         onClick={onToggleOpen}
       >
-        <div className="flex gap-x-1.5 items-center font-mono overflow-hidden">
-          {open ? (
-            <ChevronDownIcon className="h-3 w-3 text-gray-500" />
-          ) : (
-            <ChevronRightIcon className="h-3 w-3 text-gray-500" />
-          )}
+        <div className="flex gap-x-1.5 items-center overflow-hidden">
+          <Grid3x3Icon className="text-gray-400 min-h-3.5 min-w-3.5 h-3.5 w-3.5" />
           <ScrollBar
             className="overflow-auto horizontal-only whitespace-nowrap"
             title={props.tableName}
@@ -100,7 +96,11 @@ function TableItem(props: TableItemProps) {
           </ScrollBar>
         </div>
         <div className="pl-1">
-          <Grid3x3Icon className="text-gray-400 min-h-4 min-w-4 h-4 w-4" />
+          {open ? (
+            <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+          ) : (
+            <ChevronRightIcon className="h-3 w-3 text-gray-500" />
+          )}
         </div>
       </button>
       <div className={open ? 'block' : 'hidden'}>
