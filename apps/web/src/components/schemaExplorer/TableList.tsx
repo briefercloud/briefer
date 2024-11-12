@@ -1,61 +1,55 @@
+import { Map } from 'immutable'
 import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { Grid3x3Icon } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import TableDetails from './TableDetails'
 import type { APIDataSource } from '@briefer/database'
 import { DataSourceColumn, DataSourceSchema } from '@briefer/types'
 import ScrollBar from '../ScrollBar'
-import Levenshtein from 'levenshtein'
+import useDebouncedMemo from '@/hooks/useDebouncedMemo'
+import { useCallback } from 'react'
 
 interface Props {
   dataSource: APIDataSource
   schemaName: string
   schema: DataSourceSchema
-  search: string
+  schemaState: Map<string, boolean>
+  onToggleTableOpen: (schemaName: string, tableName: string) => void
+  hiddenTables: Set<string>
+  hiddenColumns: Set<string>
 }
 export default function TableList(props: Props) {
   const tables: { name: string; columns: DataSourceColumn[] }[] =
-    useMemo(() => {
-      return Object.entries(props.schema.tables)
-        .map(([tableName, table]) => {
-          return {
-            name: tableName,
-            columns: table.columns,
-          }
-        })
-        .filter((table) => {
-          const columns = table.columns.flatMap(
-            (column) => `${props.schemaName}.${table.name}.${column.name}`
-          )
-
-          return columns.some(
-            (column) =>
-              props.search.trim() === '' ||
-              column
-                .trim()
-                .toLowerCase()
-                .includes(props.search.trim().toLowerCase()) ||
-              new Levenshtein(
-                column.trim().toLowerCase(),
-                props.search.trim().toLowerCase()
-              ).distance <=
-                column.length / 2
-          )
-        })
-        .sort((a, b) => a.name.localeCompare(b.name))
-    }, [props.schema, props.search])
+    useDebouncedMemo(
+      () => {
+        return Object.entries(props.schema.tables)
+          .map(([tableName, table]) => {
+            return {
+              name: tableName,
+              columns: table.columns,
+            }
+          })
+          .sort((a, b) => a.name.localeCompare(b.name))
+      },
+      [props.schema],
+      500
+    )
 
   return (
     <ul>
-      {tables.map((table) => (
-        <TableItem
-          key={table.name}
-          schemaName={props.schemaName}
-          tableName={table.name}
-          columns={table.columns}
-          search={props.search}
-        />
-      ))}
+      {tables.map(
+        (table) =>
+          !props.hiddenTables.has(`${props.schemaName}.${table.name}`) && (
+            <TableItem
+              key={table.name}
+              schemaName={props.schemaName}
+              tableName={table.name}
+              columns={table.columns}
+              open={props.schemaState.get(table.name) ?? false}
+              onToggleOpen={props.onToggleTableOpen}
+              hiddenColumns={props.hiddenColumns}
+            />
+          )
+      )}
     </ul>
   )
 }
@@ -64,21 +58,14 @@ interface TableItemProps {
   schemaName: string
   tableName: string
   columns: DataSourceColumn[]
-  search: string
+  open: boolean
+  onToggleOpen: (schemaName: string, tableName: string) => void
+  hiddenColumns: Set<string>
 }
 function TableItem(props: TableItemProps) {
-  const [open, setOpen] = useState(false)
   const onToggleOpen = useCallback(() => {
-    setOpen((o) => !o)
-  }, [])
-  const onClose = useCallback(() => {
-    setOpen(false)
-  }, [])
-  useEffect(() => {
-    if (props.search) {
-      setOpen(true)
-    }
-  }, [props.search])
+    props.onToggleOpen(props.schemaName, props.tableName)
+  }, [props.schemaName, props.tableName])
 
   return (
     <li key={props.tableName} className="">
@@ -96,22 +83,21 @@ function TableItem(props: TableItemProps) {
           </ScrollBar>
         </div>
         <div className="pl-1">
-          {open ? (
+          {props.open ? (
             <ChevronDownIcon className="h-3 w-3 text-gray-500" />
           ) : (
             <ChevronRightIcon className="h-3 w-3 text-gray-500" />
           )}
         </div>
       </button>
-      <div className={open ? 'block' : 'hidden'}>
+      {props.open && (
         <TableDetails
           schemaName={props.schemaName}
           tableName={props.tableName}
-          onCloseTableDetails={onClose}
           columns={props.columns}
-          search={props.search}
+          hiddenColumns={props.hiddenColumns}
         />
-      </div>
+      )}
     </li>
   )
 }

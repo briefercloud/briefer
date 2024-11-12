@@ -10,12 +10,15 @@ import {
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { ShapesIcon } from 'lucide-react'
 import type { DataSource, APIDataSource } from '@briefer/database'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { SchemaInfo } from './SchemaInfo'
 import TableList from './TableList'
 import { DataSourceSchema } from '@briefer/types'
 import ScrollBar from '../ScrollBar'
 import { useDebounce } from '@/hooks/useDebounce'
+import useDebouncedMemo from '@/hooks/useDebouncedMemo'
+import { splitEvery } from 'ramda'
+import Spin from '../Spin'
 
 interface Props {
   schemas: Map<string, DataSourceSchema>
@@ -25,6 +28,10 @@ interface Props {
   canRetrySchema: boolean
 }
 export default function SchemaList(props: Props) {
+  const [openState, setOpenState] = useState<
+    Map<string, { open: boolean; tables: Map<string, boolean> }>
+  >(Map())
+
   const [search, setSearch] = useState('')
   const onChangeSearch = useDebounce(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,33 +41,159 @@ export default function SchemaList(props: Props) {
     []
   )
 
-  const sortedSchemas = useMemo(
-    () =>
-      Array.from(props.schemas.entries())
-        .filter(([schemaName, schema]) => {
-          const columns = Object.entries(schema.tables).flatMap(
-            ([tableName, table]) =>
-              table.columns.flatMap(
-                (column) => `${schemaName}.${tableName}.${column.name}`
-              )
-          )
+  const [searching, setSearching] = useState(false)
+  const [hiddenSchemas, setHiddenSchemas] = useState<Set<string>>(new Set())
+  const [hiddenTables, setHiddenTables] = useState<Set<string>>(new Set())
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set())
 
-          return columns.some(
-            (column) =>
+  useEffect(() => {
+    if (search.trim() === '') {
+      if (hiddenSchemas.size !== 0) {
+        setHiddenSchemas(new Set())
+      }
+
+      if (hiddenTables.size !== 0) {
+        setHiddenTables(new Set())
+      }
+
+      if (hiddenColumns.size !== 0) {
+        setHiddenColumns(new Set())
+      }
+
+      setSearching(false)
+      return
+    }
+
+    let active = true
+    setSearching(true)
+    const nextHiddenSchemas = new Set<string>()
+    const nextHiddenTables = new Set<string>()
+    const nextHiddenColumns = new Set<string>()
+
+    const tasks: { schema: string; table: string; column: string }[] =
+      Array.from(props.schemas.entries()).flatMap(([schemaName, schema]) =>
+        Array.from(Object.entries(schema.tables)).flatMap(
+          ([tableName, table]) => {
+            nextHiddenSchemas.add(schemaName)
+            nextHiddenTables.add(`${schemaName}.${tableName}`)
+
+            return table.columns.map((column) => {
+              nextHiddenColumns.add(`${schemaName}.${tableName}.${column.name}`)
+              return {
+                schema: schemaName,
+                table: tableName,
+                column: column.name,
+              }
+            })
+          }
+        )
+      )
+
+    Promise.resolve()
+      .then(async () => {
+        let startTime = Date.now()
+        const FPS = 60
+        let remaining = tasks.length
+        for (const chunk of splitEvery(200, tasks)) {
+          if (Date.now() - startTime > 1000 / FPS) {
+            await new Promise((resolve) => requestAnimationFrame(resolve))
+            startTime = Date.now()
+          }
+
+          if (!active) {
+            return
+          }
+
+          for (const { schema, table, column } of chunk) {
+            const fullColumnName = `${schema}.${table}.${column}`
+            if (
               search.trim() === '' ||
-              column
+              fullColumnName
                 .trim()
                 .toLowerCase()
                 .includes(search.trim().toLowerCase()) ||
               new Levenshtein(
-                column.trim().toLowerCase(),
+                fullColumnName.trim().toLowerCase(),
                 search.trim().toLowerCase()
               ).distance <=
-                column.length / 2
-          )
+                fullColumnName.length / 2
+            ) {
+              nextHiddenColumns.delete(fullColumnName)
+              nextHiddenTables.delete(`${schema}.${table}`)
+              nextHiddenSchemas.delete(schema)
+            }
+          }
+
+          setHiddenSchemas(nextHiddenSchemas)
+          setHiddenTables(nextHiddenTables)
+          setHiddenColumns(nextHiddenColumns)
+          remaining -= chunk.length
+        }
+        setSearching(false)
+      })
+      .then(() => {
+        if (!active) {
+          return
+        }
+
+        setHiddenSchemas(nextHiddenSchemas)
+        setHiddenTables(nextHiddenTables)
+        setHiddenColumns(nextHiddenColumns)
+        setSearching(false)
+        let nextOpenState = Map<
+          string,
+          { open: boolean; tables: Map<string, boolean> }
+        >()
+        for (const { schema, table } of tasks) {
+          const tables = nextOpenState.get(schema)?.tables ?? Map()
+          nextOpenState = nextOpenState.set(schema, {
+            open: !nextHiddenSchemas.has(schema),
+            tables: tables.set(
+              table,
+              !nextHiddenTables.has(`${schema}.${table}`)
+            ),
+          })
+        }
+        setOpenState(nextOpenState)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [props.schemas, search])
+
+  const sortedSchemas = useDebouncedMemo(
+    () =>
+      Array.from(props.schemas.entries()).sort(([a], [b]) =>
+        a.localeCompare(b)
+      ),
+    [props.schemas],
+    500
+  )
+
+  const onToggleSchemaOpen = useCallback((schemaName: string) => {
+    setOpenState((state) => {
+      const open = !(state.get(schemaName)?.open ?? false)
+      return state.set(schemaName, {
+        open,
+        tables: state.get(schemaName)?.tables ?? Map(),
+      })
+    })
+  }, [])
+
+  const onToggleTableOpen = useCallback(
+    (schemaName: string, tableName: string) => {
+      setOpenState((state) => {
+        const open = !(state.get(schemaName)?.tables.get(tableName) ?? false)
+        return state.set(schemaName, {
+          open: state.get(schemaName)?.open ?? false,
+          tables:
+            state.get(schemaName)?.tables.set(tableName, open) ??
+            Map<string, boolean>().set(tableName, open),
         })
-        .sort(([a], [b]) => a.localeCompare(b)),
-    [props.schemas, search]
+      })
+    },
+    []
   )
 
   return (
@@ -107,6 +240,7 @@ export default function SchemaList(props: Props) {
               className="w-full h-8 border-0 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0 pl-2"
               onChange={onChangeSearch}
             />
+            {searching && <Spin />}
           </div>
           <ul className="h-full">
             {sortedSchemas.length === 0 ? (
@@ -114,15 +248,24 @@ export default function SchemaList(props: Props) {
                 No results found.
               </li>
             ) : (
-              sortedSchemas.map(([schemaName, schema]) => (
-                <SchemaItem
-                  key={schemaName}
-                  dataSource={props.dataSource}
-                  schemaName={schemaName}
-                  schema={schema}
-                  search={search}
-                />
-              ))
+              sortedSchemas.map(
+                ([schemaName, schema]) =>
+                  !hiddenSchemas.has(schemaName) && (
+                    <SchemaItem
+                      key={schemaName}
+                      dataSource={props.dataSource}
+                      schemaName={schemaName}
+                      schema={schema}
+                      search={search}
+                      schemaState={openState.get(schemaName)?.tables ?? Map()}
+                      open={openState.get(schemaName)?.open ?? false}
+                      onToggleSchemaOpen={onToggleSchemaOpen}
+                      onToggleTableOpen={onToggleTableOpen}
+                      hiddenTables={hiddenTables}
+                      hiddenColumns={hiddenColumns}
+                    />
+                  )
+              )
             )}
           </ul>
         </div>
@@ -136,17 +279,17 @@ interface SchemaItemProps {
   schemaName: string
   schema: DataSourceSchema
   search: string
+  open: boolean
+  onToggleSchemaOpen: (schemaName: string) => void
+  schemaState: Map<string, boolean>
+  onToggleTableOpen: (schemaName: string, tableName: string) => void
+  hiddenTables: Set<string>
+  hiddenColumns: Set<string>
 }
 function SchemaItem(props: SchemaItemProps) {
-  const [open, setOpen] = useState(false)
   const onToggleOpen = useCallback(() => {
-    setOpen(!open)
+    props.onToggleSchemaOpen(props.schemaName)
   }, [open])
-  useEffect(() => {
-    if (props.search) {
-      setOpen(true)
-    }
-  }, [props.search])
 
   return (
     <li key={props.schemaName}>
@@ -161,21 +304,24 @@ function SchemaItem(props: SchemaItemProps) {
           </ScrollBar>
         </div>
         <div className="pl-1">
-          {open ? (
+          {props.open ? (
             <ChevronDownIcon className="h-3 w-3 text-gray-500" />
           ) : (
             <ChevronRightIcon className="h-3 w-3 text-gray-500" />
           )}
         </div>
       </button>
-      <div className={open ? 'block' : 'hidden'}>
+      {props.open && (
         <TableList
           dataSource={props.dataSource}
           schemaName={props.schemaName}
           schema={props.schema}
-          search={props.search}
+          schemaState={props.schemaState}
+          onToggleTableOpen={props.onToggleTableOpen}
+          hiddenTables={props.hiddenTables}
+          hiddenColumns={props.hiddenColumns}
         />
-      </div>
+      )}
     </li>
   )
 }

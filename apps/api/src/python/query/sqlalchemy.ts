@@ -428,7 +428,7 @@ def schema_from_tables(conn, inspector, tables):
         print(json.dumps(progress, default=str))
 
     if not made_progress and len(exceptions) > 0:
-        raise AggregateException(exceptions)
+        raise BrieferAggregateException(exceptions)
 
 
 def get_data_source_structure(data_source_id, credentials_info=None):
@@ -461,7 +461,7 @@ def get_data_source_structure(data_source_id, credentials_info=None):
                     continue
             schema_from_tables(conn, inspector, tables)
             if len(tables) == 0 and len(exceptions) > 0:
-                raise AggregateException(exceptions)
+                raise BrieferAggregateException(exceptions)
 
 credentials_info = json.loads(${JSON.stringify(
     JSON.stringify(credentialsInfo)

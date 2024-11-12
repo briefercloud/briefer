@@ -205,7 +205,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
+        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
     },
   })
 
@@ -626,16 +626,19 @@ async function _refreshDataSourceStructure(
       defaultSchema,
       version: 3,
     })
-    const tablesToDelete = await prisma().dataSourceSchemaTable.findMany({
+
+    const allTables = await prisma().dataSourceSchemaTable.findMany({
       where: {
         dataSourceSchemaId: dataSource.structure.id,
-        NOT: {
-          schema: { in: tables.map((t) => t.schema) },
-          name: { in: tables.map((t) => t.table) },
-        },
       },
       select: { id: true, schema: true, name: true },
     })
+
+    // Filter out tables that are in the `tables` list
+    const tablesToDelete = allTables.filter(
+      (table) =>
+        !tables.some((t) => t.schema === table.schema && t.table === table.name)
+    )
 
     for (const batch of splitEvery(100, tablesToDelete)) {
       await prisma().dataSourceSchemaTable.deleteMany({
