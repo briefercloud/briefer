@@ -1,3 +1,4 @@
+import { Map } from 'immutable'
 import { Transition } from '@headlessui/react'
 import { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
@@ -5,8 +6,8 @@ import DatabaseList from './DatabaseList'
 import { useDataSources } from '@/hooks/useDatasources'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import SchemaList from './SchemaList'
-import TableList from './TableList'
 import { DataSource } from '@briefer/database'
+import { DataSourceSchema } from '@briefer/types'
 
 interface Props {
   workspaceId: string
@@ -29,13 +30,9 @@ export default function SchemaExplorer(props: Props) {
   const [state, setState] = useState<{
     initialDataSourceId: string | null
     dataSourceId: string | null
-    schema: string | null
-    table: string | null
   }>({
     initialDataSourceId: props.dataSourceId,
     dataSourceId: props.dataSourceId,
-    schema: null,
-    table: null,
   })
   useEffect(() => {
     if (!props.dataSourceId) {
@@ -80,29 +77,11 @@ export default function SchemaExplorer(props: Props) {
     [state]
   )
 
-  const schemaNames = useMemo(
+  const dataSourceSchemas: Map<string, DataSourceSchema> = useMemo(
     () =>
-      Array.from(
-        state.dataSourceId ? schemas.get(state.dataSourceId)?.keys() ?? [] : []
-      ),
+      state.dataSourceId ? schemas.get(state.dataSourceId) ?? Map() : Map(),
     [state.dataSourceId, schemas]
   )
-
-  const onTableListBack = useCallback(() => {
-    setState((s) => ({
-      ...s,
-      schema: null,
-      table: null,
-    }))
-  }, [])
-
-  const onSelectTable = useCallback((table: string | null) => {
-    setState((s) => ({ ...s, table }))
-  }, [])
-
-  const onSelectSchema = useCallback((schema: string | null) => {
-    setState((s) => ({ ...s, schema }))
-  }, [])
 
   const onSchemaListBack = useCallback(() => {
     setState((s) => ({
@@ -123,19 +102,6 @@ export default function SchemaExplorer(props: Props) {
     },
     [refreshOne]
   )
-
-  const schema = useMemo(() => {
-    if (!state.dataSourceId || !state.schema) {
-      return null
-    }
-
-    return {
-      name: state.schema,
-      state: schemas.get(state.dataSourceId)?.get(state.schema) ?? {
-        tables: {},
-      },
-    }
-  }, [state.schema, schemas])
 
   return (
     <Transition
@@ -160,27 +126,13 @@ export default function SchemaExplorer(props: Props) {
         ref={ref}
       >
         {selectedDataSource ? (
-          schema ? (
-            <TableList
-              dataSource={selectedDataSource}
-              schemaName={schema.name}
-              schema={schema.state}
-              onBack={onTableListBack}
-              selectedTable={state.table}
-              onSelectTable={onSelectTable}
-              onRetrySchema={onRetrySchema}
-              canRetrySchema={props.canRetrySchema}
-            />
-          ) : (
-            <SchemaList
-              dataSource={selectedDataSource}
-              schemaNames={schemaNames}
-              onSelectSchema={onSelectSchema}
-              onBack={onSchemaListBack}
-              onRetrySchema={onRetrySchema}
-              canRetrySchema={props.canRetrySchema}
-            />
-          )
+          <SchemaList
+            dataSource={selectedDataSource}
+            schemas={dataSourceSchemas}
+            onBack={onSchemaListBack}
+            onRetrySchema={onRetrySchema}
+            canRetrySchema={props.canRetrySchema}
+          />
         ) : (
           <DatabaseList
             dataSources={datasources}
