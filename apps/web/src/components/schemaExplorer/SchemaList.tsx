@@ -15,6 +15,7 @@ import { SchemaInfo } from './SchemaInfo'
 import TableList from './TableList'
 import { DataSourceSchema } from '@briefer/types'
 import ScrollBar from '../ScrollBar'
+import { useDebounce } from '@/hooks/useDebounce'
 
 interface Props {
   schemas: Map<string, DataSourceSchema>
@@ -25,10 +26,11 @@ interface Props {
 }
 export default function SchemaList(props: Props) {
   const [search, setSearch] = useState('')
-  const onChangeSearch = useCallback(
+  const onChangeSearch = useDebounce(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setSearch(e.target.value)
     },
+    500,
     []
   )
 
@@ -103,7 +105,6 @@ export default function SchemaList(props: Props) {
               type="text"
               placeholder="Search..."
               className="w-full h-8 border-0 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0 pl-2"
-              value={search}
               onChange={onChangeSearch}
             />
           </div>
