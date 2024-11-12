@@ -3458,6 +3458,11 @@
   dependencies:
     "@types/node" "*"
 
+"@types/levenshtein@^1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@types/levenshtein/-/levenshtein-1.0.4.tgz#f40b276fcbad9796f075764c0b14a6c7192e3018"
+  integrity sha512-QiNzDEGuAHoNVa7xjTPGQRecXScckE8bAEpuHipG8lEFPZh4eIBK0dw0K5mu9XdiTiVD8AxwYY8lOxYaP1rZUA==
+
 "@types/linkify-it@^5":
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/@types/linkify-it/-/linkify-it-5.0.0.tgz#21413001973106cda1c3a9b91eedd4ccd5469d76"
@@ -9361,6 +9366,11 @@ leven@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/leven/-/leven-3.1.0.tgz#77891de834064cccba82ae7842bb6b14a13ed7f2"
   integrity sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==
+
+levenshtein@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/levenshtein/-/levenshtein-1.0.5.tgz#3911737a9cb56da345d008f55782c6f138979ba3"
+  integrity sha512-UQf1nnmxjl7O0+snDXj2YF2r74Gkya8ZpnegrUBYN9tikh2dtxV/ey8e07BO5wwo0i76yjOvbDhFHdcPEiH9aA==
 
 levn@^0.4.1:
   version "0.4.1"

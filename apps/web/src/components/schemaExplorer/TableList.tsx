@@ -1,24 +1,17 @@
-import ExplorerTitle from './ExplorerTitle'
-import { databaseImages } from '../DataSourcesList'
-import { ChevronRightIcon } from '@heroicons/react/24/outline'
-import { ChevronLeftIcon } from '@heroicons/react/24/solid'
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 import { Grid3x3Icon } from 'lucide-react'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import TableDetails from './TableDetails'
-import type { APIDataSource, DataSource } from '@briefer/database'
+import type { APIDataSource } from '@briefer/database'
 import { DataSourceColumn, DataSourceSchema } from '@briefer/types'
-import { SchemaInfo } from './SchemaInfo'
 import ScrollBar from '../ScrollBar'
+import Levenshtein from 'levenshtein'
 
 interface Props {
   dataSource: APIDataSource
   schemaName: string
   schema: DataSourceSchema
-  onBack: () => void
-  onSelectTable: (tableName: string | null) => void
-  selectedTable: string | null
-  onRetrySchema: (dataSource: DataSource) => void
-  canRetrySchema: boolean
+  search: string
 }
 export default function TableList(props: Props) {
   const tables: { name: string; columns: DataSourceColumn[] }[] =
@@ -30,80 +23,95 @@ export default function TableList(props: Props) {
             columns: table.columns,
           }
         })
-        .sort((a, b) => a.name.localeCompare(b.name))
-    }, [props.schema])
+        .filter((table) => {
+          const columns = table.columns.flatMap(
+            (column) => `${props.schemaName}.${table.name}.${column.name}`
+          )
 
-  const columns = useMemo(
-    () =>
-      tables.find((table) => table.name === props.selectedTable)?.columns ?? [],
-    [props.selectedTable, tables]
-  )
+          return columns.some(
+            (column) =>
+              props.search.trim() === '' ||
+              column
+                .trim()
+                .toLowerCase()
+                .includes(props.search.trim().toLowerCase()) ||
+              new Levenshtein(
+                column.trim().toLowerCase(),
+                props.search.trim().toLowerCase()
+              ).distance <=
+                column.length / 2
+          )
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+    }, [props.schema, props.search])
 
   return (
-    <div className="flex flex-col h-full">
-      <ExplorerTitle
-        title="Schema explorer"
-        description="Choose a table to see its columns."
-        dataSource={props.dataSource}
-        onRetrySchema={props.onRetrySchema}
-        canRetrySchema={props.canRetrySchema}
-      />
-
-      <div className="flex-1 h-1/3 pt-4 flex flex-col overflow-hidden">
-        <button
-          className="relative flex px-4 py-2 text-xs font-medium border-y bg-gray-50 text-gray-600 items-center justify-between font-mono hover:bg-gray-100 group w-full"
-          onClick={props.onBack}
-        >
-          <div className="flex gap-x-1.5 items-center">
-            <ChevronLeftIcon className="h-3 w-3 text-gray-500 group-hover:text-gray-700" />
-            <h4>
-              {props.dataSource.config.data.name}.{props.schemaName}
-            </h4>
-          </div>
-
-          <img
-            src={databaseImages(props.dataSource.config.type)}
-            alt=""
-            className="h-4 w-4 group-hover:grayscale-[50%]"
-          />
-        </button>
-
-        <ScrollBar className="text-xs text-gray-500 font-mono overflow-x-hidden overflow-y-auto flex-grow">
-          <SchemaInfo
-            dataSource={props.dataSource}
-            onRetrySchema={props.onRetrySchema}
-          />
-          <ul className="flex flex-col">
-            {tables.map((table) => {
-              return (
-                <li
-                  key={table.name}
-                  className="px-4 py-2.5 border-b border-gray-200 cursor-pointer hover:bg-gray-50 flex items-center justify-between gap-x-1.5"
-                  onClick={() => props.onSelectTable(table.name)}
-                >
-                  <Grid3x3Icon className="text-gray-400 min-h-4 min-w-4 h-4 w-4" />
-                  <div className="pr-2 flex-grow overflow-x-hidden">
-                    <ScrollBar
-                      className="overflow-auto horizontal-only whitespace-nowrap"
-                      title={table.name}
-                    >
-                      {table.name}
-                    </ScrollBar>
-                  </div>
-                  <ChevronRightIcon className="h-3 w-3 text-gray-500" />
-                </li>
-              )
-            })}
-          </ul>
-        </ScrollBar>
-      </div>
-      {props.selectedTable && (
-        <TableDetails
-          tableName={props.selectedTable}
-          onCloseTableDetails={() => props.onSelectTable(null)}
-          columns={columns}
+    <ul>
+      {tables.map((table) => (
+        <TableItem
+          key={table.name}
+          schemaName={props.schemaName}
+          tableName={table.name}
+          columns={table.columns}
+          search={props.search}
         />
-      )}
-    </div>
+      ))}
+    </ul>
+  )
+}
+
+interface TableItemProps {
+  schemaName: string
+  tableName: string
+  columns: DataSourceColumn[]
+  search: string
+}
+function TableItem(props: TableItemProps) {
+  const [open, setOpen] = useState(false)
+  const onToggleOpen = useCallback(() => {
+    setOpen((o) => !o)
+  }, [])
+  const onClose = useCallback(() => {
+    setOpen(false)
+  }, [])
+  useEffect(() => {
+    if (props.search) {
+      setOpen(true)
+    }
+  }, [props.search])
+
+  return (
+    <li key={props.tableName} className="">
+      <button
+        className="pl-6 pr-3.5 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full font-normal"
+        onClick={onToggleOpen}
+      >
+        <div className="flex gap-x-1.5 items-center overflow-hidden">
+          <Grid3x3Icon className="text-gray-400 min-h-3.5 min-w-3.5 h-3.5 w-3.5" />
+          <ScrollBar
+            className="overflow-auto horizontal-only whitespace-nowrap"
+            title={props.tableName}
+          >
+            {props.tableName}
+          </ScrollBar>
+        </div>
+        <div className="pl-1">
+          {open ? (
+            <ChevronDownIcon className="h-3 w-3 text-gray-500" />
+          ) : (
+            <ChevronRightIcon className="h-3 w-3 text-gray-500" />
+          )}
+        </div>
+      </button>
+      <div className={open ? 'block' : 'hidden'}>
+        <TableDetails
+          schemaName={props.schemaName}
+          tableName={props.tableName}
+          onCloseTableDetails={onClose}
+          columns={props.columns}
+          search={props.search}
+        />
+      </div>
+    </li>
   )
 }
