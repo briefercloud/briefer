@@ -327,12 +327,13 @@ export function CodeEditor(props: Props) {
         selection,
       }
 
-      const state = mergeRef.current
-        ? EditorState.fromJSON(mergeRef.current.state, config, {
-            // deserialize history
-            history: historyField,
-          })
-        : EditorState.create(config)
+      const state =
+        mergeRef.current && mergeRef.current.state
+          ? EditorState.fromJSON(mergeRef.current.state, config, {
+              // deserialize history
+              history: historyField,
+            })
+          : EditorState.create(config)
 
       const comingFromMerge = mergeRef.current !== null
       destroyCurrent()
