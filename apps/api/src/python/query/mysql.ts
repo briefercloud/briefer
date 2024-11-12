@@ -1,7 +1,14 @@
 import { v4 as uuidv4 } from 'uuid'
 import { MySQLDataSource, getDatabaseURL } from '@briefer/database'
 import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
-import { makeSQLAlchemyQuery } from './sqlalchemy.js'
+import { makeSQLAlchemyQuery, pingSQLAlchemy } from './sqlalchemy.js'
+
+export function pingMySQL(
+  ds: MySQLDataSource,
+  encryptionKey: string
+): Promise<null | Error> {
+  return pingSQLAlchemy({ type: 'mysql', data: ds }, encryptionKey, null)
+}
 
 export async function makeMySQLQuery(
   workspaceId: string,

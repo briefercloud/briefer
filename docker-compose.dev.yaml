@@ -64,6 +64,19 @@ services:
     volumes:
       - ecommerce_data:/var/lib/postgresql/data
 
+  ecommerce_mysql:
+    build: ./data/mysql/ecommerce
+    restart: always
+    ports:
+      - '3307:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: ecommerce
+      MYSQL_USER: mysql
+      MYSQL_PASSWORD: password
+    volumes:
+      - ./data/mysql/ecommerce/data:/var/lib/mysql
+
 volumes:
   postgres_dev_data:
   ecommerce_data:

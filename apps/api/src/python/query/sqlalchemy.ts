@@ -358,37 +358,48 @@ import json
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
 from sqlalchemy import text
-from sqlalchemy.exc import ProgrammingError
-from sqlalchemy.exc import NoSuchTableError
-from psycopg2.errors import InsufficientPrivilege
-from redshift_connector.error import ProgrammingError as RedshiftProgrammingError
+
+class BrieferAggregateException(Exception):
+    def __init__(self, exceptions):
+        self.exceptions = exceptions
+
+    def __str__(self):
+        return f"Got {len(self.exceptions)} exceptions: {self.exceptions}"
+
+    def __iter__(self):
+        return iter(self.exceptions)
+
+
 
 def get_columns(conn, inspector, table_name, schema_name):
     if ${JSON.stringify(ds.type)} == "redshift":
         result = []
-        try:
-            columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
+        columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
 
-            for row in columns:
-                try:
-                    csv_reader = csv.reader([row[0].strip("()")])
-                    column = next(csv_reader)
-                    result.append({
-                        "name": column[2],
-                        "type": column[3]
-                    })
-                except Exception as e:
-                    print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
-                    continue
-        except Exception as e:
-            print(json.dumps({"log": f"Got error when trying to get columns for table {table_name}: {str(e)}"}))
-            pass
+        exceptions = []
+        for row in columns:
+            try:
+                csv_reader = csv.reader([row[0].strip("()")])
+                column = next(csv_reader)
+                result.append({
+                    "name": column[2],
+                    "type": column[3]
+                })
+            except Exception as e:
+                print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
+                exceptions.append(e)
+                continue
+
+        if len(result) == 0 and len(exceptions) > 0:
+            raise BrieferAggregateException(exceptions)
 
         return result
 
     return inspector.get_columns(table_name, schema=schema_name)
 
 def schema_from_tables(conn, inspector, tables):
+    made_progress = False
+    exceptions = []
     for table in tables:
         schema_name, table_name = table.split(".")
         print(json.dumps({"log": f"Getting schema for table {table}"}))
@@ -399,16 +410,12 @@ def schema_from_tables(conn, inspector, tables):
                     "name": column["name"],
                     "type": str(column["type"])
                 })
-        except ProgrammingError as e:
-            if isinstance(e.orig, InsufficientPrivilege):
-                print(json.dumps({"log": f"Insufficient privileges to access table {table}"}))
-                continue
-
-            raise e
-        except NoSuchTableError as e:
-            print(json.dumps({"log": f"Got NoSuchTableError when trying to get columns for table {table}"}))
+        except Exception as e:
+            print(json.dumps({"log": f"Got error when trying to get columns for table {table}: {str(e)}"}))
+            exceptions.append(e)
             continue
 
+        made_progress = True
         progress = {
             "type": "progress",
             "schema": schema_name,
@@ -419,6 +426,9 @@ def schema_from_tables(conn, inspector, tables):
             "defaultSchema": "public"
         }
         print(json.dumps(progress, default=str))
+
+    if not made_progress and len(exceptions) > 0:
+        raise AggregateException(exceptions)
 
 
 def get_data_source_structure(data_source_id, credentials_info=None):
@@ -439,12 +449,19 @@ def get_data_source_structure(data_source_id, credentials_info=None):
             schema_from_tables(conn, inspector, tables)
         else:
             tables = []
+            exceptions = []
             for schema_name in inspector.get_schema_names():
                 print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
-                schema_tables = inspector.get_table_names(schema=schema_name)
-                tables += [f"{schema_name}.{table}" for table in schema_tables]
+                try:
+                    schema_tables = inspector.get_table_names(schema=schema_name)
+                    tables += [f"{schema_name}.{table}" for table in schema_tables]
+                except Exception as e:
+                    exceptions.append(e)
+                    print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
+                    continue
             schema_from_tables(conn, inspector, tables)
-
+            if len(tables) == 0 and len(exceptions) > 0:
+                raise AggregateException(exceptions)
 
 credentials_info = json.loads(${JSON.stringify(
     JSON.stringify(credentialsInfo)
