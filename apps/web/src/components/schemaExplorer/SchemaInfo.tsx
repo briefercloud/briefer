@@ -34,7 +34,7 @@ export function SchemaInfo(props: SchemaInfoProps): JSX.Element | null {
 
 function SchemaInfoLoading({ refreshing = false }: { refreshing?: boolean }) {
   return (
-    <div className="font-normal w-full flex justify-center py-2 items-center gap-x-1.5 text-sm bg-white border-b border-gray-200">
+    <div className="font-normal w-full flex justify-center py-2 items-center gap-x-2 text-xs border-b border-gray-200 bg-white animate-pulse">
       <Spin />
       <span>{refreshing ? 'Refreshing' : 'Loading'} schema...</span>
     </div>
