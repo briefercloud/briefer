@@ -109,15 +109,21 @@ export default function SchemaList(props: Props) {
             />
           </div>
           <ul className="h-full">
-            {sortedSchemas.map(([schemaName, schema]) => (
-              <SchemaItem
-                key={schemaName}
-                dataSource={props.dataSource}
-                schemaName={schemaName}
-                schema={schema}
-                search={search}
-              />
-            ))}
+            {sortedSchemas.length === 0 ? (
+              <li className="px-4 py-4 text-gray-500 text-xs">
+                No results found.
+              </li>
+            ) : (
+              sortedSchemas.map(([schemaName, schema]) => (
+                <SchemaItem
+                  key={schemaName}
+                  dataSource={props.dataSource}
+                  schemaName={schemaName}
+                  schema={schema}
+                  search={search}
+                />
+              ))
+            )}
           </ul>
         </div>
       </div>
