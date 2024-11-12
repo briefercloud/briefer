@@ -2,7 +2,11 @@ import Levenshtein from 'levenshtein'
 import { Map } from 'immutable'
 import ExplorerTitle from './ExplorerTitle'
 import { databaseImages } from '../DataSourcesList'
-import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 import { ChevronLeftIcon } from '@heroicons/react/24/solid'
 import { ShapesIcon } from 'lucide-react'
 import type { DataSource, APIDataSource } from '@briefer/database'
@@ -93,13 +97,16 @@ export default function SchemaList(props: Props) {
             dataSource={props.dataSource}
             onRetrySchema={props.onRetrySchema}
           />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full h-8 border-0 border-b border-gray-200 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0"
-            value={search}
-            onChange={onChangeSearch}
-          />
+          <div className="px-4 py-0 flex items-center border-b border-gray-200 group focus-within:border-blue-300">
+            <MagnifyingGlassIcon className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-blue-500" />
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full h-8 border-0 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0 pl-2"
+              value={search}
+              onChange={onChangeSearch}
+            />
+          </div>
           <ul className="h-full">
             {sortedSchemas.map(([schemaName, schema]) => (
               <SchemaItem
