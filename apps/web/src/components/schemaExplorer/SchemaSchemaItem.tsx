@@ -20,9 +20,12 @@ function SchemaSchemaItem(props: Props) {
       className="px-3.5 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full font-normal"
       onClick={onToggle}
     >
-      <div className="flex gap-x-1.5 items-center overflow-hidden">
+      <div className="flex gap-x-1.5 items-center overflow-hidden w-full">
         <ShapesIcon className="h-3.5 w-3.5 text-gray-400" />
-        <ScrollBar className="text-left overflow-auto horizontal-only whitespace-nowrap flex-auto">
+        <ScrollBar
+          className="overflow-auto horizontal-only whitespace-nowrap w-full text-left"
+          title={props.name}
+        >
           <h4>{props.name}</h4>
         </ScrollBar>
       </div>

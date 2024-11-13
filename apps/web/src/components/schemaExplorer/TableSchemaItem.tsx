@@ -20,10 +20,10 @@ function TableSchemaItem(props: Props) {
       className="pl-6 pr-3.5 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between w-full font-normal"
       onClick={onToggle}
     >
-      <div className="flex gap-x-1.5 items-center overflow-hidden">
+      <div className="flex gap-x-1.5 items-center overflow-hidden w-full">
         <Grid3x3Icon className="text-gray-400 min-h-3.5 min-w-3.5 h-3.5 w-3.5" />
         <ScrollBar
-          className="overflow-auto horizontal-only whitespace-nowrap"
+          className="overflow-auto horizontal-only whitespace-nowrap w-full text-left"
           title={props.name}
         >
           {props.name}
