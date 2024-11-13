@@ -11,6 +11,7 @@ import { EnvironmentStatusProvider } from '@/hooks/useEnvironmentStatus'
 import { WebsocketProvider } from '@/hooks/useWebsocket'
 import '@/styles/globals.css'
 import 'simplebar-react/dist/simplebar.min.css'
+import 'react-virtualized/styles.css'
 
 import '../../scripts/wdyr'
 import DndBackendProvider from '@/components/DndBackendProvider'
