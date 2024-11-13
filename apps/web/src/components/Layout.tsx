@@ -418,7 +418,7 @@ export default function Layout({
                         router.pathname.startsWith(item.href)
                           ? 'text-gray-800 bg-ceramic-100/50'
                           : 'text-gray-500 hover:bg-ceramic-100/80',
-                        'group text-sm font-medium leading-6 w-full flex py-1 rounded-md hover:text-ceramic-600'
+                        'group text-sm font-medium leading-6 w-full flex py-1 hover:text-ceramic-600'
                       )}
                     >
                       <div className="w-full flex items-center gap-x-2 px-4 relative">
