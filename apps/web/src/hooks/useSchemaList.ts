@@ -36,41 +36,47 @@ function flattenSchemas(
 ): SchemaList {
   const result: SchemaItem[] = []
 
-  schemas.forEach((schema, schemaName) => {
-    result.push({
-      _tag: 'schema',
-      name: schemaName,
-      schema,
-      isOpen: openItems.has(schemaName),
-    })
-
-    if (!openItems.has(schemaName)) {
-      return
-    }
-
-    Object.entries(schema.tables).forEach(([tableName, table]) => {
+  schemas
+    .sortBy((_, key) => key)
+    .forEach((schema, schemaName) => {
       result.push({
-        _tag: 'table',
-        schemaName,
-        name: tableName,
-        table,
-        isOpen: openItems.has(`${schemaName}.${tableName}`),
+        _tag: 'schema',
+        name: schemaName,
+        schema,
+        isOpen: openItems.has(schemaName),
       })
 
-      if (!openItems.has(`${schemaName}.${tableName}`)) {
+      if (!openItems.has(schemaName)) {
         return
       }
 
-      table.columns.forEach((column) => {
-        result.push({
-          _tag: 'column',
-          schemaName,
-          tableName,
-          column,
+      Object.entries(schema.tables)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([tableName, table]) => {
+          result.push({
+            _tag: 'table',
+            schemaName,
+            name: tableName,
+            table,
+            isOpen: openItems.has(`${schemaName}.${tableName}`),
+          })
+
+          if (!openItems.has(`${schemaName}.${tableName}`)) {
+            return
+          }
+
+          table.columns
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach((column) => {
+              result.push({
+                _tag: 'column',
+                schemaName,
+                tableName,
+                column,
+              })
+            })
         })
-      })
     })
-  })
 
   return List(result)
 }
@@ -148,8 +154,8 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
     setSearching(true)
 
     const result: SchemaItem[] = []
-    const addedTables = Set<string>()
-    const addedSchemas = Set<string>()
+    let addedTables = Set<string>()
+    let addedSchemas = Set<string>()
 
     const workQueue: {
       schema: DataSourceSchema
@@ -211,7 +217,7 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
               schema: work.schema,
               isOpen: true,
             })
-            addedSchemas.add(work.schemaName)
+            addedSchemas = addedSchemas.add(work.schemaName)
           }
 
           if (!addedTables.has(`${work.schemaName}.${work.tableName}`)) {
@@ -222,7 +228,9 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
               table: work.table,
               isOpen: true,
             })
-            addedTables.add(`${work.schemaName}.${work.tableName}`)
+            addedTables = addedTables.add(
+              `${work.schemaName}.${work.tableName}`
+            )
           }
 
           result.push({
