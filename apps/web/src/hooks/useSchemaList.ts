@@ -36,41 +36,47 @@ function flattenSchemas(
 ): SchemaList {
   const result: SchemaItem[] = []
 
-  schemas.forEach((schema, schemaName) => {
-    result.push({
-      _tag: 'schema',
-      name: schemaName,
-      schema,
-      isOpen: openItems.has(schemaName),
-    })
-
-    if (!openItems.has(schemaName)) {
-      return
-    }
-
-    Object.entries(schema.tables).forEach(([tableName, table]) => {
+  schemas
+    .sortBy((_, key) => key)
+    .forEach((schema, schemaName) => {
       result.push({
-        _tag: 'table',
-        schemaName,
-        name: tableName,
-        table,
-        isOpen: openItems.has(`${schemaName}.${tableName}`),
+        _tag: 'schema',
+        name: schemaName,
+        schema,
+        isOpen: openItems.has(schemaName),
       })
 
-      if (!openItems.has(`${schemaName}.${tableName}`)) {
+      if (!openItems.has(schemaName)) {
         return
       }
 
-      table.columns.forEach((column) => {
-        result.push({
-          _tag: 'column',
-          schemaName,
-          tableName,
-          column,
+      Object.entries(schema.tables)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .forEach(([tableName, table]) => {
+          result.push({
+            _tag: 'table',
+            schemaName,
+            name: tableName,
+            table,
+            isOpen: openItems.has(`${schemaName}.${tableName}`),
+          })
+
+          if (!openItems.has(`${schemaName}.${tableName}`)) {
+            return
+          }
+
+          table.columns
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach((column) => {
+              result.push({
+                _tag: 'column',
+                schemaName,
+                tableName,
+                column,
+              })
+            })
         })
-      })
     })
-  })
 
   return List(result)
 }
