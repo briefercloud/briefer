@@ -63,9 +63,13 @@ function Table(props: Props) {
                       'px-2 py-1.5 text-gray-900 whitespace-nowrap border-gray-200 '
                     )}
                   >
-                    {typeof cell === 'object'
-                      ? JSON.stringify(cell)
-                      : cell?.toString()}
+                    {cell === null ? (
+                      <span className="uppercase text-gray-400">null</span>
+                    ) : typeof cell === 'object' ? (
+                      JSON.stringify(cell)
+                    ) : (
+                      cell?.toString()
+                    )}
                   </td>
                 )
               })}
