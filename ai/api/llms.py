@@ -1,5 +1,5 @@
 from langchain_aws import BedrockLLM
-from langchain_openai import ChatOpenAI, AzureOpenAI
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from decouple import config
 
 # Add available models here
@@ -28,11 +28,11 @@ def initialize_llm(model_id=None, openai_api_key=None):
         )
     elif use_azure:
         # Initialize Azure OpenAI using the environment variables for API key and model name
-        llm = AzureOpenAI(
+        llm = AzureChatOpenAI(
             temperature=0,
             verbose=False,
             openai_api_key=openai_api_key,
-            model_name=model_id if model_id else config("OPENAI_DEFAULT_MODEL_NAME"),
+            azure_endpoint=config("AZURE_OPENAI_ENDPOINT", default=""),
             azure_deployment=config("AZURE_DEPLOYMENT", default=""),
             api_version=config("AZURE_API_VERSION", default=""),
         )
