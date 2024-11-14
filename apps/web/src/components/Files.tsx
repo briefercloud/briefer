@@ -460,7 +460,7 @@ function FileItem(props: FileItemProps) {
         <Tooltip
           position="manual"
           title=""
-          message="You must be in a notebook to use this file."
+          message="You must be editing a notebook to use this file."
           active={!props.canUse}
           tooltipClassname="-top-1 w-44 -translate-y-full"
         >
@@ -475,7 +475,7 @@ function FileItem(props: FileItemProps) {
         <span className="text-gray-300 px-1">/</span>
         <Tooltip
           title=""
-          message="You must be in a notebook to use this file."
+          message="You must be editing a notebook to use this file."
           active={!props.canUse}
           tooltipClassname="w-44"
         >

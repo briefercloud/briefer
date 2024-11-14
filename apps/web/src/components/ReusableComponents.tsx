@@ -179,7 +179,7 @@ function ReusableComponentItem(props: ReusableComponentItemProps) {
           <Tooltip
             position="manual"
             title=""
-            message="You must be in a notebook to use this file."
+            message="You must be editing a notebook to use this component."
             active={!props.canUse}
             tooltipClassname="-top-1 w-44 -translate-y-full"
           >
