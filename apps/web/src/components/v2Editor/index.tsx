@@ -100,6 +100,7 @@ import { HotkeysProvider } from 'react-hotkeys-hook'
 import useEditorAwareness, {
   EditorAwarenessProvider,
 } from '@/hooks/useEditorAwareness'
+import { SQLExtensionProvider } from './CodeEditor/sql'
 
 export enum ElementType {
   Block = 'BLOCK',
@@ -1801,8 +1802,10 @@ export default function V2Editor(
   const scrollViewRef = useRef<HTMLDivElement>(null)
   return (
     <EditorAwarenessProvider scrollViewRef={scrollViewRef} yDoc={props.yDoc}>
-      <Editor {...props} scrollViewRef={scrollViewRef} />
-      {props.children}
+      <SQLExtensionProvider workspaceId={props.document.workspaceId}>
+        <Editor {...props} scrollViewRef={scrollViewRef} />
+        {props.children}
+      </SQLExtensionProvider>
     </EditorAwarenessProvider>
   )
 }

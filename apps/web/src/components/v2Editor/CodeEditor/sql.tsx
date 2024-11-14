@@ -12,11 +12,17 @@ import {
   SQLNamespace,
   StandardSQL,
 } from '@codemirror/lang-sql'
-import { useMemo } from 'react'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { CompletionContext, CompletionResult } from '@codemirror/autocomplete'
 import { DataSourceSchema } from '@briefer/types'
 import { APIDataSource } from '@briefer/database'
-import useDebouncedMemo from '@/hooks/useDebouncedMemo'
 
 function getDialect(type?: APIDataSource['config']['type']): SQLDialect {
   if (!type) {
@@ -164,21 +170,99 @@ export function useSQLExtension(
   workspaceId: string,
   dataSourceId: string | null
 ): Extension {
-  const [{ datasources, schemas }] = useDataSources(workspaceId)
-  const { datasource, schema } = useMemo(
-    () => ({
-      datasource:
-        datasources?.find((ds) => ds.config.data.id === dataSourceId) ?? null,
-      schema: dataSourceId
-        ? schemas.get(dataSourceId)
-        : Map<string, DataSourceSchema>(),
-    }),
-    [datasources, schemas, dataSourceId]
+  const getExtension = useContext(Context)
+
+  // State to store the extension
+  const [extension, setExtension] = useState<Extension>(() =>
+    getExtension(workspaceId, dataSourceId)
   )
 
-  return useDebouncedMemo(
-    () => language(datasource, schema ?? Map()),
-    [datasource, schema],
-    5000
+  // Refs to track previous workspaceId and dataSourceId
+  const prevWorkspaceId = useRef(workspaceId)
+  const prevDataSourceId = useRef(dataSourceId)
+
+  useEffect(() => {
+    // Only call getExtension if workspaceId or dataSourceId has changed
+    if (
+      prevWorkspaceId.current !== workspaceId ||
+      prevDataSourceId.current !== dataSourceId
+    ) {
+      const newExtension = getExtension(workspaceId, dataSourceId)
+      setExtension(newExtension)
+      prevWorkspaceId.current = workspaceId
+      prevDataSourceId.current = dataSourceId
+    }
+  }, [workspaceId, dataSourceId])
+
+  return extension
+}
+
+const Context = createContext(
+  (_workspaceId: string, _dataSourceId: string | null): Extension => {
+    throw new Error('Called getExtension outside of provider')
+  }
+)
+
+interface Props {
+  workspaceId: string
+  children: React.ReactNode
+}
+export function SQLExtensionProvider(props: Props) {
+  const [{ datasources, schemas }] = useDataSources(props.workspaceId)
+  const [extensions, setExtensions] = useState<Map<string, Extension>>(Map())
+
+  const getExtension = useCallback(
+    (workspaceId: string, dataSourceId: string | null): Extension => {
+      const key = `${workspaceId}-${dataSourceId}`
+      const extension = extensions.get(key)
+      if (extension) {
+        return extension
+      }
+
+      const datasource =
+        datasources?.find((ds) => ds.config.data.id === dataSourceId) ?? null
+      const schema = dataSourceId ? schemas.get(dataSourceId) : null
+      const newExtension = language(datasource, schema ?? Map())
+
+      setExtensions((extensions) => extensions.set(key, newExtension))
+
+      return newExtension
+    },
+    [extensions, datasources, schemas]
+  )
+
+  const lastUpdate = useRef(0)
+  useEffect(() => {
+    const update = () => {
+      setExtensions((extensions) =>
+        extensions.map((_, key) => {
+          const [, dataSourceId] = key.split('-')
+          const datasource =
+            datasources?.find((ds) => ds.config.data.id === dataSourceId) ??
+            null
+          const schema = dataSourceId ? schemas.get(dataSourceId) : null
+          return language(datasource, schema ?? Map())
+        })
+      )
+    }
+
+    if (Date.now() - lastUpdate.current > 5000) {
+      update()
+      lastUpdate.current = Date.now()
+      return
+    }
+    const timeToWait = Math.max(5000, 5000 - (Date.now() - lastUpdate.current))
+    const timeout = setTimeout(() => {
+      update()
+      lastUpdate.current = Date.now()
+    }, timeToWait)
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [datasources, schemas])
+
+  return (
+    <Context.Provider value={getExtension}>{props.children}</Context.Provider>
   )
 }
