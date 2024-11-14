@@ -29,6 +29,7 @@ import { PublishBlinkingSignal } from '../BlinkingSignal'
 import { Tooltip } from '../Tooltips'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import useWebsocket from '@/hooks/useWebsocket'
+import { SQLExtensionProvider } from '../v2Editor/CodeEditor/sql'
 
 interface Props {
   document: ApiDocument
@@ -227,11 +228,13 @@ export default function Dashboard(props: Props) {
           {syncing ? (
             <DashboardSkeleton />
           ) : (
-            <DashboardContent
-              {...props}
-              isEditing={props.isEditing}
-              yDoc={yDoc}
-            />
+            <SQLExtensionProvider workspaceId={props.document.workspaceId}>
+              <DashboardContent
+                {...props}
+                isEditing={props.isEditing}
+                yDoc={yDoc}
+              />
+            </SQLExtensionProvider>
           )}
         </div>
 
@@ -291,7 +294,9 @@ export type DraggingBlock = {
   height: number
 }
 function DashboardContent(props: Props & { yDoc: Y.Doc }) {
-  const [{ datasources: dataSources }] = useDataSources(props.document.workspaceId)
+  const [{ datasources: dataSources }] = useDataSources(
+    props.document.workspaceId
+  )
   const [draggingBlock, setDraggingBlock] = useState<DraggingBlock | null>(null)
   const [latestBlockId, setLatestBlockId] = useState<string | null>(null)
 
