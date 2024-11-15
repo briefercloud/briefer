@@ -318,7 +318,7 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             job = client.query(query)
             result = job.result()
 
-            inserted_rows = result.output_rows
+            inserted_rows = job.num_dml_affected_rows
             updated_rows = 0
             ignored_rows = 0
 
