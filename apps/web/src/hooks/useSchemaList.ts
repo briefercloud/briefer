@@ -32,7 +32,8 @@ type SchemaList = List<SchemaItem>
 
 function flattenSchemas(
   schemas: Map<string, DataSourceSchema>,
-  openItems: Set<string>
+  openItems: Set<string>,
+  filterOpenItems = false
 ): SchemaList {
   const result: SchemaItem[] = []
 
@@ -46,7 +47,7 @@ function flattenSchemas(
         isOpen: openItems.has(schemaName),
       })
 
-      if (!openItems.has(schemaName)) {
+      if (filterOpenItems && !openItems.has(schemaName)) {
         return
       }
 
@@ -61,7 +62,7 @@ function flattenSchemas(
             isOpen: openItems.has(`${schemaName}.${tableName}`),
           })
 
-          if (!openItems.has(`${schemaName}.${tableName}`)) {
+          if (filterOpenItems && !openItems.has(`${schemaName}.${tableName}`)) {
             return
           }
 
@@ -99,8 +100,13 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
   const [openItems, setOpenItems] = useState<Set<string>>(Set())
   const [search, setSearch] = useState<string>('')
   const [searching, setSearching] = useState<boolean>(false)
-  const [data, setData] = useState<SchemaList>(() =>
+
+  const [filteredItems, setFilteredItems] = useState<SchemaList>(() =>
     flattenSchemas(schemas, openItems)
+  )
+
+  const [data, setData] = useState<SchemaList>(() =>
+    flattenSchemas(schemas, openItems, true)
   )
 
   const toggleSchema = useCallback((schemaName: string) => {
@@ -146,7 +152,9 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
     const searchTerm = search.trim().toLowerCase()
     if (searchTerm === '') {
       setSearching(false)
-      setData(flattenSchemas(schemas, openItems))
+      const flattenedSchemas = flattenSchemas(schemas, openItems)
+      setFilteredItems(flattenedSchemas)
+      setData(flattenedSchemas)
       return
     }
 
@@ -188,7 +196,9 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
       for (const work of workQueue) {
         const FPS = 60
         if (Date.now() - startTime > 1000 / FPS) {
-          setData(List(result))
+          const resultsList = List(result)
+          setFilteredItems(resultsList)
+          setData(resultsList)
           await new Promise((resolve) => requestAnimationFrame(resolve))
           if (!active) {
             return
@@ -242,8 +252,11 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
         }
         remaining--
       }
-      setData(List(result))
+      const resultsList = List(result)
+      setData(resultsList)
+      setFilteredItems(resultsList)
       setSearching(false)
+      setOpenItems(addedSchemas.union(addedTables))
     })
 
     return () => {
@@ -252,8 +265,41 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
   }, [schemas, search])
 
   useEffect(() => {
-    setData(flattenSchemas(schemas, openItems))
-  }, [schemas, openItems])
+    setData(
+      filteredItems
+        .filter((item) => {
+          if (item._tag === 'schema') {
+            return true
+          }
+
+          if (item._tag === 'table') {
+            return openItems.has(item.schemaName)
+          }
+
+          return (
+            openItems.has(item.schemaName) &&
+            openItems.has(`${item.schemaName}.${item.tableName}`)
+          )
+        })
+        .map((item) => {
+          if (item._tag === 'schema') {
+            return {
+              ...item,
+              isOpen: openItems.has(item.name),
+            }
+          }
+
+          if (item._tag === 'table') {
+            return {
+              ...item,
+              isOpen: openItems.has(`${item.schemaName}.${item.name}`),
+            }
+          }
+
+          return item
+        })
+    )
+  }, [schemas, openItems, filteredItems])
 
   return useMemo(() => [state, api], [state, api])
 }
