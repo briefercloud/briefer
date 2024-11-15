@@ -19,6 +19,9 @@ import {
   ExecutionQueueItemTextInputSaveValueMetadata,
   InputBlock,
   ExecutionQueueItemTextInputRenameVariableMetadata,
+  DateInputBlock,
+  ExecutionQueueItemDateInputMetadata,
+  isDateInputBlock,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -30,6 +33,7 @@ import {
   VisualizationExecutor,
 } from './visualization.js'
 import { ITextInputExecutor, TextInputExecutor } from './text-input.js'
+import { DateInputExecutor, IDateInputExecutor } from './date-input.js'
 
 export class Executor {
   private isRunning: boolean = false
@@ -42,6 +46,7 @@ export class Executor {
     private readonly sqlExecutor: ISQLExecutor,
     private readonly visExecutor: IVisualizationExecutor,
     private readonly textInputExecutor: ITextInputExecutor,
+    private readonly dateInputExecutor: IDateInputExecutor,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private readonly blocks: Y.Map<YBlock>,
@@ -153,6 +158,9 @@ export class Executor {
           data.metadata
         )
         break
+      case 'date-input':
+        await this.dateInputExecutor.save(item, data.block, data.metadata)
+        break
       default:
         exhaustiveCheck(data)
     }
@@ -162,21 +170,21 @@ export class Executor {
     item: ExecutionQueueItem
   ): ExecutionItemData | null {
     const metadata = item.getMetadata()
+    const block = this.blocks.get(item.getBlockId())
+    if (!block) {
+      logger().error(
+        {
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId: item.getBlockId(),
+        },
+        'Failed to find block for execution item'
+      )
+      return null
+    }
+
     switch (metadata._tag) {
       case 'python': {
-        const block = this.blocks.get(item.getBlockId())
-        if (!block) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Failed to find block for execution item'
-          )
-          return null
-        }
-
         if (!isPythonBlock(block)) {
           logger().error(
             {
@@ -193,19 +201,6 @@ export class Executor {
       }
       case 'sql':
       case 'sql-rename-dataframe': {
-        const block = this.blocks.get(item.getBlockId())
-        if (!block) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Failed to find block for execution item'
-          )
-          return null
-        }
-
         if (!isSQLBlock(block)) {
           logger().error(
             {
@@ -226,19 +221,6 @@ export class Executor {
         }
       }
       case 'visualization': {
-        const block = this.blocks.get(item.getBlockId())
-        if (!block) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Failed to find block for execution item'
-          )
-          return null
-        }
-
         if (!isVisualizationBlock(block)) {
           logger().error(
             {
@@ -255,19 +237,6 @@ export class Executor {
       }
       case 'text-input-save-value':
       case 'text-input-rename-variable': {
-        const block = this.blocks.get(item.getBlockId())
-        if (!block) {
-          logger().error(
-            {
-              workspaceId: this.workspaceId,
-              documentId: this.documentId,
-              blockId: item.getBlockId(),
-            },
-            'Failed to find block for execution item'
-          )
-          return null
-        }
-
         if (!isInputBlock(block)) {
           logger().error(
             {
@@ -287,6 +256,21 @@ export class Executor {
             return { _tag: 'text-input-rename-variable', metadata, block }
         }
       }
+      case 'date-input': {
+        if (!isDateInputBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for input execution'
+          )
+          return null
+        }
+
+        return { _tag: 'date-input', metadata, block }
+      }
 
       case 'noop':
         return null
@@ -304,6 +288,7 @@ export class Executor {
       ),
       VisualizationExecutor.fromWSSharedDocV2(doc, events),
       TextInputExecutor.fromWSSharedDocV2(doc),
+      DateInputExecutor.fromWSSharedDocV2(doc),
       doc.workspaceId,
       doc.documentId,
       doc.blocks,
@@ -342,6 +327,11 @@ type ExecutionItemData =
       _tag: 'text-input-rename-variable'
       metadata: ExecutionQueueItemTextInputRenameVariableMetadata
       block: Y.XmlElement<InputBlock>
+    }
+  | {
+      _tag: 'date-input'
+      metadata: ExecutionQueueItemDateInputMetadata
+      block: Y.XmlElement<DateInputBlock>
     }
 
 function exhaustiveCheck(_param: never) {}

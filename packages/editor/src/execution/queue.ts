@@ -112,12 +112,10 @@ export class ExecutionQueue {
     blockId: string,
     tag?: ExecutionQueueItemMetadataWithoutNoop['_tag']
   ): Execution[] {
-    debugger
     const executions: Execution[] = []
     for (const yBatch of this.queue) {
       const batch = ExecutionQueueBatch.fromYjs(yBatch)
       for (const item of batch) {
-        console.log(item.getBlockId(), blockId, tag === undefined)
         if (
           item.getBlockId() === blockId &&
           (tag === undefined || item.getMetadata()._tag === tag)

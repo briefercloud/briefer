@@ -81,6 +81,13 @@ export type ExecutionQueueItemTextInputRenameVariableMetadata = z.infer<
   typeof ExecutionQueueItemTextInputRenameVariableMetadata
 >
 
+export const ExecutionQueueItemDateInputMetadata = z.object({
+  _tag: z.literal('date-input'),
+})
+export type ExecutionQueueItemDateInputMetadata = z.infer<
+  typeof ExecutionQueueItemDateInputMetadata
+>
+
 export const ExecutionQueueItemNoopMetadata = z.object({
   _tag: z.literal('noop'),
 })
@@ -95,6 +102,7 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemVisualizationMetadata,
   ExecutionQueueItemTextInputSaveValueMetadata,
   ExecutionQueueItemTextInputRenameVariableMetadata,
+  ExecutionQueueItemDateInputMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
 export type ExecutionQueueItemMetadata = z.infer<

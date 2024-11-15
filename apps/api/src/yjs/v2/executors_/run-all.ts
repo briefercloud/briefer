@@ -317,7 +317,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         // })
       },
       onDateInput: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
       onFileUpload: () => {},
       onDashboardHeader: () => {},
@@ -355,7 +356,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         // })
       },
       onDateInput: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
       onFileUpload: () => {},
       onDashboardHeader: () => {},
@@ -396,7 +398,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         // })
       },
       onDateInput: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
       onFileUpload: () => {},
       onDashboardHeader: () => {},

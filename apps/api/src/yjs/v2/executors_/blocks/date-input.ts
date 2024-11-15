@@ -41,67 +41,68 @@ export class DateInputExecutor implements IDateInputExecutor {
   }
 
   public async save(block: Y.XmlElement<DateInputBlock>) {
-    const {
-      id: blockId,
-      variable,
-      value,
-    } = getDateInputAttributes(block, this.blocks)
+    // const {
+    //   id: blockId,
+    //   variable,
+    //   value,
+    // } = getDateInputAttributes(block, this.blocks)
 
-    const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
-    if (!dfNameRegex.test(variable)) {
-      block.setAttribute('status', 'invalid-variable')
-      return false
-    }
+    // const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    // if (!dfNameRegex.test(variable)) {
+    //   block.setAttribute('status', 'invalid-variable')
+    //   return false
+    // }
 
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        variable,
-        value,
-      },
-      'Adding date input variable to execution queue'
-    )
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     variable,
+    //     value,
+    //   },
+    //   'Adding date input variable to execution queue'
+    // )
 
-    const success = await this.executionQueue.add(async () => {
-      logger().trace(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId,
-          variable,
-          value,
-        },
-        'Saving date input variable'
-      )
+    // const success = await this.executionQueue.add(async () => {
+    //   logger().trace(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId,
+    //       variable,
+    //       value,
+    //     },
+    //     'Saving date input variable'
+    //   )
 
-      try {
-        await this.effects.setDateTimeVariable(
-          this.workspaceId,
-          this.documentId,
-          variable,
-          value
-        )
-        return true
-      } catch {
-        block.setAttribute('status', 'unexpected-error')
-        return false
-      } finally {
-        logger().trace(
-          {
-            workspaceId: this.workspaceId,
-            documentId: this.documentId,
-            blockId,
-            variable,
-            value,
-          },
-          'Saved date input variable'
-        )
-      }
-    })
+    //   try {
+    //     await this.effects.setDateTimeVariable(
+    //       this.workspaceId,
+    //       this.documentId,
+    //       variable,
+    //       value
+    //     )
+    //     return true
+    //   } catch {
+    //     block.setAttribute('status', 'unexpected-error')
+    //     return false
+    //   } finally {
+    //     logger().trace(
+    //       {
+    //         workspaceId: this.workspaceId,
+    //         documentId: this.documentId,
+    //         blockId,
+    //         variable,
+    //         value,
+    //       },
+    //       'Saved date input variable'
+    //     )
+    //   }
+    // })
 
-    return success ?? false
+    // return success ?? false
+    return false
   }
 
   public static make(

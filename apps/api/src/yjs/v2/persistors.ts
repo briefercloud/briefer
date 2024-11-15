@@ -743,21 +743,21 @@ export class AppPersistor implements Persistor {
     >
     const currentToCompare: ToCompare = {
       ...getBaseAttributes(block),
-      status: attrs.status,
       variable: attrs.variable,
       value: attrs.value,
       executedAt: attrs.executedAt,
       configOpen: attrs.configOpen,
       dateType: attrs.dateType,
+      error: attrs.error,
     }
     const publishedToCompare: ToCompare = {
       ...getBaseAttributes(publishedBlock),
-      status: publishedAttrs.status,
       variable: publishedAttrs.variable,
       value: publishedAttrs.value,
       executedAt: publishedAttrs.executedAt,
       configOpen: publishedAttrs.configOpen,
       dateType: publishedAttrs.dateType,
+      error: publishedAttrs.error,
     }
 
     return !equals(currentToCompare, publishedToCompare)
@@ -1140,12 +1140,14 @@ export class AppPersistor implements Persistor {
       executedAt: prevAttributes.executedAt,
       configOpen: prevAttributes.configOpen,
       dateType: prevAttributes.dateType,
+      error: prevAttributes.error,
     }
     const nextToCompare: ToCompare = {
       ...getBaseAttributes(nextBlock),
       executedAt: nextAttributes.executedAt,
       configOpen: nextAttributes.configOpen,
       dateType: nextAttributes.dateType,
+      error: nextAttributes.error,
     }
 
     return equals(prevToCompare, nextToCompare)

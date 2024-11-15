@@ -8,7 +8,6 @@ import {
   getDataframes,
   getLayout,
   requestDateInputRun,
-  requestRun,
   switchBlockType,
 } from '@briefer/editor'
 import { useCallback, useEffect, useState } from 'react'
@@ -70,23 +69,17 @@ function GridElement(props: Props) {
 
   const onRun = useCallback(
     <B extends YBlock>(block: B, customCallback?: (block: B) => void) => {
-      requestRun(
-        block,
-        blocks.value,
-        layout.value,
-        environmentStartedAt,
-        false,
-        customCallback
-      )
+      // TODO
+      // requestRun(
+      //   block,
+      //   blocks.value,
+      //   layout.value,
+      //   environmentStartedAt,
+      //   false,
+      //   customCallback
+      // )
     },
     [blocks.value, layout.value, environmentStartedAt]
-  )
-
-  const onSaveDateInput = useCallback(
-    (block: Y.XmlElement<DateInputBlockT>) => {
-      requestDateInputRun(block, blocks.value)
-    },
-    [blocks.value]
   )
 
   const renderItem = useCallback(
@@ -218,10 +211,11 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={onSaveDateInput}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDashboardHeader: (block) => (
@@ -243,7 +237,6 @@ function GridElement(props: Props) {
       props.isEditingDashboard,
       isEditingBlock,
       onRun,
-      onSaveDateInput,
       props.userId,
       props.executionQueue,
     ]

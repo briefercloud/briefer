@@ -376,10 +376,11 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
-            onRun={() => {}}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDropdownInput: (block) => (
@@ -407,9 +408,10 @@ function BlockListItem(props: BlockListItemProps) {
             isEditable={false}
             isApp={true}
             isDashboard={true}
-            onRun={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onPivotTable: (block) => (

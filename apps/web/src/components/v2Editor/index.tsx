@@ -1727,11 +1727,11 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        // TODO
-        onRun={() => {}}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onFileUpload: (block) => (

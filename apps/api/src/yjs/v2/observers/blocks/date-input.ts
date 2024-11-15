@@ -33,21 +33,18 @@ export class DateInputObserver implements IDateInputObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<DateInputBlock>) {
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: block.getAttribute('id'),
-      },
-      'handling initial date input block state'
-    )
-
-    const status = getDateInputAttributes(block, this.blocks).status
-    if (status !== 'idle') {
-      block.setAttribute('status', 'idle')
-    }
-
-    this.executor.save(block)
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: block.getAttribute('id'),
+    //   },
+    //   'handling initial date input block state'
+    // )
+    // const status = getDateInputAttributes(block, this.blocks).status
+    // if (status !== 'idle') {
+    //   block.setAttribute('status', 'idle')
+    // }
   }
 
   public async handleBlockEvent(
@@ -96,60 +93,57 @@ export class DateInputObserver implements IDateInputObserver {
   }
 
   private async handleBlockStatusChange(block: Y.XmlElement<DateInputBlock>) {
-    const attrs = getDateInputAttributes(block, this.blocks)
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: attrs.id,
-        status: attrs.status,
-      },
-      'Handling date input block status'
-    )
-
-    try {
-      switch (attrs.status) {
-        case 'idle':
-          break
-        case 'run-requested':
-          block.setAttribute('status', 'running')
-          break
-        case 'running': {
-          const success = await this.executor.save(block)
-          if (success) {
-            block.setAttribute('status', 'idle')
-          }
-          break
-        }
-        case 'run-all-running':
-        case 'run-all-enqueued':
-          // handled by run all observer
-          break
-      }
-    } catch (err) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId: attrs.id,
-          status: attrs.status,
-          err,
-        },
-        'Error while handling block status change'
-      )
-      block.setAttribute('status', 'idle')
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId: attrs.id,
-        status: attrs.status,
-      },
-      'finished handling date input block status change'
-    )
+    // const attrs = getDateInputAttributes(block, this.blocks)
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: attrs.id,
+    //     status: attrs.status,
+    //   },
+    //   'Handling date input block status'
+    // )
+    // try {
+    //   switch (attrs.status) {
+    //     case 'idle':
+    //       break
+    //     case 'run-requested':
+    //       block.setAttribute('status', 'running')
+    //       break
+    //     case 'running': {
+    //       const success = await this.executor.save(block)
+    //       if (success) {
+    //         block.setAttribute('status', 'idle')
+    //       }
+    //       break
+    //     }
+    //     case 'run-all-running':
+    //     case 'run-all-enqueued':
+    //       // handled by run all observer
+    //       break
+    //   }
+    // } catch (err) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId: attrs.id,
+    //       status: attrs.status,
+    //       err,
+    //     },
+    //     'Error while handling block status change'
+    //   )
+    //   block.setAttribute('status', 'idle')
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId: attrs.id,
+    //     status: attrs.status,
+    //   },
+    //   'finished handling date input block status change'
+    // )
   }
 
   public static make(

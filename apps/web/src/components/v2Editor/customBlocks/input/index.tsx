@@ -122,7 +122,7 @@ function InputBlock(props: Props) {
     })
   }, [props.block, props.executionQueue, props.userId])
 
-  const onRetryVariable = useCallback(() => {
+  const onRunValue = useCallback(() => {
     updateInputVariable(props.block, props.blocks, {
       error: null,
     })
@@ -250,7 +250,7 @@ function InputBlock(props: Props) {
                   <>
                     <button
                       disabled={attrs.variable.error === null}
-                      onClick={onRetryVariable}
+                      onClick={onRunValue}
                     >
                       <ExclamationCircleIcon
                         className="h-3 w-3 text-red-300"

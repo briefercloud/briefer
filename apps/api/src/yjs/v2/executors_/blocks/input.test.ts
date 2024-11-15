@@ -65,7 +65,7 @@ describe('InputExecutor', () => {
   describe('saveVariable', () => {
     it('should set error to invalid-variable-name when newValue is invalid', async () => {
       updateInputVariable(block, blocks, {
-        status: 'saving',
+        // status: 'saving',
         newValue: 'invalid variable',
       })
 
@@ -82,7 +82,7 @@ describe('InputExecutor', () => {
 
       updateInputVariable(block, blocks, { value: 'old_variable' })
       updateInputVariable(block, blocks, {
-        status: 'saving',
+        // status: 'saving',
         newValue: 'new_variable',
       })
 
@@ -108,7 +108,7 @@ describe('InputExecutor', () => {
   describe('.saveValue', () => {
     it('should update value in block after perform setVariable effect', async () => {
       updateInputValue(block, { value: 'old_value' })
-      updateInputValue(block, { status: 'saving', newValue: 'new_value' })
+      // updateInputValue(block, { status: 'saving', newValue: 'new_value' })
 
       effects.setVariable.mockResolvedValue({
         promise: Promise.resolve(),

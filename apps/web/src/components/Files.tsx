@@ -16,13 +16,7 @@ import Link from 'next/link'
 import Spin from './Spin'
 import clsx from 'clsx'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import {
-  BlockType,
-  addBlockGroup,
-  getBlocks,
-  getLayout,
-  requestRun,
-} from '@briefer/editor'
+import { BlockType, addBlockGroup, getBlocks, getLayout } from '@briefer/editor'
 import {
   FolderIcon,
   InformationCircleIcon,
@@ -86,7 +80,8 @@ file`
         return
       }
 
-      requestRun(pythonBlock, blocks, layout, environmentStartedAt, true)
+      // TODO
+      // requestRun(pythonBlock, blocks, layout, environmentStartedAt, true)
     },
     [props.yDoc, environmentStartedAt]
   )
@@ -131,7 +126,8 @@ file`
         return
       }
 
-      requestRun(sqlBlock, blocks, layout, environmentStartedAt, true)
+      // TODO
+      // requestRun(sqlBlock, blocks, layout, environmentStartedAt, true)
     },
     [props.yDoc, environmentStartedAt]
   )
