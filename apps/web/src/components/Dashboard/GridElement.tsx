@@ -196,11 +196,12 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={() => {}}
             dataframes={dataframes.value}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDateInput: (block) => (

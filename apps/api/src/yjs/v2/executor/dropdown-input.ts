@@ -1,47 +1,47 @@
 import {
-  InputBlock,
+  DropdownInputBlock,
   YBlock,
-  getInputAttributes,
-  updateInputValue,
-  updateInputVariable,
-  updateInputBlockExecutedAt,
+  getDropdownInputAttributes,
+  updateDropdownInputValue,
+  updateDropdownInputVariable,
+  updateDropdownInputBlockExecutedAt,
+  ExecutionQueueItemDropdownInputRenameVariableMetadata,
   ExecutionQueueItem,
-  ExecutionQueueItemTextInputSaveValueMetadata,
-  ExecutionQueueItemTextInputRenameVariableMetadata,
+  ExecutionQueueItemDropdownInputSaveValueMetadata,
 } from '@briefer/editor'
 import * as Y from 'yjs'
-import { setVariable } from '../../../python/input.js'
 import { logger } from '../../../logger.js'
+import { setVariable } from '../../../python/input.js'
 import { WSSharedDocV2 } from '../index.js'
 
-export type InputEffects = {
+export type DropdownInputEffects = {
   setVariable: typeof setVariable
 }
 
-export interface ITextInputExecutor {
+export interface IDropdownInputExecutor {
   saveValue(
     executionItem: ExecutionQueueItem,
-    block: Y.XmlElement<InputBlock>,
-    metadata: ExecutionQueueItemTextInputSaveValueMetadata
+    block: Y.XmlElement<DropdownInputBlock>,
+    metadata: ExecutionQueueItemDropdownInputSaveValueMetadata
   ): Promise<void>
   renameVariable(
     executionItem: ExecutionQueueItem,
-    block: Y.XmlElement<InputBlock>,
-    metadata: ExecutionQueueItemTextInputRenameVariableMetadata
+    block: Y.XmlElement<DropdownInputBlock>,
+    metadata: ExecutionQueueItemDropdownInputRenameVariableMetadata
   ): Promise<void>
 }
 
-export class TextInputExecutor implements ITextInputExecutor {
+export class DropdownInputExecutor implements IDropdownInputExecutor {
   private workspaceId: string
   private documentId: string
   private blocks: Y.Map<YBlock>
-  private effects: InputEffects
+  private effects: DropdownInputEffects
 
   constructor(
     workspaceId: string,
     documentId: string,
     blocks: Y.Map<YBlock>,
-    effects: InputEffects = {
+    effects: DropdownInputEffects = {
       setVariable,
     }
   ) {
@@ -53,24 +53,24 @@ export class TextInputExecutor implements ITextInputExecutor {
 
   public async renameVariable(
     executionItem: ExecutionQueueItem,
-    block: Y.XmlElement<InputBlock>,
-    _metadata: ExecutionQueueItemTextInputRenameVariableMetadata
+    block: Y.XmlElement<DropdownInputBlock>,
+    _metadata: ExecutionQueueItemDropdownInputRenameVariableMetadata
   ) {
+    const attrs = getDropdownInputAttributes(block, this.blocks)
+
+    const { newValue: newVariableName } = attrs.variable
+    const { value } = attrs.value
+
+    const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
+    if (!dfNameRegex.test(newVariableName)) {
+      updateDropdownInputVariable(block, this.blocks, {
+        error: 'invalid-variable-name',
+      })
+      executionItem.setCompleted()
+      return
+    }
+
     try {
-      const attrs = getInputAttributes(block, this.blocks)
-
-      const { newValue: newVariableName } = attrs.variable
-      const { value } = attrs.value
-
-      const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
-      if (!dfNameRegex.test(newVariableName)) {
-        updateInputVariable(block, this.blocks, {
-          error: 'invalid-variable-name',
-        })
-        executionItem.setCompleted()
-        return
-      }
-
       logger().trace(
         {
           workspaceId: this.workspaceId,
@@ -78,8 +78,16 @@ export class TextInputExecutor implements ITextInputExecutor {
           blockId: attrs.id,
           variableName: newVariableName,
         },
-        'Saving input variable'
+        'Saving dropdown input variable'
       )
+
+      if (value === null) {
+        updateDropdownInputValue(block, {
+          error: 'invalid-value',
+        })
+        executionItem.setCompleted()
+        return
+      }
 
       let aborted = false
       let cleanup = executionItem.observeStatus((status) => {
@@ -112,7 +120,7 @@ export class TextInputExecutor implements ITextInputExecutor {
       cleanup()
 
       if (!aborted) {
-        updateInputVariable(block, this.blocks, {
+        updateDropdownInputVariable(block, this.blocks, {
           value: newVariableName,
           error: null,
         })
@@ -123,7 +131,7 @@ export class TextInputExecutor implements ITextInputExecutor {
             blockId: attrs.id,
             variableName: newVariableName,
           },
-          'Saved input variable'
+          'Saved dropdown input variable'
         )
       }
       executionItem.setCompleted()
@@ -138,7 +146,7 @@ export class TextInputExecutor implements ITextInputExecutor {
         'Failed to rename text input variable'
       )
 
-      updateInputVariable(block, this.blocks, {
+      updateDropdownInputVariable(block, this.blocks, {
         error: 'unexpected-error',
       })
       executionItem.setCompleted()
@@ -147,40 +155,51 @@ export class TextInputExecutor implements ITextInputExecutor {
 
   public async saveValue(
     executionItem: ExecutionQueueItem,
-    block: Y.XmlElement<InputBlock>,
-    _metadata: ExecutionQueueItemTextInputSaveValueMetadata
+    block: Y.XmlElement<DropdownInputBlock>,
+    _metadata: ExecutionQueueItemDropdownInputSaveValueMetadata
   ) {
-    try {
-      const attrs = getInputAttributes(block, this.blocks)
-      const { value: variableName } = attrs.variable
-      const { newValue } = attrs.value
+    const attrs = getDropdownInputAttributes(block, this.blocks)
 
+    const { value: variableName } = attrs.variable
+    const { newValue } = attrs.value
+
+    if (newValue === null) {
+      updateDropdownInputValue(block, {
+        error: 'invalid-value',
+      })
+      executionItem.setCompleted()
+      return
+    }
+
+    try {
       logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
           variableName,
+          newValue,
         },
-        'Saving input value'
+        'Saving dropdown input value'
       )
 
       await this.effects
         .setVariable(this.workspaceId, this.documentId, variableName, newValue)
         .then(({ promise }) => promise)
-      updateInputValue(block, {
+      updateDropdownInputValue(block, {
         value: newValue,
         error: null,
       })
-      updateInputBlockExecutedAt(block, new Date())
+      updateDropdownInputBlockExecutedAt(block, new Date())
       logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: attrs.id,
           variableName,
+          newValue,
         },
-        'Saved input value'
+        'Saved dropdown input value'
       )
       executionItem.setCompleted()
     } catch (err) {
@@ -191,10 +210,9 @@ export class TextInputExecutor implements ITextInputExecutor {
           blockId: executionItem.getBlockId(),
           error: err,
         },
-        'Failed to save text input value'
+        'Failed to save dropdown input value'
       )
-
-      updateInputValue(block, {
+      updateDropdownInputValue(block, {
         error: 'unexpected-error',
       })
       executionItem.setCompleted()
@@ -202,8 +220,13 @@ export class TextInputExecutor implements ITextInputExecutor {
   }
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
-    return new TextInputExecutor(doc.workspaceId, doc.documentId, doc.blocks, {
-      setVariable,
-    })
+    return new DropdownInputExecutor(
+      doc.workspaceId,
+      doc.documentId,
+      doc.blocks,
+      {
+        setVariable,
+      }
+    )
   }
 }

@@ -3,6 +3,7 @@ import {
   execStatusIsDisabled,
   getWritebackAttributes,
   getWritebackBlockExecStatus,
+  getWritebackBlockResultStatus,
   type WritebackBlock,
 } from '@briefer/editor'
 import {
@@ -101,6 +102,7 @@ function WritebackBlock(props: Props) {
   }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
   const execStatus = getWritebackBlockExecStatus(props.block)
+  const resultStatus = getWritebackBlockResultStatus(props.block)
   const statusIsDisabled = execStatusIsDisabled(execStatus)
 
   const onRunAbort = useCallback(() => {
@@ -166,7 +168,7 @@ function WritebackBlock(props: Props) {
                 disabled={!props.isEditable}
               />
               {isCollapsed &&
-                (execStatus === 'success' ? (
+                (resultStatus === 'success' ? (
                   <CheckCircleIcon className="w-4 h-4 text-green-600" />
                 ) : (
                   <XCircleIcon className="w-4 h-4 text-red-500" />

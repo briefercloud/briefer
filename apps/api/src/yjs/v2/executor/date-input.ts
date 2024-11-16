@@ -52,7 +52,6 @@ export class DateInputExecutor implements IDateInputExecutor {
       variable,
       value,
     } = getDateInputAttributes(block, this.blocks)
-    console.log('SAVING', JSON.stringify({ variable, value }))
 
     const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
     if (!dfNameRegex.test(variable)) {

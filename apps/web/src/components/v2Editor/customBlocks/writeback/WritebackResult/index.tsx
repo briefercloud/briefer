@@ -1,18 +1,18 @@
 import { DataSource } from '@briefer/database'
-import { ExecStatus } from '@briefer/editor'
 import WritebackErrorResult from './WritebackErrorResult'
 import WritebackSuccessResult from './WritebackSuccessResult'
 import { DatabaseZapIcon } from 'lucide-react'
 import LargeSpinner from '@/components/LargeSpinner'
 import { WriteBackResult } from '@briefer/types'
+import { ExecutionStatus, isExecutionStatusLoading } from '@briefer/editor'
 
 interface Props {
-  status: ExecStatus
+  status: ExecutionStatus
   result: WriteBackResult | null
   dataSources: DataSource[]
 }
 function WritebackResult(props: Props) {
-  if (props.status === 'loading' || props.status === 'enqueued') {
+  if (isExecutionStatusLoading(props.status)) {
     return <Loading />
   }
 

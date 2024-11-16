@@ -23,7 +23,9 @@ export type ExecutionQueueItemStatus = z.infer<typeof ExecutionQueueItemStatus>
 
 export type ExecutionStatus = ExecutionQueueItemStatus['_tag'] | 'idle'
 
-export function isExecutionStatusLoading(status: ExecutionStatus): boolean {
+export function isExecutionStatusLoading(
+  status: ExecutionStatus
+): status is 'running' | 'aborting' | 'enqueued' {
   switch (status) {
     case 'enqueued':
     case 'running':
@@ -81,6 +83,20 @@ export type ExecutionQueueItemTextInputRenameVariableMetadata = z.infer<
   typeof ExecutionQueueItemTextInputRenameVariableMetadata
 >
 
+export const ExecutionQueueItemDropdownInputSaveValueMetadata = z.object({
+  _tag: z.literal('dropdown-input-save-value'),
+})
+export type ExecutionQueueItemDropdownInputSaveValueMetadata = z.infer<
+  typeof ExecutionQueueItemDropdownInputSaveValueMetadata
+>
+
+export const ExecutionQueueItemDropdownInputRenameVariableMetadata = z.object({
+  _tag: z.literal('dropdown-input-rename-variable'),
+})
+export type ExecutionQueueItemDropdownInputRenameVariableMetadata = z.infer<
+  typeof ExecutionQueueItemDropdownInputRenameVariableMetadata
+>
+
 export const ExecutionQueueItemDateInputMetadata = z.object({
   _tag: z.literal('date-input'),
 })
@@ -103,6 +119,8 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemTextInputSaveValueMetadata,
   ExecutionQueueItemTextInputRenameVariableMetadata,
   ExecutionQueueItemDateInputMetadata,
+  ExecutionQueueItemDropdownInputSaveValueMetadata,
+  ExecutionQueueItemDropdownInputRenameVariableMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
 export type ExecutionQueueItemMetadata = z.infer<

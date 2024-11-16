@@ -1,4 +1,4 @@
-import { clone, uniq } from 'ramda'
+import { clone, head, uniq } from 'ramda'
 import * as Y from 'yjs'
 import {
   BlockType,
@@ -184,10 +184,20 @@ export function updateDropdownInputValue(
 }
 
 export function getDropdownInputValueExecStatus(
-  block: Y.XmlElement<DropdownInputBlock>
+  block: Y.XmlElement<DropdownInputBlock>,
+  executionQueue: ExecutionQueue
 ): ExecutionStatus {
-  // TODO:
-  return 'running'
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(
+    blockId,
+    'dropdown-input-save-value'
+  )
+  const execution = head(executions)
+  if (execution) {
+    return execution.item.getStatus()._tag
+  }
+
+  return 'completed'
 }
 
 function getDropdownInputVariable(
@@ -218,17 +228,31 @@ export function updateDropdownInputVariable(
 
 export function getDropdownInputVariableExecStatus(
   block: Y.XmlElement<DropdownInputBlock>,
-  blocks: Y.Map<YBlock>
+  executionQueue: ExecutionQueue
 ): ExecutionStatus {
-  // TODO:
-  return 'running'
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(
+    blockId,
+    'dropdown-input-rename-variable'
+  )
+
+  const execution = head(executions)
+
+  if (!execution) {
+    return 'completed'
+  }
+
+  return execution.item.getStatus()._tag
 }
 
 export function getDropdownInputBlockExecStatus(
   block: Y.XmlElement<DropdownInputBlock>,
-  blocks: Y.Map<YBlock>
+  executionQueue: ExecutionQueue
 ): ExecutionStatus {
-  const variableStatus = getDropdownInputVariableExecStatus(block, blocks)
+  const variableStatus = getDropdownInputVariableExecStatus(
+    block,
+    executionQueue
+  )
 
   switch (variableStatus) {
     case 'running':
@@ -238,7 +262,7 @@ export function getDropdownInputBlockExecStatus(
     case 'completed':
     case 'unknown':
     case 'idle':
-      return getDropdownInputValueExecStatus(block)
+      return getDropdownInputValueExecStatus(block, executionQueue)
   }
 }
 
@@ -259,45 +283,6 @@ function getAvailableDropdownInputVariable(
     value: `dropdown_${i}`,
     newValue: `dropdown_${i}`,
     error: null,
-  }
-}
-
-export function dropdownInputRequestSaveVariable(
-  block: Y.XmlElement<DropdownInputBlock>
-): void {
-  const operation = () => {
-    const oldVal = block.getAttribute('variable')
-    if (!oldVal) {
-      return
-    }
-
-    block.setAttribute('variable', { ...oldVal })
-  }
-
-  if (block.doc) {
-    block.doc.transact(operation)
-  } else {
-    operation()
-  }
-}
-
-export function dropdownInputRequestSaveValue(
-  block: Y.XmlElement<DropdownInputBlock>,
-  status?: 'saving' | 'save-requested'
-): void {
-  const operation = () => {
-    const oldVal = block.getAttribute('value')
-    if (!oldVal) {
-      return
-    }
-
-    block.setAttribute('value', { ...oldVal })
-  }
-
-  if (block.doc) {
-    block.doc.transact(operation)
-  } else {
-    operation()
   }
 }
 

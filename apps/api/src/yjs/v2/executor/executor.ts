@@ -22,6 +22,10 @@ import {
   DateInputBlock,
   ExecutionQueueItemDateInputMetadata,
   isDateInputBlock,
+  ExecutionQueueItemDropdownInputSaveValueMetadata,
+  ExecutionQueueItemDropdownInputRenameVariableMetadata,
+  isDropdownInputBlock,
+  DropdownInputBlock,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -34,6 +38,10 @@ import {
 } from './visualization.js'
 import { ITextInputExecutor, TextInputExecutor } from './text-input.js'
 import { DateInputExecutor, IDateInputExecutor } from './date-input.js'
+import {
+  DropdownInputExecutor,
+  IDropdownInputExecutor,
+} from './dropdown-input.js'
 
 export class Executor {
   private isRunning: boolean = false
@@ -46,6 +54,7 @@ export class Executor {
     private readonly sqlExecutor: ISQLExecutor,
     private readonly visExecutor: IVisualizationExecutor,
     private readonly textInputExecutor: ITextInputExecutor,
+    private readonly dropdownInputExecutor: IDropdownInputExecutor,
     private readonly dateInputExecutor: IDateInputExecutor,
     private readonly workspaceId: string,
     private readonly documentId: string,
@@ -158,6 +167,20 @@ export class Executor {
           data.metadata
         )
         break
+      case 'dropdown-input-save-value':
+        await this.dropdownInputExecutor.saveValue(
+          item,
+          data.block,
+          data.metadata
+        )
+        break
+      case 'dropdown-input-rename-variable':
+        await this.dropdownInputExecutor.renameVariable(
+          item,
+          data.block,
+          data.metadata
+        )
+        break
       case 'date-input':
         await this.dateInputExecutor.save(item, data.block, data.metadata)
         break
@@ -256,6 +279,27 @@ export class Executor {
             return { _tag: 'text-input-rename-variable', metadata, block }
         }
       }
+      case 'dropdown-input-save-value':
+      case 'dropdown-input-rename-variable': {
+        if (!isDropdownInputBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for input execution'
+          )
+          return null
+        }
+
+        switch (metadata._tag) {
+          case 'dropdown-input-save-value':
+            return { _tag: 'dropdown-input-save-value', metadata, block }
+          case 'dropdown-input-rename-variable':
+            return { _tag: 'dropdown-input-rename-variable', metadata, block }
+        }
+      }
       case 'date-input': {
         if (!isDateInputBlock(block)) {
           logger().error(
@@ -288,6 +332,7 @@ export class Executor {
       ),
       VisualizationExecutor.fromWSSharedDocV2(doc, events),
       TextInputExecutor.fromWSSharedDocV2(doc),
+      DropdownInputExecutor.fromWSSharedDocV2(doc),
       DateInputExecutor.fromWSSharedDocV2(doc),
       doc.workspaceId,
       doc.documentId,
@@ -327,6 +372,16 @@ type ExecutionItemData =
       _tag: 'text-input-rename-variable'
       metadata: ExecutionQueueItemTextInputRenameVariableMetadata
       block: Y.XmlElement<InputBlock>
+    }
+  | {
+      _tag: 'dropdown-input-save-value'
+      metadata: ExecutionQueueItemDropdownInputSaveValueMetadata
+      block: Y.XmlElement<DropdownInputBlock>
+    }
+  | {
+      _tag: 'dropdown-input-rename-variable'
+      metadata: ExecutionQueueItemDropdownInputRenameVariableMetadata
+      block: Y.XmlElement<DropdownInputBlock>
     }
   | {
       _tag: 'date-input'

@@ -21,6 +21,7 @@ import {
   YBlock,
   updateYText,
   ExecutionQueue,
+  isExecutionStatusLoading,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
@@ -104,7 +105,7 @@ function PythonBlock(props: Props) {
     'python'
   )
   const execution = head(executions) ?? null
-  const status = execution?.item.getStatus() ?? { _tag: 'idle' }
+  const status = execution?.item.getStatus()._tag ?? 'idle'
 
   const { id: blockId, componentId } = getPythonAttributes(props.block)
   const onRun = useCallback(() => {
@@ -119,15 +120,14 @@ function PythonBlock(props: Props) {
   }, [props.block, props.onTry])
 
   const onRunAbort = useCallback(() => {
-    switch (status._tag) {
+    switch (status) {
       case 'enqueued':
       case 'running':
         execution?.item.setAborting()
         break
       case 'idle':
-      case 'error':
-      case 'success':
-      case 'aborted':
+      case 'completed':
+      case 'unknown':
         onRun()
         break
       case 'aborting':
@@ -137,19 +137,7 @@ function PythonBlock(props: Props) {
     }
   }, [status, execution, onRun])
 
-  const statusIsDisabled: boolean = (() => {
-    switch (status._tag) {
-      case 'error':
-      case 'success':
-      case 'idle':
-      case 'aborted':
-        return false
-      case 'running':
-      case 'enqueued':
-      case 'aborting':
-        return false
-    }
-  })()
+  const statusIsDisabled = isExecutionStatusLoading(status)
 
   const onToggleEditWithAIPromptOpen = useCallback(() => {
     if (!hasOaiKey) {
@@ -174,9 +162,9 @@ function PythonBlock(props: Props) {
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
 
   const queryStatusText: JSX.Element | null = useMemo(() => {
-    switch (status._tag) {
+    switch (status) {
       case 'idle':
-      case 'success':
+      case 'completed':
         if (source?.toJSON() === lastQuery && lastQueryTime) {
           return <PythonSucceededText lastExecutionTime={lastQueryTime} />
         }
@@ -191,8 +179,7 @@ function PythonBlock(props: Props) {
         return (
           <ExecutingPythonText startExecutionTime={startQueryTime ?? null} />
         )
-      case 'error':
-      case 'aborted':
+      case 'unknown':
         return null
     }
   }, [
@@ -255,7 +242,7 @@ function PythonBlock(props: Props) {
   }, [props.block, hasOaiKey])
 
   const diffButtonsVisible =
-    !props.isPublicMode && aiSuggestions !== null && status._tag === 'idle'
+    !props.isPublicMode && aiSuggestions !== null && status === 'idle'
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(blockId)
@@ -399,7 +386,7 @@ function PythonBlock(props: Props) {
           </div>
           <ApproveDiffButons
             visible={diffButtonsVisible}
-            canTry={status._tag === 'idle'}
+            canTry={status === 'idle'}
             onTry={onTry}
             onAccept={onAcceptAISuggestion}
             onReject={onRejectAISuggestion}
@@ -525,23 +512,21 @@ function PythonBlock(props: Props) {
       >
         <button
           onClick={onRunAbort}
-          disabled={status._tag !== 'idle' && status._tag !== 'running'}
+          disabled={status !== 'idle' && status !== 'running'}
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                status._tag !== 'idle' && status._tag !== 'running',
-              'bg-red-200':
-                status._tag === 'running' && envStatus === 'Running',
-              'bg-yellow-300':
-                status._tag === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status._tag === 'idle',
+                status !== 'idle' && status !== 'running',
+              'bg-red-200': status === 'running' && envStatus === 'Running',
+              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
+              'bg-primary-200': status === 'idle',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
         >
-          {status._tag !== 'idle' ? (
+          {status !== 'idle' ? (
             <div>
-              {status._tag === 'enqueued' ? (
+              {status === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
               ) : (
                 <StopIcon className="w-3 h-3 text-gray-500" />
@@ -549,7 +534,7 @@ function PythonBlock(props: Props) {
               <PythonExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
+                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>

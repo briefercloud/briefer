@@ -1712,11 +1712,11 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         isApp={props.isApp}
         dataframes={props.dataframes}
-        // TODO
-        onRun={() => {}}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onDateInput: (block) => (

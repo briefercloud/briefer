@@ -392,10 +392,11 @@ function BlockListItem(props: BlockListItemProps) {
             isEditable={false}
             isApp={true}
             isDashboard={true}
-            onRun={() => {}}
             dataframes={props.dataframes}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onFileUpload: () => null,

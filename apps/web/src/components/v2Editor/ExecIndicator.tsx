@@ -7,9 +7,7 @@ import {
 import Spin from '../Spin'
 import {
   ExecutionQueue,
-  ExecutionStatus,
   getResultStatus,
-  ResultStatus,
   TabRef,
   YBlock,
 } from '@briefer/editor'
@@ -27,7 +25,6 @@ function ExecIndicator(props: Props) {
   const executions = useBlockExecutions(props.executionQueue, block)
   const execution = head(executions)
   const status = execution?.item.getStatus()._tag ?? 'idle'
-  console.log(execution, status)
 
   switch (status) {
     case 'enqueued':

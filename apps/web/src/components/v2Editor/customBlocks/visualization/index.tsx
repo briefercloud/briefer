@@ -10,7 +10,7 @@ import {
   getVisualizationAttributes,
   getDataframe,
   ExecutionQueue,
-  Execution,
+  isExecutionStatusLoading,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
@@ -164,7 +164,7 @@ function VisualizationBlock(props: Props) {
     'visualization'
   )
   const execution = head(executions) ?? null
-  const status = execution?.item.getStatus() ?? { _tag: 'idle' }
+  const status = execution?.item.getStatus()._tag ?? 'idle'
 
   const onRun = useCallback(() => {
     executions.forEach((e) => e.item.setAborting())
@@ -174,15 +174,14 @@ function VisualizationBlock(props: Props) {
   }, [executions, blockId, props.executionQueue, props.userId])
 
   const onRunAbort = useCallback(() => {
-    switch (status._tag) {
+    switch (status) {
       case 'enqueued':
       case 'running':
         execution?.item.setAborting()
         break
       case 'idle':
-      case 'error':
-      case 'success':
-      case 'aborted':
+      case 'unknown':
+      case 'completed':
         onRun()
         break
       case 'aborting':
@@ -459,19 +458,7 @@ function VisualizationBlock(props: Props) {
     editorAPI.insert(blockId, { scrollIntoView: false })
   }, [blockId, editorAPI.insert])
 
-  const viewLoading: boolean = (() => {
-    switch (status._tag) {
-      case 'idle':
-      case 'error':
-      case 'aborted':
-      case 'success':
-        return false
-      case 'running':
-      case 'enqueued':
-      case 'aborting':
-        return true
-    }
-  })()
+  const viewLoading = isExecutionStatusLoading(status)
 
   if (props.isDashboard) {
     return (
@@ -640,12 +627,10 @@ function VisualizationBlock(props: Props) {
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                status._tag !== 'idle' && status._tag !== 'running',
-              'bg-red-200':
-                status._tag === 'running' && envStatus === 'Running',
-              'bg-yellow-300':
-                status._tag === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status._tag === 'idle',
+                status !== 'idle' && status !== 'running',
+              'bg-red-200': status === 'running' && envStatus === 'Running',
+              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
+              'bg-primary-200': status === 'idle',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
@@ -655,12 +640,12 @@ function VisualizationBlock(props: Props) {
             (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
             (!hasAValidYAxis && chartType !== 'histogram') ||
             !props.isEditable ||
-            (status._tag !== 'idle' && status._tag !== 'running')
+            (status !== 'idle' && status !== 'running')
           }
         >
-          {status._tag !== 'idle' ? (
+          {status !== 'idle' ? (
             <div>
-              {status._tag === 'enqueued' ? (
+              {status === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
               ) : (
                 <StopIcon className="w-3 h-3 text-gray-500" />
@@ -668,7 +653,7 @@ function VisualizationBlock(props: Props) {
               <VisualizationExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
+                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>
