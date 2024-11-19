@@ -9,6 +9,7 @@ import {
 import { MergeView } from '@codemirror/merge'
 import { vscodeKeymap } from '@replit/codemirror-vscode-keymap'
 import { basicSetup } from 'codemirror'
+import { indentUnit } from '@codemirror/language'
 import { EditorView, keymap, ViewPlugin, ViewUpdate } from '@codemirror/view'
 import { historyField } from '@codemirror/commands'
 import { materialLight } from './theme'
@@ -266,6 +267,7 @@ export function CodeEditor(props: Props) {
           })
         ),
         basicSetup,
+        indentUnit.of(' '.repeat(4)),
         EditorView.lineWrapping,
         ...(props.language === 'python'
           ? [pythonCompartment.of(python)]
