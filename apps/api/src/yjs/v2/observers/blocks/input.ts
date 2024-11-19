@@ -65,6 +65,8 @@ export class InputObserver implements IInputObserver {
         status: 'idle',
       })
     }
+
+    this.executor.saveValue(block)
   }
 
   public async handleBlockEvent(
