@@ -80,7 +80,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         dataframeName,
       } = getVisualizationAttributes(block)
       if (!dataframeName) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
       const dataframe = this.dataframes.get(dataframeName)
@@ -94,7 +94,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
         (!hasAValidYAxis && chartType !== 'histogram')
       ) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
 
@@ -159,17 +159,19 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       }
 
       if (aborted) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('aborted')
         block.setAttribute('spec', null)
         return
       }
 
       if (!result.success) {
-        if (result.reason !== 'aborted') {
+        if (result.reason === 'aborted') {
+          executionItem.setCompleted('aborted')
+        } else {
           block.setAttribute('error', result.reason)
+          executionItem.setCompleted('error')
         }
 
-        executionItem.setCompleted()
         block.setAttribute('spec', null)
         return
       }
@@ -183,7 +185,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       block.setAttribute('tooManyDataPointsHidden', !capped)
       block.setAttribute('updatedAt', new Date().toISOString())
       block.setAttribute('error', null)
-      executionItem.setCompleted()
+      executionItem.setCompleted('success')
 
       logger().trace(
         {
@@ -206,7 +208,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
 
       block.setAttribute('error', 'unknown')
       block.setAttribute('spec', null)
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

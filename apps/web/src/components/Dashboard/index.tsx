@@ -248,7 +248,12 @@ export default function Dashboard(props: Props) {
         </div>
 
         {!props.isEditing && (
-          <RunAllV2 disabled={false} yDoc={yDoc} primary={true} />
+          <RunAllV2
+            disabled={false}
+            yDoc={yDoc}
+            primary={true}
+            userId={props.userId}
+          />
         )}
         <Comments
           workspaceId={props.document.workspaceId}

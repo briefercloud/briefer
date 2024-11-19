@@ -420,6 +420,21 @@ export class AppPersistor implements Persistor {
 
   public async persistUpdate(doc: WSSharedDocV2, update: Uint8Array) {
     if (this.userId) {
+      await prisma().userYjsAppDocument.upsert({
+        where: {
+          yjsAppDocumentId_userId: {
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            userId: this.userId,
+          },
+        },
+        create: {
+          yjsAppDocumentId: this.yjsAppDocumentId,
+          userId: this.userId,
+          state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
+        },
+        update: {},
+      })
+
       const { id } = await prisma().yjsUpdate.create({
         data: {
           userYjsAppDocumentUserId: this.userId,

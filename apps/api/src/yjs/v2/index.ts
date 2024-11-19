@@ -34,7 +34,6 @@ import {
 import PQueue from 'p-queue'
 import { IOServer } from '../../websocket/index.js'
 import { broadcastDocument } from '../../websocket/workspace/documents.js'
-import { MainObserver } from './observers/index.js'
 import {
   AppPersistor,
   DocumentPersistor,
@@ -46,9 +45,7 @@ import {
   getDashboard,
   getDataframes,
   getLayout,
-  getRunAll,
 } from '@briefer/editor'
-import { UserNotebookEvents } from '../../events/user.js'
 import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
@@ -375,7 +372,6 @@ export class WSSharedDocV2 {
 
   private socketServer: IOServer
   private title: string = ''
-  private observer: MainObserver
   private executor: Executor
   private persistor: Persistor
   private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
@@ -403,19 +399,14 @@ export class WSSharedDocV2 {
     this.byteLength = loadStateResult.byteLength
     this.awareness = this.configAwareness()
 
-    const events = new UserNotebookEvents(this.workspaceId, this.documentId)
-    this.observer = MainObserver.make(
-      this.workspaceId,
-      this.documentId,
-      this,
-      events
-    )
+    // TODO
+    // const events = new UserNotebookEvents(this.workspaceId, this.documentId)
     this.executor = Executor.fromWSSharedDocV2(this)
     this.publisherId = uuidv4()
   }
 
   private getPubSubChannel() {
-    return `yjs-updates-${this.id}`
+    return `yjs-updates-${this.documentId}`
   }
 
   public async init() {
@@ -429,7 +420,6 @@ export class WSSharedDocV2 {
     )
     this.awareness.on('update', this.awarenessHandler)
     this.executor.start()
-    // this.observer.start()
   }
 
   private onSubMessage = async (message?: string) => {
@@ -446,7 +436,13 @@ export class WSSharedDocV2 {
     }
 
     const parsedMessage = jsonString
-      .pipe(z.object({ publisherId: uuidSchema, message: uuidSchema }))
+      .pipe(
+        z.object({
+          id: z.string().min(1),
+          publisherId: uuidSchema,
+          message: uuidSchema,
+        })
+      )
       .safeParse(message)
     if (!parsedMessage.success) {
       logger().error(
@@ -461,7 +457,10 @@ export class WSSharedDocV2 {
       return
     }
 
-    if (parsedMessage.data.publisherId === this.publisherId) {
+    if (
+      parsedMessage.data.publisherId === this.publisherId ||
+      parsedMessage.data.id !== this.id
+    ) {
       return
     }
 
@@ -515,18 +514,16 @@ export class WSSharedDocV2 {
     this.ydoc = newYDoc
     this.clock = newClock
     this.byteLength = newByteLength
-    this.observer = MainObserver.make(
-      this.workspaceId,
-      this.documentId,
-      this,
-      new UserNotebookEvents(this.workspaceId, this.documentId)
-    )
+
+    this.executor = Executor.fromWSSharedDocV2(this)
 
     this.title = this.getTitleFromDoc()
 
     this.awareness = this.configAwareness()
-    this.ydoc.on('update', this.updateHandler)
-    this.observer.start()
+    this.ydoc.on('update', (update, _arg1, _arg2, tr) => {
+      this.updateHandler(update, tr)
+    })
+    this.executor.start()
   }
 
   private awarenessHandler = (
@@ -590,10 +587,6 @@ export class WSSharedDocV2 {
     return getLayout(this.ydoc)
   }
 
-  public get runAll() {
-    return getRunAll(this.ydoc)
-  }
-
   public get executionQueue() {
     return this.ydoc.getArray('executionQueue')
   }
@@ -610,7 +603,7 @@ export class WSSharedDocV2 {
   }
 
   public canCollect() {
-    return this.refs === 0 && this.observer.isIdle()
+    return this.refs === 0 && this.executor.isIdle()
   }
 
   public canWrite(
@@ -637,11 +630,16 @@ export class WSSharedDocV2 {
 
     // only call this when the update originates from this connection
     if (tr.local || (tr.origin && 'user' in tr.origin)) {
+      const pubsubChannel = this.getPubSubChannel()
       try {
         const updateId = await this.persistor.persistUpdate(this, update)
         await publish(
-          this.getPubSubChannel(),
-          JSON.stringify({ publisherId: this.publisherId, message: updateId })
+          pubsubChannel,
+          JSON.stringify({
+            id: this.id,
+            publisherId: this.publisherId,
+            message: updateId,
+          })
         )
         logger().trace(
           {
@@ -658,6 +656,7 @@ export class WSSharedDocV2 {
             id: this.id,
             documentId: this.documentId,
             workspaceId: this.workspaceId,
+            pubsubChannel,
             err,
           },
           'Failed to persist Yjs update'

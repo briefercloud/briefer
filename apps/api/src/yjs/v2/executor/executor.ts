@@ -80,6 +80,10 @@ export class Executor {
     this.isRunning = true
   }
 
+  public isIdle() {
+    return this.currentExecution === null
+  }
+
   public async stop(): Promise<void> {
     this.isRunning = false
 
@@ -99,26 +103,38 @@ export class Executor {
 
     this.currentExecution = this.makeBatchProgress(currentBatch)
     await this.currentExecution
+    this.currentExecution = null
     if (this.isRunning) {
       this.timeout = setTimeout(() => this.execute(), 0)
     }
   }
 
   private async makeBatchProgress(batch: ExecutionQueueBatch) {
+    logger().trace(
+      {
+        workspaceId: this.workspaceId,
+        documentId: this.documentId,
+        batchStatus: batch.status,
+        batchRemaining: batch.remaining,
+        batchLength: batch.length,
+      },
+      'Making batch progress'
+    )
     const current = batch.getCurrent()
     if (!current) {
-      logger().error(
+      logger().trace(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
         },
-        'Could not get current item out of execution batch, advancing queue anyways to prevent infinite loop'
+        'Got to the end of current batch, advancing queue to next batch'
       )
       this.queue.advance()
       return
     }
 
     const status = current.getStatus()
+
     switch (status._tag) {
       case 'running':
       case 'enqueued':
@@ -128,29 +144,39 @@ export class Executor {
       case 'unknown':
       case 'aborting':
         // TODO: when getting here we should try to abort one more time
-        current.setCompleted()
+        current.setCompleted('aborted')
         break
       default:
         exhaustiveCheck(status)
     }
 
-    if (!current.isComplete()) {
+    if (current.getCompleteStatus() === null) {
       logger().error(
         {
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: current.getBlockId(),
         },
-        'Execution item did not complete after calling executeItem, advancing queue anyways to prevent infinite loop'
+        'Execution item did not complete after calling executeItem, advancing batch anyways to prevent infinite loop'
       )
+      current.setCompleted('error')
     }
-    this.queue.advance()
   }
 
   private async executeItem(item: ExecutionQueueItem): Promise<void> {
+    logger().trace(
+      {
+        workspaceId: this.workspaceId,
+        documentId: this.documentId,
+        blockId: item.getBlockId(),
+      },
+      'Executing item'
+    )
+
     item.setRunning()
     const data = this.getExecutionItemData(item)
     if (!data) {
+      item.setCompleted('error')
       return
     }
 

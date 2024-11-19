@@ -83,13 +83,13 @@ export class PivotTableExecutor implements IPivotTableExecutor {
 
       const dataframeName = block.getAttribute('dataframeName')
       if (!dataframeName) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
 
       const dataframe = this.dataframes.get(dataframeName)
       if (!dataframe) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
 
@@ -109,7 +109,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
         if (rows.length === 0 || cols.length === 0 || metrics.length === 0) {
           block.setAttribute('updatedAt', new Date().toISOString())
           block.setAttribute('error', null)
-          executionItem.setCompleted()
+          executionItem.setCompleted('success')
           return
         }
 
@@ -124,7 +124,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
           ) {
             block.setAttribute('updatedAt', new Date().toISOString())
             block.setAttribute('error', null)
-            executionItem.setCompleted()
+            executionItem.setCompleted('success')
             return
           }
         }
@@ -166,7 +166,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
       cleanup()
 
       if (aborted) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('aborted')
         return
       }
 
@@ -174,13 +174,16 @@ export class PivotTableExecutor implements IPivotTableExecutor {
         if (result.reason !== 'aborted') {
           block.setAttribute('error', result.reason)
         }
+        executionItem.setCompleted(
+          result.reason === 'aborted' ? 'aborted' : 'error'
+        )
       } else {
         block.setAttribute('updatedAt', new Date().toISOString())
         block.setAttribute('error', null)
         block.setAttribute('result', result.result)
         block.setAttribute('page', result.result.page)
+        executionItem.setCompleted('success')
       }
-      executionItem.setCompleted()
 
       logger().trace(
         {
@@ -202,6 +205,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
       )
 
       block.setAttribute('error', 'unknown')
+      executionItem.setCompleted('error')
     }
   }
 

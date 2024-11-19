@@ -56,7 +56,7 @@ export class DateInputExecutor implements IDateInputExecutor {
     const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
     if (!dfNameRegex.test(variable)) {
       block.setAttribute('error', 'invalid-variable')
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
       return
     }
 
@@ -88,6 +88,7 @@ export class DateInputExecutor implements IDateInputExecutor {
         },
         'Saved date input variable'
       )
+      executionItem.setCompleted('success')
     } catch (err) {
       logger().error(
         {
@@ -101,8 +102,7 @@ export class DateInputExecutor implements IDateInputExecutor {
         'Failed to save date input variable'
       )
       block.setAttribute('error', 'unexpected-error')
-    } finally {
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

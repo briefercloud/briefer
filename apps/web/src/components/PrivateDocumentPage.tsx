@@ -354,7 +354,12 @@ function PrivateDocumentPageInner(
           onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
         >
           {!isViewer && (
-            <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
+            <RunAllV2
+              disabled={false}
+              yDoc={yDoc}
+              primary={props.isApp}
+              userId={props.user.id}
+            />
           )}
         </V2Editor>
 

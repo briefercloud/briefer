@@ -77,7 +77,7 @@ export class WritebackExecutor implements IWritebackExecutor {
 
       if (aborted) {
         cleanup()
-        executionItem.setCompleted()
+        executionItem.setCompleted('aborted')
         return
       }
 
@@ -91,7 +91,7 @@ export class WritebackExecutor implements IWritebackExecutor {
           reason: 'datasource-not-found',
           executedAt: executedAt.toISOString(),
         })
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         cleanup()
         return
       }
@@ -103,7 +103,7 @@ export class WritebackExecutor implements IWritebackExecutor {
           reason: 'dataframe-not-found',
           executedAt: executedAt.toISOString(),
         })
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         cleanup()
         return
       }
@@ -134,11 +134,13 @@ export class WritebackExecutor implements IWritebackExecutor {
       })
 
       const result = await promise
-      await abortP
+      aborted = await abortP
       cleanup()
 
       block.setAttribute('result', result)
-      executionItem.setCompleted()
+      executionItem.setCompleted(
+        aborted ? 'aborted' : result._tag === 'success' ? 'success' : 'error'
+      )
       logger().trace(
         {
           workspaceId: this.workspaceId,
@@ -158,7 +160,7 @@ export class WritebackExecutor implements IWritebackExecutor {
         },
         'writeback block error'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

@@ -17,6 +17,7 @@ import {
   getTabsFromBlockGroupId,
   switchBlockType,
   YBlock,
+  YBlockGroup,
 } from '../index.js'
 
 export type YExecutionQueue = Y.Array<YExecutionQueueBatch>
@@ -55,7 +56,10 @@ export class ExecutionQueue {
     const bId =
       typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
     const item = createYExecutionQueueItem(bId, userId, metadata)
-    const batch = createYExecutionQueueBatch([item], { isRunAll: false })
+    const batch = createYExecutionQueueBatch([item], {
+      isRunAll: false,
+      isSchedule: false,
+    })
     this.queue.push([batch])
   }
 
@@ -104,8 +108,105 @@ export class ExecutionQueue {
       items.push(createYExecutionQueueItem(tab.blockId, userId, metadata))
     }
 
-    const batch = createYExecutionQueueBatch(items, { isRunAll: false })
+    const batch = createYExecutionQueueBatch(items, {
+      isRunAll: false,
+      isSchedule: false,
+    })
     this.queue.push([batch])
+  }
+
+  public enqueueRunAll(
+    layout: Y.Array<YBlockGroup>,
+    blocks: Y.Map<YBlock>,
+    source: { userId: string | null } | 'schedule'
+  ): ExecutionQueueBatch {
+    const items: YExecutionQueueItem[] = []
+    const userId = typeof source === 'string' ? null : source.userId
+
+    layout.forEach((group) => {
+      const tabs = group.getAttribute('tabs')
+      if (!tabs) {
+        return
+      }
+
+      tabs.forEach((tab) => {
+        const blockId = tab.getAttribute('id')
+        if (!blockId) {
+          return
+        }
+
+        const block = blocks.get(blockId)
+        if (!block) {
+          return
+        }
+
+        const item = switchBlockType(block, {
+          onSQL: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'sql',
+              isSuggestion: false,
+              selectedCode: null,
+            })
+          },
+          onPython: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'python',
+              isSuggestion: false,
+            })
+          },
+          onVisualization: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'visualization',
+            })
+          },
+          onInput: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'text-input-save-value',
+            })
+          },
+          onDateInput: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'date-input',
+            })
+          },
+          onDropdownInput: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'dropdown-input-save-value',
+            })
+          },
+          onWriteback: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'writeback',
+            })
+          },
+          onPivotTable: () => {
+            return createYExecutionQueueItem(blockId, userId, {
+              _tag: 'pivot-table',
+            })
+          },
+          onFileUpload: () => {
+            return null
+          },
+          onRichText: () => {
+            return null
+          },
+          onDashboardHeader: () => {
+            return null
+          },
+        })
+
+        if (item) {
+          items.push(item)
+        }
+      })
+    })
+
+    const batch = createYExecutionQueueBatch(items, {
+      isRunAll: true,
+      isSchedule: source === 'schedule',
+    })
+    this.queue.push([batch])
+    return ExecutionQueueBatch.fromYjs(batch)
   }
 
   public getBlockExecutions(
@@ -144,6 +245,13 @@ export class ExecutionQueue {
 
   public toJSON(): ExecutionQueueBatch[] {
     return this.queue.map((batch) => ExecutionQueueBatch.fromYjs(batch))
+  }
+
+  public getRunAllBatches(): ExecutionQueueBatch[] {
+    return this.queue
+      .toArray()
+      .filter((batch) => batch.getAttribute('isRunAll'))
+      .map((batch) => ExecutionQueueBatch.fromYjs(batch))
   }
 
   private onObservation = () => {

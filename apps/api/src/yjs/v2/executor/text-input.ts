@@ -67,7 +67,7 @@ export class TextInputExecutor implements ITextInputExecutor {
         updateInputVariable(block, this.blocks, {
           error: 'invalid-variable-name',
         })
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
 
@@ -126,7 +126,7 @@ export class TextInputExecutor implements ITextInputExecutor {
           'Saved input variable'
         )
       }
-      executionItem.setCompleted()
+      executionItem.setCompleted(aborted ? 'aborted' : 'success')
     } catch (err) {
       logger().error(
         {
@@ -141,7 +141,7 @@ export class TextInputExecutor implements ITextInputExecutor {
       updateInputVariable(block, this.blocks, {
         error: 'unexpected-error',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 
@@ -182,7 +182,7 @@ export class TextInputExecutor implements ITextInputExecutor {
         },
         'Saved input value'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('success')
     } catch (err) {
       logger().error(
         {
@@ -197,7 +197,7 @@ export class TextInputExecutor implements ITextInputExecutor {
       updateInputValue(block, {
         error: 'unexpected-error',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

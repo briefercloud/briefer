@@ -63,6 +63,7 @@ export class PythonExecutor implements IPythonExecutor {
       const actualSource =
         (metadata.isSuggestion ? aiSuggestions : source)?.toJSON() ?? ''
 
+      let errored = false
       const { promise, abort } = await this.effects.executePython(
         this.workspaceId,
         this.documentId,
@@ -70,6 +71,14 @@ export class PythonExecutor implements IPythonExecutor {
         (outputs) => {
           const prevOutputs = block.getAttribute('result') ?? []
           block.setAttribute('result', prevOutputs.concat(outputs))
+          if (!errored) {
+            for (const output of outputs) {
+              if (output.type === 'error') {
+                errored = true
+                break
+              }
+            }
+          }
         },
         { storeHistory: true }
       )
@@ -82,7 +91,7 @@ export class PythonExecutor implements IPythonExecutor {
       await promise
       const aborted = await abortP
       if (aborted) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('aborted')
         cleanup()
         return
       }
@@ -99,7 +108,7 @@ export class PythonExecutor implements IPythonExecutor {
         },
         'python block executed'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted(errored ? 'error' : 'success')
     } catch (err) {
       logger().error(
         {
@@ -110,7 +119,7 @@ export class PythonExecutor implements IPythonExecutor {
         },
         'Error while executing python block'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

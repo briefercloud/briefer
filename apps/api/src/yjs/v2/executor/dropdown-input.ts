@@ -66,7 +66,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       updateDropdownInputVariable(block, this.blocks, {
         error: 'invalid-variable-name',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
       return
     }
 
@@ -85,7 +85,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
         updateDropdownInputValue(block, {
           error: 'invalid-value',
         })
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         return
       }
 
@@ -134,7 +134,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
           'Saved dropdown input variable'
         )
       }
-      executionItem.setCompleted()
+      executionItem.setCompleted(aborted ? 'aborted' : 'success')
     } catch (err) {
       logger().error(
         {
@@ -149,7 +149,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       updateDropdownInputVariable(block, this.blocks, {
         error: 'unexpected-error',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 
@@ -167,7 +167,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       updateDropdownInputValue(block, {
         error: 'invalid-value',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
       return
     }
 
@@ -201,7 +201,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
         },
         'Saved dropdown input value'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('success')
     } catch (err) {
       logger().error(
         {
@@ -215,7 +215,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       updateDropdownInputValue(block, {
         error: 'unexpected-error',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

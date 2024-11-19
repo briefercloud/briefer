@@ -104,7 +104,7 @@ export class SQLExecutor implements ISQLExecutor {
       } = getSQLAttributes(block, this.blocks)
 
       if ((!dataSourceId && !isFileDataSource) || !dataframeName) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         cleanup()
         return
       }
@@ -114,7 +114,7 @@ export class SQLExecutor implements ISQLExecutor {
       ).find((ds) => ds.data.id === dataSourceId)
 
       if (aborted) {
-        executionItem.setCompleted()
+        executionItem.setCompleted('aborted')
         block.setAttribute('result', {
           type: 'abort-error',
           message: 'Query aborted',
@@ -127,7 +127,7 @@ export class SQLExecutor implements ISQLExecutor {
         // the selected datasource was deleted
         // recover this block state by removing the datasourceId
         block.removeAttribute('dataSourceId')
-        executionItem.setCompleted()
+        executionItem.setCompleted('error')
         cleanup()
         return
       }
@@ -162,7 +162,7 @@ export class SQLExecutor implements ISQLExecutor {
         cleanup()
 
         if (aborted) {
-          executionItem.setCompleted()
+          executionItem.setCompleted('aborted')
           await abort()
           await promise
           block.setAttribute('result', {
@@ -182,7 +182,7 @@ export class SQLExecutor implements ISQLExecutor {
         const result = await promise
         aborted = await abortP
         if (aborted) {
-          executionItem.setCompleted()
+          executionItem.setCompleted('aborted')
           cleanup()
           block.setAttribute('result', {
             type: 'abort-error',
@@ -233,7 +233,13 @@ export class SQLExecutor implements ISQLExecutor {
         resultType = result.type
       }
 
-      executionItem.setCompleted()
+      executionItem.setCompleted(
+        resultType === 'success'
+          ? 'success'
+          : resultType === 'abort-error'
+          ? 'aborted'
+          : 'error'
+      )
 
       logger().trace(
         {
@@ -254,7 +260,7 @@ export class SQLExecutor implements ISQLExecutor {
         },
         'Error while executin sql block'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 
@@ -277,7 +283,7 @@ export class SQLExecutor implements ISQLExecutor {
         ...dataframeName,
         error: 'invalid-name',
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
       return
     }
 
@@ -286,7 +292,9 @@ export class SQLExecutor implements ISQLExecutor {
         ...dataframeName,
         value: dataframeName.newValue,
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted(
+        result?.type === 'abort-error' ? 'aborted' : 'error'
+      )
       return
     }
 
@@ -320,7 +328,7 @@ export class SQLExecutor implements ISQLExecutor {
         value: dataframeName.newValue,
         error: undefined,
       })
-      executionItem.setCompleted()
+      executionItem.setCompleted('success')
     } catch (err) {
       logger().error(
         {
@@ -331,7 +339,7 @@ export class SQLExecutor implements ISQLExecutor {
         },
         'Error while renaming dataframe'
       )
-      executionItem.setCompleted()
+      executionItem.setCompleted('error')
     }
   }
 

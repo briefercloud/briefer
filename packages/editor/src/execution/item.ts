@@ -14,6 +14,11 @@ export const ExecutionQueueItemStatus = z.union([
   }),
   z.object({
     _tag: z.literal('completed'),
+    status: z.union([
+      z.literal('success'),
+      z.literal('error'),
+      z.literal('aborted'),
+    ]),
   }),
   z.object({
     _tag: z.literal('unknown'),
@@ -198,15 +203,16 @@ export class ExecutionQueueItem {
   private statusObservers: Set<(status: ExecutionQueueItemStatus) => void> =
     new Set()
 
-  public isComplete(): boolean {
-    switch (this.getStatus()._tag) {
+  public getCompleteStatus(): 'success' | 'error' | 'aborted' | null {
+    const status = this.getStatus()
+    switch (status._tag) {
       case 'completed':
-        return true
+        return status.status
       case 'enqueued':
       case 'running':
       case 'aborting':
       case 'unknown':
-        return false
+        return null
     }
   }
 
@@ -226,8 +232,8 @@ export class ExecutionQueueItem {
     this.item.setAttribute('status', { _tag: 'aborting' })
   }
 
-  public setCompleted(): void {
-    this.item.setAttribute('status', { _tag: 'completed' })
+  public setCompleted(status: 'success' | 'error' | 'aborted'): void {
+    this.item.setAttribute('status', { _tag: 'completed', status })
   }
 
   public getStatus(): ExecutionQueueItemStatus {

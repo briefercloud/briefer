@@ -1,17 +1,23 @@
 import * as Y from 'yjs'
-import { ExecutionQueueItem, YExecutionQueueItem } from './item.js'
+import {
+  ExecutionQueueItem,
+  ExecutionStatus,
+  YExecutionQueueItem,
+} from './item.js'
+import { exhaustiveCheck } from '@briefer/types'
 
 export type YExecutionQueueBatchAttrs = {
   version: 1
   queue: Y.Array<YExecutionQueueItem>
   isRunAll: boolean
+  isSchedule: boolean
 }
 
 export type YExecutionQueueBatch = Y.XmlElement<YExecutionQueueBatchAttrs>
 
 export function createYExecutionQueueBatch(
   items: YExecutionQueueItem[],
-  { isRunAll }: { isRunAll: boolean }
+  { isRunAll, isSchedule }: { isRunAll: boolean; isSchedule: boolean }
 ): YExecutionQueueBatch {
   const queue = new Y.Array<YExecutionQueueItem>()
   queue.insert(0, items)
@@ -20,6 +26,7 @@ export function createYExecutionQueueBatch(
     version: 1,
     queue,
     isRunAll,
+    isSchedule,
   }
   const el = new Y.XmlElement<YExecutionQueueBatchAttrs>()
 
@@ -44,7 +51,7 @@ export class ExecutionQueueBatch {
   public getCurrent(): ExecutionQueueItem | null {
     for (const raw of this.batch.getAttribute('queue') ?? new Y.Array()) {
       const item = ExecutionQueueItem.fromYjs(raw)
-      if (!item.isComplete()) {
+      if (item.getCompleteStatus() === null) {
         return item
       }
     }
@@ -67,6 +74,80 @@ export class ExecutionQueueBatch {
       ),
       isRunAll: this.batch.getAttribute('isRunAll') ?? false,
     }
+  }
+
+  public abort() {
+    for (const item of this) {
+      if (item.getStatus()._tag !== 'completed') {
+        item.setAborting()
+      }
+    }
+  }
+
+  public waitForCompletion(): Promise<string | null> {
+    return new Promise((resolve) => {
+      let current = this.getCurrent()
+      const onObservation = () => {
+        if (!current) {
+          this.batch.unobserveDeep(onObservation)
+          resolve(null)
+          return
+        }
+
+        if (current.getCompleteStatus() === 'error') {
+          this.batch.unobserveDeep(onObservation)
+          resolve(current.getBlockId())
+          return
+        }
+
+        current = this.getCurrent()
+        if (!current) {
+          this.batch.unobserveDeep(onObservation)
+          resolve(null)
+          return
+        }
+      }
+      this.batch.observeDeep(onObservation)
+    })
+  }
+
+  public get length(): number {
+    return this.batch.getAttribute('queue')?.length ?? 0
+  }
+
+  public get remaining(): number {
+    let currentPos = 0
+    for (const item of this) {
+      if (item.getCompleteStatus() !== null) {
+        currentPos++
+      } else {
+        break
+      }
+    }
+
+    return this.length - currentPos
+  }
+
+  public get status(): ExecutionStatus {
+    debugger
+    let status: ExecutionStatus = 'unknown'
+    for (const item of this) {
+      const itemStatus = item.getStatus()._tag
+      switch (itemStatus) {
+        case 'completed':
+          status = 'completed'
+          break
+        case 'running':
+        case 'unknown':
+        case 'aborting':
+        case 'enqueued':
+          return itemStatus
+        default:
+          exhaustiveCheck(itemStatus)
+      }
+    }
+
+    return status
   }
 
   public static fromYjs(doc: YExecutionQueueBatch): ExecutionQueueBatch {
