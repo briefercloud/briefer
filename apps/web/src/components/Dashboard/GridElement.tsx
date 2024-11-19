@@ -251,15 +251,15 @@ function GridElement(props: Props) {
   const canEdit = blockType && blockType === BlockType.DashboardHeader
   const showEdit = canEdit && !isEditingBlock
 
+  const WrapperElement =
+    props.block?.getAttribute('type') === BlockType.Visualization
+      ? 'div'
+      : ScrollBar
+
   return (
     <div className="relative group h-full">
       {props.block ? (
-        <ScrollBar
-          className="w-full h-full rounded-md overflow-hidden flex flex-col"
-          disabled={
-            props.block.getAttribute('type') === BlockType.Visualization
-          }
-        >
+        <WrapperElement className="w-full h-full rounded-md overflow-hidden flex flex-col">
           {hasTitle && titleContent && (
             <h2 className="text-gray-700 font-medium text-left text-sm truncate min-h-6 px-3.5 py-2.5">
               {titleContent}
@@ -269,7 +269,7 @@ function GridElement(props: Props) {
           <div className="h-full overflow-hidden">
             {renderItem(props.block, props.item)}
           </div>
-        </ScrollBar>
+        </WrapperElement>
       ) : (
         <div className="bg-gray-200 overflow-hidden">{props.item.i}</div>
       )}
