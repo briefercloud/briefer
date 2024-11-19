@@ -118,6 +118,13 @@ export type ExecutionQueueItemPivotTableLoadPageMetadata = z.infer<
   typeof ExecutionQueueItemPivotTableLoadPageMetadata
 >
 
+export const ExecutionQueueItemWritebackMetadata = z.object({
+  _tag: z.literal('writeback'),
+})
+export type ExecutionQueueItemWritebackMetadata = z.infer<
+  typeof ExecutionQueueItemWritebackMetadata
+>
+
 export const ExecutionQueueItemNoopMetadata = z.object({
   _tag: z.literal('noop'),
 })
@@ -137,6 +144,7 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemDropdownInputRenameVariableMetadata,
   ExecutionQueueItemPivotTableMetadata,
   ExecutionQueueItemPivotTableLoadPageMetadata,
+  ExecutionQueueItemWritebackMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
 export type ExecutionQueueItemMetadata = z.infer<

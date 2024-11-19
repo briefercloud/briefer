@@ -306,7 +306,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         // })
       },
       onWriteback: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
       onDropdownInput: (block) => {
         // TODO
@@ -361,7 +362,8 @@ export class RunAllExecutor implements IRunAllExecutor {
       onFileUpload: () => {},
       onDashboardHeader: () => {},
       onWriteback: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
       onPivotTable: (block) => {
         // TODO
@@ -404,7 +406,8 @@ export class RunAllExecutor implements IRunAllExecutor {
       onFileUpload: () => {},
       onDashboardHeader: () => {},
       onWriteback: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
       onPivotTable: (block) => {
         // TODO

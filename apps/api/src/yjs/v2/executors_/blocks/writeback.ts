@@ -87,7 +87,7 @@ export class WritebackExecutor implements IWritebackExecutor {
             (ds) => ds.data.id === attrs.dataSourceId
           )
           if (!dataSource) {
-            block.setAttribute('status', 'idle')
+            // block.setAttribute('status', 'idle')
             block.setAttribute('result', {
               _tag: 'error',
               step: 'validation',
@@ -98,7 +98,7 @@ export class WritebackExecutor implements IWritebackExecutor {
           }
 
           if (!attrs.dataframeName) {
-            block.setAttribute('status', 'idle')
+            // block.setAttribute('status', 'idle')
             block.setAttribute('result', {
               _tag: 'error',
               step: 'validation',
@@ -127,7 +127,7 @@ export class WritebackExecutor implements IWritebackExecutor {
 
           const result = await promise
 
-          block.setAttribute('status', 'idle')
+          // block.setAttribute('status', 'idle')
           block.setAttribute('result', result)
           logger().trace(
             {
@@ -161,7 +161,7 @@ export class WritebackExecutor implements IWritebackExecutor {
 
     const running = this.runningCode.get(block)
     if (!running) {
-      block.setAttribute('status', 'idle')
+      // block.setAttribute('status', 'idle')
       return
     }
 

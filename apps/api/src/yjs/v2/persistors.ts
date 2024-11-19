@@ -1229,8 +1229,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'tableName'], prevAttributes),
-      omit(['status', 'tableName'], nextAttributes)
+      omit(['tableName'], prevAttributes),
+      omit(['tableName'], nextAttributes)
     )
   }
 

@@ -1773,6 +1773,8 @@ function TabRef(props: TabRefProps) {
         }
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onPivotTable: (block) => (

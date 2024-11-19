@@ -30,6 +30,9 @@ import {
   PivotTableBlock,
   ExecutionQueueItemPivotTableLoadPageMetadata,
   isPivotTableBlock,
+  WritebackBlock,
+  ExecutionQueueItemWritebackMetadata,
+  isWritebackBlock,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -47,6 +50,7 @@ import {
   IDropdownInputExecutor,
 } from './dropdown-input.js'
 import { IPivotTableExecutor, PivotTableExecutor } from './pivot-table.js'
+import { IWritebackExecutor, WritebackExecutor } from './writeback.js'
 
 export class Executor {
   private isRunning: boolean = false
@@ -62,6 +66,7 @@ export class Executor {
     private readonly dropdownInputExecutor: IDropdownInputExecutor,
     private readonly dateInputExecutor: IDateInputExecutor,
     private readonly pivotTableExecutor: IPivotTableExecutor,
+    private readonly writebackExecutor: IWritebackExecutor,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private readonly blocks: Y.Map<YBlock>,
@@ -195,6 +200,9 @@ export class Executor {
         break
       case 'pivot-table-load-page':
         await this.pivotTableExecutor.loadPage(item, data.block, data.metadata)
+        break
+      case 'writeback':
+        await this.writebackExecutor.run(item, data.block, data.metadata)
         break
       default:
         exhaustiveCheck(data)
@@ -349,6 +357,21 @@ export class Executor {
             return { _tag: 'pivot-table-load-page', metadata, block }
         }
       }
+      case 'writeback': {
+        if (!isWritebackBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for writeback execution'
+          )
+          return null
+        }
+
+        return { _tag: 'writeback', metadata, block }
+      }
       case 'noop':
         return null
     }
@@ -368,6 +391,7 @@ export class Executor {
       DropdownInputExecutor.fromWSSharedDocV2(doc),
       DateInputExecutor.fromWSSharedDocV2(doc),
       PivotTableExecutor.fromWSSharedDocV2(doc),
+      WritebackExecutor.fromWSSharedDocV2(doc, events),
       doc.workspaceId,
       doc.documentId,
       doc.blocks,
@@ -431,6 +455,11 @@ type ExecutionItemData =
       _tag: 'pivot-table-load-page'
       metadata: ExecutionQueueItemPivotTableLoadPageMetadata
       block: Y.XmlElement<PivotTableBlock>
+    }
+  | {
+      _tag: 'writeback'
+      metadata: ExecutionQueueItemWritebackMetadata
+      block: Y.XmlElement<WritebackBlock>
     }
 
 function exhaustiveCheck(_param: never) {}
