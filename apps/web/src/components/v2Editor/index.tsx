@@ -1782,8 +1782,6 @@ function TabRef(props: TabRefProps) {
         blocks={props.blocks}
         hasMultipleTabs={props.hasMultipleTabs}
         isEditable={props.isEditable}
-        // TODO
-        onRun={() => {}}
         onAddGroupedBlock={props.addGroupedBlock}
         dragPreview={props.dragPreview}
         dataframes={props.dataframes}
@@ -1794,6 +1792,8 @@ function TabRef(props: TabRefProps) {
         dashboardMode="none"
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
   })

@@ -104,6 +104,20 @@ export type ExecutionQueueItemDateInputMetadata = z.infer<
   typeof ExecutionQueueItemDateInputMetadata
 >
 
+export const ExecutionQueueItemPivotTableMetadata = z.object({
+  _tag: z.literal('pivot-table'),
+})
+export type ExecutionQueueItemPivotTableMetadata = z.infer<
+  typeof ExecutionQueueItemPivotTableMetadata
+>
+
+export const ExecutionQueueItemPivotTableLoadPageMetadata = z.object({
+  _tag: z.literal('pivot-table-load-page'),
+})
+export type ExecutionQueueItemPivotTableLoadPageMetadata = z.infer<
+  typeof ExecutionQueueItemPivotTableLoadPageMetadata
+>
+
 export const ExecutionQueueItemNoopMetadata = z.object({
   _tag: z.literal('noop'),
 })
@@ -121,6 +135,8 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemDateInputMetadata,
   ExecutionQueueItemDropdownInputSaveValueMetadata,
   ExecutionQueueItemDropdownInputRenameVariableMetadata,
+  ExecutionQueueItemPivotTableMetadata,
+  ExecutionQueueItemPivotTableLoadPageMetadata,
   ExecutionQueueItemNoopMetadata,
 ])
 export type ExecutionQueueItemMetadata = z.infer<

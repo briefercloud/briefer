@@ -31,7 +31,7 @@ export class PivotTableObserver implements IPivotTableObserver {
   }
 
   public handleInitialBlockState(block: Y.XmlElement<PivotTableBlock>) {
-    block.setAttribute('status', 'idle')
+    // block.setAttribute('status', 'idle')
   }
 
   public async handleBlockEvent(
@@ -100,74 +100,70 @@ export class PivotTableObserver implements IPivotTableObserver {
     block: Y.XmlElement<PivotTableBlock>,
     tr: Y.Transaction
   ) {
-    const blockId = block.getAttribute('id')
-    const status = block.getAttribute('status')
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status,
-      },
-      'Handling pivot table block status change'
-    )
-
-    try {
-      switch (status) {
-        case 'run-requested':
-          await this.executor.abort(block)
-          block.setAttribute('status', 'running')
-          break
-        case 'running':
-          await this.executor.run(block, tr)
-          if (this.executor.isIdle()) {
-            block.setAttribute('status', 'idle')
-          }
-          break
-        case 'aborting':
-          await this.executor.abort(block)
-          block.setAttribute('status', 'idle')
-          break
-        case 'abort-requested':
-          block.setAttribute('status', 'aborting')
-          break
-        case 'page-requested':
-          await this.executor.abort(block)
-          block.setAttribute('status', 'loading-page')
-          break
-        case 'loading-page':
-          await this.executor.loadPage(block, tr)
-          if (this.executor.isIdle()) {
-            block.setAttribute('status', 'idle')
-          }
-          break
-      }
-    } catch (err) {
-      logger().error(
-        {
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-          blockId,
-          status,
-          err,
-        },
-        'Error while handling block status change'
-      )
-
-      block.setAttribute('status', 'idle')
-      block.setAttribute('error', 'unknown')
-    }
-
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        blockId,
-        status: block.getAttribute('status'),
-      },
-      'Finished handling pivot table block status change'
-    )
+    // const blockId = block.getAttribute('id')
+    // const status = block.getAttribute('status')
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status,
+    //   },
+    //   'Handling pivot table block status change'
+    // )
+    // try {
+    //   switch (status) {
+    //     case 'run-requested':
+    //       await this.executor.abort(block)
+    //       block.setAttribute('status', 'running')
+    //       break
+    //     case 'running':
+    //       await this.executor.run(block, tr)
+    //       if (this.executor.isIdle()) {
+    //         block.setAttribute('status', 'idle')
+    //       }
+    //       break
+    //     case 'aborting':
+    //       await this.executor.abort(block)
+    //       block.setAttribute('status', 'idle')
+    //       break
+    //     case 'abort-requested':
+    //       block.setAttribute('status', 'aborting')
+    //       break
+    //     case 'page-requested':
+    //       await this.executor.abort(block)
+    //       block.setAttribute('status', 'loading-page')
+    //       break
+    //     case 'loading-page':
+    //       await this.executor.loadPage(block, tr)
+    //       if (this.executor.isIdle()) {
+    //         block.setAttribute('status', 'idle')
+    //       }
+    //       break
+    //   }
+    // } catch (err) {
+    //   logger().error(
+    //     {
+    //       workspaceId: this.workspaceId,
+    //       documentId: this.documentId,
+    //       blockId,
+    //       status,
+    //       err,
+    //     },
+    //     'Error while handling block status change'
+    //   )
+    //   block.setAttribute('status', 'idle')
+    //   block.setAttribute('error', 'unknown')
+    // }
+    // logger().trace(
+    //   {
+    //     workspaceId: this.workspaceId,
+    //     documentId: this.documentId,
+    //     blockId,
+    //     status: block.getAttribute('status'),
+    //   },
+    //   'Finished handling pivot table block status change'
+    // )
   }
 
   public static make(

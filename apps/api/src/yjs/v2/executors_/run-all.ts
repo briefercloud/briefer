@@ -8,8 +8,6 @@ import {
   getResultStatus,
   isExecutableBlock,
   switchBlockType,
-  updateDropdownInputValue,
-  updateInputValue,
 } from '@briefer/editor'
 import { ISQLExecutor, SQLExecutor } from './blocks/sql.js'
 import { IPythonExecutor, PythonExecutor } from './blocks/python.js'
@@ -323,7 +321,8 @@ export class RunAllExecutor implements IRunAllExecutor {
       onFileUpload: () => {},
       onDashboardHeader: () => {},
       onPivotTable: (block) => {
-        block.setAttribute('status', 'run-all-enqueued')
+        // TODO
+        // block.setAttribute('status', 'run-all-enqueued')
       },
     })
   }
@@ -365,7 +364,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         block.setAttribute('status', 'run-all-running')
       },
       onPivotTable: (block) => {
-        block.setAttribute('status', 'run-all-running')
+        // TODO
+        // block.setAttribute('status', 'run-all-running')
       },
     })
   }
@@ -407,7 +407,8 @@ export class RunAllExecutor implements IRunAllExecutor {
         block.setAttribute('status', 'idle')
       },
       onPivotTable: (block) => {
-        block.setAttribute('status', 'idle')
+        // TODO
+        // block.setAttribute('status', 'idle')
       },
     })
   }

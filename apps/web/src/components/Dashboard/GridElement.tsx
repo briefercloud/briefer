@@ -164,13 +164,14 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            onRun={onRun}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onInput: (block) => (

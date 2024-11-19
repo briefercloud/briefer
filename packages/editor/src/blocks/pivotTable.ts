@@ -9,7 +9,7 @@ import {
   EditableField,
   ResultStatus,
 } from './index.js'
-import { clone } from 'ramda'
+import { clone, head } from 'ramda'
 import {
   AggregateFunction,
   DataFrameColumn,
@@ -17,6 +17,7 @@ import {
   PivotTableSort,
 } from '@briefer/types'
 import { ExecutionStatus } from '../execution/item.js'
+import { ExecutionQueue } from '../execution/queue.js'
 
 export type PivotTableRow = {
   column: DataFrameColumn | null
@@ -30,16 +31,6 @@ export type PivotTableMetric = {
 }
 
 export type PivotTableBlock = BaseBlock<BlockType.PivotTable> & {
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'running'
-    | 'run-all-enqueued'
-    | 'run-all-running'
-    | 'page-requested'
-    | 'loading-page'
-    | 'abort-requested'
-    | 'aborting'
   dataframeName: string | null
   variable: EditableField<'invalid-variable-name' | 'unexpected-error'>
   rows: PivotTableRow[]
@@ -64,7 +55,6 @@ export const makePivotTableBlock = (
     index: null,
     title: '',
     type: BlockType.PivotTable,
-    status: 'idle',
     variable: getAvailablePivotVariable(blocks),
     dataframeName: null,
     rows: [{ column: null }],
@@ -101,7 +91,6 @@ export function getPivotTableAttributes(
 
   return {
     ...getBaseAttributes(block),
-    status: getAttributeOr(block, 'status', 'idle'),
     dataframeName: getAttributeOr(block, 'dataframeName', null),
     variable,
     rows: getAttributeOr(block, 'rows', []),
@@ -128,7 +117,6 @@ export function duplicatePivotTableBlock(
 
   const nextAttributes: PivotTableBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
-    status: prevAttributes.status,
     dataframeName: prevAttributes.dataframeName,
     variable: newVariable
       ? getAvailablePivotVariable(blocks)
@@ -156,26 +144,19 @@ export function duplicatePivotTableBlock(
 }
 
 export function getPivotTableBlockExecStatus(
-  block: Y.XmlElement<PivotTableBlock>
+  block: Y.XmlElement<PivotTableBlock>,
+  executionQueue: ExecutionQueue
 ): ExecutionStatus {
-  const status = block.getAttribute('status')
-
-  switch (status) {
-    case undefined:
-    case 'idle':
-      return 'completed'
-    case 'run-all-enqueued':
-    case 'run-requested':
-      return 'enqueued'
-    case 'running':
-    case 'run-all-running':
-    case 'page-requested':
-    case 'loading-page':
-      return 'running'
-    case 'abort-requested':
-    case 'aborting':
-      return 'aborting'
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue
+    .getBlockExecutions(blockId, 'pivot-table')
+    .concat(executionQueue.getBlockExecutions(blockId, 'pivot-table-load-page'))
+  const execution = head(executions)
+  if (execution) {
+    return execution.item.getStatus()._tag
   }
+
+  return 'completed'
 }
 
 export function getPivotTableBlockResultStatus(
@@ -250,8 +231,6 @@ function getAvailablePivotVariable(
   return {
     value: `pivot_table_${i}`,
     newValue: `pivot_table_${i}`,
-    // TODO renaming of pivot table
-    // status: 'idle',
     error: null,
   }
 }

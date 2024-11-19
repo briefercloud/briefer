@@ -105,6 +105,7 @@ export class SQLExecutor implements ISQLExecutor {
 
       if ((!dataSourceId && !isFileDataSource) || !dataframeName) {
         executionItem.setCompleted()
+        cleanup()
         return
       }
 

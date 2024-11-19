@@ -1242,8 +1242,8 @@ export class AppPersistor implements Persistor {
     const nextAttributes = nextBlock.getAttributes()
 
     return equals(
-      omit(['status', 'page', 'sort'], prevAttributes),
-      omit(['status', 'page', 'sort'], nextAttributes)
+      omit(['page', 'sort'], prevAttributes),
+      omit(['page', 'sort'], nextAttributes)
     )
   }
 }

@@ -425,13 +425,14 @@ function BlockListItem(props: BlockListItemProps) {
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
-              onRun={() => {}}
               dashboardMode="editing"
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
               isCursorWithin={false}
               isCursorInserting={false}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
             />
           </div>
         ),

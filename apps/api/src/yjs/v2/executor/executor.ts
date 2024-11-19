@@ -26,6 +26,10 @@ import {
   ExecutionQueueItemDropdownInputRenameVariableMetadata,
   isDropdownInputBlock,
   DropdownInputBlock,
+  ExecutionQueueItemPivotTableMetadata,
+  PivotTableBlock,
+  ExecutionQueueItemPivotTableLoadPageMetadata,
+  isPivotTableBlock,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -42,6 +46,7 @@ import {
   DropdownInputExecutor,
   IDropdownInputExecutor,
 } from './dropdown-input.js'
+import { IPivotTableExecutor, PivotTableExecutor } from './pivot-table.js'
 
 export class Executor {
   private isRunning: boolean = false
@@ -56,6 +61,7 @@ export class Executor {
     private readonly textInputExecutor: ITextInputExecutor,
     private readonly dropdownInputExecutor: IDropdownInputExecutor,
     private readonly dateInputExecutor: IDateInputExecutor,
+    private readonly pivotTableExecutor: IPivotTableExecutor,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private readonly blocks: Y.Map<YBlock>,
@@ -183,6 +189,12 @@ export class Executor {
         break
       case 'date-input':
         await this.dateInputExecutor.save(item, data.block, data.metadata)
+        break
+      case 'pivot-table':
+        await this.pivotTableExecutor.run(item, data.block, data.metadata)
+        break
+      case 'pivot-table-load-page':
+        await this.pivotTableExecutor.loadPage(item, data.block, data.metadata)
         break
       default:
         exhaustiveCheck(data)
@@ -316,6 +328,27 @@ export class Executor {
         return { _tag: 'date-input', metadata, block }
       }
 
+      case 'pivot-table':
+      case 'pivot-table-load-page': {
+        if (!isPivotTableBlock(block)) {
+          logger().error(
+            {
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for pivot table execution'
+          )
+          return null
+        }
+
+        switch (metadata._tag) {
+          case 'pivot-table':
+            return { _tag: 'pivot-table', metadata, block }
+          case 'pivot-table-load-page':
+            return { _tag: 'pivot-table-load-page', metadata, block }
+        }
+      }
       case 'noop':
         return null
     }
@@ -334,6 +367,7 @@ export class Executor {
       TextInputExecutor.fromWSSharedDocV2(doc),
       DropdownInputExecutor.fromWSSharedDocV2(doc),
       DateInputExecutor.fromWSSharedDocV2(doc),
+      PivotTableExecutor.fromWSSharedDocV2(doc),
       doc.workspaceId,
       doc.documentId,
       doc.blocks,
@@ -387,6 +421,16 @@ type ExecutionItemData =
       _tag: 'date-input'
       metadata: ExecutionQueueItemDateInputMetadata
       block: Y.XmlElement<DateInputBlock>
+    }
+  | {
+      _tag: 'pivot-table'
+      metadata: ExecutionQueueItemPivotTableMetadata
+      block: Y.XmlElement<PivotTableBlock>
+    }
+  | {
+      _tag: 'pivot-table-load-page'
+      metadata: ExecutionQueueItemPivotTableLoadPageMetadata
+      block: Y.XmlElement<PivotTableBlock>
     }
 
 function exhaustiveCheck(_param: never) {}
