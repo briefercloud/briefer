@@ -16,7 +16,13 @@ import Link from 'next/link'
 import Spin from './Spin'
 import clsx from 'clsx'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { BlockType, addBlockGroup, getBlocks, getLayout } from '@briefer/editor'
+import {
+  BlockType,
+  ExecutionQueue,
+  addBlockGroup,
+  getBlocks,
+  getLayout,
+} from '@briefer/editor'
 import {
   FolderIcon,
   InformationCircleIcon,
@@ -30,7 +36,9 @@ interface Props {
   workspaceId: string
   visible: boolean
   onHide: () => void
+  userId: string | null
   yDoc?: Y.Doc
+  executionQueue?: ExecutionQueue
 }
 export default function Files(props: Props) {
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -39,7 +47,7 @@ export default function Files(props: Props) {
 
   const onUseInPython = useCallback(
     (file: BrieferFile) => {
-      if (!props.yDoc) {
+      if (!props.yDoc || !props.executionQueue) {
         return
       }
 
@@ -80,15 +88,22 @@ file`
         return
       }
 
-      // TODO
-      // requestRun(pythonBlock, blocks, layout, environmentStartedAt, true)
+      props.executionQueue.enqueueBlock(
+        pythonBlock,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'python',
+          isSuggestion: false,
+        }
+      )
     },
-    [props.yDoc, environmentStartedAt]
+    [props.yDoc, props.executionQueue, environmentStartedAt]
   )
 
   const onUseInSQL = useCallback(
     (file: BrieferFile) => {
-      if (!props.yDoc) {
+      if (!props.yDoc || !props.executionQueue) {
         return
       }
 
@@ -126,10 +141,18 @@ file`
         return
       }
 
-      // TODO
-      // requestRun(sqlBlock, blocks, layout, environmentStartedAt, true)
+      props.executionQueue.enqueueBlock(
+        sqlBlock,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'sql',
+          isSuggestion: false,
+          selectedCode: null,
+        }
+      )
     },
-    [props.yDoc, environmentStartedAt]
+    [props.yDoc, props.executionQueue, environmentStartedAt]
   )
 
   const [

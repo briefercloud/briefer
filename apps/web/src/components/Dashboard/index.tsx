@@ -63,6 +63,14 @@ export default function Dashboard(props: Props) {
     null
   )
 
+  const executionQueue = useMemo(
+    () =>
+      ExecutionQueue.fromYjs(yDoc, {
+        skipDependencyCheck: !props.document.runUnexecutedBlocks,
+      }),
+    [yDoc]
+  )
+
   const router = useRouter()
   const socket = useWebsocket()
 
@@ -233,6 +241,7 @@ export default function Dashboard(props: Props) {
                 {...props}
                 isEditing={props.isEditing}
                 yDoc={yDoc}
+                executionQueue={executionQueue}
               />
             </SQLExtensionProvider>
           )}
@@ -253,6 +262,7 @@ export default function Dashboard(props: Props) {
             yDoc={yDoc}
             primary={true}
             userId={props.userId}
+            executionQueue={executionQueue}
           />
         )}
         <Comments
@@ -283,7 +293,9 @@ export default function Dashboard(props: Props) {
               workspaceId={props.document.workspaceId}
               visible={selectedSidebar === 'files'}
               onHide={onHideSidebar}
+              userId={props.userId}
               yDoc={yDoc}
+              executionQueue={executionQueue}
             />
           </>
         )}
@@ -298,11 +310,9 @@ export type DraggingBlock = {
   width: number
   height: number
 }
-function DashboardContent(props: Props & { yDoc: Y.Doc }) {
-  const executionQueue = useMemo(
-    () => ExecutionQueue.fromYjs(props.yDoc),
-    [props.yDoc]
-  )
+function DashboardContent(
+  props: Props & { yDoc: Y.Doc; executionQueue: ExecutionQueue }
+) {
   const [{ datasources: dataSources }] = useDataSources(
     props.document.workspaceId
   )
@@ -332,7 +342,7 @@ function DashboardContent(props: Props & { yDoc: Y.Doc }) {
         isEditing={props.isEditing}
         userRole={props.role}
         userId={props.userId}
-        executionQueue={executionQueue}
+        executionQueue={props.executionQueue}
       />
       {props.isEditing && (
         <DashboardControls
@@ -342,7 +352,7 @@ function DashboardContent(props: Props & { yDoc: Y.Doc }) {
           onDragStart={onDragStart}
           onAddBlock={onAddBlock}
           userId={props.userId}
-          executionQueue={executionQueue}
+          executionQueue={props.executionQueue}
         />
       )}
     </div>

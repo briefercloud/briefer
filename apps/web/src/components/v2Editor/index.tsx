@@ -415,6 +415,7 @@ const DraggableTabbedBlock = (props: {
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
   userId: string | null
+  executionQueue: ExecutionQueue
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -423,13 +424,6 @@ const DraggableTabbedBlock = (props: {
   const { state: blocks } = useYDocState<Y.Map<YBlock>>(
     props.yDoc,
     blocksGetter
-  )
-  const executionQueue = useMemo(
-    () =>
-      ExecutionQueue.fromYjs(props.yDoc, {
-        skipDependencyCheck: !props.document.runUnexecutedBlocks,
-      }),
-    [props.yDoc, props.document.runUnexecutedBlocks]
   )
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -531,16 +525,14 @@ file`
         return
       }
 
-      // TODO
-      // requestRun(
-      //   pythonBlock,
-      //   blocks.value,
-      //   layout.value,
-      //   environmentStartedAt,
-      //   true
-      // )
+      props.executionQueue.enqueueBlock(
+        pythonBlock,
+        props.userId,
+        environmentStartedAt,
+        { _tag: 'python', isSuggestion: false }
+      )
     },
-    [blocks, layout, environmentStartedAt]
+    [layout, blocks, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onFileUploadBlockQueryUsage = useCallback(
@@ -576,16 +568,14 @@ file`
         return
       }
 
-      // TODO
-      // requestRun(
-      //   sqlBlock,
-      //   blocks.value,
-      //   layout.value,
-      //   environmentStartedAt,
-      //   true
-      // )
+      props.executionQueue.enqueueBlock(
+        sqlBlock,
+        props.userId,
+        environmentStartedAt,
+        { _tag: 'sql', isSuggestion: false, selectedCode: null }
+      )
     },
-    []
+    [layout, blocks, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onToggleIsBlockHiddenInPublished = useCallback(
@@ -635,7 +625,7 @@ file`
         currentBlockId={currentBlockId}
         dragPreview={dragPreview}
         userId={props.userId}
-        executionQueue={executionQueue}
+        executionQueue={props.executionQueue}
       />
     ))
   }, [
@@ -659,7 +649,7 @@ file`
     currentBlockId,
     dragPreview,
     props.userId,
-    executionQueue,
+    props.executionQueue,
   ])
 
   const onSwitchActiveTab = useCallback(
@@ -706,8 +696,8 @@ file`
   }, [currentBlockId, props.id, props.onRemoveBlock])
 
   const runAllTabs = useCallback(() => {
-    executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
-  }, [executionQueue, props.yDoc, props.id])
+    props.executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
+  }, [props.executionQueue, props.yDoc, props.id])
 
   const runBelowBlock = useCallback(() => {
     const blockGroup = getBlockGroup(layout.value, props.id)
@@ -730,12 +720,13 @@ file`
       return
     }
 
-    const metadata = executionQueue.getExecutionQueueMetadataForBlock(block)
+    const metadata =
+      props.executionQueue.getExecutionQueueMetadataForBlock(block)
     if (!metadata) {
       return
     }
 
-    executionQueue.enqueueBlockOnwards(
+    props.executionQueue.enqueueBlockOnwards(
       currentBlockId,
       props.userId,
       environmentStartedAt,
@@ -744,7 +735,7 @@ file`
   }, [
     layout,
     blocks,
-    executionQueue,
+    props.executionQueue,
     props.id,
     props.userId,
     environmentStartedAt,
@@ -860,7 +851,7 @@ file`
                   onCheckCanReorderTab={onCheckCanReorderTab}
                   isDraggable={hasMultipleTabs && !props.isApp}
                   blocks={blocks.value}
-                  executionQueue={executionQueue}
+                  executionQueue={props.executionQueue}
                 />
               ))}
               {isScrollable && !isScrolledAllTheWayRight && (
@@ -954,6 +945,7 @@ const V2EditorRow = (props: {
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
   userId: string | null
+  executionQueue: ExecutionQueue
 }) => {
   return (
     <div>
@@ -987,6 +979,7 @@ const V2EditorRow = (props: {
         onSchemaExplorer={props.onSchemaExplorer}
         insertBelow={props.insertBelow}
         userId={props.userId}
+        executionQueue={props.executionQueue}
       />
       <Dropzone
         index={props.index + 1}
@@ -1018,6 +1011,7 @@ interface Props {
   onOpenFiles: () => void
   onSchemaExplorer: (dataSourceId: string | null) => void
   scrollViewRef: React.RefObject<HTMLDivElement>
+  executionQueue: ExecutionQueue
 }
 const Editor = (props: Props) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
@@ -1395,6 +1389,7 @@ const Editor = (props: Props) => {
           onSchemaExplorer={props.onSchemaExplorer}
           insertBelow={insertBelow}
           userId={props.userId}
+          executionQueue={props.executionQueue}
         />
       )
     })

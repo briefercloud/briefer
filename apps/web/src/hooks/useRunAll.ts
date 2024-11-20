@@ -23,10 +23,13 @@ type UseRunAll = [
     abort: () => void
   }
 ]
-function useRunAll(yDoc: Y.Doc, userId: string | null): UseRunAll {
+function useRunAll(
+  yDoc: Y.Doc,
+  executionQueue: ExecutionQueue,
+  userId: string | null
+): UseRunAll {
   const { state: layout } = useYDocState(yDoc, getLayout)
   const { state: blocks } = useYDocState(yDoc, getBlocks)
-  const executionQueue = useMemo(() => ExecutionQueue.fromYjs(yDoc), [yDoc])
   const [state, setState] = useState<State>({
     status: 'idle',
     total: 0,

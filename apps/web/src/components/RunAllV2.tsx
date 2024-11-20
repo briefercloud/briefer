@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
 import React from 'react'
 import { PlayIcon, StopIcon } from '@heroicons/react/20/solid'
-import { isExecutionStatusLoading } from '@briefer/editor'
+import { ExecutionQueue, isExecutionStatusLoading } from '@briefer/editor'
 import { useCallback } from 'react'
 import clsx from 'clsx'
 import useRunAll from '@/hooks/useRunAll'
@@ -11,12 +11,13 @@ import usePreviousEffect from '@/hooks/usePreviousEffect'
 interface Props {
   disabled: boolean
   yDoc: Y.Doc
+  executionQueue: ExecutionQueue
   primary: boolean
   userId: string
 }
 export default function RunAllV2(props: Props) {
   const [{ total, remaining, status, failedBlockId }, { run, abort }] =
-    useRunAll(props.yDoc, props.userId)
+    useRunAll(props.yDoc, props.executionQueue, props.userId)
 
   const onClick = useCallback(() => {
     if (status !== 'idle') {
