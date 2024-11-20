@@ -7,7 +7,7 @@
     "start": "node ./dist/index.js",
     "dev": "node nodemon.js",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {
     "@briefer/database": "*",

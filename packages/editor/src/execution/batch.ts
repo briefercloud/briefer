@@ -4,7 +4,7 @@ import {
   ExecutionStatus,
   YExecutionQueueItem,
 } from './item.js'
-import { exhaustiveCheck } from '@briefer/types'
+import { exhaustiveCheck } from '../index.js'
 
 export type YExecutionQueueBatchAttrs = {
   version: 1

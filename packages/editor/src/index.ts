@@ -354,3 +354,5 @@ export function getDataframe(
 
   return df ?? null
 }
+
+export function exhaustiveCheck(_param: never) {}

@@ -1,6 +1,10 @@
-import { uuidSchema } from '@briefer/types'
 import * as Y from 'yjs'
 import * as z from 'zod'
+import { validate as validateUUID } from 'uuid'
+
+const uuidSchema = z.string().refine((uuid) => validateUUID(uuid), {
+  message: 'Invalid UUID format',
+})
 
 export const ExecutionQueueItemStatus = z.union([
   z.object({
