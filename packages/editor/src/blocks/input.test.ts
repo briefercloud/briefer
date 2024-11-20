@@ -4,7 +4,7 @@ import {
   BlockType,
   YBlock,
   getInputAttributes,
-  isInputBlock,
+  isTextInputBlock,
   getInputValueExecStatus,
   getInputVariableExecStatus,
   makeInputBlock,
@@ -20,7 +20,7 @@ describe('isYInputBlock', () => {
     const inputBlock = makeInputBlock('blockId', blocks)
     blocks.set('blockId', inputBlock)
 
-    expect(isInputBlock(inputBlock)).toBe(true)
+    expect(isTextInputBlock(inputBlock)).toBe(true)
   })
 
   it('should return false for non-Input blocks', () => {
@@ -29,7 +29,7 @@ describe('isYInputBlock', () => {
     const sqlBlock = makeSQLBlock('blockId', blocks)
     blocks.set('blockId', sqlBlock)
 
-    expect(isInputBlock(sqlBlock)).toBe(false)
+    expect(isTextInputBlock(sqlBlock)).toBe(false)
   })
 })
 

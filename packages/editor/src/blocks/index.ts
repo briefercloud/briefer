@@ -36,7 +36,7 @@ import {
   getInputBlockExecutedAt,
   inputRequestSaveValue,
 } from './input.js'
-import { YBlockGroup, switchBlockType } from '../index.js'
+import { YBlockGroup, isTextInputBlock, switchBlockType } from '../index.js'
 import { FileUploadBlock, duplicateFileUploadBlock } from './fileUpload.js'
 import {
   DropdownInputBlock,

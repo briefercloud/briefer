@@ -30,7 +30,7 @@ export type InputBlock = BaseBlock<BlockType.Input> & {
   executedAt: string | null
 }
 
-export const isInputBlock = (
+export const isTextInputBlock = (
   block: YBlock
 ): block is Y.XmlElement<InputBlock> =>
   block.getAttribute('type') === BlockType.Input
@@ -234,7 +234,7 @@ export function getInputBlockExecStatus(
 function getAvailableInputVariable(
   blocks: Y.Map<YBlock>
 ): InputBlock['variable'] {
-  const inputBlocks = Array.from(blocks.values()).filter(isInputBlock)
+  const inputBlocks = Array.from(blocks.values()).filter(isTextInputBlock)
   const vars = new Set(
     inputBlocks.map((block) => block.getAttribute('variable')?.value)
   )

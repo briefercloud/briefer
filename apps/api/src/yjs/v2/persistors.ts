@@ -27,6 +27,7 @@ import {
   isDateInputBlock,
   getDateInputAttributes,
   PivotTableBlock,
+  isTextInputBlock,
 } from '@briefer/editor'
 import { equals, omit } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
@@ -526,7 +527,8 @@ export class AppPersistor implements Persistor {
           if (!publishedBlock) {
             throw new Error(`Block(${blockId}) not found in published state`)
           }
-          if (!isInputBlock(publishedBlock)) {
+
+          if (!isTextInputBlock(publishedBlock)) {
             return true
           }
 
