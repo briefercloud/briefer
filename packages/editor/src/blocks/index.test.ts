@@ -86,7 +86,8 @@ describe('computeDepencyQueue', () => {
       clickedBlock,
       layout,
       blocks,
-      envStartedAt
+      envStartedAt,
+      false
     ).map((b) => b.getAttribute('id'))
 
     const expected = [secondBlock].map((b) => b.getAttribute('id'))

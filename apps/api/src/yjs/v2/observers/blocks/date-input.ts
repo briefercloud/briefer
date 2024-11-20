@@ -46,6 +46,8 @@ export class DateInputObserver implements IDateInputObserver {
     if (status !== 'idle') {
       block.setAttribute('status', 'idle')
     }
+
+    this.executor.save(block)
   }
 
   public async handleBlockEvent(
