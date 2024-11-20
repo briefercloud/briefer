@@ -13,7 +13,7 @@ import {
 } from '@briefer/types'
 import { createVisualization } from '../../../python/visualizations.js'
 import { z } from 'zod'
-import { EventContext, VisEvents } from '../../../events/index.js'
+import { VisEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
 
 export type VisualizationEffects = {
@@ -24,7 +24,8 @@ export interface IVisualizationExecutor {
   run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<VisualizationBlock>,
-    metadata: ExecutionQueueItemVisualizationMetadata
+    metadata: ExecutionQueueItemVisualizationMetadata,
+    events: VisEvents
   ): Promise<void>
 }
 
@@ -33,26 +34,24 @@ export class VisualizationExecutor implements IVisualizationExecutor {
   private documentId: string
   private dataframes: Y.Map<DataFrame>
   private effects: VisualizationEffects
-  private events: VisEvents
 
   constructor(
     workspaceId: string,
     documentId: string,
     dataframes: Y.Map<DataFrame>,
-    effects: VisualizationEffects,
-    events: VisEvents
+    effects: VisualizationEffects
   ) {
     this.workspaceId = workspaceId
     this.documentId = documentId
     this.dataframes = dataframes
     this.effects = effects
-    this.events = events
   }
 
   public async run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<VisualizationBlock>,
-    metadata: ExecutionQueueItemVisualizationMetadata
+    _metadata: ExecutionQueueItemVisualizationMetadata,
+    events: VisEvents
   ) {
     block.removeAttribute('result')
     try {
@@ -111,8 +110,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         }
       })
 
-      // TODO
-      // this.events.visUpdate(EventContext.fromYTransaction(tr), chartType)
+      events.visUpdate(chartType)
       const { promise, abort } = await this.effects.createVisualization(
         this.workspaceId,
         this.documentId,
@@ -212,13 +210,12 @@ export class VisualizationExecutor implements IVisualizationExecutor {
     }
   }
 
-  public static fromWSSharedDocV2(doc: WSSharedDocV2, events: VisEvents) {
+  public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new VisualizationExecutor(
       doc.workspaceId,
       doc.documentId,
       doc.dataframes,
-      { createVisualization },
-      events
+      { createVisualization }
     )
   }
 }

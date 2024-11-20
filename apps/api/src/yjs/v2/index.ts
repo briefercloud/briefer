@@ -399,8 +399,6 @@ export class WSSharedDocV2 {
     this.byteLength = loadStateResult.byteLength
     this.awareness = this.configAwareness()
 
-    // TODO
-    // const events = new UserNotebookEvents(this.workspaceId, this.documentId)
     this.executor = Executor.fromWSSharedDocV2(this)
     this.publisherId = uuidv4()
   }

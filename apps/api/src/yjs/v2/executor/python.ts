@@ -23,7 +23,8 @@ export interface IPythonExecutor {
   run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<PythonBlock>,
-    metadata: ExecutionQueueItemPythonMetadata
+    metadata: ExecutionQueueItemPythonMetadata,
+    events: PythonEvents
   ): Promise<void>
 }
 
@@ -33,17 +34,16 @@ export class PythonExecutor implements IPythonExecutor {
     private readonly documentId: string,
     private dataframes: Y.Map<DataFrame>,
     private readonly blocks: Y.Map<YBlock>,
-    private readonly effects: PythonEffects,
-    private readonly events: PythonEvents
+    private readonly effects: PythonEffects
   ) {}
 
   public async run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<PythonBlock>,
-    metadata: ExecutionQueueItemPythonMetadata
+    metadata: ExecutionQueueItemPythonMetadata,
+    events: PythonEvents
   ): Promise<void> {
-    // TODO: events
-    // this.events.pythonRun(EventContext.fromYTransaction(tr))
+    events.pythonRun()
     block.setAttribute('result', [])
 
     try {
@@ -134,7 +134,7 @@ export class PythonExecutor implements IPythonExecutor {
     updateDataframes(this.dataframes, newDataframes, blockId, blocks)
   }
 
-  public static fromWSSharedDocV2(doc: WSSharedDocV2, events: PythonEvents) {
+  public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new PythonExecutor(
       doc.workspaceId,
       doc.documentId,
@@ -143,8 +143,7 @@ export class PythonExecutor implements IPythonExecutor {
       {
         executePython,
         listDataFrames,
-      },
-      events
+      }
     )
   }
 }

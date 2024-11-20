@@ -224,6 +224,10 @@ export class ExecutionQueueItem {
     return this.item.getAttribute('blockId') ?? ''
   }
 
+  public getUserId(): string | null {
+    return this.item.getAttribute('userId') ?? null
+  }
+
   public setRunning(): void {
     this.item.setAttribute('status', { _tag: 'running' })
   }

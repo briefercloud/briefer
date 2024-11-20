@@ -21,7 +21,8 @@ export interface IWritebackExecutor {
   run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<WritebackBlock>,
-    metadata: ExecutionQueueItemWritebackMetadata
+    metadata: ExecutionQueueItemWritebackMetadata,
+    events: WritebackEvents
   ): Promise<void>
 }
 
@@ -29,27 +30,24 @@ export class WritebackExecutor implements IWritebackExecutor {
   private workspaceId: string
   private documentId: string
   private effects: WritebackEffects
-  private events: WritebackEvents
 
   constructor(
     workspaceId: string,
     documentId: string,
-    effects: WritebackEffects,
-    events: WritebackEvents
+    effects: WritebackEffects
   ) {
     this.workspaceId = workspaceId
     this.documentId = documentId
     this.effects = effects
-    this.events = events
   }
 
   public async run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<WritebackBlock>,
-    _metadata: ExecutionQueueItemWritebackMetadata
+    _metadata: ExecutionQueueItemWritebackMetadata,
+    events: WritebackEvents
   ) {
-    // TODO
-    // this.events.writeback(EventContext.fromYTransaction(tr))
+    events.writeback()
 
     block.setAttribute('result', null)
 
@@ -164,14 +162,9 @@ export class WritebackExecutor implements IWritebackExecutor {
     }
   }
 
-  public static fromWSSharedDocV2(doc: WSSharedDocV2, events: WritebackEvents) {
-    return new WritebackExecutor(
-      doc.workspaceId,
-      doc.documentId,
-      {
-        writeback,
-      },
-      events
-    )
+  public static fromWSSharedDocV2(doc: WSSharedDocV2) {
+    return new WritebackExecutor(doc.workspaceId, doc.documentId, {
+      writeback,
+    })
   }
 }

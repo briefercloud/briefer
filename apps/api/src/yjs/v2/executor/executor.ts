@@ -51,6 +51,17 @@ import {
 } from './dropdown-input.js'
 import { IPivotTableExecutor, PivotTableExecutor } from './pivot-table.js'
 import { IWritebackExecutor, WritebackExecutor } from './writeback.js'
+import { ScheduleNotebookEvents } from '../../../events/schedule.js'
+import { ApiUser, getUserById } from '@briefer/database'
+
+const unknownUser = (): ApiUser => ({
+  id: 'unknown',
+  name: 'unknown',
+  email: 'unknown',
+  picture: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+})
 
 export class Executor {
   private isRunning: boolean = false
@@ -120,6 +131,7 @@ export class Executor {
       },
       'Making batch progress'
     )
+
     const current = batch.getCurrent()
     if (!current) {
       logger().trace(
@@ -138,7 +150,7 @@ export class Executor {
     switch (status._tag) {
       case 'running':
       case 'enqueued':
-        await this.executeItem(current)
+        await this.executeItem(batch, current)
         break
       case 'completed':
         break
@@ -164,7 +176,10 @@ export class Executor {
     }
   }
 
-  private async executeItem(item: ExecutionQueueItem): Promise<void> {
+  private async executeItem(
+    batch: ExecutionQueueBatch,
+    item: ExecutionQueueItem
+  ): Promise<void> {
     logger().trace(
       {
         workspaceId: this.workspaceId,
@@ -181,19 +196,42 @@ export class Executor {
       return
     }
 
+    const events = await (async () => {
+      if (batch.isSchedule()) {
+        return new ScheduleNotebookEvents()
+      }
+
+      let user: ApiUser | null = null
+      const userId = item.getUserId()
+      if (userId) {
+        user = await getUserById(userId)
+      }
+
+      if (!user) {
+        user = unknownUser()
+      }
+
+      return new UserNotebookEvents(this.workspaceId, this.documentId, user)
+    })()
+
     switch (data._tag) {
       case 'python': {
-        await this.pythonExecutor.run(item, data.block, data.metadata)
+        await this.pythonExecutor.run(item, data.block, data.metadata, events)
         break
       }
       case 'sql':
-        await this.sqlExecutor.run(item, data.block, data.metadata)
+        await this.sqlExecutor.run(item, data.block, data.metadata, events)
         break
       case 'sql-rename-dataframe':
-        await this.sqlExecutor.renameDataframe(item, data.block, data.metadata)
+        await this.sqlExecutor.renameDataframe(
+          item,
+          data.block,
+          data.metadata,
+          events
+        )
         break
       case 'visualization':
-        await this.visExecutor.run(item, data.block, data.metadata)
+        await this.visExecutor.run(item, data.block, data.metadata, events)
         break
       case 'text-input-save-value':
         await this.textInputExecutor.saveValue(item, data.block, data.metadata)
@@ -229,7 +267,12 @@ export class Executor {
         await this.pivotTableExecutor.loadPage(item, data.block, data.metadata)
         break
       case 'writeback':
-        await this.writebackExecutor.run(item, data.block, data.metadata)
+        await this.writebackExecutor.run(
+          item,
+          data.block,
+          data.metadata,
+          events
+        )
         break
       default:
         exhaustiveCheck(data)
@@ -405,20 +448,15 @@ export class Executor {
   }
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2): Executor {
-    const events = new UserNotebookEvents(doc.workspaceId, doc.documentId)
     return new Executor(
-      PythonExecutor.fromWSSharedDocV2(doc, events),
-      SQLExecutor.fromWSSharedDocV2(
-        doc,
-        config().DATASOURCES_ENCRYPTION_KEY,
-        events
-      ),
-      VisualizationExecutor.fromWSSharedDocV2(doc, events),
+      PythonExecutor.fromWSSharedDocV2(doc),
+      SQLExecutor.fromWSSharedDocV2(doc, config().DATASOURCES_ENCRYPTION_KEY),
+      VisualizationExecutor.fromWSSharedDocV2(doc),
       TextInputExecutor.fromWSSharedDocV2(doc),
       DropdownInputExecutor.fromWSSharedDocV2(doc),
       DateInputExecutor.fromWSSharedDocV2(doc),
       PivotTableExecutor.fromWSSharedDocV2(doc),
-      WritebackExecutor.fromWSSharedDocV2(doc, events),
+      WritebackExecutor.fromWSSharedDocV2(doc),
       doc.workspaceId,
       doc.documentId,
       doc.blocks,

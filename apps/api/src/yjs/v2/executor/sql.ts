@@ -31,12 +31,14 @@ export interface ISQLExecutor {
   run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
-    metadata: ExecutionQueueItemSQLMetadata
+    metadata: ExecutionQueueItemSQLMetadata,
+    events: SQLEvents
   ): Promise<void>
   renameDataframe(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
-    metadata: ExecutionQueueItemSQLRenameDataframeMetadata
+    metadata: ExecutionQueueItemSQLRenameDataframeMetadata,
+    events: SQLEvents
   ): Promise<void>
 }
 
@@ -47,7 +49,6 @@ export class SQLExecutor implements ISQLExecutor {
   private dataframes: Y.Map<DataFrame>
   private blocks: Y.Map<YBlock>
   private effects: SQLEffects
-  private events: SQLEvents
 
   constructor(
     workspaceId: string,
@@ -55,8 +56,7 @@ export class SQLExecutor implements ISQLExecutor {
     dataSourcesEncryptionKey: string,
     dataframes: Y.Map<DataFrame>,
     blocks: Y.Map<YBlock>,
-    effects: SQLEffects,
-    events: SQLEvents
+    effects: SQLEffects
   ) {
     this.workspaceId = workspaceId
     this.documentId = documentId
@@ -64,16 +64,15 @@ export class SQLExecutor implements ISQLExecutor {
     this.dataframes = dataframes
     this.blocks = blocks
     this.effects = effects
-    this.events = events
   }
 
   public async run(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
-    metadata: ExecutionQueueItemSQLMetadata
+    metadata: ExecutionQueueItemSQLMetadata,
+    events: SQLEvents
   ) {
-    // TODO
-    // this.events.sqlRun(EventContext.fromYTransaction(tr))
+    events.sqlRun()
 
     try {
       block.setAttribute('startQueryTime', new Date().toISOString())
@@ -267,11 +266,8 @@ export class SQLExecutor implements ISQLExecutor {
   public async renameDataframe(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
-    metadata: ExecutionQueueItemSQLRenameDataframeMetadata
+    _metadata: ExecutionQueueItemSQLRenameDataframeMetadata
   ) {
-    // TODO
-    // this.events.sqlRenameDataFrame(EventContext.fromYTransaction(tr))
-
     const {
       id: blockId,
       dataframeName,
@@ -345,8 +341,7 @@ export class SQLExecutor implements ISQLExecutor {
 
   public static fromWSSharedDocV2(
     doc: WSSharedDocV2,
-    dataSourcesEncryptionKey: string,
-    events: SQLEvents
+    dataSourcesEncryptionKey: string
   ) {
     return new SQLExecutor(
       doc.workspaceId,
@@ -366,8 +361,7 @@ export class SQLExecutor implements ISQLExecutor {
               select: { runSQLSelection: true },
             })
             .then((doc) => doc?.runSQLSelection ?? false),
-      },
-      events
+      }
     )
   }
 }

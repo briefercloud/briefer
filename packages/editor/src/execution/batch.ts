@@ -48,6 +48,10 @@ export class ExecutionQueueBatch {
     return this.batch.getAttribute('isRunAll') ?? false
   }
 
+  public isSchedule(): boolean {
+    return this.batch.getAttribute('isSchedule') ?? false
+  }
+
   public getCurrent(): ExecutionQueueItem | null {
     const queue = this.batch.getAttribute('queue')
     if (!queue) {

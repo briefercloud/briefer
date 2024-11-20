@@ -270,9 +270,6 @@ async function executeNotebook(
   doc: Document,
   app: YjsAppDocument
 ): Promise<void> {
-  // TODO
-  const events = new ScheduleNotebookEvents()
-
   let emptyLayout = true
   while (emptyLayout) {
     const id = yjs.getDocId(doc.id, app ? { id: app.id, userId: null } : null)
