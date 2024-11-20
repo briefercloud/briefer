@@ -129,14 +129,32 @@ function PivotTableBlock(props: Props) {
       props.block.unobserve(observe)
     }
   }, [props.block, dataframe])
+
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.workspaceId)
+
   useEffect(() => {
     if (isDirty) {
-      props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-        _tag: 'pivot-table',
-      })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
+      )
       setIsDirty(false)
     }
-  }, [isDirty, attrs.id, props.executionQueue, props.userId])
+  }, [
+    isDirty,
+    props.block,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onChangeTitle = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,9 +210,39 @@ function PivotTableBlock(props: Props) {
   const onPrevPage = useCallback(() => {
     const run = () => {
       props.block.setAttribute('page', attrs.page - 1)
-      props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-        _tag: 'pivot-table-load-page',
-      })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table-load-page',
+        }
+      )
+    }
+    if (props.block.doc) {
+      props.block.doc.transact(run)
+    } else {
+      run()
+    }
+  }, [
+    props.block,
+    attrs.page,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
+
+  const onNextPage = useCallback(() => {
+    const run = () => {
+      props.block.setAttribute('page', attrs.page + 1)
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table-load-page',
+        }
+      )
     }
     if (props.block.doc) {
       props.block.doc.transact(run)
@@ -203,27 +251,18 @@ function PivotTableBlock(props: Props) {
     }
   }, [props.block, attrs.page, props.executionQueue, props.userId])
 
-  const onNextPage = useCallback(() => {
-    const run = () => {
-      props.block.setAttribute('page', attrs.page + 1)
-      props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-        _tag: 'pivot-table-load-page',
-      })
-    }
-    if (props.block.doc) {
-      props.block.doc.transact(run)
-    } else {
-      run()
-    }
-  }, [props.block, attrs.id, attrs.page, props.executionQueue, props.userId])
-
   const setPage = useCallback(
     (page: number) => {
       const run = () => {
         props.block.setAttribute('page', page + 1)
-        props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-          _tag: 'pivot-table-load-page',
-        })
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'pivot-table-load-page',
+          }
+        )
       }
 
       if (props.block.doc) {
@@ -232,7 +271,7 @@ function PivotTableBlock(props: Props) {
         run()
       }
     },
-    [props.block, props.executionQueue, attrs.id, props.userId]
+    [props.block, props.executionQueue, props.userId]
   )
 
   const executions = useBlockExecutions(
@@ -274,28 +313,41 @@ function PivotTableBlock(props: Props) {
         pageExecution.item.setAborting()
       }
     } else {
-      props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-        _tag: 'pivot-table',
-      })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
+      )
     }
-  }, [execution, pageExecution, props.executionQueue, attrs.id, props.userId])
+  }, [
+    execution,
+    pageExecution,
+    props.executionQueue,
+    props.block,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(attrs.id)
   }, [props.onToggleIsBlockHiddenInPublished, attrs.id])
 
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.workspaceId
-  )
-
   const onSort = useCallback(
     (sort: PivotTableSort | null) => {
       props.block.setAttribute('sort', sort)
-      props.executionQueue.enqueueBlock(attrs.id, props.userId, {
-        _tag: 'pivot-table',
-      })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
+      )
     },
-    [props.block, props.executionQueue, attrs.id, props.userId]
+    [props.block, props.executionQueue, props.userId, props.executionQueue]
   )
 
   const [, editorAPI] = useEditorAwareness()

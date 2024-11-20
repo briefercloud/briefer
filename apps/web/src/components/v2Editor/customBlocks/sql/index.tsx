@@ -73,7 +73,6 @@ interface Props {
   isEditable: boolean
   isPublicMode: boolean
   dragPreview: ConnectDragPreview | null
-  onTry: (block: Y.XmlElement<SQLBlock>) => void
   dashboardMode: 'live' | 'editing' | 'none'
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
@@ -131,17 +130,47 @@ function SQLBlock(props: Props) {
     componentId,
   } = getSQLAttributes(props.block, props.blocks)
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.document.workspaceId
+  )
+
   const onRun = useCallback(() => {
-    props.executionQueue.enqueueBlock(blockId, props.userId, {
-      _tag: 'sql',
-      isSuggestion: false,
-      selectedCode,
-    })
-  }, [props.executionQueue, blockId, props.userId, selectedCode])
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'sql',
+        isSuggestion: false,
+        selectedCode,
+      }
+    )
+  }, [
+    props.executionQueue,
+    blockId,
+    props.userId,
+    environmentStartedAt,
+    selectedCode,
+  ])
 
   const onTry = useCallback(() => {
-    props.onTry(props.block)
-  }, [props.onTry, props.block])
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'sql',
+        isSuggestion: true,
+        selectedCode,
+      }
+    )
+  }, [
+    props.executionQueue,
+    blockId,
+    props.userId,
+    environmentStartedAt,
+    selectedCode,
+  ])
 
   const executions = useBlockExecutions(
     props.executionQueue,
@@ -499,6 +528,7 @@ function SQLBlock(props: Props) {
                 <DataframeNameInput
                   disabled={!props.isEditable || statusIsDisabled}
                   block={props.block}
+                  environmentStartedAt={environmentStartedAt}
                   userId={props.userId}
                   executionQueue={props.executionQueue}
                 />

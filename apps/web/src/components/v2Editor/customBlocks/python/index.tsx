@@ -55,7 +55,6 @@ interface Props {
   blocks: Y.Map<YBlock>
   isEditable: boolean
   dragPreview: ConnectDragPreview | null
-  onTry: (block: Y.XmlElement<PythonBlock>) => void
   isPublicMode: boolean
   isPDF: boolean
   dashboardPlace: 'controls' | 'view' | null
@@ -81,9 +80,11 @@ function PythonBlock(props: Props) {
     )
   }, [currentWorkspace, properties.data])
 
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.document.workspaceId
-  )
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.document.workspaceId)
 
   const toggleResultHidden = useCallback(() => {
     props.block.doc?.transact(() => {
@@ -109,15 +110,28 @@ function PythonBlock(props: Props) {
 
   const { id: blockId, componentId } = getPythonAttributes(props.block)
   const onRun = useCallback(() => {
-    props.executionQueue.enqueueBlock(blockId, props.userId, {
-      _tag: 'python',
-      isSuggestion: false,
-    })
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'python',
+        isSuggestion: false,
+      }
+    )
   }, [props.executionQueue, blockId, props.userId])
 
   const onTry = useCallback(() => {
-    props.onTry(props.block)
-  }, [props.block, props.onTry])
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'python',
+        isSuggestion: true,
+      }
+    )
+  }, [props.executionQueue, blockId, props.userId, environmentStartedAt])
 
   const onRunAbort = useCallback(() => {
     switch (status) {

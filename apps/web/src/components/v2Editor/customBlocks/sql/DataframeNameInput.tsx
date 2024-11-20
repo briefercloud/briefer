@@ -36,6 +36,7 @@ interface Props {
   block: Y.XmlElement<SQLBlock>
   disabled?: boolean
   userId: string | null
+  environmentStartedAt: Date | null
   executionQueue: ExecutionQueue
 }
 function DataframeNameInput(props: Props) {
@@ -69,10 +70,21 @@ function DataframeNameInput(props: Props) {
     for (const { item } of executions) {
       item.setAborting()
     }
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'sql-rename-dataframe',
-    })
-  }, [props.block, dataframeName, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      props.environmentStartedAt,
+      {
+        _tag: 'sql-rename-dataframe',
+      }
+    )
+  }, [
+    props.block,
+    dataframeName,
+    props.executionQueue,
+    props.userId,
+    props.environmentStartedAt,
+  ])
 
   const onRetry = useCallback(() => {
     if (!dataframeName) {
@@ -86,10 +98,21 @@ function DataframeNameInput(props: Props) {
     for (const { item } of executions) {
       item.setAborting()
     }
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'sql-rename-dataframe',
-    })
-  }, [dataframeName, props.block, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      props.environmentStartedAt,
+      {
+        _tag: 'sql-rename-dataframe',
+      }
+    )
+  }, [
+    dataframeName,
+    props.block,
+    props.executionQueue,
+    props.environmentStartedAt,
+    props.userId,
+  ])
 
   const status = execution?.item.getStatus() ?? { _tag: 'idle' }
 

@@ -18,6 +18,7 @@ import { ClockIcon } from '@heroicons/react/20/solid'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 function errorMessage(
   error: InputBlock['variable']['error'],
@@ -66,6 +67,7 @@ interface Props {
   isCursorWithin: boolean
   isCursorInserting: boolean
   userId: string | null
+  workspaceId: string
   executionQueue: ExecutionQueue
 }
 function InputBlock(props: Props) {
@@ -95,6 +97,9 @@ function InputBlock(props: Props) {
     [props.block, props.blocks]
   )
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.workspaceId
+  )
   const onBlurVariable: React.FocusEventHandler<HTMLInputElement> = useCallback(
     (e) => {
       if (attrs.variable.newValue !== attrs.variable.value) {
@@ -102,35 +107,44 @@ function InputBlock(props: Props) {
           newValue: e.target.value.trim(),
           error: null,
         })
-        props.executionQueue.enqueueBlock(props.block, props.userId, {
-          _tag: 'text-input-rename-variable',
-        })
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'text-input-rename-variable',
+          }
+        )
       }
     },
-    [
-      props.block,
-      props.blocks,
-      props.executionQueue,
-      props.userId,
-      attrs.variable,
-    ]
+    [props.block, props.userId, environmentStartedAt]
   )
 
   const onSaveValue = useCallback(() => {
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'text-input-save-value',
-    })
-  }, [props.block, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'text-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, environmentStartedAt])
 
   const onRunValue = useCallback(() => {
     updateInputVariable(props.block, props.blocks, {
       error: null,
     })
 
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'text-input-rename-variable',
-    })
-  }, [props.block, props.executionQueue, props.userId, props.blocks])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'text-input-rename-variable',
+      }
+    )
+  }, [props.block, props.userId, environmentStartedAt])
 
   const variableExecutions = useBlockExecutions(
     props.executionQueue,

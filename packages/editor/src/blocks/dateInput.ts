@@ -13,6 +13,7 @@ import {
   ExecutionStatus,
   ResultStatus,
   updateYText,
+  YBlockGroup,
 } from '../index.js'
 import { clone, head } from 'ramda'
 
@@ -343,10 +344,11 @@ function getAvailableDateInputVariable(
 }
 
 export function requestDateInputRun(
+  executionQueue: ExecutionQueue,
   block: Y.XmlElement<DateInputBlock>,
   blocks: Y.Map<YBlock>,
-  executionQueue: ExecutionQueue,
-  userId: string | null
+  userId: string | null,
+  environmentStartedAt: Date | null
 ): void {
   const operation = () => {
     const attrs = getDateInputAttributes(block, blocks)
@@ -376,7 +378,7 @@ export function requestDateInputRun(
 
     block.setAttribute('variable', nextVariable)
     block.setAttribute('value', nextValue)
-    executionQueue.enqueueBlock(block, userId, {
+    executionQueue.enqueueBlock(block, userId, environmentStartedAt, {
       _tag: 'date-input',
     })
   }

@@ -52,7 +52,6 @@ import {
   getNextBlockIdAfterDelete,
   isRunnableBlock,
   ExecutionQueue,
-  ExecutionQueueItemMetadataWithoutNoop,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -426,8 +425,11 @@ const DraggableTabbedBlock = (props: {
     blocksGetter
   )
   const executionQueue = useMemo(
-    () => ExecutionQueue.fromYjs(props.yDoc),
-    [props.yDoc]
+    () =>
+      ExecutionQueue.fromYjs(props.yDoc, {
+        skipDependencyCheck: !props.document.runUnexecutedBlocks,
+      }),
+    [props.yDoc, props.document.runUnexecutedBlocks]
   )
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -490,34 +492,6 @@ const DraggableTabbedBlock = (props: {
       return props.onAddGroupedBlock(blockType, props.id, blockId, position)
     },
     [props.onAddGroupedBlock, props.id]
-  )
-
-  const onRun = useCallback(
-    <B extends YBlock>(
-      block: B,
-      metadata: ExecutionQueueItemMetadataWithoutNoop,
-      customCallback?: (block: B) => void
-    ) => {
-      executionQueue.enqueueBlock(
-        getBaseAttributes(block).id,
-        props.userId,
-        metadata
-      )
-    },
-    [executionQueue, props.userId]
-  )
-
-  const onTry = useCallback(
-    (block: YBlock) => {
-      // TODO
-      // requestTrySuggestion(
-      //   block,
-      //   blocks.value,
-      //   layout.value,
-      //   environmentStartedAt
-      // )
-    },
-    [blocks.value, layout.value, environmentStartedAt]
   )
 
   const onFileUploadBlockPythonUsage = useCallback(
@@ -649,8 +623,6 @@ file`
         isPublicViewer={props.isPublicViewer}
         document={props.document}
         dataSources={props.dataSources}
-        onRun={onRun}
-        onTry={onTry}
         onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
         onSchemaExplorer={props.onSchemaExplorer}
         insertBelow={props.insertBelow}
@@ -675,8 +647,6 @@ file`
     props.isPublicViewer,
     props.document,
     props.dataSources,
-    onRun,
-    onTry,
     onToggleIsBlockHiddenInPublished,
     props.onSchemaExplorer,
     props.insertBelow,
@@ -1571,11 +1541,6 @@ interface TabRefProps {
   isPublicViewer: boolean
   document: ApiDocument
   dataSources: APIDataSources
-  onRun: (
-    block: YBlock,
-    metadata: ExecutionQueueItemMetadataWithoutNoop
-  ) => void
-  onTry: (block: YBlock) => void
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
@@ -1633,7 +1598,6 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         dataSources={props.dataSources}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        onTry={props.onTry}
         dashboardMode="none"
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
@@ -1654,7 +1618,6 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         document={props.document}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        onTry={props.onTry}
         isPDF={props.isPDF}
         dashboardPlace={null}
         hasMultipleTabs={props.hasMultipleTabs}
@@ -1674,6 +1637,7 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         onAddGroupedBlock={props.addGroupedBlock}
         block={block}
+        blocks={props.blocks}
         dataframes={props.dataframes}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
         isDashboard={false}
@@ -1700,6 +1664,7 @@ function TabRef(props: TabRefProps) {
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
+        workspaceId={props.document.workspaceId}
         executionQueue={props.executionQueue}
       />
     ),
@@ -1716,6 +1681,7 @@ function TabRef(props: TabRefProps) {
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
+        workspaceId={props.document.workspaceId}
         executionQueue={props.executionQueue}
       />
     ),
@@ -1731,6 +1697,7 @@ function TabRef(props: TabRefProps) {
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
+        workspaceId={props.document.workspaceId}
         executionQueue={props.executionQueue}
       />
     ),

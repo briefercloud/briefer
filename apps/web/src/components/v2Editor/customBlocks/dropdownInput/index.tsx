@@ -10,6 +10,7 @@ import {
   updateDropdownInputVariable,
   ExecutionQueue,
   isExecutionStatusLoading,
+  YBlockGroup,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -24,6 +25,7 @@ import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid'
 import ReactDOM from 'react-dom'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -74,6 +76,7 @@ interface Props {
   isCursorWithin: boolean
   isCursorInserting: boolean
   userId: string | null
+  workspaceId: string
   executionQueue: ExecutionQueue
 }
 function DropdownInputBlock(props: Props) {
@@ -96,14 +99,23 @@ function DropdownInputBlock(props: Props) {
     [props.block]
   )
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.workspaceId
+  )
+
   const onRetryValue = useCallback(() => {
     updateDropdownInputValue(props.block, {
       error: null,
     })
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'dropdown-input-save-value',
-    })
-  }, [props.block, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   const toggleConfigOpen = useCallback(() => {
     dropdownInputToggleConfigOpen(props.block)
@@ -125,29 +137,32 @@ function DropdownInputBlock(props: Props) {
           newValue: e.target.value.trim(),
           error: null,
         })
-        props.executionQueue.enqueueBlock(props.block, props.userId, {
-          _tag: 'dropdown-input-rename-variable',
-        })
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'dropdown-input-rename-variable',
+          }
+        )
       }
     },
-    [
-      attrs.variable.newValue,
-      attrs.variable.value,
-      props.block,
-      props.blocks,
-      props.userId,
-      props.executionQueue,
-    ]
+    [props.block, props.userId, props.executionQueue]
   )
 
   const onRetryVariable = useCallback(() => {
     updateDropdownInputVariable(props.block, props.blocks, {
       error: null,
     })
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'dropdown-input-rename-variable',
-    })
-  }, [props.block, props.blocks, props.userId, props.executionQueue])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-rename-variable',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   const selectRef = useRef<HTMLUListElement>(null)
 
@@ -192,18 +207,28 @@ function DropdownInputBlock(props: Props) {
     (value: string) => {
       setSelected(value)
       updateDropdownInputValue(props.block, { newValue: value })
-      props.executionQueue.enqueueBlock(props.block, props.userId, {
-        _tag: 'dropdown-input-save-value',
-      })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'dropdown-input-save-value',
+        }
+      )
     },
-    [props.block, props.executionQueue, props.userId]
+    [props.block, props.userId, props.executionQueue, environmentStartedAt]
   )
 
   const onRun = useCallback(() => {
-    props.executionQueue.enqueueBlock(props.block, props.userId, {
-      _tag: 'dropdown-input-save-value',
-    })
-  }, [props.block, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   return (
     <div

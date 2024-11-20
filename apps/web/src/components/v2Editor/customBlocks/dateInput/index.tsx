@@ -3,6 +3,7 @@ import { ConnectDragPreview } from 'react-dnd'
 import {
   ExecutionQueue,
   YBlock,
+  YBlockGroup,
   getDateInputAttributes,
   getDateInputBlockExecStatus,
   isExecutionStatusLoading,
@@ -21,6 +22,7 @@ import DateInputBlockInput from './DateInputBlockInput'
 import DateSettings from './DateSettings'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 function invalidVariableErrorMessage(
   status: 'invalid-variable' | 'invalid-variable-and-value' | 'unexpected-error'
@@ -56,6 +58,7 @@ interface Props {
   isDashboard: boolean
   isCursorWithin: boolean
   isCursorInserting: boolean
+  workspaceId: string
   userId: string | null
   executionQueue: ExecutionQueue
 }
@@ -85,12 +88,17 @@ function DateInput(props: Props) {
     _tag: 'idle',
   }
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.workspaceId
+  )
+
   const onRun = useCallback(() => {
     requestDateInputRun(
+      props.executionQueue,
       props.block,
       props.blocks,
-      props.executionQueue,
-      props.userId
+      props.userId,
+      environmentStartedAt
     )
   }, [props.block, props.blocks, props.executionQueue, props.userId])
 

@@ -11,6 +11,7 @@ import {
   YExecutionQueueItem,
 } from './item.js'
 import {
+  computeDepencyQueue,
   getBaseAttributes,
   getBlocks,
   getLayout,
@@ -27,12 +28,32 @@ export type Execution = {
   batch: ExecutionQueueBatch
 }
 
-export class ExecutionQueue {
-  private queue: YExecutionQueue
-  private observers: Set<() => void> = new Set()
+export type ExecutionQueueOptions = {
+  skipDependencyCheck: boolean
+}
 
-  private constructor(doc: Y.Doc) {
+const defaultOptions: ExecutionQueueOptions = {
+  skipDependencyCheck: false,
+}
+
+export class ExecutionQueue {
+  private readonly queue: YExecutionQueue
+  private readonly blocks: Y.Map<YBlock>
+  private readonly layout: Y.Array<YBlockGroup>
+  private readonly observers: Set<() => void> = new Set()
+  private readonly options: ExecutionQueueOptions
+
+  private constructor(
+    doc: Y.Doc,
+    options: Partial<ExecutionQueueOptions> = {}
+  ) {
     this.queue = doc.getArray<YExecutionQueueBatch>('executionQueue')
+    this.blocks = getBlocks(doc)
+    this.layout = getLayout(doc)
+    this.options = {
+      ...defaultOptions,
+      ...options,
+    }
   }
 
   public getCurrentBatch(): ExecutionQueueBatch | null {
@@ -51,12 +72,56 @@ export class ExecutionQueue {
   public enqueueBlock(
     blockId: string | YBlock,
     userId: string | null,
+    environmentStartedAt: Date | null,
     metadata: ExecutionQueueItemMetadataWithoutNoop
   ): void {
     const bId =
       typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
+    const block =
+      typeof blockId === 'string' ? this.blocks.get(blockId) : blockId
+    if (!block) {
+      return
+    }
+
+    const items: YExecutionQueueItem[] = []
+
+    const dependencies = this.options.skipDependencyCheck
+      ? []
+      : computeDepencyQueue(
+          block,
+          this.layout,
+          this.blocks,
+          environmentStartedAt
+        )
+    for (const dep of dependencies) {
+      const metadata =
+        switchBlockType<ExecutionQueueItemMetadataWithoutNoop | null>(dep, {
+          onRichText: () => null,
+          onSQL: () => ({
+            _tag: 'sql',
+            isSuggestion: false,
+            selectedCode: null,
+          }),
+          onPython: () => ({ _tag: 'python', isSuggestion: false }),
+          onVisualization: () => ({ _tag: 'visualization' }),
+          onInput: () => ({ _tag: 'text-input-save-value' }),
+          onDropdownInput: () => ({ _tag: 'dropdown-input-save-value' }),
+          onDateInput: () => ({ _tag: 'date-input' }),
+          onFileUpload: () => null,
+          onDashboardHeader: () => null,
+          onWriteback: () => ({ _tag: 'writeback' }),
+          onPivotTable: () => ({ _tag: 'pivot-table' }),
+        })
+      if (metadata) {
+        const blockId = getBaseAttributes(dep).id
+        items.push(createYExecutionQueueItem(blockId, userId, metadata))
+      }
+    }
+
     const item = createYExecutionQueueItem(bId, userId, metadata)
-    const batch = createYExecutionQueueBatch([item], {
+    items.push(item)
+
+    const batch = createYExecutionQueueBatch(items, {
       isRunAll: false,
       isSchedule: false,
     })
@@ -260,7 +325,10 @@ export class ExecutionQueue {
     }
   }
 
-  public static fromYjs(doc: Y.Doc): ExecutionQueue {
-    return new ExecutionQueue(doc)
+  public static fromYjs(
+    doc: Y.Doc,
+    options: Partial<ExecutionQueueOptions> = {}
+  ): ExecutionQueue {
+    return new ExecutionQueue(doc, options)
   }
 }

@@ -46,9 +46,11 @@ interface Props {
   executionQueue: ExecutionQueue
 }
 function WritebackBlock(props: Props) {
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.workspaceId
-  )
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.workspaceId)
 
   const {
     id: blockId,
@@ -123,11 +125,22 @@ function WritebackBlock(props: Props) {
     if (execution) {
       execution.item.setAborting()
     } else {
-      props.executionQueue.enqueueBlock(blockId, props.userId, {
-        _tag: 'writeback',
-      })
+      props.executionQueue.enqueueBlock(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'writeback',
+        }
+      )
     }
-  }, [blockId, execution, props.executionQueue, props.userId])
+  }, [
+    blockId,
+    environmentStartedAt,
+    execution,
+    props.executionQueue,
+    props.userId,
+  ])
 
   const onChangeOnConflictColumns = useCallback(
     (value: string[]) => {

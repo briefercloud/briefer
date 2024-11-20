@@ -315,7 +315,6 @@ function BlockListItem(props: BlockListItemProps) {
               dataSources={props.dataSources}
               isEditable={false}
               dragPreview={null}
-              onTry={() => {}}
               dashboardMode="editing"
               isPublicMode={false}
               hasMultipleTabs={false}
@@ -335,7 +334,6 @@ function BlockListItem(props: BlockListItemProps) {
             blocks={props.blocks}
             isEditable={false}
             dragPreview={null}
-            onTry={() => {}}
             isPDF={false}
             dashboardPlace="controls"
             isPublicMode={false}
@@ -352,6 +350,7 @@ function BlockListItem(props: BlockListItemProps) {
               document={props.document}
               dataframes={props.dataframes}
               block={block}
+              blocks={props.blocks}
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
@@ -380,6 +379,7 @@ function BlockListItem(props: BlockListItemProps) {
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
+            workspaceId={props.document.workspaceId}
             executionQueue={props.executionQueue}
           />
         ),
@@ -396,6 +396,7 @@ function BlockListItem(props: BlockListItemProps) {
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
+            workspaceId={props.document.workspaceId}
             executionQueue={props.executionQueue}
           />
         ),
@@ -404,6 +405,7 @@ function BlockListItem(props: BlockListItemProps) {
           <DateInputBlock
             block={block}
             blocks={props.blocks}
+            workspaceId={props.document.workspaceId}
             dragPreview={null}
             belongsToMultiTabGroup={false}
             isEditable={false}

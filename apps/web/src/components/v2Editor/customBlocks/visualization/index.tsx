@@ -11,6 +11,8 @@ import {
   getDataframe,
   ExecutionQueue,
   isExecutionStatusLoading,
+  YBlockGroup,
+  YBlock,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
@@ -75,6 +77,7 @@ interface Props {
   document: ApiDocument
   dataframes: Y.Map<DataFrame>
   block: Y.XmlElement<VisualizationBlock>
+  blocks: Y.Map<YBlock>
   dragPreview: ConnectDragPreview | null
   isEditable: boolean
   isPublicMode: boolean
@@ -166,12 +169,29 @@ function VisualizationBlock(props: Props) {
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus()._tag ?? 'idle'
 
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.document.workspaceId)
+
   const onRun = useCallback(() => {
     executions.forEach((e) => e.item.setAborting())
-    props.executionQueue.enqueueBlock(blockId, props.userId, {
-      _tag: 'visualization',
-    })
-  }, [executions, blockId, props.executionQueue, props.userId])
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'visualization',
+      }
+    )
+  }, [
+    executions,
+    blockId,
+    props.executionQueue,
+    environmentStartedAt,
+    props.userId,
+  ])
 
   const onRunAbort = useCallback(() => {
     switch (status) {
@@ -402,10 +422,6 @@ function VisualizationBlock(props: Props) {
       setIsDirty(false)
     }
   }, [isDirty, props.block, onRun])
-
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.document.workspaceId
-  )
 
   const [isFullscreen] = useFullScreenDocument(props.document.id)
 
