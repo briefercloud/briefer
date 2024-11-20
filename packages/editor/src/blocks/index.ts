@@ -122,9 +122,13 @@ export const requestRun = <B extends YBlock>(
   skipDependencyCheck: boolean,
   customOnRequestRun?: (block: B) => void
 ) => {
-  const dependencies = skipDependencyCheck
-    ? []
-    : computeDepencyQueue(block, layout, blocks, environmentStartedAt)
+  const dependencies = computeDepencyQueue(
+    block,
+    layout,
+    blocks,
+    environmentStartedAt,
+    skipDependencyCheck
+  )
 
   const queue = dependencies
   if (!customOnRequestRun) {
@@ -158,9 +162,13 @@ export const requestTrySuggestion = (
   environmentStartedAt: Date | null,
   skipDependencyCheck = false
 ) => {
-  const dependencies = skipDependencyCheck
-    ? []
-    : computeDepencyQueue(block, layout, blocks, environmentStartedAt)
+  const dependencies = computeDepencyQueue(
+    block,
+    layout,
+    blocks,
+    environmentStartedAt,
+    skipDependencyCheck
+  )
   const queue = dependencies.concat(block)
 
   for (const block of queue) {
@@ -334,6 +342,22 @@ export function isExecutableBlock(block: YBlock): boolean {
   })
 }
 
+export function isInputBlock(block: YBlock): boolean {
+  return switchBlockType(block, {
+    onPython: () => false,
+    onSQL: () => false,
+    onVisualization: () => false,
+    onInput: () => true,
+    onDropdownInput: () => true,
+    onWriteback: () => false,
+    onDateInput: () => true,
+    onRichText: () => false,
+    onFileUpload: () => false,
+    onDashboardHeader: () => false,
+    onPivotTable: () => false,
+  })
+}
+
 export function duplicateYText(text: Y.Text): Y.Text {
   const newText = new Y.Text()
   newText.insert(0, text.toString())
@@ -393,10 +417,23 @@ function getExecutedAt(block: YBlock, blocks: Y.Map<YBlock>): Date | null {
 function mustExecute(
   block: YBlock,
   blocks: Y.Map<YBlock>,
-  environmentStartedAt: Date | null
+  environmentStartedAt: Date | null,
+  skipDependencyCheck: boolean
 ): boolean {
   if (!isExecutableBlock(block)) {
     return false
+  }
+
+  // We should always run input blocks if they have not been run yet
+  // even if skipDependencyCheck is true
+  if (skipDependencyCheck) {
+    const lastExecutedAt = getExecutedAt(block, blocks)
+    const lastExecutedAtIsAfterEnvironmentStartedAt =
+      lastExecutedAt === null ||
+      environmentStartedAt === null ||
+      dfns.isAfter(environmentStartedAt, lastExecutedAt)
+
+    return isInputBlock(block) && lastExecutedAtIsAfterEnvironmentStartedAt
   }
 
   if (environmentStartedAt === null) {
@@ -415,7 +452,8 @@ export function computeDepencyQueue(
   block: YBlock,
   layout: Y.Array<YBlockGroup>,
   blocks: Y.Map<YBlock>,
-  environmentStartedAt: Date | null
+  environmentStartedAt: Date | null,
+  skipDependencyCheck: boolean
 ): YBlock[] {
   const flatLayout = layout
     .toArray()
@@ -438,7 +476,7 @@ export function computeDepencyQueue(
 
   const blocksBefore = flatLayout.slice(0, blockIndex)
   const blocksBeforeToRun = blocksBefore.filter((block) =>
-    mustExecute(block, blocks, environmentStartedAt)
+    mustExecute(block, blocks, environmentStartedAt, skipDependencyCheck)
   )
 
   return blocksBeforeToRun
