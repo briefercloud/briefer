@@ -36,7 +36,7 @@ interface Props {
   block: Y.XmlElement<SQLBlock>
   disabled?: boolean
   userId: string | null
-  environmentStartedAt: Date | null
+  environmentStartedAt: string | null
   executionQueue: ExecutionQueue
 }
 function DataframeNameInput(props: Props) {

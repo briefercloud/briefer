@@ -317,7 +317,7 @@ function getExecutedAt(block: YBlock, blocks: Y.Map<YBlock>): Date | null {
 function mustExecute(
   block: YBlock,
   blocks: Y.Map<YBlock>,
-  environmentStartedAt: Date | null,
+  environmentStartedAt: string | null,
   skipDependencyCheck: boolean
 ): boolean {
   if (!isExecutableBlock(block)) {
@@ -352,8 +352,8 @@ export function computeDepencyQueue(
   block: YBlock,
   layout: Y.Array<YBlockGroup>,
   blocks: Y.Map<YBlock>,
-  environmentStartedAt: Date | null,
-  skipDependencyCheck: boolean
+  skipDependencyCheck: boolean,
+  environmentStartedAt: string | null
 ): YBlock[] {
   const flatLayout = layout
     .toArray()

@@ -49,7 +49,12 @@ export class ExecutionQueueBatch {
   }
 
   public getCurrent(): ExecutionQueueItem | null {
-    for (const raw of this.batch.getAttribute('queue') ?? new Y.Array()) {
+    const queue = this.batch.getAttribute('queue')
+    if (!queue) {
+      return null
+    }
+
+    for (const raw of queue) {
       const item = ExecutionQueueItem.fromYjs(raw)
       if (item.getCompleteStatus() === null) {
         return item

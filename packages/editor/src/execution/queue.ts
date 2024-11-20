@@ -36,6 +36,10 @@ const defaultOptions: ExecutionQueueOptions = {
   skipDependencyCheck: false,
 }
 
+export type RunAllSource =
+  | { _tag: 'user'; userId: string }
+  | { _tag: 'schedule'; scheduleId: string }
+
 export class ExecutionQueue {
   private readonly queue: YExecutionQueue
   private readonly blocks: Y.Map<YBlock>
@@ -72,7 +76,7 @@ export class ExecutionQueue {
   public enqueueBlock(
     blockId: string | YBlock,
     userId: string | null,
-    environmentStartedAt: Date | null,
+    environmentStartedAt: string | null,
     metadata: ExecutionQueueItemMetadataWithoutNoop
   ): void {
     const bId =
@@ -144,7 +148,7 @@ export class ExecutionQueue {
   public enqueueBlockOnwards(
     blockId: string | YBlock,
     userId: string | null,
-    environmentStartedAt: Date | null,
+    environmentStartedAt: string | null,
     metadata: ExecutionQueueItemMetadataWithoutNoop
   ): void {
     const block =
@@ -222,10 +226,10 @@ export class ExecutionQueue {
   public enqueueRunAll(
     layout: Y.Array<YBlockGroup>,
     blocks: Y.Map<YBlock>,
-    source: { userId: string | null } | 'schedule'
+    source: RunAllSource
   ): ExecutionQueueBatch {
     const items: YExecutionQueueItem[] = []
-    const userId = typeof source === 'string' ? null : source.userId
+    const userId = source._tag === 'user' ? source.userId : null
 
     layout.forEach((group) => {
       const tabs = group.getAttribute('tabs')
@@ -254,7 +258,7 @@ export class ExecutionQueue {
 
     const batch = createYExecutionQueueBatch(items, {
       isRunAll: true,
-      isSchedule: source === 'schedule',
+      isSchedule: source._tag === 'schedule',
     })
     this.queue.push([batch])
     return ExecutionQueueBatch.fromYjs(batch)
@@ -334,6 +338,10 @@ export class ExecutionQueue {
         onDashboardHeader: () => null,
       }
     )
+  }
+
+  public get length(): number {
+    return this.queue.length
   }
 
   public static fromYjs(

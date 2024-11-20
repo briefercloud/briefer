@@ -139,6 +139,7 @@ export class Executor {
       case 'running':
       case 'enqueued':
         await this.executeItem(current)
+        break
       case 'completed':
         break
       case 'unknown':

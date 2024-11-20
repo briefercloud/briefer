@@ -273,9 +273,10 @@ async function executeNotebook(
   // TODO
   const events = new ScheduleNotebookEvents()
 
-  while (true) {
+  let emptyLayout = true
+  while (emptyLayout) {
     const id = yjs.getDocId(doc.id, app ? { id: app.id, userId: null } : null)
-    const emptyLayout = await yjs.getYDocForUpdate(
+    emptyLayout = await yjs.getYDocForUpdate(
       id,
       socketServer,
       doc.id,
@@ -286,11 +287,10 @@ async function executeNotebook(
         }
 
         const executionQueue = ExecutionQueue.fromYjs(ydoc.ydoc)
-        const batch = executionQueue.enqueueRunAll(
-          ydoc.layout,
-          ydoc.blocks,
-          'schedule'
-        )
+        const batch = executionQueue.enqueueRunAll(ydoc.layout, ydoc.blocks, {
+          _tag: 'schedule',
+          scheduleId,
+        })
         await batch.waitForCompletion()
         await updateAppState(ydoc, app, socketServer)
         return false
@@ -299,6 +299,7 @@ async function executeNotebook(
         ? new AppPersistor(app.id, null) // user is null when running a schedule
         : new DocumentPersistor(doc.id)
     )
+
     if (emptyLayout) {
       logger().error(
         {
@@ -310,7 +311,6 @@ async function executeNotebook(
         'doc had empty layout, retrying'
       )
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      continue
     }
   }
 }

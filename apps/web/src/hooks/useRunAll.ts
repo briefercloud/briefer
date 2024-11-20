@@ -26,7 +26,7 @@ type UseRunAll = [
 function useRunAll(
   yDoc: Y.Doc,
   executionQueue: ExecutionQueue,
-  userId: string | null
+  userId: string
 ): UseRunAll {
   const { state: layout } = useYDocState(yDoc, getLayout)
   const { state: blocks } = useYDocState(yDoc, getBlocks)
@@ -64,6 +64,7 @@ function useRunAll(
 
   const run = useCallback(() => {
     const batch = executionQueue.enqueueRunAll(layout.value, blocks.value, {
+      _tag: 'user',
       userId,
     })
     batch.waitForCompletion().then((failedBlockId) => {

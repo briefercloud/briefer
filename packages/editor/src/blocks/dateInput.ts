@@ -348,7 +348,7 @@ export function requestDateInputRun(
   block: Y.XmlElement<DateInputBlock>,
   blocks: Y.Map<YBlock>,
   userId: string | null,
-  environmentStartedAt: Date | null
+  environmentStartedAt: string | null
 ): void {
   const operation = () => {
     const attrs = getDateInputAttributes(block, blocks)
