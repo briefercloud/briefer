@@ -129,7 +129,6 @@ export class ExecutionQueueBatch {
   }
 
   public get status(): ExecutionStatus {
-    debugger
     let status: ExecutionStatus = 'unknown'
     for (const item of this) {
       const itemStatus = item.getStatus()._tag

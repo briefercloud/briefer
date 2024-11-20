@@ -710,45 +710,45 @@ file`
   }, [executionQueue, props.yDoc, props.id])
 
   const runBelowBlock = useCallback(() => {
-    const currentBlockGroupIndex = layout.value.toArray().findIndex((bg) => {
-      return bg.getAttribute('id') === props.id
-    })
-    const currentTabIndex = tabRefs.findIndex((tab) => tab.isCurrent)
-
-    if (currentBlockGroupIndex === -1 || currentTabIndex === -1) {
+    const blockGroup = getBlockGroup(layout.value, props.id)
+    if (!blockGroup) {
       return
     }
 
-    const blocksBelow = layout.value.toArray().slice(currentBlockGroupIndex)
-    for (const blockGroup of blocksBelow) {
-      const currBlockGroupId = blockGroup.getAttribute('id')
-      const tabs = getTabsFromBlockGroup(blockGroup, blocks.value)
-
-      tabs.forEach((tab, i) => {
-        const tabBlock = blocks.value.get(tab.blockId)
-        if (
-          !tabBlock ||
-          (i < currentTabIndex && currBlockGroupId === props.id)
-        ) {
-          return
-        }
-
-        // TODO
-        // if (!execStatusIsDisabled(getExecStatus(tabBlock, blocks.value))) {
-        //   requestRun(
-        //     tabBlock,
-        //     blocks.value,
-        //     layout.value,
-        //     environmentStartedAt,
-        //     // we must skip dependency checks because running any blocks above
-        //     // is counterintuitive given the user's intention is to run the
-        //     // blocks below
-        //     true
-        //   )
-        // }
-      })
+    const current = blockGroup.getAttribute('current')
+    if (!current) {
+      return
     }
-  }, [blocks, layout, tabRefs, environmentStartedAt])
+
+    const currentBlockId = current.getAttribute('id')
+    if (!currentBlockId) {
+      return
+    }
+
+    const block = blocks.value.get(currentBlockId)
+    if (!block) {
+      return
+    }
+
+    const metadata = executionQueue.getExecutionQueueMetadataForBlock(block)
+    if (!metadata) {
+      return
+    }
+
+    executionQueue.enqueueBlockOnwards(
+      currentBlockId,
+      props.userId,
+      environmentStartedAt,
+      metadata
+    )
+  }, [
+    layout,
+    blocks,
+    executionQueue,
+    props.id,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const popupContainerRef = useRef<HTMLDivElement>(null)
 

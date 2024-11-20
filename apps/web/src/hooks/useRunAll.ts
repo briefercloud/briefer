@@ -60,7 +60,6 @@ function useRunAll(yDoc: Y.Doc, userId: string | null): UseRunAll {
   }, [executionQueue])
 
   const run = useCallback(() => {
-    console.log('run!')
     const batch = executionQueue.enqueueRunAll(layout.value, blocks.value, {
       userId,
     })

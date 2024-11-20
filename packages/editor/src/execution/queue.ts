@@ -94,24 +94,7 @@ export class ExecutionQueue {
           environmentStartedAt
         )
     for (const dep of dependencies) {
-      const metadata =
-        switchBlockType<ExecutionQueueItemMetadataWithoutNoop | null>(dep, {
-          onRichText: () => null,
-          onSQL: () => ({
-            _tag: 'sql',
-            isSuggestion: false,
-            selectedCode: null,
-          }),
-          onPython: () => ({ _tag: 'python', isSuggestion: false }),
-          onVisualization: () => ({ _tag: 'visualization' }),
-          onInput: () => ({ _tag: 'text-input-save-value' }),
-          onDropdownInput: () => ({ _tag: 'dropdown-input-save-value' }),
-          onDateInput: () => ({ _tag: 'date-input' }),
-          onFileUpload: () => null,
-          onDashboardHeader: () => null,
-          onWriteback: () => ({ _tag: 'writeback' }),
-          onPivotTable: () => ({ _tag: 'pivot-table' }),
-        })
+      const metadata = this.getExecutionQueueMetadataForBlock(dep)
       if (metadata) {
         const blockId = getBaseAttributes(dep).id
         items.push(createYExecutionQueueItem(blockId, userId, metadata))
@@ -142,29 +125,7 @@ export class ExecutionQueue {
         continue
       }
 
-      const metadata =
-        switchBlockType<ExecutionQueueItemMetadataWithoutNoop | null>(block, {
-          onSQL: () => ({
-            _tag: 'sql',
-            isSuggestion: false,
-            selectedCode: null,
-          }),
-          onPython: () => ({ _tag: 'python', isSuggestion: false }),
-          onVisualization: () => ({ _tag: 'visualization' }),
-          // TODO
-          onInput: () => null,
-          // TODO
-          onDateInput: () => null,
-          // TODO
-          onDropdownInput: () => null,
-          // TODO
-          onWriteback: () => null,
-          // TODO
-          onPivotTable: () => null,
-          onFileUpload: () => null,
-          onRichText: () => null,
-          onDashboardHeader: () => null,
-        })
+      const metadata = this.getExecutionQueueMetadataForBlock(block)
 
       if (!metadata) {
         continue
@@ -177,6 +138,84 @@ export class ExecutionQueue {
       isRunAll: false,
       isSchedule: false,
     })
+    this.queue.push([batch])
+  }
+
+  public enqueueBlockOnwards(
+    blockId: string | YBlock,
+    userId: string | null,
+    environmentStartedAt: Date | null,
+    metadata: ExecutionQueueItemMetadataWithoutNoop
+  ): void {
+    const block =
+      typeof blockId === 'string' ? this.blocks.get(blockId) : blockId
+    if (!block) {
+      return
+    }
+
+    const blocksAfter: YExecutionQueueItem[] = []
+    let found = false
+    for (const blockGroup of this.layout) {
+      const tabs = blockGroup.getAttribute('tabs') ?? new Y.Array()
+      for (const tab of tabs) {
+        const tabBlockId = tab.getAttribute('id')
+        if (!tabBlockId) {
+          continue
+        }
+
+        if (tabBlockId === blockId) {
+          found = true
+          continue
+        }
+
+        if (found) {
+          const block = this.blocks.get(tabBlockId)
+          if (block) {
+            const metadata = this.getExecutionQueueMetadataForBlock(block)
+            if (!metadata) {
+              continue
+            }
+
+            blocksAfter.push(
+              createYExecutionQueueItem(tabBlockId, userId, metadata)
+            )
+          }
+        }
+      }
+    }
+
+    const bId =
+      typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
+
+    const dependencies = this.options.skipDependencyCheck
+      ? []
+      : computeDepencyQueue(
+          block,
+          this.layout,
+          this.blocks,
+          environmentStartedAt
+        )
+
+    const blocksBefore: YExecutionQueueItem[] = []
+    for (const dep of dependencies) {
+      const metadata = this.getExecutionQueueMetadataForBlock(dep)
+      if (!metadata) {
+        continue
+      }
+
+      const blockId = getBaseAttributes(dep).id
+      blocksBefore.push(createYExecutionQueueItem(blockId, userId, metadata))
+    }
+
+    const item = createYExecutionQueueItem(bId, userId, metadata)
+
+    const batch = createYExecutionQueueBatch(
+      [...blocksBefore, item, ...blocksAfter],
+      {
+        isRunAll: false,
+        isSchedule: false,
+      }
+    )
     this.queue.push([batch])
   }
 
@@ -205,62 +244,9 @@ export class ExecutionQueue {
           return
         }
 
-        const item = switchBlockType(block, {
-          onSQL: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'sql',
-              isSuggestion: false,
-              selectedCode: null,
-            })
-          },
-          onPython: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'python',
-              isSuggestion: false,
-            })
-          },
-          onVisualization: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'visualization',
-            })
-          },
-          onInput: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'text-input-save-value',
-            })
-          },
-          onDateInput: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'date-input',
-            })
-          },
-          onDropdownInput: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'dropdown-input-save-value',
-            })
-          },
-          onWriteback: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'writeback',
-            })
-          },
-          onPivotTable: () => {
-            return createYExecutionQueueItem(blockId, userId, {
-              _tag: 'pivot-table',
-            })
-          },
-          onFileUpload: () => {
-            return null
-          },
-          onRichText: () => {
-            return null
-          },
-          onDashboardHeader: () => {
-            return null
-          },
-        })
-
-        if (item) {
+        const metadata = this.getExecutionQueueMetadataForBlock(block)
+        if (metadata) {
+          const item = createYExecutionQueueItem(blockId, userId, metadata)
           items.push(item)
         }
       })
@@ -323,6 +309,31 @@ export class ExecutionQueue {
     for (const observer of this.observers) {
       observer()
     }
+  }
+
+  public getExecutionQueueMetadataForBlock(
+    block: YBlock
+  ): ExecutionQueueItemMetadataWithoutNoop | null {
+    return switchBlockType<ExecutionQueueItemMetadataWithoutNoop | null>(
+      block,
+      {
+        onSQL: () => ({
+          _tag: 'sql',
+          isSuggestion: false,
+          selectedCode: null,
+        }),
+        onPython: () => ({ _tag: 'python', isSuggestion: false }),
+        onVisualization: () => ({ _tag: 'visualization' }),
+        onInput: () => ({ _tag: 'text-input-save-value' }),
+        onDateInput: () => ({ _tag: 'date-input' }),
+        onDropdownInput: () => ({ _tag: 'dropdown-input-save-value' }),
+        onWriteback: () => ({ _tag: 'writeback' }),
+        onPivotTable: () => ({ _tag: 'pivot-table' }),
+        onFileUpload: () => null,
+        onRichText: () => null,
+        onDashboardHeader: () => null,
+      }
+    )
   }
 
   public static fromYjs(
