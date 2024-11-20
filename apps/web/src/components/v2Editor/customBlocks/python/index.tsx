@@ -404,7 +404,7 @@ function PythonBlock(props: Props) {
                       <span>Edit with AI</span>
                       <div
                         className={clsx(
-                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-20',
+                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
                           hasOaiKey ? 'w-28' : 'w-40'
                         )}
                       >
