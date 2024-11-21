@@ -20,6 +20,7 @@ import {
   BlockType,
   removeDashboardBlock,
   ExecutionQueue,
+  AITasks,
 } from '@briefer/editor'
 import GridElement from './GridElement'
 import Title from '../v2Editor/Title'
@@ -126,6 +127,7 @@ interface InnerProps {
   userId: string | null
   isEditing: boolean
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 
   // We use this to trigger actions when a new block is added
   latestBlockId: string | null
@@ -210,6 +212,7 @@ function DashboardViewInner(props: InnerProps) {
                 latestBlockId={props.latestBlockId}
                 userId={props.userId}
                 executionQueue={props.executionQueue}
+                aiTasks={props.aiTasks}
               />
             </WrapperCard>
           </div>
@@ -328,6 +331,7 @@ interface Props {
   userRole: string
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 export default function DashboardView(props: Props) {
   return (

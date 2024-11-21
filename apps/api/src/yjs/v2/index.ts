@@ -49,6 +49,7 @@ import {
 import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
+import { AIExecutor } from './executor/ai/index.js'
 
 type Role = UserWorkspaceRole
 
@@ -373,6 +374,7 @@ export class WSSharedDocV2 {
   private socketServer: IOServer
   private title: string = ''
   private executor: Executor
+  private aiExecutor: AIExecutor
   private persistor: Persistor
   private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
   private byteLength: number = 0
@@ -400,6 +402,7 @@ export class WSSharedDocV2 {
     this.awareness = this.configAwareness()
 
     this.executor = Executor.fromWSSharedDocV2(this)
+    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
     this.publisherId = uuidv4()
   }
 
@@ -418,6 +421,7 @@ export class WSSharedDocV2 {
     )
     this.awareness.on('update', this.awarenessHandler)
     this.executor.start()
+    this.aiExecutor.start()
   }
 
   private onSubMessage = async (message?: string) => {
@@ -513,7 +517,12 @@ export class WSSharedDocV2 {
     this.clock = newClock
     this.byteLength = newByteLength
 
+    this.executor.stop()
+
     this.executor = Executor.fromWSSharedDocV2(this)
+
+    this.aiExecutor.stop()
+    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
 
     this.title = this.getTitleFromDoc()
 
@@ -522,6 +531,7 @@ export class WSSharedDocV2 {
       this.updateHandler(update, tr)
     })
     this.executor.start()
+    this.aiExecutor.start()
   }
 
   private awarenessHandler = (
@@ -590,9 +600,12 @@ export class WSSharedDocV2 {
   }
 
   public async destroy() {
-    await this.subscription?.()
-    // this.observer.stop()
-    await this.executor.stop()
+    await Promise.all([
+      this.subscription?.(),
+      this.executor.stop(),
+      this.aiExecutor.stop(),
+    ])
+
     this.ydoc.destroy()
   }
 

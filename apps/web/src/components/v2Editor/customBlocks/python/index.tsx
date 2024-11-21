@@ -22,6 +22,7 @@ import {
   updateYText,
   ExecutionQueue,
   isExecutionStatusLoading,
+  AITasks,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
@@ -48,6 +49,7 @@ import { CodeEditor } from '../../CodeEditor'
 import { exhaustiveCheck } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { useAITasks } from '@/hooks/useAITasks'
 
 interface Props {
   document: ApiDocument
@@ -63,6 +65,7 @@ interface Props {
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   insertBelow?: () => void
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
   userId: string | null
 }
 function PythonBlock(props: Props) {
@@ -107,6 +110,13 @@ function PythonBlock(props: Props) {
   )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus()._tag ?? 'idle'
+
+  const editAITasks = useAITasks(props.aiTasks, props.block, 'edit-python')
+  const fixAITasks = useAITasks(props.aiTasks, props.block, 'fix-python')
+  const aiTask = useMemo(
+    () => head(editAITasks.concat(fixAITasks)) ?? null,
+    [editAITasks, fixAITasks]
+  )
 
   const { id: blockId, componentId } = getPythonAttributes(props.block)
   const onRun = useCallback(() => {
@@ -219,8 +229,15 @@ function PythonBlock(props: Props) {
   const results = props.block.getAttribute('result') ?? []
   const aiSuggestions = getPythonAISuggestions(props.block)
   const editWithAIPrompt = getPythonBlockEditWithAIPrompt(props.block)
-  // TODO
-  const isAIEditing = false // isPythonBlockAIEditing(props.block)
+
+  const isAIEditing =
+    aiTask?.getMetadata()._tag === 'edit-python'
+      ? isExecutionStatusLoading(aiTask.getStatus()._tag)
+      : false
+  const isAIFixing =
+    aiTask?.getMetadata()._tag === 'fix-python'
+      ? isExecutionStatusLoading(aiTask.getStatus()._tag)
+      : false
 
   const [editorState, editorAPI] = useEditorAwareness()
 
@@ -230,9 +247,8 @@ function PythonBlock(props: Props) {
   }, [props.block, editorAPI.insert])
 
   const onSubmitEditWithAI = useCallback(() => {
-    // TODO
-    // requestPythonEditWithAI(props.block)
-  }, [props.block])
+    props.aiTasks.enqueue(blockId, props.userId, { _tag: 'edit-python' })
+  }, [props.aiTasks, blockId, props.userId])
 
   const onAcceptAISuggestion = useCallback(() => {
     if (aiSuggestions) {
@@ -251,9 +267,8 @@ function PythonBlock(props: Props) {
       return
     }
 
-    // TODO
-    // requestPythonFixWithAI(props.block)
-  }, [props.block, hasOaiKey])
+    props.aiTasks.enqueue(blockId, props.userId, { _tag: 'fix-python' })
+  }, [props.aiTasks, blockId, props.userId, hasOaiKey])
 
   const diffButtonsVisible =
     !props.isPublicMode && aiSuggestions !== null && status === 'idle'
@@ -312,8 +327,7 @@ function PythonBlock(props: Props) {
       <PythonOutputs
         className="flex flex-col h-full ph-no-capture"
         outputs={results}
-        // TODO
-        isFixWithAILoading={false} //isFixingPythonWithAI(props.block)}
+        isFixWithAILoading={isAIFixing}
         onFixWithAI={onFixWithAI}
         isPDF={props.isPDF}
         isDashboardView={props.dashboardPlace === 'view'}
@@ -425,9 +439,7 @@ function PythonBlock(props: Props) {
                 {aiSuggestions === null &&
                   !props.isPublicMode &&
                   props.isEditable &&
-                  // TODO
-                  // !isFixingPythonWithAI(props.block) &&
-                  false && (
+                  !isAIFixing && (
                     <button
                       disabled={!props.isEditable}
                       onClick={onToggleEditWithAIPromptOpen}
@@ -504,8 +516,7 @@ function PythonBlock(props: Props) {
           >
             <PythonOutputs
               outputs={results}
-              // TODO
-              isFixWithAILoading={false} // isFixingPythonWithAI(props.block)}
+              isFixWithAILoading={isAIFixing}
               onFixWithAI={onFixWithAI}
               canFixWithAI={hasOaiKey}
               isPDF={props.isPDF}

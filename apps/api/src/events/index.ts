@@ -1,4 +1,4 @@
-interface AIEvents {
+export interface AIEvents {
   aiUsage: (
     type: 'sql' | 'python',
     action: 'edit' | 'fix',

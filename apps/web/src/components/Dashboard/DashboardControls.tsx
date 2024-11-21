@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
 import {
+  AITasks,
   BlockType,
   ExecutionQueue,
   YBlock,
@@ -48,6 +49,7 @@ interface Props {
   onAddBlock: (blockId: string) => void
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function DashboardControls(props: Props) {
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
@@ -206,6 +208,7 @@ function DashboardControls(props: Props) {
             onDragStart={props.onDragStart}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         </ScrollBar>
       </div>
@@ -223,6 +226,7 @@ interface BlocksListProps {
   onDragStart: (draggingBlock: DraggingBlock) => void
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function BlocksList(props: BlocksListProps) {
   return (
@@ -241,6 +245,7 @@ function BlocksList(props: BlocksListProps) {
             onDragStart={props.onDragStart}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         )
       })}
@@ -258,6 +263,7 @@ interface BlockListItemProps {
   onDragStart: (draggingBlock: DraggingBlock) => void
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function BlockListItem(props: BlockListItemProps) {
   const { id, type } = getBaseAttributes(props.block)
@@ -342,6 +348,7 @@ function BlockListItem(props: BlockListItemProps) {
             onToggleIsBlockHiddenInPublished={() => {}}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onVisualization: (block) => (

@@ -4,7 +4,7 @@ import {
   ExecutionStatus,
   YExecutionQueueItem,
 } from './item.js'
-import { exhaustiveCheck } from '../index.js'
+import { exhaustiveCheck } from '../utils.js'
 
 export type YExecutionQueueBatchAttrs = {
   version: 1

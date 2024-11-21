@@ -1,5 +1,6 @@
 import * as Y from 'yjs'
 import {
+  AITasks,
   BlockType,
   ExecutionQueue,
   YBlock,
@@ -37,6 +38,7 @@ interface Props {
   latestBlockId: string | null
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 
 const NO_TITLE_BLOCKS = [
@@ -111,6 +113,7 @@ function GridElement(props: Props) {
             onToggleIsBlockHiddenInPublished={() => {}}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onVisualization: (block) => (

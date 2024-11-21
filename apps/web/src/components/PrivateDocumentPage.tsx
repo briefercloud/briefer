@@ -32,7 +32,7 @@ import ShortcutsModal from './ShortcutsModal'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import ReusableComponents from './ReusableComponents'
 import PageSettingsPanel from './PageSettingsPanel'
-import { ExecutionQueue } from '@briefer/editor'
+import { AITasks, ExecutionQueue } from '@briefer/editor'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -215,6 +215,7 @@ function PrivateDocumentPageInner(
       }),
     [yDoc, props.document.runUnexecutedBlocks]
   )
+  const aiTasks = useMemo(() => AITasks.fromYjs(yDoc), [yDoc])
 
   const onPublish = useCallback(async () => {
     if (props.publishing) {
@@ -358,6 +359,7 @@ function PrivateDocumentPageInner(
           isFullScreen={isFullScreen}
           yDoc={yDoc}
           executionQueue={executionQueue}
+          aiTasks={aiTasks}
           provider={provider}
           isSyncing={syncing}
           onOpenFiles={onToggleFiles}

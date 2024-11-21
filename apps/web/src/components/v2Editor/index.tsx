@@ -52,6 +52,7 @@ import {
   getNextBlockIdAfterDelete,
   isRunnableBlock,
   ExecutionQueue,
+  AITasks,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -416,6 +417,7 @@ const DraggableTabbedBlock = (props: {
   insertBelow: () => void
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -626,6 +628,7 @@ file`
         dragPreview={dragPreview}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ))
   }, [
@@ -946,6 +949,7 @@ const V2EditorRow = (props: {
   insertBelow: () => void
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }) => {
   return (
     <div>
@@ -980,6 +984,7 @@ const V2EditorRow = (props: {
         insertBelow={props.insertBelow}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
       <Dropzone
         index={props.index + 1}
@@ -1012,6 +1017,7 @@ interface Props {
   onSchemaExplorer: (dataSourceId: string | null) => void
   scrollViewRef: React.RefObject<HTMLDivElement>
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 const Editor = (props: Props) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
@@ -1390,6 +1396,7 @@ const Editor = (props: Props) => {
           insertBelow={insertBelow}
           userId={props.userId}
           executionQueue={props.executionQueue}
+          aiTasks={props.aiTasks}
         />
       )
     })
@@ -1560,6 +1567,7 @@ interface TabRefProps {
   dragPreview: ConnectDragPreview | null
   userId: string | null
   executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function TabRef(props: TabRefProps) {
   const [editorState] = useEditorAwareness()
@@ -1623,6 +1631,7 @@ function TabRef(props: TabRefProps) {
         insertBelow={props.insertBelow}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ),
     onVisualization: (block) => (

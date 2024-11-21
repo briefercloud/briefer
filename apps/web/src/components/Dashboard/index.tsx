@@ -10,7 +10,7 @@ import { ApiDocument, UserWorkspaceRole } from '@briefer/database'
 import DashboardView from './DashboardView'
 import DashboardControls from './DashboardControls'
 import { useDataSources } from '@/hooks/useDatasources'
-import { BlockType, ExecutionQueue } from '@briefer/editor'
+import { AITasks, BlockType, ExecutionQueue } from '@briefer/editor'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import DashboardSkeleton from './DashboardSkeleton'
@@ -70,6 +70,7 @@ export default function Dashboard(props: Props) {
       }),
     [yDoc]
   )
+  const aiTasks = useMemo(() => AITasks.fromYjs(yDoc), [yDoc])
 
   const router = useRouter()
   const socket = useWebsocket()
@@ -242,6 +243,7 @@ export default function Dashboard(props: Props) {
                 isEditing={props.isEditing}
                 yDoc={yDoc}
                 executionQueue={executionQueue}
+                aiTasks={aiTasks}
               />
             </SQLExtensionProvider>
           )}
@@ -311,7 +313,11 @@ export type DraggingBlock = {
   height: number
 }
 function DashboardContent(
-  props: Props & { yDoc: Y.Doc; executionQueue: ExecutionQueue }
+  props: Props & {
+    yDoc: Y.Doc
+    executionQueue: ExecutionQueue
+    aiTasks: AITasks
+  }
 ) {
   const [{ datasources: dataSources }] = useDataSources(
     props.document.workspaceId
@@ -343,6 +349,7 @@ function DashboardContent(
         userRole={props.role}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
       {props.isEditing && (
         <DashboardControls
@@ -353,6 +360,7 @@ function DashboardContent(
           onAddBlock={onAddBlock}
           userId={props.userId}
           executionQueue={props.executionQueue}
+          aiTasks={props.aiTasks}
         />
       )}
     </div>

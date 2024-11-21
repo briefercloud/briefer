@@ -54,14 +54,16 @@ import { IWritebackExecutor, WritebackExecutor } from './writeback.js'
 import { ScheduleNotebookEvents } from '../../../events/schedule.js'
 import { ApiUser, getUserById } from '@briefer/database'
 
-const unknownUser = (): ApiUser => ({
-  id: 'unknown',
-  name: 'unknown',
-  email: 'unknown',
-  picture: null,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-})
+export function unknownUser(): ApiUser {
+  return {
+    id: 'unknown',
+    name: 'unknown',
+    email: 'unknown',
+    picture: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+}
 
 export class Executor {
   private isRunning: boolean = false
@@ -111,6 +113,15 @@ export class Executor {
       this.timeout = setTimeout(() => this.execute(), 500)
       return
     }
+
+    logger().trace(
+      {
+        workspaceId: this.workspaceId,
+        documentId: this.documentId,
+        queueLength: this.queue.length,
+      },
+      'Making execution queue progress'
+    )
 
     this.currentExecution = this.makeBatchProgress(currentBatch)
     await this.currentExecution

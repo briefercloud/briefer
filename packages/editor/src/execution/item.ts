@@ -1,10 +1,6 @@
 import * as Y from 'yjs'
 import * as z from 'zod'
-import { validate as validateUUID } from 'uuid'
-
-const uuidSchema = z.string().refine((uuid) => validateUUID(uuid), {
-  message: 'Invalid UUID format',
-})
+import { uuidSchema } from '../utils.js'
 
 export const ExecutionQueueItemStatus = z.union([
   z.object({
