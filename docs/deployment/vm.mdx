@@ -74,9 +74,8 @@ Here's a step-by-step guide to deploy Briefer as a single container:
 
 4. Expose your server to the internet or your local network.
    Make sure that you allow traffic on port `3000`.
-5. (Optional) If you want to use a domain name rather than an IP, create the necessary DNS records to access port `3000`. Otherwise, skip this step.
-6. (Optional, recommended) Set up the certificates for your Briefer deployment so that you can use HTTPS.
-   The way most people set up certificates is by placing a load balancer or reverse proxy in front of Briefer and then configuring it to use the certificates you created for Briefer's domain (`briefer.yourcompany.example.com`).
+5. (Optional) If you want to use a domain name rather than an IP, create the necessary DNS records to access port 3000. Otherwise, skip this step.
+6. (Optional, recommended) Set up the certificates for your Briefer deployment so that you can use HTTPS. The way most people set up certificates is by placing a load balancer or reverse proxy in front of Briefer and then configuring it to use the certificates you created for Briefer's domain (briefer.yourcompany.example.com).
 
 ## Using an external Postgres instance to store Briefer's data (recommended)
 
@@ -91,5 +90,6 @@ To do that, you'll need to set these environment variables when running your Bri
 - `POSTGRES_DATABASE`: The name of the database to use within Postgres.
 - `POSTGRES_USERNAME`: The username Briefer should use to connect to your Postgres instance.
 - `POSTGRES_PASSWORD`: The password for the chosen Postgres user.
+- `POSTGRES_PRISMA_URL`: The connection URL for your Postgres instance in the format `postgresql://<username>:<password>@<host>:<port>/<database>`.
 
 This way, you will have automated back-ups and — if you need to — you will be able to re-deploy Briefer in another machine and retain your data.
