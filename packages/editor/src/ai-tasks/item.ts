@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 import * as z from 'zod'
-import { uuidSchema } from '../utils.js'
+import { exhaustiveCheck, uuidSchema } from '../utils.js'
 
 export const AITaskItemStatus = z.union([
   z.object({
@@ -8,6 +8,7 @@ export const AITaskItemStatus = z.union([
   }),
   z.object({
     _tag: z.literal('aborting'),
+    ping: z.number().positive(),
   }),
   z.object({
     _tag: z.literal('running'),
@@ -58,6 +59,18 @@ export type AITaskItemFixPythonMetadata = z.infer<
   typeof AITaskItemFixPythonMetadata
 >
 
+export const AITaskItemEditSQLMetadata = z.object({
+  _tag: z.literal('edit-sql'),
+})
+export type AITaskItemEditSQLMetadata = z.infer<
+  typeof AITaskItemEditSQLMetadata
+>
+
+export const AITaskItemFixSQLMetadata = z.object({
+  _tag: z.literal('fix-sql'),
+})
+export type AITaskItemFixSQLMetadata = z.infer<typeof AITaskItemFixSQLMetadata>
+
 export const AITaskItemNoopMetadata = z.object({
   _tag: z.literal('noop'),
 })
@@ -66,6 +79,8 @@ export type AITaskItemNoopMetadata = z.infer<typeof AITaskItemNoopMetadata>
 export const AITaskItemMetadata = z.union([
   AITaskItemEditPythonMetadata,
   AITaskItemFixPythonMetadata,
+  AITaskItemEditSQLMetadata,
+  AITaskItemFixSQLMetadata,
   AITaskItemNoopMetadata,
 ])
 export type AITaskItemMetadata = z.infer<typeof AITaskItemMetadata>
@@ -141,11 +156,25 @@ export class AITaskItem {
   }
 
   public ping(): void {
-    this.setRunning()
+    const status = this.getStatus()
+    switch (status._tag) {
+      case 'running':
+        this.item.setAttribute('status', { _tag: 'running', ping: Date.now() })
+        break
+      case 'aborting':
+        this.item.setAttribute('status', { _tag: 'aborting', ping: Date.now() })
+        break
+      case 'enqueued':
+      case 'completed':
+      case 'unknown':
+        break
+      default:
+        exhaustiveCheck(status)
+    }
   }
 
   public setAborting(): void {
-    this.item.setAttribute('status', { _tag: 'aborting' })
+    this.item.setAttribute('status', { _tag: 'aborting', ping: Date.now() })
   }
 
   public setCompleted(status: 'success' | 'error' | 'aborted'): void {

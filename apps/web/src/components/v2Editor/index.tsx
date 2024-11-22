@@ -1611,6 +1611,7 @@ function TabRef(props: TabRefProps) {
         insertBelow={props.insertBelow}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ),
     onPython: (block) => (

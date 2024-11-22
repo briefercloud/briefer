@@ -1,75 +1,112 @@
 import debounce from 'lodash.debounce'
-import * as Y from 'yjs'
-import { getWorkspaceWithSecrets } from '@briefer/database'
-import { DataFrame, PythonErrorOutput } from '@briefer/types'
-import { pythonEditStreamed } from '../../../../ai-api.js'
 import {
   AITaskItem,
-  AITaskItemEditPythonMetadata,
-  AITaskItemFixPythonMetadata,
-  closePythonEditWithAIPrompt,
-  getPythonBlockEditWithAIPrompt,
-  getPythonBlockResult,
-  getPythonSource,
-  PythonBlock,
-  updatePythonAISuggestions,
+  AITaskItemEditSQLMetadata,
+  AITaskItemFixSQLMetadata,
+  SQLBlock,
+  YBlock,
+  closeSQLEditWithAIPrompt,
+  getSQLAttributes,
+  updateSQLAISuggestions,
 } from '@briefer/editor'
-import { WSSharedDocV2 } from '../../index.js'
-import { AIEvents } from '../../../../events/index.js'
+import * as Y from 'yjs'
+import {
+  getCredentialsInfo,
+  getDatabaseURL,
+  listDataSources,
+  getWorkspaceWithSecrets,
+} from '@briefer/database'
 import { logger } from '../../../../logger.js'
+import { sqlEditStreamed } from '../../../../ai-api.js'
+import { config } from '../../../../config/index.js'
+import { AIEvents } from '../../../../events/index.js'
+import { WSSharedDocV2 } from '../../index.js'
 import { CanceledError } from 'axios'
 
 async function editWithAI(
   workspaceId: string,
+  datasourceId:
+    | {
+        type: 'db'
+        id: string
+      }
+    | { type: 'duckdb' },
   source: string,
   instructions: string,
-  dataFrames: DataFrame[],
   event: (modelId: string | null) => void,
-  onSource: (source: string) => void
+  onSuggestions: (suggestions: string) => void
 ) {
   const workspace = workspaceId
     ? await getWorkspaceWithSecrets(workspaceId)
     : null
 
-  event(workspace?.assistantModel ?? null)
+  const assistantModelId = workspace?.assistantModel ?? null
 
-  return pythonEditStreamed(
+  if (datasourceId.type === 'duckdb') {
+    event(assistantModelId)
+
+    return sqlEditStreamed(
+      'duckdb',
+      source,
+      instructions,
+      null,
+      onSuggestions,
+      assistantModelId,
+      workspace?.secrets?.openAiApiKey ?? null
+    )
+  }
+
+  const dataSources = await listDataSources(workspaceId)
+  const dataSource = dataSources.find((ds) => ds.data.id === datasourceId.id)
+  if (!dataSource) {
+    throw new Error(`Datasource with id ${datasourceId} not found`)
+  }
+
+  const [databaseURL, credentialsInfo] = await Promise.all([
+    getDatabaseURL(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
+    getCredentialsInfo(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
+  ])
+
+  event(assistantModelId)
+
+  return sqlEditStreamed(
+    databaseURL,
     source,
     instructions,
-    dataFrames,
-    onSource,
-    workspace?.assistantModel ?? null,
+    credentialsInfo,
+    onSuggestions,
+    assistantModelId,
     workspace?.secrets?.openAiApiKey ?? null
   )
 }
 
-export interface IPythonAIExecutor {
+export interface ISQLAIExecutor {
   editWithAI(
     taskItem: AITaskItem,
-    block: Y.XmlElement<PythonBlock>,
-    metadata: AITaskItemEditPythonMetadata,
+    block: Y.XmlElement<SQLBlock>,
+    metadata: AITaskItemEditSQLMetadata,
     events: AIEvents
   ): Promise<void>
   fixWithAI(
     taskItem: AITaskItem,
-    block: Y.XmlElement<PythonBlock>,
-    metadata: AITaskItemFixPythonMetadata,
+    block: Y.XmlElement<SQLBlock>,
+    metadata: AITaskItemFixSQLMetadata,
     events: AIEvents
   ): Promise<void>
 }
 
-export class AIPythonExecutor implements IPythonAIExecutor {
+export class AISQLExecutor implements ISQLAIExecutor {
   constructor(
     private readonly workspaceId: string,
     private readonly documentId: string,
-    private readonly dataframes: Y.Map<DataFrame>,
+    private readonly blocks: Y.Map<YBlock>,
     private readonly effects: { editWithAI: typeof editWithAI }
   ) {}
 
   public async editWithAI(
     taskItem: AITaskItem,
-    block: Y.XmlElement<PythonBlock>,
-    _metadata: AITaskItemEditPythonMetadata,
+    block: Y.XmlElement<SQLBlock>,
+    _metadata: AITaskItemEditSQLMetadata,
     events: AIEvents
   ): Promise<void> {
     let cleanup: () => void = () => {}
@@ -81,24 +118,35 @@ export class AIPythonExecutor implements IPythonAIExecutor {
         }
       })
 
-      const instructions = getPythonBlockEditWithAIPrompt(block).toJSON()
-      if (!instructions) {
+      const {
+        dataSourceId: datasourceId,
+        isFileDataSource,
+        source,
+        editWithAIPrompt,
+      } = getSQLAttributes(block, this.blocks)
+
+      const instructions = editWithAIPrompt?.toJSON() ?? ''
+
+      if ((!datasourceId && !isFileDataSource) || !instructions) {
         taskItem.setCompleted('error')
         return
       }
 
       const callback = debounce((suggestions) => {
-        updatePythonAISuggestions(block, suggestions)
+        if (aborted) {
+          return
+        }
+
+        updateSQLAISuggestions(block, suggestions)
       }, 50)
 
-      const source = getPythonSource(block).toJSON()
       const { promise, abortController } = await this.effects.editWithAI(
         this.workspaceId,
-        source,
+        datasourceId ? { type: 'db', id: datasourceId } : { type: 'duckdb' },
+        source?.toJSON() ?? '',
         instructions,
-        Array.from(this.dataframes.values()),
         (modelId) => {
-          events.aiUsage('python', 'edit', modelId)
+          events.aiUsage('sql', 'edit', modelId)
         },
         callback
       )
@@ -119,7 +167,7 @@ export class AIPythonExecutor implements IPythonAIExecutor {
 
       await promise
       callback.flush()
-      closePythonEditWithAIPrompt(block, true)
+      closeSQLEditWithAIPrompt(block, true)
       taskItem.setCompleted(aborted ? 'aborted' : 'success')
     } catch (err) {
       if (err instanceof CanceledError) {
@@ -134,7 +182,7 @@ export class AIPythonExecutor implements IPythonAIExecutor {
           blockId: taskItem.getUserId(),
           err,
         },
-        'Error editing python block with AI'
+        'Error editing SQL block with AI'
       )
       taskItem.setCompleted('error')
     } finally {
@@ -144,8 +192,8 @@ export class AIPythonExecutor implements IPythonAIExecutor {
 
   public async fixWithAI(
     taskItem: AITaskItem,
-    block: Y.XmlElement<PythonBlock>,
-    _metadata: AITaskItemFixPythonMetadata,
+    block: Y.XmlElement<SQLBlock>,
+    _metadata: AITaskItemFixSQLMetadata,
     events: AIEvents
   ): Promise<void> {
     let cleanup: () => void = () => {}
@@ -156,33 +204,41 @@ export class AIPythonExecutor implements IPythonAIExecutor {
           aborted = true
         }
       })
-      const error = getPythonBlockResult(block).find(
-        (r): r is PythonErrorOutput => r.type === 'error'
+
+      const { dataSourceId, isFileDataSource } = getSQLAttributes(
+        block,
+        this.blocks
       )
-      if (!error) {
+      if (!dataSourceId && !isFileDataSource) {
         taskItem.setCompleted('error')
         return
       }
 
-      const instructions = `Fix the Python code, this is the error: ${JSON.stringify(
-        {
-          ...error,
-          traceback: error.traceback.slice(0, 2),
-        }
-      )}`
-      const source = getPythonSource(block).toJSON()
+      const error = block.getAttribute('result')
+      if (!error || error.type !== 'syntax-error') {
+        taskItem.setCompleted('error')
+        return
+      }
+
+      const instructions = `Fix the query, this is the error: ${error.message}`
+
+      const source = block.getAttribute('source')?.toJSON() ?? ''
 
       const callback = debounce((suggestions) => {
-        updatePythonAISuggestions(block, suggestions)
+        if (aborted) {
+          return
+        }
+
+        updateSQLAISuggestions(block, suggestions)
       }, 50)
 
       const { promise, abortController } = await this.effects.editWithAI(
         this.workspaceId,
+        dataSourceId ? { type: 'db', id: dataSourceId } : { type: 'duckdb' },
         source,
         instructions,
-        Array.from(this.dataframes.values()),
         (modelId) => {
-          events.aiUsage('python', 'fix', modelId)
+          events.aiUsage('sql', 'fix', modelId)
         },
         callback
       )
@@ -217,7 +273,7 @@ export class AIPythonExecutor implements IPythonAIExecutor {
           blockId: taskItem.getUserId(),
           err,
         },
-        'Error fixing python block with AI'
+        'Error fixing SQL block with AI'
       )
       taskItem.setCompleted('error')
     } finally {
@@ -225,12 +281,9 @@ export class AIPythonExecutor implements IPythonAIExecutor {
     }
   }
 
-  public static fromWSSharedDocV2(doc: WSSharedDocV2): AIPythonExecutor {
-    return new AIPythonExecutor(
-      doc.workspaceId,
-      doc.documentId,
-      doc.dataframes,
-      { editWithAI }
-    )
+  public static fromWSSharedDocV2(doc: WSSharedDocV2) {
+    return new AISQLExecutor(doc.workspaceId, doc.documentId, doc.blocks, {
+      editWithAI,
+    })
   }
 }

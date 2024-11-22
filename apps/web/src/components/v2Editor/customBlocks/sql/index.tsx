@@ -26,6 +26,8 @@ import {
   getSQLAttributes,
   createComponentState,
   ExecutionQueue,
+  AITasks,
+  isExecutionStatusLoading,
 } from '@briefer/editor'
 import SQLResult from './SQLResult'
 import type {
@@ -60,6 +62,7 @@ import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
 import { exhaustiveCheck, SQLQueryConfiguration } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { useAITasks } from '@/hooks/useAITasks'
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
 -- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
@@ -81,6 +84,7 @@ interface Props {
   insertBelow: () => void
   executionQueue: ExecutionQueue
   userId: string | null
+  aiTasks: AITasks
 }
 function SQLBlock(props: Props) {
   const properties = useProperties()
@@ -222,12 +226,32 @@ function SQLBlock(props: Props) {
     [components, componentId]
   )
 
+  const editAITasks = useAITasks(props.aiTasks, props.block, 'edit-sql')
+  const fixAITasks = useAITasks(props.aiTasks, props.block, 'fix-sql')
+  const aiTask = useMemo(
+    () => head(editAITasks.concat(fixAITasks)) ?? null,
+    [editAITasks, fixAITasks]
+  )
+
+  const isAIEditing =
+    aiTask?.getMetadata()._tag === 'edit-sql'
+      ? isExecutionStatusLoading(aiTask.getStatus()._tag)
+      : false
+  const isAIFixing =
+    aiTask?.getMetadata()._tag === 'fix-sql'
+      ? isExecutionStatusLoading(aiTask.getStatus()._tag)
+      : false
+
   const [editorState, editorAPI] = useEditorAwareness()
 
   const onCloseEditWithAIPrompt = useCallback(() => {
+    if (aiTask?.getMetadata()._tag === 'edit-sql') {
+      aiTask.setAborting()
+    }
+
     closeSQLEditWithAIPrompt(props.block, false)
     editorAPI.insert(blockId, { scrollIntoView: false })
-  }, [props.block, editorAPI.insert])
+  }, [props.block, editorAPI.insert, blockId, aiTask])
 
   const onChangeDataSource = useCallback(
     (df: { value: string; type: DataSourceType | 'duckdb' }) => {
@@ -305,9 +329,8 @@ function SQLBlock(props: Props) {
   ])
 
   const onSubmitEditWithAI = useCallback(() => {
-    // TODO
-    // requestSQLEditWithAI(props.block)
-  }, [props.block])
+    props.aiTasks.enqueue(blockId, props.userId, { _tag: 'edit-sql' })
+  }, [props.aiTasks, blockId, props.userId])
 
   const onAcceptAISuggestion = useCallback(() => {
     if (aiSuggestions) {
@@ -326,17 +349,12 @@ function SQLBlock(props: Props) {
       return
     }
 
-    // TODO
-    // const status = props.block.getAttribute('status')
-    // if (status === 'fix-with-ai-running') {
-    //   props.block.setAttribute('status', 'idle')
-    // } else {
-    //   requestSQLFixWithAI(props.block)
-    // }
-  }, [props.block, hasOaiKey])
-
-  // TODO
-  const isAIEditing = false // isSQLBlockAIEditing(props.block)
+    if (aiTask?.getMetadata()._tag === 'fix-sql') {
+      aiTask.setAborting()
+    } else {
+      props.aiTasks.enqueue(blockId, props.userId, { _tag: 'fix-sql' })
+    }
+  }, [props.aiTasks, blockId, props.userId, hasOaiKey, aiTask])
 
   const [copied, setCopied] = useState(false)
   useEffect(() => {
@@ -452,8 +470,7 @@ function SQLBlock(props: Props) {
         dataframeName={dataframeName?.value ?? ''}
         isResultHidden={isResultHidden ?? false}
         toggleResultHidden={toggleResultHidden}
-        // TODO
-        isFixingWithAI={false} // isFixingSQLWithAI(props.block)}
+        isFixingWithAI={isAIFixing}
         onFixWithAI={onFixWithAI}
         dashboardMode={props.dashboardMode}
         canFixWithAI={hasOaiKey}
@@ -626,9 +643,7 @@ function SQLBlock(props: Props) {
                 {!props.isPublicMode &&
                   aiSuggestions === null &&
                   props.isEditable &&
-                  // TODO
-                  // !isFixingPythonWithAI(props.block) &&
-                  false && (
+                  !isAIFixing && (
                     <button
                       disabled={!props.isEditable}
                       onClick={onToggleEditWithAIPromptOpen}
@@ -683,8 +698,7 @@ function SQLBlock(props: Props) {
             dataframeName={dataframeName?.value ?? ''}
             isResultHidden={isResultHidden ?? false}
             toggleResultHidden={toggleResultHidden}
-            // TODO
-            isFixingWithAI={false} // isFixingSQLWithAI(props.block)}
+            isFixingWithAI={isAIFixing}
             onFixWithAI={onFixWithAI}
             dashboardMode={props.dashboardMode}
             canFixWithAI={hasOaiKey}

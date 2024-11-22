@@ -95,6 +95,7 @@ function GridElement(props: Props) {
             insertBelow={() => {}}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onPython: (block) => (

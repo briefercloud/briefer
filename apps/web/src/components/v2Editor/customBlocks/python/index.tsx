@@ -242,9 +242,13 @@ function PythonBlock(props: Props) {
   const [editorState, editorAPI] = useEditorAwareness()
 
   const onCloseEditWithAIPrompt = useCallback(() => {
+    if (aiTask?.getMetadata()._tag === 'edit-sql') {
+      aiTask.setAborting()
+    }
+
     closePythonEditWithAIPrompt(props.block, false)
     editorAPI.insert(blockId, { scrollIntoView: false })
-  }, [props.block, editorAPI.insert])
+  }, [props.block, editorAPI.insert, blockId, aiTask])
 
   const onSubmitEditWithAI = useCallback(() => {
     props.aiTasks.enqueue(blockId, props.userId, { _tag: 'edit-python' })
@@ -267,8 +271,12 @@ function PythonBlock(props: Props) {
       return
     }
 
-    props.aiTasks.enqueue(blockId, props.userId, { _tag: 'fix-python' })
-  }, [props.aiTasks, blockId, props.userId, hasOaiKey])
+    if (aiTask?.getMetadata()._tag === 'fix-python') {
+      aiTask.setAborting()
+    } else {
+      props.aiTasks.enqueue(blockId, props.userId, { _tag: 'fix-python' })
+    }
+  }, [props.aiTasks, blockId, props.userId, hasOaiKey, aiTask])
 
   const diffButtonsVisible =
     !props.isPublicMode && aiSuggestions !== null && status === 'idle'

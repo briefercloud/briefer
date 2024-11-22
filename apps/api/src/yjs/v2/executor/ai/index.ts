@@ -6,12 +6,14 @@ import {
   AITasks,
   getBaseAttributes,
   isPythonBlock,
+  isSQLBlock,
   YBlock,
 } from '@briefer/editor'
 import { WSSharedDocV2 } from '../../index.js'
 import { logger } from '../../../../logger.js'
 import { exhaustiveCheck } from '@briefer/types'
 import { AIPythonExecutor, IPythonAIExecutor } from './python.js'
+import { AISQLExecutor, ISQLAIExecutor } from './sql.js'
 import { ApiUser, getUserById } from '@briefer/database'
 import { unknownUser } from '../executor.js'
 import { UserNotebookEvents } from '../../../../events/user.js'
@@ -44,7 +46,8 @@ export class AIExecutor {
     private readonly documentId: string,
     private readonly tasks: AITasks,
     private readonly blocks: Y.Map<YBlock>,
-    private readonly pythonAIExecutor: IPythonAIExecutor
+    private readonly pythonAIExecutor: IPythonAIExecutor,
+    private readonly sqlAIExecutor: ISQLAIExecutor
   ) {}
 
   public start() {
@@ -147,6 +150,28 @@ export class AIExecutor {
           }
           break
         }
+        case 'edit-sql':
+        case 'fix-sql': {
+          if (!isSQLBlock(block)) {
+            throw new UnexpectedBlockTypeError(
+              task.getBlockId(),
+              'sql',
+              getBaseAttributes(block).type
+            )
+          }
+
+          switch (metadata._tag) {
+            case 'edit-sql':
+              await this.sqlAIExecutor.editWithAI(task, block, metadata, events)
+              break
+            case 'fix-sql':
+              await this.sqlAIExecutor.fixWithAI(task, block, metadata, events)
+              break
+            default:
+              exhaustiveCheck(metadata)
+          }
+          break
+        }
         default:
           exhaustiveCheck(metadata)
       }
@@ -182,7 +207,8 @@ export class AIExecutor {
       doc.documentId,
       AITasks.fromYjs(doc.ydoc),
       doc.blocks,
-      AIPythonExecutor.fromWSSharedDocV2(doc)
+      AIPythonExecutor.fromWSSharedDocV2(doc),
+      AISQLExecutor.fromWSSharedDocV2(doc)
     )
   }
 }

@@ -330,6 +330,7 @@ function BlockListItem(props: BlockListItemProps) {
               insertBelow={() => {}}
               userId={props.userId}
               executionQueue={props.executionQueue}
+              aiTasks={props.aiTasks}
             />
           </div>
         ),
