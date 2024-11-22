@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import * as Y from 'yjs'
 import { WSSharedDocV2 } from '../index.js'
 import {
@@ -53,6 +54,8 @@ import { IPivotTableExecutor, PivotTableExecutor } from './pivot-table.js'
 import { IWritebackExecutor, WritebackExecutor } from './writeback.js'
 import { ScheduleNotebookEvents } from '../../../events/schedule.js'
 import { ApiUser, getUserById } from '@briefer/database'
+import { acquireLock } from '../../../lock.js'
+import { exhaustiveCheck } from '@briefer/types'
 
 export function unknownUser(): ApiUser {
   return {
@@ -66,12 +69,14 @@ export function unknownUser(): ApiUser {
 }
 
 export class Executor {
+  private readonly id = uuidv4()
   private isRunning: boolean = false
   private timeout: NodeJS.Timeout | null = null
   private currentExecution: Promise<void> | null = null
-  private queue: ExecutionQueue
+  private readonly queue: ExecutionQueue
 
   private constructor(
+    private readonly docId: string,
     private readonly pythonExecutor: IPythonExecutor,
     private readonly sqlExecutor: ISQLExecutor,
     private readonly visExecutor: IVisualizationExecutor,
@@ -89,8 +94,8 @@ export class Executor {
   }
 
   public start() {
-    this.execute()
     this.isRunning = true
+    this.execute()
   }
 
   public isIdle() {
@@ -108,32 +113,118 @@ export class Executor {
   }
 
   private async execute() {
-    const currentBatch = this.queue.getCurrentBatch()
-    if (!currentBatch) {
-      this.timeout = setTimeout(() => this.execute(), 500)
-      return
-    }
+    try {
+      logger().debug(
+        {
+          port: process.env['PORT'],
+          id: this.id,
+          docId: this.docId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+        },
+        'Acquiring executor lock'
+      )
 
-    logger().trace(
-      {
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-        queueLength: this.queue.length,
-      },
-      'Making execution queue progress'
-    )
+      await acquireLock(
+        `executor:${this.docId}`,
+        () =>
+          new Promise<void>(async (resolve, reject) => {
+            if (!this.isRunning) {
+              logger().debug(
+                {
+                  port: process.env['PORT'],
+                  id: this.id,
+                  docId: this.docId,
+                  workspaceId: this.workspaceId,
+                  documentId: this.documentId,
+                },
+                'Executor lock acquired but executor is not running anymore. Exiting.'
+              )
+              resolve()
+              return
+            }
 
-    this.currentExecution = this.makeBatchProgress(currentBatch)
-    await this.currentExecution
-    this.currentExecution = null
-    if (this.isRunning) {
-      this.timeout = setTimeout(() => this.execute(), 0)
+            logger().debug(
+              {
+                port: process.env['PORT'],
+                id: this.id,
+                docId: this.docId,
+                workspaceId: this.workspaceId,
+                documentId: this.documentId,
+              },
+              'Executor lock acquired. Executing queue'
+            )
+
+            const tick = async () => {
+              try {
+                if (!this.isRunning) {
+                  logger().debug(
+                    {
+                      port: process.env['PORT'],
+                      id: this.id,
+                      docId: this.docId,
+                      workspaceId: this.workspaceId,
+                      documentId: this.documentId,
+                    },
+                    'Executor is not running. Stopping consumer loop.'
+                  )
+                  resolve()
+                  return
+                }
+
+                const currentBatch = this.queue.getCurrentBatch()
+                if (!currentBatch) {
+                  this.timeout = setTimeout(() => tick(), 500)
+                  return
+                }
+
+                logger().trace(
+                  {
+                    port: process.env['PORT'],
+                    id: this.id,
+                    docId: this.docId,
+                    workspaceId: this.workspaceId,
+                    documentId: this.documentId,
+                    queueLength: this.queue.length,
+                  },
+                  'Making execution queue progress'
+                )
+
+                this.currentExecution = this.makeBatchProgress(currentBatch)
+                await this.currentExecution
+                if (this.isRunning) {
+                  this.timeout = setTimeout(() => tick(), 0)
+                }
+              } catch (err) {
+                reject(err)
+              }
+            }
+
+            tick()
+          })
+      )
+    } catch (err) {
+      logger().error(
+        {
+          port: process.env['PORT'],
+          id: this.id,
+          docId: this.docId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          err,
+        },
+        'Unexpected error while executing queue. Retrying in 2 seconds'
+      )
+      setTimeout(() => this.execute(), 2000)
     }
   }
 
   private async makeBatchProgress(batch: ExecutionQueueBatch) {
     logger().trace(
       {
+        port: process.env['PORT'],
+        id: this.id,
+        docId: this.docId,
         workspaceId: this.workspaceId,
         documentId: this.documentId,
         batchStatus: batch.status,
@@ -147,6 +238,9 @@ export class Executor {
     if (!current) {
       logger().trace(
         {
+          port: process.env['PORT'],
+          id: this.id,
+          docId: this.docId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
         },
@@ -177,6 +271,9 @@ export class Executor {
     if (current.getCompleteStatus() === null) {
       logger().error(
         {
+          port: process.env['PORT'],
+          id: this.id,
+          docId: this.docId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: current.getBlockId(),
@@ -193,6 +290,9 @@ export class Executor {
   ): Promise<void> {
     logger().trace(
       {
+        port: process.env['PORT'],
+        id: this.id,
+        docId: this.docId,
         workspaceId: this.workspaceId,
         documentId: this.documentId,
         blockId: item.getBlockId(),
@@ -298,6 +398,9 @@ export class Executor {
     if (!block) {
       logger().error(
         {
+          port: process.env['PORT'],
+          id: this.id,
+          docId: this.docId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: item.getBlockId(),
@@ -312,6 +415,9 @@ export class Executor {
         if (!isPythonBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -328,6 +434,9 @@ export class Executor {
         if (!isSQLBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -348,6 +457,9 @@ export class Executor {
         if (!isVisualizationBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -364,6 +476,9 @@ export class Executor {
         if (!isInputBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -385,6 +500,9 @@ export class Executor {
         if (!isDropdownInputBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -405,6 +523,9 @@ export class Executor {
         if (!isDateInputBlock(block)) {
           logger().error(
             {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: item.getBlockId(),
@@ -460,6 +581,7 @@ export class Executor {
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2): Executor {
     return new Executor(
+      doc.id,
       PythonExecutor.fromWSSharedDocV2(doc),
       SQLExecutor.fromWSSharedDocV2(doc, config().DATASOURCES_ENCRYPTION_KEY),
       VisualizationExecutor.fromWSSharedDocV2(doc),
@@ -537,5 +659,3 @@ type ExecutionItemData =
       metadata: ExecutionQueueItemWritebackMetadata
       block: Y.XmlElement<WritebackBlock>
     }
-
-function exhaustiveCheck(_param: never) {}

@@ -292,9 +292,7 @@ async function executeNotebook(
         await updateAppState(ydoc, app, socketServer)
         return false
       },
-      app
-        ? new AppPersistor(app.id, null) // user is null when running a schedule
-        : new DocumentPersistor(doc.id)
+      new AppPersistor(app.id, null) // user is null when running a schedule
     )
 
     if (emptyLayout) {

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import * as Y from 'yjs'
 import PQueue from 'p-queue'
 import {
@@ -17,6 +18,7 @@ import { AISQLExecutor, ISQLAIExecutor } from './sql.js'
 import { ApiUser, getUserById } from '@briefer/database'
 import { unknownUser } from '../executor.js'
 import { UserNotebookEvents } from '../../../../events/user.js'
+import { acquireLock } from '../../../../lock.js'
 
 class UnexpectedBlockTypeError extends Error {
   constructor(
@@ -37,11 +39,13 @@ class BlockNotFoundError extends Error {
 }
 
 export class AIExecutor {
+  private readonly id = uuidv4()
   private isRunning = false
   private readonly pQueue = new PQueue({ concurrency: 4 })
   private timeout: NodeJS.Timeout | null = null
 
   private constructor(
+    private readonly docId: string,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private readonly tasks: AITasks,
@@ -51,8 +55,8 @@ export class AIExecutor {
   ) {}
 
   public start() {
-    this.execute()
     this.isRunning = true
+    this.execute()
   }
 
   public async stop(): Promise<void> {
@@ -66,17 +70,95 @@ export class AIExecutor {
   }
 
   private async execute() {
-    await this.pQueue.onSizeLessThan(this.pQueue.concurrency)
+    try {
+      logger().debug(
+        {
+          id: this.id,
+          docId: this.docId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+        },
+        'Acquiring AI tasks lock'
+      )
 
-    const next = this.tasks.next()
-    let timeout = 500
-    if (next) {
-      this.pQueue.add(() => this.executeItem(next))
-      timeout = 0
-    }
+      await acquireLock(
+        `ai-tasks:${this.docId}`,
+        () =>
+          new Promise<void>(async (resolve, reject) => {
+            if (!this.isRunning) {
+              logger().debug(
+                {
+                  port: process.env['PORT'],
+                  id: this.id,
+                  docId: this.docId,
+                  workspaceId: this.workspaceId,
+                  documentId: this.documentId,
+                },
+                'AI tasks lock acquired but executor is not running anymore. Exiting.'
+              )
+              resolve()
+              return
+            }
 
-    if (this.isRunning) {
-      this.timeout = setTimeout(() => this.execute(), timeout)
+            logger().debug(
+              {
+                id: this.id,
+                docId: this.docId,
+                workspaceId: this.workspaceId,
+                documentId: this.documentId,
+              },
+              'AI tasks lock acquired. Executing AI tasks'
+            )
+
+            const tick = async () => {
+              try {
+                if (!this.isRunning) {
+                  logger().debug(
+                    {
+                      port: process.env['PORT'],
+                      id: this.id,
+                      docId: this.docId,
+                      workspaceId: this.workspaceId,
+                      documentId: this.documentId,
+                    },
+                    'AI Tasks is not running. Stopping consumer loop.'
+                  )
+                  resolve()
+                  return
+                }
+
+                await this.pQueue.onSizeLessThan(this.pQueue.concurrency)
+
+                const next = this.tasks.next()
+                let timeout = 500
+                if (next) {
+                  this.pQueue.add(() => this.executeItem(next))
+                  timeout = 0
+                }
+
+                if (this.isRunning) {
+                  this.timeout = setTimeout(() => tick(), timeout)
+                }
+              } catch (err) {
+                reject(err)
+              }
+            }
+
+            tick()
+          })
+      )
+    } catch (err) {
+      logger().error(
+        {
+          id: this.id,
+          docId: this.docId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          err,
+        },
+        'Unexpected error while executing AI tasks. Retrying in 2 seconds'
+      )
+      setTimeout(() => this.execute(), 2000)
     }
   }
 
@@ -203,6 +285,7 @@ export class AIExecutor {
 
   public static fromWSSharedV2(doc: WSSharedDocV2): AIExecutor {
     return new AIExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       AITasks.fromYjs(doc.ydoc),

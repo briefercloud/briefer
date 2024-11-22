@@ -23,20 +23,13 @@ import {
   switchBlockType,
   DashboardHeaderBlock,
   getBaseAttributes,
-  getInputAttributes,
-  isInputBlock,
   DropdownInputBlock,
-  getDropdownInputAttributes,
-  isDropdownInputBlock,
   DateInputBlock,
-  isDateInputBlock,
   getDateInputAttributes,
   PivotTableBlock,
-  isTextInputBlock,
 } from '@briefer/editor'
 import { equals, omit } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
-import { getYDocWithoutHistory } from './documents.js'
 import { WritebackBlock } from '@briefer/editor/types/blocks/writeback.js'
 import { acquireLock } from '../../lock.js'
 
@@ -45,14 +38,9 @@ export type LoadStateResult = {
   clock: number
   byteLength: number
 }
-type CleanHistoryResult = LoadStateResult
 export interface Persistor {
   load: (tx?: PrismaTransaction) => Promise<LoadStateResult>
   persistUpdate: (ydoc: WSSharedDocV2, update: Uint8Array) => Promise<string>
-  cleanHistory: (
-    ydoc: WSSharedDocV2,
-    tx?: PrismaTransaction
-  ) => Promise<CleanHistoryResult>
   canWrite: (
     decoder: decoding.Decoder,
     doc: WSSharedDocV2,
@@ -186,39 +174,6 @@ export class DocumentPersistor implements Persistor {
         return true
       case 'viewer':
         return false
-    }
-  }
-
-  public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    return acquireLock(`document:${this.documentId}`, () =>
-      this._cleanHistory(wsdoc, tx)
-    )
-  }
-
-  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const ydoc = getYDocWithoutHistory(wsdoc)
-    const state = Y.encodeStateAsUpdate(ydoc)
-    const buffer = Buffer.from(state)
-
-    const yjsAppDoc = await (tx ?? prisma()).yjsDocument.upsert({
-      where: { documentId: this.documentId },
-      create: {
-        documentId: this.documentId,
-        state: buffer,
-      },
-      update: {
-        clock: {
-          // TODO: we need to broadcast clock when multiple servers
-          increment: 1,
-        },
-        state: buffer,
-      },
-    })
-
-    return {
-      ydoc,
-      clock: yjsAppDoc.clock,
-      byteLength: state.byteLength,
     }
   }
 
@@ -458,54 +413,6 @@ export class AppPersistor implements Persistor {
     return id
   }
 
-  public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
-      this._cleanHistory(wsdoc, tx)
-    )
-  }
-
-  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const ydoc = getYDocWithoutHistory(wsdoc)
-
-    if (this.userId) {
-      const yjsAppDoc = await (tx ?? prisma()).userYjsAppDocument.update({
-        where: {
-          yjsAppDocumentId_userId: {
-            yjsAppDocumentId: this.yjsAppDocumentId,
-            userId: this.userId,
-          },
-        },
-        data: {
-          clock: {
-            // TODO: we need to broadcast clock when multiple servers
-            increment: 1,
-          },
-        },
-      })
-
-      return {
-        ydoc,
-        clock: yjsAppDoc.clock,
-        byteLength: Y.encodeStateAsUpdate(ydoc).length,
-      }
-    }
-
-    const yjsAppDoc = await (tx ?? prisma()).yjsAppDocument.update({
-      where: { id: this.yjsAppDocumentId },
-      data: {
-        clock: {
-          increment: 1,
-        },
-      },
-    })
-
-    return {
-      ydoc,
-      clock: yjsAppDoc.clock,
-      byteLength: Y.encodeStateAsUpdate(ydoc).length,
-    }
-  }
-
   public async replaceState(newState: Buffer) {
     return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
       this._replaceState(newState)
@@ -581,201 +488,6 @@ export class AppPersistor implements Persistor {
     const nextBlocks = getBlocks(nextDoc)
     const areBlocksAcceptable = this.areBlocksAcceptable(blocks, nextBlocks)
     return areBlocksAcceptable
-  }
-
-  private async getPublishedDoc(tx: PrismaTransaction): Promise<Y.Doc> {
-    const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
-      where: {
-        id: this.yjsAppDocumentId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
-
-    const doc = new Y.Doc()
-    this.applyUpdate(doc, yjsAppDoc.state)
-    return doc
-  }
-
-  private async userChangedState(
-    currentDoc: WSSharedDocV2,
-    tx: PrismaTransaction
-  ): Promise<boolean> {
-    // did the user interact with the app?
-    const currentBlocks = Array.from(currentDoc.blocks.values())
-    let publishedDoc: Y.Doc | null = null
-    for (const block of currentBlocks) {
-      const interacted = await switchBlockType(block, {
-        onRichText: async () => false,
-        onSQL: async () => false,
-        onPython: async () => false,
-        onVisualization: async () => false,
-        onWriteback: async () => false,
-        onFileUpload: async () => false,
-        onDashboardHeader: async () => false,
-        onPivotTable: async () => false,
-
-        // interactive blocks
-        onInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isTextInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-        onDropdownInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isDropdownInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedDropdownInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-        onDateInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isDateInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedDateInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-      })
-
-      if (interacted) {
-        return true
-      }
-    }
-
-    return false
-  }
-
-  private async userChangedInputBlock(
-    block: Y.XmlElement<InputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<InputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getInputAttributes(block, blocks)
-    const publishedAttrs = getInputAttributes(publishedBlock, publishedBlocks)
-
-    return !equals(attrs.value, publishedAttrs.value)
-  }
-
-  private async userChangedDropdownInputBlock(
-    block: Y.XmlElement<DropdownInputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<DropdownInputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getDropdownInputAttributes(block, blocks)
-    const publishedAttrs = getDropdownInputAttributes(
-      publishedBlock,
-      publishedBlocks
-    )
-
-    return !equals(attrs.value, publishedAttrs.value)
-  }
-
-  private async userChangedDateInputBlock(
-    block: Y.XmlElement<DateInputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<DateInputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getDateInputAttributes(block, blocks)
-    const publishedAttrs = getDateInputAttributes(
-      publishedBlock,
-      publishedBlocks
-    )
-
-    if (compareText(attrs.label, publishedAttrs.label) !== 0) {
-      return true
-    }
-
-    if (compareText(attrs.newValue, publishedAttrs.newValue) !== 0) {
-      return true
-    }
-
-    if (compareText(attrs.newVariable, publishedAttrs.newVariable) !== 0) {
-      return true
-    }
-
-    // this code is written like this so that it wont compile
-    // if new attributes are added.
-    // that ensures that we will remember to update this
-    // method when new attributes are introduced
-    type ToCompare = Omit<
-      DateInputBlock,
-      // label is checked above
-      | 'label'
-
-      // newVariable is checked above
-      | 'newVariable'
-
-      // newValue is checked above
-      | 'newValue'
-    >
-    const currentToCompare: ToCompare = {
-      ...getBaseAttributes(block),
-      variable: attrs.variable,
-      value: attrs.value,
-      executedAt: attrs.executedAt,
-      configOpen: attrs.configOpen,
-      dateType: attrs.dateType,
-      error: attrs.error,
-    }
-    const publishedToCompare: ToCompare = {
-      ...getBaseAttributes(publishedBlock),
-      variable: publishedAttrs.variable,
-      value: publishedAttrs.value,
-      executedAt: publishedAttrs.executedAt,
-      configOpen: publishedAttrs.configOpen,
-      dateType: publishedAttrs.dateType,
-      error: publishedAttrs.error,
-    }
-
-    return !equals(currentToCompare, publishedToCompare)
   }
 
   private areBlocksAcceptable(

@@ -183,23 +183,22 @@ export async function updateAppState(
   app: YjsAppDocument,
   socketServer: IOServer
 ) {
-  const state = Y.encodeStateAsUpdate(ydoc.ydoc)
-
-  const usersApps = await prisma().userYjsAppDocument.findMany({
-    where: { yjsAppDocumentId: app.id },
-    select: { userId: true },
-  })
-
-  await Promise.all(
-    usersApps.map(async (userApp) =>
-      getYDocForUpdate(
-        getDocId(app.documentId, { id: app.id, userId: userApp.userId }),
-        socketServer,
-        app.documentId,
-        ydoc.workspaceId,
-        (ydoc) => ydoc.replaceState(state),
-        new AppPersistor(app.id, userApp.userId)
-      )
-    )
-  )
+  // TODO
+  // const state = Y.encodeStateAsUpdate(ydoc.ydoc)
+  // const usersApps = await prisma().userYjsAppDocument.findMany({
+  //   where: { yjsAppDocumentId: app.id },
+  //   select: { userId: true },
+  // })
+  // await Promise.all(
+  //   usersApps.map(async (userApp) =>
+  //     getYDocForUpdate(
+  //       getDocId(app.documentId, { id: app.id, userId: userApp.userId }),
+  //       socketServer,
+  //       app.documentId,
+  //       ydoc.workspaceId,
+  //       (ydoc) => ydoc.replaceState(state),
+  //       new AppPersistor(app.id, userApp.userId)
+  //     )
+  //   )
+  // )
 }

@@ -50,6 +50,7 @@ import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
 import { AIExecutor } from './executor/ai/index.js'
+import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -303,7 +304,6 @@ function startDocumentCollection() {
   async function collectDocs() {
     const start = Date.now()
     try {
-      console.log('DOCS SIZE', docs.size)
       logger().trace({ docsCount: docs.size }, 'Collecting docs')
       const queue = new PQueue({ concurrency: 6 })
       let collected = 0
@@ -411,17 +411,19 @@ export class WSSharedDocV2 {
   }
 
   public async init() {
-    this.subscription = await subscribe(
-      this.getPubSubChannel(),
-      this.onSubMessage
-    )
+    await acquireLock(`yjs-${this.documentId}`, async () => {
+      this.subscription = await subscribe(
+        this.getPubSubChannel(),
+        this.onSubMessage
+      )
 
-    this.ydoc.on('update', (update, _arg1, _arg2, tr) =>
-      this.updateHandler(update, tr)
-    )
-    this.awareness.on('update', this.awarenessHandler)
-    this.executor.start()
-    this.aiExecutor.start()
+      this.ydoc.on('update', (update, _arg1, _arg2, tr) =>
+        this.updateHandler(update, tr)
+      )
+      this.awareness.on('update', this.awarenessHandler)
+      this.executor.start()
+      this.aiExecutor.start()
+    })
   }
 
   private onSubMessage = async (message?: string) => {
@@ -494,44 +496,6 @@ export class WSSharedDocV2 {
     }
 
     Y.applyUpdate(this.ydoc, update.update)
-  }
-
-  public async replaceState(state: Uint8Array | Buffer): Promise<void> {
-    await this.serialUpdatesQueue.add(async () => {
-      const result = await this.persistor.replaceState(
-        state instanceof Buffer ? state : Buffer.from(state)
-      )
-
-      this.reset(result.ydoc, result.clock, result.byteLength)
-    })
-  }
-
-  private reset(newYDoc: Y.Doc, newClock: number, newByteLength: number) {
-    this.ydoc.off('update', this.updateHandler)
-    this.ydoc.destroy()
-
-    this.awareness.off('update', this.awarenessHandler)
-    this.awareness.destroy()
-
-    this.ydoc = newYDoc
-    this.clock = newClock
-    this.byteLength = newByteLength
-
-    this.executor.stop()
-
-    this.executor = Executor.fromWSSharedDocV2(this)
-
-    this.aiExecutor.stop()
-    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
-
-    this.title = this.getTitleFromDoc()
-
-    this.awareness = this.configAwareness()
-    this.ydoc.on('update', (update, _arg1, _arg2, tr) => {
-      this.updateHandler(update, tr)
-    })
-    this.executor.start()
-    this.aiExecutor.start()
   }
 
   private awarenessHandler = (

@@ -1,101 +1,55 @@
-import prisma from '@briefer/database'
-import { v4 as uuidv4 } from 'uuid'
-import { z } from 'zod'
+import { parse as parseUUID } from 'uuid'
+import prisma, { getPGInstance } from '@briefer/database'
 import { logger } from './logger.js'
 
-const INTERVAL_MS = 5000
+// PostgreSQL advisory lock key is a 64-bit integer
+//
+// However we use UUIDs as identifiers in our database and JavaScript
+// only supports 53-bit integers
+//
+// So, we convert UUIDs to two 32-bit integers since PostgreSQL advisory
+// lock can accept two 32-bit integers as a key
+function uuidToPGLockKey(uuid: string) {
+  const binaryId: Uint8Array = parseUUID(uuid)
+  const view = new DataView(binaryId.buffer)
+
+  // first 32 bits
+  const fst = view.getInt32(0)
+
+  // last 32 bits
+  const snd = view.getInt32(4)
+
+  return [fst, snd]
+}
+
 export async function acquireLock<T>(
   name: string,
-  cb: () => Promise<T>,
-  expirationTimeMs: number = 30000
+  cb: () => Promise<T>
 ): Promise<T> {
-  const now = new Date()
-  const expiresAt = new Date(now.getTime() + expirationTimeMs)
-  const ownerId = uuidv4()
+  const { pgClient } = await getPGInstance()
 
-  let interval: NodeJS.Timeout | null = null
+  const lock = await prisma().lock.upsert({
+    where: {
+      name,
+    },
+    update: {},
+    create: { name },
+  })
+
+  const [fst, snd] = uuidToPGLockKey(lock.id)
+
   try {
-    let attempt = 1
-    while (true) {
-      logger().debug({ name, ownerId, attempt }, 'attempting to acquire lock')
-      try {
-        await prisma().lock.upsert({
-          where: {
-            name,
-            OR: [
-              { isLocked: false },
-              {
-                expiresAt: {
-                  lte: now,
-                },
-              },
-            ],
-          },
-          update: {
-            isLocked: true,
-            acquiredAt: now,
-            expiresAt,
-            ownerId,
-          },
-          create: {
-            name,
-            isLocked: true,
-            acquiredAt: now,
-            expiresAt: expiresAt,
-            ownerId,
-          },
-        })
-        logger().debug({ name, ownerId }, 'lock acquired')
+    // acquire lock
+    logger().trace({ name, fst, snd }, 'Acquiring lock')
+    await pgClient.query('SELECT pg_advisory_lock($1, $2)', [fst, snd])
+    logger().trace({ name, fst, snd }, 'Lock acquired')
 
-        interval = setInterval(async () => {
-          logger().debug({ name, ownerId }, 'incrementing lock expiration time')
-          await prisma().lock.update({
-            where: {
-              name,
-              ownerId,
-            },
-            data: {
-              expiresAt: new Date(new Date().getTime() + INTERVAL_MS),
-            },
-          })
-        }, INTERVAL_MS)
-
-        const r = await cb()
-        clearInterval(interval)
-        return r
-      } catch (err) {
-        // catch unique constraint violation
-        if (z.object({ code: z.literal('P2002') }).safeParse(err).success) {
-          logger().debug({ name, ownerId }, 'lock already acquired, retrying')
-          await new Promise((resolve) => setTimeout(resolve, 200))
-          attempt++
-          continue
-        }
-
-        if (!interval) {
-          logger().error(
-            {
-              name,
-              ownerId,
-              err,
-            },
-            'error acquiring lock'
-          )
-        }
-        throw err
-      }
-    }
+    // run callback
+    return await cb()
   } finally {
-    logger().debug({ name, ownerId }, 'releasing lock')
-    if (interval) {
-      clearInterval(interval)
-    }
-    await prisma().lock.deleteMany({
-      where: {
-        name,
-        ownerId,
-      },
-    })
-    logger().debug({ name, ownerId }, 'lock released')
+    // release lock
+    logger().trace({ name, fst, snd }, 'Releasing lock')
+    await pgClient.query('SELECT pg_advisory_unlock($1, $2)', [fst, snd])
+    logger().trace({ name, fst, snd }, 'Lock released')
   }
 }

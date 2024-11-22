@@ -224,6 +224,10 @@ export async function createSocketServer(server: http.Server): Promise<Server> {
     })
   })
 
+  io.on('error', (err) => {
+    logger().error({ err }, 'Socket server error occurred')
+  })
+
   return {
     io: io,
     shutdown: async () => {
