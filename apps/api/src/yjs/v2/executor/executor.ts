@@ -16,7 +16,6 @@ import {
   ExecutionQueueItemVisualizationMetadata,
   VisualizationBlock,
   ExecutionQueueItemSQLRenameDataframeMetadata,
-  isInputBlock,
   ExecutionQueueItemTextInputSaveValueMetadata,
   InputBlock,
   ExecutionQueueItemTextInputRenameVariableMetadata,
@@ -34,6 +33,7 @@ import {
   WritebackBlock,
   ExecutionQueueItemWritebackMetadata,
   isWritebackBlock,
+  isTextInputBlock,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -473,7 +473,7 @@ export class Executor {
       }
       case 'text-input-save-value':
       case 'text-input-rename-variable': {
-        if (!isInputBlock(block)) {
+        if (!isTextInputBlock(block)) {
           logger().error(
             {
               port: process.env['PORT'],

@@ -89,14 +89,13 @@ export class ExecutionQueue {
 
     const items: YExecutionQueueItem[] = []
 
-    const dependencies = this.options.skipDependencyCheck
-      ? []
-      : computeDepencyQueue(
-          block,
-          this.layout,
-          this.blocks,
-          environmentStartedAt
-        )
+    const dependencies = computeDepencyQueue(
+      block,
+      this.layout,
+      this.blocks,
+      this.options.skipDependencyCheck,
+      environmentStartedAt
+    )
     for (const dep of dependencies) {
       const metadata = this.getExecutionQueueMetadataForBlock(dep)
       if (metadata) {
@@ -191,14 +190,13 @@ export class ExecutionQueue {
     const bId =
       typeof blockId === 'string' ? blockId : getBaseAttributes(blockId).id
 
-    const dependencies = this.options.skipDependencyCheck
-      ? []
-      : computeDepencyQueue(
-          block,
-          this.layout,
-          this.blocks,
-          environmentStartedAt
-        )
+    const dependencies = computeDepencyQueue(
+      block,
+      this.layout,
+      this.blocks,
+      this.options.skipDependencyCheck,
+      environmentStartedAt
+    )
 
     const blocksBefore: YExecutionQueueItem[] = []
     for (const dep of dependencies) {
