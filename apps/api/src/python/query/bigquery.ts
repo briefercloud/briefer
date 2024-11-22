@@ -180,6 +180,13 @@ def _briefer_make_bq_query():
                 df = pd.concat(chunks, ignore_index=True)
                 convert_columns(df, columns_by_type)
                 initial_rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+
+                # convert all values to string to make sure we preserve the python values
+                # when displaying this data in the browser
+                for row in initial_rows:
+                    for key in row:
+                        row[key] = str(row[key])
+
                 if columns is None:
                     columns = get_columns(df)
 
@@ -208,6 +215,12 @@ def _briefer_make_bq_query():
 
         if len(initial_rows) < 250:
             initial_rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+
+            # convert all values to string to make sure we preserve the python values
+            # when displaying this data in the browser
+            for row in initial_rows:
+                for key in row:
+                    row[key] = str(row[key])
 
         columns = get_columns(df)
         result = {
