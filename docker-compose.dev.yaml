@@ -77,25 +77,16 @@ services:
     volumes:
       - ./data/mysql/ecommerce/data:/var/lib/mysql
 
-  api-nginx:
-    image: nginx:1.27
-    command: /bin/sh -c "/generate-nginx-config.sh && nginx -g 'daemon off;'"
-    ports:
-      - '8080:8080'
-    environment:
-      MULTI_INSTANCE: ${MULTI_INSTANCE:-false}
+  haproxy:
+    image: haproxy:3.0
     volumes:
       - type: bind
-        source: ./dev/nginx/nginx.conf
-        target: /etc/nginx/nginx.conf
+        source: ./haproxy.cfg
+        target: /usr/local/etc/haproxy/haproxy.cfg
         volume:
           nocopy: true
-      - type: bind
-        source: ./dev/nginx/generate-nginx-config.sh
-        target: /generate-nginx-config.sh
-        volume:
-          nocopy: true
-    restart: always
+    ports:
+      - '8080:8080'
 
 volumes:
   postgres_dev_data:
