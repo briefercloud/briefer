@@ -58,10 +58,10 @@ export async function recoverFromNotFound<A>(
   }
 }
 
-let pgInstance: { pgClient: pg.PoolClient; pool: pg.Pool } | null = null
+let pgInstance: { pubSubClient: pg.Client; pool: pg.Pool } | null = null
 let subscribers: Record<string, Set<(message?: string) => void>> = {}
 export async function getPGInstance(): Promise<{
-  pgClient: pg.PoolClient
+  pubSubClient: pg.Client
   pool: pg.Pool
 }> {
   if (!connectionString) {
@@ -73,7 +73,9 @@ export async function getPGInstance(): Promise<{
   }
 
   const pgPool = new pg.Pool({ connectionString })
-  const pubSubClient = await pgPool.connect()
+  const pubSubClient = new pg.Client({ connectionString })
+  await pubSubClient.connect()
+
   pubSubClient.on('notification', (notification) => {
     const subs = subscribers[notification.channel]
     if (!subs) {
@@ -85,7 +87,7 @@ export async function getPGInstance(): Promise<{
     })
   })
 
-  pgInstance = { pgClient: pubSubClient, pool: pgPool }
+  pgInstance = { pubSubClient, pool: pgPool }
 
   return pgInstance
 }
@@ -94,7 +96,7 @@ export async function subscribe(
   channel: string,
   onNotification: (message?: string) => void
 ): Promise<() => Promise<void>> {
-  const { pgClient: pubSubClient } = await getPGInstance()
+  const { pubSubClient } = await getPGInstance()
 
   const channelLockId = hashChannel(channel)
 
@@ -160,7 +162,7 @@ export async function getPGPool(): Promise<pg.Pool> {
 }
 
 export async function publish(channel: string, message: string): Promise<void> {
-  const { pgClient: pubSubClient } = await getPGInstance()
+  const { pubSubClient } = await getPGInstance()
   await pubSubClient.query('SELECT pg_notify($1, $2)', [channel, message])
 }
 

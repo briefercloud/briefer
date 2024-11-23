@@ -184,16 +184,18 @@ export async function runSchedule(socketServer: IOServer) {
       counters.deleted++
     }
 
-    logger().info(
-      {
-        created: counters.created,
-        updated: counters.updated,
-        deleted: counters.deleted,
-        unchanged: counters.unchanged,
-        module: 'schedule',
-      },
-      'Updated schedules'
-    )
+    if (counters.created > 0 || counters.updated > 0 || counters.deleted > 0) {
+      logger().info(
+        {
+          created: counters.created,
+          updated: counters.updated,
+          deleted: counters.deleted,
+          unchanged: counters.unchanged,
+          module: 'schedule',
+        },
+        'Updated schedules'
+      )
+    }
   }
 
   let stop = false

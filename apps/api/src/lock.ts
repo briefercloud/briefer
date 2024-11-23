@@ -26,7 +26,7 @@ export async function acquireLock<T>(
   name: string,
   cb: () => Promise<T>
 ): Promise<T> {
-  const { pgClient } = await getPGInstance()
+  const { pool } = await getPGInstance()
 
   const lock = await prisma().lock.upsert({
     where: {
@@ -41,7 +41,7 @@ export async function acquireLock<T>(
   try {
     // acquire lock
     logger().trace({ name, fst, snd }, 'Acquiring lock')
-    await pgClient.query('SELECT pg_advisory_lock($1, $2)', [fst, snd])
+    await pool.query('SELECT pg_advisory_lock($1, $2)', [fst, snd])
     logger().trace({ name, fst, snd }, 'Lock acquired')
 
     // run callback
@@ -49,7 +49,7 @@ export async function acquireLock<T>(
   } finally {
     // release lock
     logger().trace({ name, fst, snd }, 'Releasing lock')
-    await pgClient.query('SELECT pg_advisory_unlock($1, $2)', [fst, snd])
+    await pool.query('SELECT pg_advisory_unlock($1, $2)', [fst, snd])
     logger().trace({ name, fst, snd }, 'Lock released')
   }
 }

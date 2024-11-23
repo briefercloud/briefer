@@ -278,7 +278,7 @@ export function setupYJSSocketServerV2(
 const wsReadyStateConnecting = 0
 const wsReadyStateOpen = 1
 
-const DOCUMENT_COLLECTION_INTERVAL = 1000 * 5 // 5 seconds
+const DOCUMENT_COLLECTION_INTERVAL = 1000 * 60 // 1 minute
 export const docs = new Map<string, WSSharedDocV2>()
 
 export const docsCache = new LRUCache<string, WSSharedDocV2>({
@@ -578,7 +578,7 @@ export class WSSharedDocV2 {
   }
 
   public canCollect() {
-    return this.refs === 0 && this.executor.isIdle()
+    return this.refs === 0 && this.executor.isIdle() && this.aiExecutor.isIdle()
   }
 
   public canWrite(

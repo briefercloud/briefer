@@ -59,6 +59,10 @@ export class AIExecutor {
     this.execute()
   }
 
+  public isIdle(): boolean {
+    return this.pQueue.size === 0
+  }
+
   public async stop(): Promise<void> {
     this.isRunning = false
 

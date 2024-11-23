@@ -9,7 +9,7 @@ import {
   ApiDocument,
   APIReusableComponent,
   EnvironmentStatus,
-  getPGPool,
+  getPGInstance,
 } from '@briefer/database'
 import {
   Comment,
@@ -114,9 +114,9 @@ export async function createSocketServer(server: http.Server): Promise<Server> {
     cors: { credentials: true, origin: config().FRONTEND_URL },
   })
 
-  const pgPool = await getPGPool()
+  const { pool } = await getPGInstance()
   io.adapter(
-    createAdapter(pgPool, {
+    createAdapter(pool, {
       tableName: 'socket_io_attachments',
       errorHandler: (err) => {
         logger().error({ err }, 'Error in @socket.io/postgres-adapter adapter')
