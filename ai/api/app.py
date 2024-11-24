@@ -10,16 +10,10 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import FastAPI, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
-from langchain_community.utilities import SQLDatabase
-from langchain_openai import ChatOpenAI
 from decouple import config
-from api.chains.sql import create_sql_query_chain
 from api.llms import initialize_llm
-from api.chains.sql_edit import create_sql_edit_query_chain
-from api.chains.python_edit import create_python_edit_query_chain
 from api.chains.stream.python_edit import create_python_edit_stream_query_chain
 from api.chains.stream.sql_edit import create_sql_edit_stream_query_chain
-from api.chains.vega import create_vega_chain
 import secrets
 from sqlalchemy.engine import create_engine
 from typing import Any
@@ -52,35 +46,6 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-class SQLInputData(BaseModel):
-    credentialsInfo: Any
-    databaseURL: str
-    question: str
-    modelId: Optional[str] = None
-
-@app.post("/v1/sql")
-async def v1_sql(data: SQLInputData, _ = Depends(get_current_username)):
-    engine = get_database_engine(data.databaseURL, data.credentialsInfo)
-    db = SQLDatabase(engine=engine)
-
-    llm = initialize_llm(model_id=data.modelId)
-    chain = create_sql_query_chain(llm, db)
-    res = chain.invoke({"question": data.question})
-
-    return res["text"]
-
-
-class VegaInputData(BaseModel):
-    sql: str
-    model_id: Optional[str] = None
-
-@app.post("/v1/vega")
-async def v1_vega(data: VegaInputData, _ = Depends(get_current_username)):
-    llm = initialize_llm(model_id=data.modelId)
-    chain = create_vega_chain(llm)
-    res = chain.invoke({"sql": data.sql})
-
-    return res["text"]
 
 class SQLEditInputData(BaseModel):
     databaseURL: str
@@ -89,33 +54,6 @@ class SQLEditInputData(BaseModel):
     instructions: str
     modelId: Optional[str] = None
     openaiApiKey: Optional[str] = None
-
-@app.post("/v1/sql/edit")
-async def v1_sql_edit(data: SQLEditInputData, _ = Depends(get_current_username)):
-    engine = get_database_engine(data.databaseURL, data.credentialsInfo)
-    db = SQLDatabase(engine=engine)
-
-    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
-    chain = create_sql_edit_query_chain(llm, db)
-    res = chain.invoke({"query": data.query, "instructions": data.instructions})
-
-    return res["text"]
-
-class PythonEditInputData(BaseModel):
-    source: str
-    instructions: str
-    allowedLibraries: List[str]
-    variables: str
-    modelId: Optional[str] = None
-    openaiApiKey: Optional[str] = None
-
-@app.post("/v1/python/edit")
-async def v1_python_edit(data: PythonEditInputData, _ = Depends(get_current_username)):
-    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
-    chain = create_python_edit_query_chain(llm)
-    res = chain.invoke({"source": data.source, "instructions": data.instructions, "allowed_libraries": data.allowedLibraries})
-
-    return res["text"]
 
 @app.post("/v1/stream/sql/edit")
 async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_username)):
@@ -140,6 +78,15 @@ async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_user
                 yield json.dumps(result) + "\n"
 
         return StreamingResponse(generate(), media_type="text/plain")
+
+class PythonEditInputData(BaseModel):
+    source: str
+    instructions: str
+    allowedLibraries: List[str]
+    variables: str
+    modelId: Optional[str] = None
+    openaiApiKey: Optional[str] = None
+
 
 @app.post("/v1/stream/python/edit")
 async def v1_stream_python_edit(data: PythonEditInputData, _ = Depends(get_current_username)):
