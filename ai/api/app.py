@@ -3,7 +3,6 @@
 # from langchain.globals import set_verbose
 # set_verbose(True)
 
-import tempfile
 import json
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
@@ -48,36 +47,23 @@ def get_current_username(credentials: HTTPBasicCredentials = Depends(security)):
 
 
 class SQLEditInputData(BaseModel):
-    databaseURL: str
-    credentialsInfo: Any
     query: str
     instructions: str
+    dialect: str
+    tableInfo: Optional[str] = None
     modelId: Optional[str] = None
     openaiApiKey: Optional[str] = None
 
 @app.post("/v1/stream/sql/edit")
 async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_username)):
-    with tempfile.NamedTemporaryFile(delete=True) as temp_cert_file:
-        credentialsInfo = data.credentialsInfo
-        cert_temp_file_path = None
-        if data.credentialsInfo and "sslrootcert" in data.credentialsInfo:
-            certdata = bytes.fromhex(data.credentialsInfo["sslrootcert"])
-            temp_cert_file.write(certdata)
-            temp_cert_file.flush()
-            cert_temp_file_path = temp_cert_file.name
-            credentialsInfo = None
+    llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
+    chain = create_sql_edit_stream_query_chain(llm, data.dialect, data.tableInfo)
 
-        engine = None
-        if data.databaseURL != "duckdb":
-            engine = get_database_engine(data.databaseURL, credentialsInfo, cert_temp_file_path)
-        llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
-        chain = create_sql_edit_stream_query_chain(llm, engine)
+    async def generate():
+        async for result in chain.astream({"query": data.query, "instructions": data.instructions}):
+            yield json.dumps(result) + "\n"
 
-        async def generate():
-            async for result in chain.astream({"query": data.query, "instructions": data.instructions}):
-                yield json.dumps(result) + "\n"
-
-        return StreamingResponse(generate(), media_type="text/plain")
+    return StreamingResponse(generate(), media_type="text/plain")
 
 class PythonEditInputData(BaseModel):
     source: str

@@ -10,10 +10,9 @@ import {
 import PQueue from 'p-queue'
 import * as Y from 'yjs'
 import prisma, {
-  getCredentialsInfo,
-  getDatabaseURL,
   listDataSources,
   getWorkspaceWithSecrets,
+  DataSource,
 } from '@briefer/database'
 import {
   listDataFrames,
@@ -22,14 +21,21 @@ import {
 } from '../../../../python/query/index.js'
 import { updateDataframes } from '../index.js'
 import { logger } from '../../../../logger.js'
-import { DataFrame, RunQueryResult } from '@briefer/types'
+import {
+  DataFrame,
+  DataSourceStructureStateV3,
+  RunQueryResult,
+} from '@briefer/types'
 import { sqlEditStreamed } from '../../../../ai-api.js'
-import { config } from '../../../../config/index.js'
 import { EventContext, SQLEvents } from '../../../../events/index.js'
 import {
   IJupyterManager,
   getJupyterManager,
 } from '../../../../jupyter/index.js'
+import {
+  fetchDataSourceStructureFromCache,
+  listSchemaTables,
+} from '../../../../datasources/structure.js'
 
 async function editWithAI(
   workspaceId: string,
@@ -54,11 +60,12 @@ async function editWithAI(
     event(assistantModelId)
 
     return sqlEditStreamed(
-      'duckdb',
       source,
       instructions,
-      null,
+      'DuckDB',
       onSuggestions,
+      // TODO: what should be the schema when duckdb?
+      null,
       assistantModelId,
       workspace?.secrets?.openAiApiKey ?? null
     )
@@ -70,22 +77,43 @@ async function editWithAI(
     throw new Error(`Datasource with id ${datasourceId} not found`)
   }
 
-  const [databaseURL, credentialsInfo] = await Promise.all([
-    getDatabaseURL(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
-    getCredentialsInfo(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
-  ])
+  const structure = await fetchDataSourceStructureFromCache(
+    dataSource.data.id,
+    dataSource.type
+  )
+  const tableInfo = await tableInfoFromStructure(dataSource, structure)
 
   event(assistantModelId)
 
   return sqlEditStreamed(
-    databaseURL,
     source,
     instructions,
-    credentialsInfo,
+    dataSource.type,
     onSuggestions,
+    tableInfo,
     assistantModelId,
     workspace?.secrets?.openAiApiKey ?? null
   )
+}
+
+async function tableInfoFromStructure(
+  config: DataSource,
+  structure: DataSourceStructureStateV3 | null
+): Promise<string | null> {
+  if (!structure) {
+    return null
+  }
+
+  let result = ''
+  for await (const schemaTable of listSchemaTables([{ config, structure }])) {
+    result += `${schemaTable.schemaName}.${schemaTable.tableName}\n`
+    for (const columns of schemaTable.table.columns) {
+      result += `${columns.name} ${columns.type}\n`
+    }
+    result += '\n'
+  }
+
+  return result.trim()
 }
 
 export type SQLEffects = {

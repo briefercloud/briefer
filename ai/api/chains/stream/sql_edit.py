@@ -62,7 +62,6 @@ def get_table_info(engine):
             system_catalogs = ["system", "information_schema", "current", "jmx", "memory"]
             all_catalogs = [row[0] for row in engine.execute("SHOW CATALOGS").fetchall()]
             user_catalogs = list(filter(lambda c: c not in system_catalogs, all_catalogs))
-            print(user_catalogs)
             with ThreadPoolExecutor() as executor:
                 catalog_engines = [create_engine(engine.url.set(database=catalog)) for catalog in user_catalogs]
                 results = executor.map(lambda ce: get_catalog_table_info(ce), catalog_engines)
@@ -83,15 +82,13 @@ def get_table_info(engine):
     return table_info[:100000]
 
 
-def create_sql_edit_stream_query_chain(llm, engine):
-    table_info = get_table_info(engine)
-
+def create_sql_edit_stream_query_chain(llm, dialect, table_info):
     prompt = PromptTemplate(
         template=template,
         input_variables=["query", "instructions"],
         partial_variables={
             "table_info": table_info,
-            "dialect": engine.dialect.name if engine else "DuckDB",
+            "dialect": dialect,
         },
     )
 

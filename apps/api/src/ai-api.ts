@@ -11,11 +11,11 @@ const base64Credentials = () =>
   ).toString('base64')
 
 export async function sqlEditStreamed(
-  databaseURL: string,
   query: string,
   instructions: string,
-  credentialsInfo: object | null,
+  dialect: string,
   onSQL: (sql: string) => void,
+  tableInfo: string | null,
   modelId: string | null,
   openaiApiKey: string | null
 ): Promise<{
@@ -26,10 +26,10 @@ export async function sqlEditStreamed(
   const response = await axios.post(
     `${config().AI_API_URL}/v1/stream/sql/edit`,
     {
-      databaseURL,
       query,
       instructions,
-      credentialsInfo,
+      dialect,
+      tableInfo,
       modelId,
       openaiApiKey: openaiApiKey
         ? decrypt(openaiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
