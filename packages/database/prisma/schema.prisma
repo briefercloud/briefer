@@ -562,6 +562,15 @@ model Environment {
 model Lock {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String   @unique
+  acquiredAt DateTime @default(now())
+  expiresAt  DateTime
+  isLocked   Boolean  @default(false)
+  ownerId    String   @db.Uuid
+}
+
+model Lock2 {
+  id         BigInt   @id @default(autoincrement())
+  name       String   @unique
 }
 
 model WorkspaceSecrets {

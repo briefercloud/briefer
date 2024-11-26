@@ -1,26 +1,5 @@
-import { parse as parseUUID } from 'uuid'
 import prisma, { getPGInstance } from '@briefer/database'
 import { logger } from './logger.js'
-
-// PostgreSQL advisory lock key is a 64-bit integer
-//
-// However we use UUIDs as identifiers in our database and JavaScript
-// only supports 53-bit integers
-//
-// So, we convert UUIDs to two 32-bit integers since PostgreSQL advisory
-// lock can accept two 32-bit integers as a key
-function uuidToPGLockKey(uuid: string) {
-  const binaryId: Uint8Array = parseUUID(uuid)
-  const view = new DataView(binaryId.buffer)
-
-  // first 32 bits
-  const fst = view.getInt32(0)
-
-  // last 32 bits
-  const snd = view.getInt32(4)
-
-  return [fst, snd]
-}
 
 export async function acquireLock<T>(
   name: string,
@@ -28,7 +7,7 @@ export async function acquireLock<T>(
 ): Promise<T> {
   const { pool } = await getPGInstance()
 
-  const lock = await prisma().lock.upsert({
+  const lock = await prisma().lock2.upsert({
     where: {
       name,
     },
@@ -36,20 +15,18 @@ export async function acquireLock<T>(
     create: { name },
   })
 
-  const [fst, snd] = uuidToPGLockKey(lock.id)
-
   try {
     // acquire lock
-    logger().trace({ name, fst, snd }, 'Acquiring lock')
-    await pool.query('SELECT pg_advisory_lock($1, $2)', [fst, snd])
-    logger().trace({ name, fst, snd }, 'Lock acquired')
+    logger().trace({ name, id: lock.id }, 'Acquiring lock')
+    await pool.query('SELECT pg_advisory_lock($1)', [lock.id])
+    logger().trace({ name, id: lock.id }, 'Lock acquired')
 
     // run callback
     return await cb()
   } finally {
     // release lock
-    logger().trace({ name, fst, snd }, 'Releasing lock')
-    await pool.query('SELECT pg_advisory_unlock($1, $2)', [fst, snd])
-    logger().trace({ name, fst, snd }, 'Lock released')
+    logger().trace({ name, id: lock.id }, 'Releasing lock')
+    await pool.query('SELECT pg_advisory_unlock($1)', [lock.id])
+    logger().trace({ name, id: lock.id }, 'Lock released')
   }
 }
