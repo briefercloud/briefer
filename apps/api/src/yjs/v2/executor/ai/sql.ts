@@ -11,17 +11,20 @@ import {
 } from '@briefer/editor'
 import * as Y from 'yjs'
 import {
-  getCredentialsInfo,
-  getDatabaseURL,
   listDataSources,
   getWorkspaceWithSecrets,
+  DataSource,
 } from '@briefer/database'
 import { logger } from '../../../../logger.js'
 import { sqlEditStreamed } from '../../../../ai-api.js'
-import { config } from '../../../../config/index.js'
 import { AIEvents } from '../../../../events/index.js'
 import { WSSharedDocV2 } from '../../index.js'
 import { CanceledError } from 'axios'
+import {
+  fetchDataSourceStructureFromCache,
+  listSchemaTables,
+} from '../../../../datasources/structure.js'
+import { DataSourceStructureStateV3 } from '@briefer/types'
 
 async function editWithAI(
   workspaceId: string,
@@ -46,11 +49,12 @@ async function editWithAI(
     event(assistantModelId)
 
     return sqlEditStreamed(
-      'duckdb',
       source,
       instructions,
-      null,
+      'DuckDB',
       onSuggestions,
+      // TODO: what should be the schema when duckdb?
+      null,
       assistantModelId,
       workspace?.secrets?.openAiApiKey ?? null
     )
@@ -62,22 +66,68 @@ async function editWithAI(
     throw new Error(`Datasource with id ${datasourceId} not found`)
   }
 
-  const [databaseURL, credentialsInfo] = await Promise.all([
-    getDatabaseURL(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
-    getCredentialsInfo(dataSource, config().DATASOURCES_ENCRYPTION_KEY),
-  ])
+  const structure = await fetchDataSourceStructureFromCache(
+    dataSource.data.id,
+    dataSource.type
+  )
+  const tableInfo = await tableInfoFromStructure(dataSource, structure)
 
   event(assistantModelId)
 
+  const dialect: string = (() => {
+    switch (dataSource.type) {
+      case 'psql':
+        return 'postgresql'
+      case 'redshift':
+        return 'redshift'
+      case 'trino':
+        return 'trino'
+      case 'bigquery':
+        return 'bigquery'
+      case 'athena':
+        return 'awsathena'
+      case 'oracle':
+        return 'oracle'
+      case 'mysql':
+        return 'mysql'
+      case 'sqlserver':
+        return 'mssql'
+      case 'snowflake':
+        return 'snowflake'
+      case 'databrickssql':
+        return 'databricks'
+    }
+  })()
+
   return sqlEditStreamed(
-    databaseURL,
     source,
     instructions,
-    credentialsInfo,
+    dialect,
     onSuggestions,
+    tableInfo,
     assistantModelId,
     workspace?.secrets?.openAiApiKey ?? null
   )
+}
+
+async function tableInfoFromStructure(
+  config: DataSource,
+  structure: DataSourceStructureStateV3 | null
+): Promise<string | null> {
+  if (!structure) {
+    return null
+  }
+
+  let result = ''
+  for await (const schemaTable of listSchemaTables([{ config, structure }])) {
+    result += `${schemaTable.schemaName}.${schemaTable.tableName}\n`
+    for (const columns of schemaTable.table.columns) {
+      result += `${columns.name} ${columns.type}\n`
+    }
+    result += '\n'
+  }
+
+  return result.trim()
 }
 
 export interface ISQLAIExecutor {
