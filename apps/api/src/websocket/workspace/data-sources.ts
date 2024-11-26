@@ -1,4 +1,4 @@
-import prisma, {
+import {
   APIDataSource,
   DataSourceType,
   getDatasource,
@@ -7,9 +7,11 @@ import prisma, {
 import { IOServer, Socket } from '../index.js'
 import { z } from 'zod'
 import { Session } from '../../types.js'
-import { fetchDataSourceStructure } from '../../datasources/structure.js'
-import { DataSourceColumn, DataSourceTable, uuidSchema } from '@briefer/types'
-import { logger } from '../../logger.js'
+import {
+  fetchDataSourceStructure,
+  listSchemaTables,
+} from '../../datasources/structure.js'
+import { DataSourceTable, uuidSchema } from '@briefer/types'
 
 export function refreshDataSources(
   socketServer: IOServer,
@@ -97,53 +99,11 @@ async function emitSchemas(
   workspaceId: string,
   dataSources: APIDataSource[]
 ) {
-  const schemaToDataSourceId = new Map(
-    dataSources.map((d) => [d.structure.id, d.config.data.id])
-  )
-  const schemaIds = dataSources.map((d) => d.structure.id)
-
-  const batchSize = 100
-  let skip = 0
-  let hasMoreResults = true
-
-  while (hasMoreResults) {
-    const tables = await prisma().dataSourceSchemaTable.findMany({
-      where: { dataSourceSchemaId: { in: schemaIds } },
-      skip,
-      take: batchSize,
-      orderBy: { createdAt: 'asc' },
+  for await (const schemaTable of listSchemaTables(dataSources)) {
+    socket.emit('workspace-datasource-schema-table-update', {
+      workspaceId,
+      ...schemaTable,
     })
-
-    skip += batchSize
-    hasMoreResults = tables.length === batchSize // If fewer than 100 results are returned, we're done
-
-    for (const table of tables) {
-      const dataSourceId = schemaToDataSourceId.get(table.dataSourceSchemaId)
-      if (!dataSourceId) {
-        continue
-      }
-
-      const columns = z.array(DataSourceColumn).safeParse(table.columns)
-      if (!columns.success) {
-        logger().error(
-          {
-            tableId: table.id,
-            dataSourceId,
-            workspaceId,
-          },
-          'Error parsing columns for table'
-        )
-        continue
-      }
-
-      socket.emit('workspace-datasource-schema-table-update', {
-        workspaceId,
-        dataSourceId,
-        schemaName: table.schema,
-        tableName: table.name,
-        table: { columns: columns.data },
-      })
-    }
   }
 }
 

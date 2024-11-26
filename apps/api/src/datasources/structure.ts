@@ -6,6 +6,7 @@ import prisma, {
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import {
+  DataSourceColumn,
   DataSourceStructureError,
   dataSourceStructureStateToV2,
   dataSourceStructureStateToV3,
@@ -205,7 +206,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
+        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
     },
   })
 
@@ -298,7 +299,7 @@ async function assignDataSourceSchemaId(
   }
 }
 
-async function getFromCache(
+export async function fetchDataSourceStructureFromCache(
   dataSourceId: string,
   type: DataSource['type']
 ): Promise<DataSourceStructureStateV3 | null> {
@@ -471,7 +472,10 @@ export async function fetchDataSourceStructure(
   dsConfig: DataSource,
   { forceRefresh }: { forceRefresh: boolean }
 ): Promise<DataSourceStructureStateV3> {
-  const currentStructure = await getFromCache(dsConfig.data.id, dsConfig.type)
+  const currentStructure = await fetchDataSourceStructureFromCache(
+    dsConfig.data.id,
+    dsConfig.type
+  )
 
   if (
     currentStructure !== null &&
@@ -791,7 +795,10 @@ async function persist(
 
 function startPingInterval(dsConfig: DataSource): NodeJS.Timeout {
   return setInterval(async () => {
-    const currentStructure = await getFromCache(dsConfig.data.id, dsConfig.type)
+    const currentStructure = await fetchDataSourceStructureFromCache(
+      dsConfig.data.id,
+      dsConfig.type
+    )
     if (!currentStructure) {
       return
     }
@@ -823,3 +830,53 @@ export const OnTableProgress = z.object({
   defaultSchema: z.string(),
 })
 export type OnTableProgress = z.infer<typeof OnTableProgress>
+
+export async function* listSchemaTables(dataSources: APIDataSource[]) {
+  const schemaToDataSourceId = new Map(
+    dataSources.map((d) => [d.structure.id, d.config.data.id])
+  )
+  const schemaIds = dataSources.map((d) => d.structure.id)
+
+  const batchSize = 100
+  let skip = 0
+  let hasMoreResults = true
+
+  while (hasMoreResults) {
+    const tables = await prisma().dataSourceSchemaTable.findMany({
+      where: { dataSourceSchemaId: { in: schemaIds } },
+      skip,
+      take: batchSize,
+      orderBy: { createdAt: 'asc' },
+    })
+
+    skip += batchSize
+    hasMoreResults = tables.length === batchSize // If fewer than 100 results are returned, we're done
+
+    for (const table of tables) {
+      const dataSourceId = schemaToDataSourceId.get(table.dataSourceSchemaId)
+      if (!dataSourceId) {
+        continue
+      }
+
+      const columns = z.array(DataSourceColumn).safeParse(table.columns)
+      if (!columns.success) {
+        logger().error(
+          {
+            tableId: table.id,
+            dataSourceSchemaId: table.dataSourceSchemaId,
+            dataSourceId,
+          },
+          'Error parsing columns for table'
+        )
+        continue
+      }
+
+      yield {
+        schemaName: table.schema,
+        tableName: table.name,
+        dataSourceId,
+        table: { columns: columns.data },
+      }
+    }
+  }
+}
