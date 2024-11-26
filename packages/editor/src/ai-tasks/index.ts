@@ -5,7 +5,7 @@ import {
   createYAITaskItem,
   YAITaskItem,
 } from './item.js'
-import { exhaustiveCheck } from '@briefer/types'
+import { exhaustiveCheck } from '../utils.js'
 
 export * from './item.js'
 
