@@ -85,10 +85,35 @@ async function editWithAI(
 
   event(assistantModelId)
 
+  const dialect: string = (() => {
+    switch (dataSource.type) {
+      case 'psql':
+        return 'postgresql'
+      case 'redshift':
+        return 'redshift'
+      case 'trino':
+        return 'trino'
+      case 'bigquery':
+        return 'bigquery'
+      case 'athena':
+        return 'awsathena'
+      case 'oracle':
+        return 'oracle'
+      case 'mysql':
+        return 'mysql'
+      case 'sqlserver':
+        return 'mssql'
+      case 'snowflake':
+        return 'snowflake'
+      case 'databrickssql':
+        return 'databricks'
+    }
+  })()
+
   return sqlEditStreamed(
     source,
     instructions,
-    dataSource.type,
+    dialect,
     onSuggestions,
     tableInfo,
     assistantModelId,
