@@ -254,6 +254,8 @@ export class Executor {
     const status = current.getStatus()
 
     switch (status._tag) {
+      // TODO: when we get a running execution item, instead of just executing again,
+      // we should actually try to find out what happened to the previous execution
       case 'running':
       case 'enqueued':
         await this.executeItem(batch, current)
