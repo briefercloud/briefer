@@ -192,6 +192,7 @@ export class Executor {
 
                 this.currentExecution = this.makeBatchProgress(currentBatch)
                 await this.currentExecution
+                this.currentExecution = null
                 if (this.isRunning) {
                   this.timeout = setTimeout(() => tick(), 0)
                 }

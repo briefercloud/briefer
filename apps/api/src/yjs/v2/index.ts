@@ -1124,7 +1124,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? doc.userAppClock[user.id] ?? doc.appClock
+          ? (doc.userAppClock[user.id] ?? doc.appClock)
           : doc.clock
 
         if (dbClock !== clock) {
