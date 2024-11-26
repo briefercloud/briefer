@@ -49,7 +49,6 @@
     "lodash.debounce": "^4.0.8",
     "lru-cache": "^10.2.2",
     "mssql": "^11.0.1",
-    "mysql2": "^3.10.1",
     "node-fetch": "^3.3.2",
     "p-all": "^5.0.0",
     "p-queue": "^8.0.1",
