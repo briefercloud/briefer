@@ -10,14 +10,14 @@ export type YExecutionQueueBatchAttrs = {
   version: 1
   queue: Y.Array<YExecutionQueueItem>
   isRunAll: boolean
-  isSchedule: boolean
+  scheduleId: string | null
 }
 
 export type YExecutionQueueBatch = Y.XmlElement<YExecutionQueueBatchAttrs>
 
 export function createYExecutionQueueBatch(
   items: YExecutionQueueItem[],
-  { isRunAll, isSchedule }: { isRunAll: boolean; isSchedule: boolean }
+  { isRunAll, scheduleId }: { isRunAll: boolean; scheduleId: string | null }
 ): YExecutionQueueBatch {
   const queue = new Y.Array<YExecutionQueueItem>()
   queue.insert(0, items)
@@ -26,7 +26,7 @@ export function createYExecutionQueueBatch(
     version: 1,
     queue,
     isRunAll,
-    isSchedule,
+    scheduleId,
   }
   const el = new Y.XmlElement<YExecutionQueueBatchAttrs>()
 
@@ -48,8 +48,8 @@ export class ExecutionQueueBatch {
     return this.batch.getAttribute('isRunAll') ?? false
   }
 
-  public isSchedule(): boolean {
-    return this.batch.getAttribute('isSchedule') ?? false
+  public getScheduleId(): string | null {
+    return this.batch.getAttribute('scheduleId') ?? null
   }
 
   public getCurrent(): ExecutionQueueItem | null {

@@ -311,8 +311,9 @@ export class Executor {
     }
 
     const events = await (async () => {
-      if (batch.isSchedule()) {
-        return new ScheduleNotebookEvents()
+      const scheduleId = batch.getScheduleId()
+      if (scheduleId) {
+        return new ScheduleNotebookEvents(scheduleId)
       }
 
       let user: ApiUser | null = null

@@ -109,7 +109,7 @@ export class ExecutionQueue {
 
     const batch = createYExecutionQueueBatch(items, {
       isRunAll: false,
-      isSchedule: false,
+      scheduleId: null,
     })
     this.queue.push([batch])
   }
@@ -139,7 +139,7 @@ export class ExecutionQueue {
 
     const batch = createYExecutionQueueBatch(items, {
       isRunAll: false,
-      isSchedule: false,
+      scheduleId: null,
     })
     this.queue.push([batch])
   }
@@ -215,7 +215,7 @@ export class ExecutionQueue {
       [...blocksBefore, item, ...blocksAfter],
       {
         isRunAll: false,
-        isSchedule: false,
+        scheduleId: null,
       }
     )
     this.queue.push([batch])
@@ -256,7 +256,7 @@ export class ExecutionQueue {
 
     const batch = createYExecutionQueueBatch(items, {
       isRunAll: true,
-      isSchedule: source._tag === 'schedule',
+      scheduleId: source._tag === 'schedule' ? source.scheduleId : null,
     })
     this.queue.push([batch])
     return ExecutionQueueBatch.fromYjs(batch)
