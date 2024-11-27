@@ -299,7 +299,7 @@ export class SQLExecutor implements ISQLExecutor {
     try {
       await this.effects.renameDataFrame(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         dataframeName.value,
         dataframeName.newValue
       )

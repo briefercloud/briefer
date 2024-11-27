@@ -130,7 +130,7 @@ export class PythonExecutor implements IPythonExecutor {
   private async updateDataFrames(blockId: string) {
     const newDataframes = await this.effects.listDataFrames(
       this.workspaceId,
-      this.documentId
+      this.sessionId
     )
 
     const blocks = new Set(Array.from(this.blocks.keys()))
