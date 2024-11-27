@@ -183,7 +183,6 @@ export class DocumentPersistor implements Persistor {
       data: {
         state: newState,
         clock: {
-          // TODO: we need to broadcast clock when multiple servers
           increment: 1,
         },
       },
@@ -435,7 +434,6 @@ export class AppPersistor implements Persistor {
         data: {
           state: newState,
           clock: {
-            // TODO: we need to broadcast clock when multiple servers
             increment: 1,
           },
         },
@@ -453,7 +451,6 @@ export class AppPersistor implements Persistor {
       data: {
         state: newState,
         clock: {
-          // TODO: we need to broadcast clock when multiple servers
           increment: 1,
         },
       },

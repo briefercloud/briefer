@@ -9,9 +9,8 @@ import { CronJob } from 'cron'
 import { logger } from '../logger.js'
 import { IOServer } from '../websocket/index.js'
 import * as yjs from '../yjs/v2/index.js'
-import { AppPersistor, DocumentPersistor } from '../yjs/v2/persistors.js'
+import { AppPersistor } from '../yjs/v2/persistors.js'
 import { ExecutionQueue } from '@briefer/editor'
-import { ScheduleNotebookEvents } from '../events/schedule.js'
 import { updateAppState } from '../yjs/v2/documents.js'
 
 function convertToCron(schedule: ExecutionSchedule): string {

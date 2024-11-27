@@ -417,9 +417,7 @@ export class WSSharedDocV2 {
         this.onSubMessage
       )
 
-      this.ydoc.on('update', (update, _arg1, _arg2, tr) =>
-        this.updateHandler(update, tr)
-      )
+      this.ydoc.on('update', this.updateHandler)
       this.awareness.on('update', this.awarenessHandler)
       this.executor.start()
       this.aiExecutor.start()
@@ -445,6 +443,7 @@ export class WSSharedDocV2 {
           id: z.string().min(1),
           publisherId: uuidSchema,
           message: uuidSchema,
+          clock: z.number().int(),
         })
       )
       .safeParse(message)
@@ -495,7 +494,58 @@ export class WSSharedDocV2 {
       return
     }
 
-    Y.applyUpdate(this.ydoc, update.update)
+    if (this.clock === parsedMessage.data.clock) {
+      Y.applyUpdate(this.ydoc, update.update)
+    } else if (parsedMessage.data.clock > this.clock) {
+      // we have a previous version of the document, we need to reset
+      const newDoc = new Y.Doc()
+      Y.applyUpdate(newDoc, update.update)
+      this.reset(newDoc, parsedMessage.data.clock, update.update.byteLength)
+    } else {
+      // we have a newer version of the document, ignore the update
+    }
+  }
+
+  public async replaceState(state: Buffer) {
+    const result = await this.persistor.replaceState(state)
+    this.reset(result.ydoc, result.clock, result.byteLength)
+    const updateId = await this.persistor.persistUpdate(this, state)
+    await publish(
+      this.getPubSubChannel(),
+      JSON.stringify({
+        id: this.id,
+        publisherId: this.publisherId,
+        message: updateId,
+        clock: this.clock,
+      })
+    )
+    broadcastDocument(this.socketServer, this.workspaceId, this.documentId)
+  }
+
+  private reset(newYDoc: Y.Doc, newClock: number, newByteLength: number) {
+    this.ydoc.off('update', this.updateHandler)
+    this.ydoc.destroy()
+
+    this.awareness.off('update', this.awarenessHandler)
+    this.awareness.destroy()
+
+    this.executor.stop()
+    this.aiExecutor.stop()
+
+    this.ydoc = newYDoc
+    this.clock = newClock
+    this.byteLength = newByteLength
+
+    this.title = this.getTitleFromDoc()
+
+    this.awareness = this.configAwareness()
+    this.ydoc.on('update', this.updateHandler)
+
+    this.executor = Executor.fromWSSharedDocV2(this)
+    this.executor.start()
+
+    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
+    this.aiExecutor.start()
   }
 
   private awarenessHandler = (
@@ -596,7 +646,12 @@ export class WSSharedDocV2 {
     return this.byteLength
   }
 
-  private updateHandler = async (update: Uint8Array, tr: Y.Transaction) => {
+  private updateHandler = async (
+    update: Uint8Array,
+    _arg1: any,
+    _arg2: any,
+    tr: Y.Transaction
+  ) => {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     syncProtocol.writeUpdate(encoder, update)
@@ -614,6 +669,7 @@ export class WSSharedDocV2 {
             id: this.id,
             publisherId: this.publisherId,
             message: updateId,
+            clock: this.clock,
           })
         )
         logger().trace(
@@ -1124,7 +1180,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? (doc.userAppClock[user.id] ?? doc.appClock)
+          ? doc.userAppClock[user.id] ?? doc.appClock
           : doc.clock
 
         if (dbClock !== clock) {
