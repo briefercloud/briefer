@@ -23,24 +23,15 @@ export interface IDateInputExecutor {
 }
 
 export class DateInputExecutor implements IDateInputExecutor {
-  private workspaceId: string
-  private documentId: string
-  private blocks: Y.Map<YBlock>
-  private effects: DateInputEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    blocks: Y.Map<YBlock>,
-    effects: DateInputEffects = {
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly blocks: Y.Map<YBlock>,
+    private readonly effects: DateInputEffects = {
       setDateTimeVariable,
     }
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.blocks = blocks
-    this.effects = effects
-  }
+  ) {}
 
   public async save(
     executionItem: ExecutionQueueItem,
@@ -62,6 +53,7 @@ export class DateInputExecutor implements IDateInputExecutor {
 
     logger().trace(
       {
+        sessionId: this.sessionId,
         workspaceId: this.workspaceId,
         documentId: this.documentId,
         blockId,
@@ -74,12 +66,13 @@ export class DateInputExecutor implements IDateInputExecutor {
     try {
       await this.effects.setDateTimeVariable(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         variable,
         value
       )
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId,
@@ -92,6 +85,7 @@ export class DateInputExecutor implements IDateInputExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId,
@@ -107,8 +101,14 @@ export class DateInputExecutor implements IDateInputExecutor {
   }
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
-    return new DateInputExecutor(doc.workspaceId, doc.documentId, doc.blocks, {
-      setDateTimeVariable,
-    })
+    return new DateInputExecutor(
+      doc.id,
+      doc.workspaceId,
+      doc.documentId,
+      doc.blocks,
+      {
+        setDateTimeVariable,
+      }
+    )
   }
 }

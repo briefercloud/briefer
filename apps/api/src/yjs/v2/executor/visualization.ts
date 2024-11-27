@@ -30,22 +30,13 @@ export interface IVisualizationExecutor {
 }
 
 export class VisualizationExecutor implements IVisualizationExecutor {
-  private workspaceId: string
-  private documentId: string
-  private dataframes: Y.Map<DataFrame>
-  private effects: VisualizationEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    dataframes: Y.Map<DataFrame>,
-    effects: VisualizationEffects
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.dataframes = dataframes
-    this.effects = effects
-  }
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly dataframes: Y.Map<DataFrame>,
+    private readonly effects: VisualizationEffects
+  ) {}
 
   public async run(
     executionItem: ExecutionQueueItem,
@@ -57,6 +48,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
     try {
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -113,7 +105,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       events.visUpdate(chartType)
       const { promise, abort } = await this.effects.createVisualization(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         dataframe,
         chartType,
         xAxis,
@@ -196,6 +188,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -212,6 +205,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new VisualizationExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       doc.dataframes,

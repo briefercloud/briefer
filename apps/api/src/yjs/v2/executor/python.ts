@@ -30,6 +30,7 @@ export interface IPythonExecutor {
 
 export class PythonExecutor implements IPythonExecutor {
   constructor(
+    private readonly sessionId: string,
     private readonly workspaceId: string,
     private readonly documentId: string,
     private dataframes: Y.Map<DataFrame>,
@@ -51,6 +52,7 @@ export class PythonExecutor implements IPythonExecutor {
 
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -66,7 +68,7 @@ export class PythonExecutor implements IPythonExecutor {
       let errored = false
       const { promise, abort } = await this.effects.executePython(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         actualSource,
         (outputs) => {
           const prevOutputs = block.getAttribute('result') ?? []
@@ -102,6 +104,7 @@ export class PythonExecutor implements IPythonExecutor {
       block.setAttribute('lastQueryTime', new Date().toISOString())
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -112,6 +115,7 @@ export class PythonExecutor implements IPythonExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -136,6 +140,7 @@ export class PythonExecutor implements IPythonExecutor {
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new PythonExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       doc.dataframes,

@@ -32,24 +32,15 @@ export interface ITextInputExecutor {
 }
 
 export class TextInputExecutor implements ITextInputExecutor {
-  private workspaceId: string
-  private documentId: string
-  private blocks: Y.Map<YBlock>
-  private effects: InputEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    blocks: Y.Map<YBlock>,
-    effects: InputEffects = {
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly blocks: Y.Map<YBlock>,
+    private readonly effects: InputEffects = {
       setVariable,
     }
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.blocks = blocks
-    this.effects = effects
-  }
+  ) {}
 
   public async renameVariable(
     executionItem: ExecutionQueueItem,
@@ -73,6 +64,7 @@ export class TextInputExecutor implements ITextInputExecutor {
 
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: attrs.id,
@@ -90,7 +82,7 @@ export class TextInputExecutor implements ITextInputExecutor {
 
       const { promise, abort } = await this.effects.setVariable(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         newVariableName,
         value
       )
@@ -118,6 +110,7 @@ export class TextInputExecutor implements ITextInputExecutor {
         })
         logger().trace(
           {
+            sessionId: this.sessionId,
             workspaceId: this.workspaceId,
             documentId: this.documentId,
             blockId: attrs.id,
@@ -157,6 +150,7 @@ export class TextInputExecutor implements ITextInputExecutor {
 
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -166,7 +160,7 @@ export class TextInputExecutor implements ITextInputExecutor {
       )
 
       await this.effects
-        .setVariable(this.workspaceId, this.documentId, variableName, newValue)
+        .setVariable(this.workspaceId, this.sessionId, variableName, newValue)
         .then(({ promise }) => promise)
       updateInputValue(block, {
         value: newValue,
@@ -186,6 +180,7 @@ export class TextInputExecutor implements ITextInputExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: executionItem.getBlockId(),
@@ -202,8 +197,14 @@ export class TextInputExecutor implements ITextInputExecutor {
   }
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
-    return new TextInputExecutor(doc.workspaceId, doc.documentId, doc.blocks, {
-      setVariable,
-    })
+    return new TextInputExecutor(
+      doc.id,
+      doc.workspaceId,
+      doc.documentId,
+      doc.blocks,
+      {
+        setVariable,
+      }
+    )
   }
 }

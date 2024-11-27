@@ -32,24 +32,15 @@ export interface IDropdownInputExecutor {
 }
 
 export class DropdownInputExecutor implements IDropdownInputExecutor {
-  private workspaceId: string
-  private documentId: string
-  private blocks: Y.Map<YBlock>
-  private effects: DropdownInputEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    blocks: Y.Map<YBlock>,
-    effects: DropdownInputEffects = {
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly blocks: Y.Map<YBlock>,
+    private readonly effects: DropdownInputEffects = {
       setVariable,
     }
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.blocks = blocks
-    this.effects = effects
-  }
+  ) {}
 
   public async renameVariable(
     executionItem: ExecutionQueueItem,
@@ -73,6 +64,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     try {
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: attrs.id,
@@ -98,7 +90,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
 
       const { promise, abort } = await this.effects.setVariable(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         newVariableName,
         value
       )
@@ -126,6 +118,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
         })
         logger().trace(
           {
+            sessionId: this.sessionId,
             workspaceId: this.workspaceId,
             documentId: this.documentId,
             blockId: attrs.id,
@@ -138,6 +131,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: executionItem.getBlockId(),
@@ -174,6 +168,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     try {
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -184,7 +179,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       )
 
       await this.effects
-        .setVariable(this.workspaceId, this.documentId, variableName, newValue)
+        .setVariable(this.workspaceId, this.sessionId, variableName, newValue)
         .then(({ promise }) => promise)
       updateDropdownInputValue(block, {
         value: newValue,
@@ -193,6 +188,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
       updateDropdownInputBlockExecutedAt(block, new Date())
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: attrs.id,
@@ -205,6 +201,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: executionItem.getBlockId(),
@@ -221,6 +218,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new DropdownInputExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       doc.blocks,

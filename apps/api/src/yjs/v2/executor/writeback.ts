@@ -27,19 +27,12 @@ export interface IWritebackExecutor {
 }
 
 export class WritebackExecutor implements IWritebackExecutor {
-  private workspaceId: string
-  private documentId: string
-  private effects: WritebackEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    effects: WritebackEffects
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.effects = effects
-  }
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly effects: WritebackEffects
+  ) {}
 
   public async run(
     executionItem: ExecutionQueueItem,
@@ -55,6 +48,7 @@ export class WritebackExecutor implements IWritebackExecutor {
       const executedAt = new Date()
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -109,7 +103,7 @@ export class WritebackExecutor implements IWritebackExecutor {
       const tableName = attrs.tableName.toJSON()
       const { promise, abort } = await this.effects.writeback(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         attrs.dataframeName,
         dataSource,
         tableName,
@@ -141,6 +135,7 @@ export class WritebackExecutor implements IWritebackExecutor {
       )
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: executionItem.getBlockId(),
@@ -163,7 +158,7 @@ export class WritebackExecutor implements IWritebackExecutor {
   }
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
-    return new WritebackExecutor(doc.workspaceId, doc.documentId, {
+    return new WritebackExecutor(doc.id, doc.workspaceId, doc.documentId, {
       writeback,
     })
   }

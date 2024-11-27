@@ -30,25 +30,14 @@ export interface IPivotTableExecutor {
 }
 
 export class PivotTableExecutor implements IPivotTableExecutor {
-  private workspaceId: string
-  private documentId: string
-  private dataframes: Y.Map<DataFrame>
-  private blocks: Y.Map<YBlock>
-  private effects: PivotTableEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    dataframes: Y.Map<DataFrame>,
-    blocks: Y.Map<YBlock>,
-    effects: PivotTableEffects
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.dataframes = dataframes
-    this.blocks = blocks
-    this.effects = effects
-  }
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly dataframes: Y.Map<DataFrame>,
+    private readonly blocks: Y.Map<YBlock>,
+    private readonly effects: PivotTableEffects
+  ) {}
 
   public async run(
     executionItem: ExecutionQueueItem,
@@ -74,6 +63,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
     try {
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -138,7 +128,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
       })
       const { promise, abort } = await this.effects.createPivotTable(
         this.workspaceId,
-        this.documentId,
+        this.sessionId,
         dataframe,
         attrs.rows,
         attrs.columns,
@@ -187,6 +177,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
 
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -211,6 +202,7 @@ export class PivotTableExecutor implements IPivotTableExecutor {
 
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new PivotTableExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       doc.dataframes,

@@ -43,28 +43,15 @@ export interface ISQLExecutor {
 }
 
 export class SQLExecutor implements ISQLExecutor {
-  private workspaceId: string
-  private documentId: string
-  private dataSourcesEncryptionKey: string
-  private dataframes: Y.Map<DataFrame>
-  private blocks: Y.Map<YBlock>
-  private effects: SQLEffects
-
   constructor(
-    workspaceId: string,
-    documentId: string,
-    dataSourcesEncryptionKey: string,
-    dataframes: Y.Map<DataFrame>,
-    blocks: Y.Map<YBlock>,
-    effects: SQLEffects
-  ) {
-    this.workspaceId = workspaceId
-    this.documentId = documentId
-    this.dataSourcesEncryptionKey = dataSourcesEncryptionKey
-    this.dataframes = dataframes
-    this.blocks = blocks
-    this.effects = effects
-  }
+    private readonly sessionId: string,
+    private readonly workspaceId: string,
+    private readonly documentId: string,
+    private readonly dataSourcesEncryptionKey: string,
+    private readonly dataframes: Y.Map<DataFrame>,
+    private readonly blocks: Y.Map<YBlock>,
+    private readonly effects: SQLEffects
+  ) {}
 
   public async run(
     executionItem: ExecutionQueueItem,
@@ -147,7 +134,7 @@ export class SQLExecutor implements ISQLExecutor {
       if (actualSource !== '') {
         const [promise, abort] = await this.effects.makeSQLQuery(
           this.workspaceId,
-          this.documentId,
+          this.sessionId,
           blockId,
           dataframeName.value,
           datasource ?? 'duckdb',
@@ -195,6 +182,7 @@ export class SQLExecutor implements ISQLExecutor {
         if (result.type === 'python-error') {
           logger().error(
             {
+              sessionId: this.sessionId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: block.getAttribute('id'),
@@ -220,6 +208,7 @@ export class SQLExecutor implements ISQLExecutor {
         } else if (result.type === 'syntax-error') {
           logger().warn(
             {
+              sessionId: this.sessionId,
               workspaceId: this.workspaceId,
               documentId: this.documentId,
               blockId: block.getAttribute('id'),
@@ -242,6 +231,7 @@ export class SQLExecutor implements ISQLExecutor {
 
       logger().trace(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -252,6 +242,7 @@ export class SQLExecutor implements ISQLExecutor {
     } catch (err) {
       logger().error(
         {
+          sessionId: this.sessionId,
           workspaceId: this.workspaceId,
           documentId: this.documentId,
           blockId: block.getAttribute('id'),
@@ -296,6 +287,7 @@ export class SQLExecutor implements ISQLExecutor {
 
     logger().trace(
       {
+        sessionId: this.sessionId,
         workspaceId: this.workspaceId,
         documentId: this.documentId,
         blockId: block.getAttribute('id'),
@@ -314,7 +306,7 @@ export class SQLExecutor implements ISQLExecutor {
 
       const dataframes = await this.effects.listDataFrames(
         this.workspaceId,
-        this.documentId
+        this.sessionId
       )
 
       const blocks = new Set(Array.from(this.blocks.keys()))
@@ -344,6 +336,7 @@ export class SQLExecutor implements ISQLExecutor {
     dataSourcesEncryptionKey: string
   ) {
     return new SQLExecutor(
+      doc.id,
       doc.workspaceId,
       doc.documentId,
       dataSourcesEncryptionKey,
