@@ -278,7 +278,7 @@ export function setupYJSSocketServerV2(
 const wsReadyStateConnecting = 0
 const wsReadyStateOpen = 1
 
-const DOCUMENT_COLLECTION_INTERVAL = 1000 * 60 // 1 minute
+const DOCUMENT_COLLECTION_INTERVAL = 1000 * 20 // 20 seconds
 export const docs = new Map<string, WSSharedDocV2>()
 
 export const docsCache = new LRUCache<string, WSSharedDocV2>({
@@ -411,17 +411,15 @@ export class WSSharedDocV2 {
   }
 
   public async init() {
-    await acquireLock(`yjs-${this.documentId}`, async () => {
-      this.subscription = await subscribe(
-        this.getPubSubChannel(),
-        this.onSubMessage
-      )
+    this.subscription = await subscribe(
+      this.getPubSubChannel(),
+      this.onSubMessage
+    )
 
-      this.ydoc.on('update', this.updateHandler)
-      this.awareness.on('update', this.awarenessHandler)
-      this.executor.start()
-      this.aiExecutor.start()
-    })
+    this.ydoc.on('update', this.updateHandler)
+    this.awareness.on('update', this.awarenessHandler)
+    this.executor.start()
+    this.aiExecutor.start()
   }
 
   private onSubMessage = async (message?: string) => {
@@ -507,7 +505,7 @@ export class WSSharedDocV2 {
   }
 
   public async replaceState(state: Buffer) {
-    const result = await this.persistor.replaceState(state)
+    const result = await this.persistor.replaceState(this.id, state)
     this.reset(result.ydoc, result.clock, result.byteLength)
     const updateId = await this.persistor.persistUpdate(this, state)
     await publish(
@@ -832,7 +830,7 @@ export class WSSharedDocV2 {
     persistor: Persistor,
     tx?: PrismaTransaction
   ): Promise<WSSharedDocV2> {
-    const loadStateResult = await persistor.load(tx)
+    const loadStateResult = await persistor.load(id, tx)
     const doc = new WSSharedDocV2(
       id,
       documentId,
