@@ -6,9 +6,47 @@ icon: gear
 
 You can configure your workspace settings to customize your Briefer experience.
 
-Right now, there are only a few settings available, but we're working on adding more. Here's what you can do:
+Here's what you can do:
 
-- Change your workspace's name
-- Allow anyone whose email belongs to your organization's domain to join your workspace automatically
-- Change the default assistant model (only available on the cloud)
-- Add an OpenAI API key (only necessary on the open-source version)
+## Change your workspace's name
+
+This is the name that will appear in the top left corner of the app.
+
+It helps users identify which workspace they're in, especially if they're part of multiple workspaces.
+
+## Allow anyone at the owner's email domain join your workspace
+
+If you enable this setting, anyone whose email belongs to your organization's domain can join your workspace automatically.
+
+We recommend enabling this setting if you want to make it easy for your team to join your workspace.
+
+The domain is determined by the email address of the workspace owner and will appear in the workspace settings.
+
+<Note>
+  This setting is only available on the cloud version of Briefer.
+</Note>
+
+## Change the default assistant model
+
+You can change the default assistant model that Briefer uses to suggest code and queries.
+
+## Add an OpenAI API key (only necessary on the open-source version)
+
+If you're using the open-source version of Briefer, you'll need to add an OpenAI API key to use the assistant.
+
+After adding your key, no one else will be able to see it, and it will be stored securely.
+
+## Private documents
+
+You can enable private documents so that users can create their own private documents that are only visible to them.
+
+This is helpful if you want to enable users to create their own "scratchpad" documents without polluting the workspace with temporary documents.
+Once you toggle that setting to "on", a section called "Private" will appear underneath the "Pages" section in the sidebar. There, users can create and manage their own private documents.
+
+If you turn this setting to "off", the "Private" section will disappear from the sidebar, and users will no longer be able to create private documents. Still, the old documents will still exist, but they won't be accessible.
+
+Read more about private documents in the [Private Documents page](/product/private-documents).
+
+<Note>
+  This setting is only available on the professional and enterprise versions of Briefer.
+</Note>
