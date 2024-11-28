@@ -71,7 +71,6 @@ export function unknownUser(): ApiUser {
 export class Executor {
   private readonly id = uuidv4()
   private isRunning: boolean = false
-  private timeout: NodeJS.Timeout | null = null
   private currentExecution: Promise<void> | null = null
   private readonly queue: ExecutionQueue
 
@@ -104,11 +103,6 @@ export class Executor {
 
   public async stop(): Promise<void> {
     this.isRunning = false
-
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
-
     await this.currentExecution
   }
 
@@ -174,7 +168,7 @@ export class Executor {
 
                 const currentBatch = this.queue.getCurrentBatch()
                 if (!currentBatch) {
-                  this.timeout = setTimeout(() => tick(), 500)
+                  setTimeout(() => tick(), 500)
                   return
                 }
 
@@ -194,7 +188,7 @@ export class Executor {
                 await this.currentExecution
                 this.currentExecution = null
                 if (this.isRunning) {
-                  this.timeout = setTimeout(() => tick(), 0)
+                  setTimeout(() => tick(), 0)
                 }
               } catch (err) {
                 reject(err)
@@ -202,7 +196,8 @@ export class Executor {
             }
 
             tick()
-          })
+          }),
+        { acquireTimeout: Infinity }
       )
     } catch (err) {
       logger().error(

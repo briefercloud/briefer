@@ -201,36 +201,40 @@ export async function runSchedule(socketServer: IOServer) {
   let stop = false
   const loop = new Promise<void>(async (resolve) => {
     logger().trace('Acquiring lock to be the schedule executor')
-    await acquireLock('schedule-executor', async () => {
-      if (stop) {
-        logger().trace(
-          'Schedule executor lock acquired but server is shutting down'
-        )
-        return
-      }
-
-      logger().trace('Schedule executor lock acquired')
-      while (true) {
+    await acquireLock(
+      'schedule-executor',
+      async () => {
         if (stop) {
-          break
-        }
-
-        try {
-          await updateSchedule()
-        } catch (err) {
-          logger().error(
-            { err, module: 'schedule' },
-            'Failed to update schedule'
+          logger().trace(
+            'Schedule executor lock acquired but server is shutting down'
           )
+          return
         }
 
-        if (stop) {
-          break
-        }
+        logger().trace('Schedule executor lock acquired')
+        while (true) {
+          if (stop) {
+            break
+          }
 
-        await new Promise((resolve) => setTimeout(resolve, 5000))
-      }
-    })
+          try {
+            await updateSchedule()
+          } catch (err) {
+            logger().error(
+              { err, module: 'schedule' },
+              'Failed to update schedule'
+            )
+          }
+
+          if (stop) {
+            break
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 5000))
+        }
+      },
+      { acquireTimeout: Infinity }
+    )
 
     resolve()
   })

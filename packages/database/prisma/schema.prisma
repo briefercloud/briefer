@@ -568,11 +568,6 @@ model Lock {
   ownerId    String   @db.Uuid
 }
 
-model Lock2 {
-  id         BigInt   @id @default(autoincrement())
-  name       String   @unique
-}
-
 model WorkspaceSecrets {
   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   openAiApiKey String?

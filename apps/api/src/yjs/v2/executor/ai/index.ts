@@ -149,7 +149,8 @@ export class AIExecutor {
             }
 
             tick()
-          })
+          }),
+        { acquireTimeout: Infinity }
       )
     } catch (err) {
       logger().error(
