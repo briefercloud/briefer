@@ -78,7 +78,8 @@
         "product/environment-variables",
         "product/ai-assistant",
         "product/slack-integration",
-        "product/keyboard-shortcuts"
+        "product/keyboard-shortcuts",
+        "product/private-documents"
       ]
     },
     {
