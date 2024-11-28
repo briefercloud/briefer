@@ -5,8 +5,8 @@ import { z } from 'zod'
 import { exhaustiveCheck } from '@briefer/types'
 
 const EXPIRATION_TIME = 1000 * 5 // 5 seconds
-const MAX_RETRY_TIMEOUT = 1000 * 2 // 2 seconds
-const DEFAULT_ACQUIRE_TIMEOUT = 1000 * 10 // 10 seconds
+const MAX_RETRY_TIMEOUT = 500 // 500ms
+const DEFAULT_ACQUIRE_TIMEOUT = Infinity
 
 class AlreadyAcquiredError extends Error {
   constructor(public readonly lockName: string) {
