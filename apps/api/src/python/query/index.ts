@@ -337,26 +337,33 @@ export async function readDataframePage(
   const code = `import json
 
 if not ("${dataframeName}" in globals()):
-  import pandas as pd
-  try:
-    ${dataframeName} = pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
-  except:
-    print(json.dumps({"type": "not-found"}))
+    import pandas as pd
+    try:
+      ${dataframeName} = pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
+    except:
+      print(json.dumps({"type": "not-found"}))
 
 if "${dataframeName}" in globals():
-  start = ${page * pageSize}
-  end = (${page} + 1) * ${pageSize}
-  rows = ${dataframeName}.iloc[start:end].to_json(
-    orient="records", date_format="iso"
-  )
-  columns = [{"name": col, "type": dtype.name} for col, dtype in ${dataframeName}.dtypes.items()]
-  result = {
-    "type": "success",
-    "rows": json.loads(rows),
-    "count": len(${dataframeName}),
-    "columns": columns
-  }
-  print(json.dumps(result))`
+    start = ${page * pageSize}
+    end = (${page} + 1) * ${pageSize}
+    rows = json.loads(${dataframeName}.iloc[start:end].to_json(
+      orient="records", date_format="iso"
+    ))
+
+    # convert all values to string to make sure we preserve the python values
+    # when displaying this data in the browser
+    for row in rows:
+        for key in row:
+            row[key] = str(row[key])
+
+    columns = [{"name": col, "type": dtype.name} for col, dtype in ${dataframeName}.dtypes.items()]
+    result = {
+      "type": "success",
+      "rows": rows,
+      "count": len(${dataframeName}),
+      "columns": columns
+    }
+    print(json.dumps(result))`
 
   let result: RunQueryResult | null = null
   let error: Error | null = null

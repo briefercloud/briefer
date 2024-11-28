@@ -159,6 +159,13 @@ def briefer_make_sqlalchemy_query():
                 df = convert_df(pd.concat([df, chunk], ignore_index=True))
                 if rows is None:
                     rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+
+                    # convert all values to string to make sure we preserve the python values
+                    # when displaying this data in the browser
+                    for row in rows:
+                        for key in row:
+                            row[key] = str(row[key])
+
                 if columns is None:
                     columns = [{"name": col, "type": dtype.name} for col, dtype in chunk.dtypes.items()]
 
