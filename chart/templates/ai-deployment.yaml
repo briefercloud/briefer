@@ -8,7 +8,7 @@ metadata:
       app.kubernetes.io/name: briefer
       app.kubernetes.io/component: ai
 spec:
-  replicas: 1
+  replicas: {{ .Values.ai.replicaCount | default 1 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: briefer
