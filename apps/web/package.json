@@ -1,6 +1,6 @@
 {
   "name": "@briefer/web",
-  "version": "0.0.66",
+  "version": "0.0.67",
   "private": true,
   "scripts": {
     "dev": "next dev -p 4000",
