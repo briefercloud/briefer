@@ -3,11 +3,12 @@ enableLocalPostgres: true
 
 ai:
   enabled: true
+  replicaCount: 1
 
   image:
     repository: docker.io
     name: briefercloud/briefer-ai
-    tag: v0.0.42
+    tag: v0.0.65
     pullPolicy: Always
 
   resources:
@@ -42,10 +43,11 @@ ai:
   #     effect: 'NoSchedule'
 
 web:
+  replicaCount: 1
   image:
     repository: docker.io
     name: briefercloud/briefer-web
-    tag: v0.0.42
+    tag: v0.0.65
     pullPolicy: Always
 
   # optional
@@ -74,10 +76,12 @@ web:
   #     effect: 'NoSchedule'
 
 api:
+  replicaCount: 1
+
   image:
     repository: docker.io
     name: briefercloud/briefer-api
-    tag: v0.0.42
+    tag: v0.0.65
     pullPolicy: Always
 
   resources:
@@ -148,7 +152,7 @@ jupyter:
   image:
     repository: docker.io
     name: briefercloud/briefer-jupyter
-    tag: v0.0.42
+    tag: v0.0.65
     pullPolicy: Always
 
   # tolerations:

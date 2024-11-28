@@ -52,11 +52,11 @@ Using Briefer's Helm chart is the easiest way of setting up Briefer on your Kube
    Feel free to change the namespace if you want to. If you're using an existing namespace, please remove the `--create-namespace` flag.
 4. After installing Briefer's Helm chart, you can confirm that the manifests have been applied by listing all the pods in the chart's target namespace (usually `kubectl get pods -n briefer`).
    <Note>
-     If you're running a Postgres instance within your cluster, it might be that
-     the API will be ready before the Postgres instance is up. In that case,
-     you'll see that the API pod will keep restarting for a few minutes. That's
-     _normal_. It happens because the API needs to connect to the database to
-     start, so it'll just keep trying to start until Postgres is ready.
+   If you're running a Postgres instance within your cluster, it might be that
+   the API will be ready before the Postgres instance is up. In that case,
+   you'll see that the API pod will keep restarting for a few minutes. That's
+   _normal_. It happens because the API needs to connect to the database to
+   start, so it'll just keep trying to start until Postgres is ready.
    </Note>
 5. Create the necessary `Ingress` resources so that you can access Briefer's API and Web containers.
    Make sure to use the same URLs you've configured in step 2.
@@ -104,6 +104,25 @@ api:
     postgresUsername: postgres
     postgresPassword: password
 ```
+
+### Using more than one replica for Briefers' services
+
+If you want to use more than one replica for Briefer's services, you must set the `replicas` for each service in your `values.yaml` file.
+
+After doing that, make sure to enable sticky sessions in your `Ingress` resources. Without sticky sessions (also known as Session Affinity), Briefer will not work correctly when using multiple replicas.
+
+If you're using NGINX as your Ingress controller, you can enable sticky sessions by adding the annotations below to your `Ingress` resources, for example.
+
+```yaml
+nginx.ingress.kubernetes.io/affinity: 'cookie'
+nginx.ingress.kubernetes.io/session-cookie-name: 'http-cookie'
+nginx.ingress.kubernetes.io/session-cookie-expires: '172800'
+nginx.ingress.kubernetes.io/session-cookie-max-age: '172800'
+```
+
+<Note>
+It's not necessary to use sticky sessions if you're using only one replica.
+</Note>
 
 ### Configuring pod sizes
 
