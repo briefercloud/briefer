@@ -111,7 +111,7 @@ If you want to use more than one replica for Briefer's services, you must set th
 
 After doing that, make sure to enable sticky sessions in your `Ingress` resources. Without sticky sessions (also known as Session Affinity), Briefer will not work correctly when using multiple replicas.
 
-If you're using NGINX as your Ingress controller, you can enable sticky sessions by adding the annotations below to your `Ingress` resources, for example.
+If you're using the Nginx Ingress controller, for example, you can enable sticky sessions by adding the annotations below to your `Ingress` resources.
 
 ```yaml
 nginx.ingress.kubernetes.io/affinity: 'cookie'
