@@ -36,6 +36,10 @@ const getDBUrl = async () => {
   if (!Number.isNaN(poolTimeout)) {
     query['pool_timeout'] = poolTimeout.toString()
   }
+
+  // TODO this should eventually be a variable
+  query['sslmode'] = 'prefer'
+
   const querystring = qs.stringify(query)
   if (querystring !== '') {
     url = `${url}?${querystring}`
