@@ -37,8 +37,7 @@ const getDBUrl = async () => {
     query['pool_timeout'] = poolTimeout.toString()
   }
 
-  // TODO this should eventually be a variable
-  query['sslmode'] = 'prefer'
+  query['sslmode'] = config().POSTGRES_SSL_MODE
 
   const querystring = qs.stringify(query)
   if (querystring !== '') {
