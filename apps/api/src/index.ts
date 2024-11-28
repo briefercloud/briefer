@@ -37,8 +37,6 @@ const getDBUrl = async () => {
     query['pool_timeout'] = poolTimeout.toString()
   }
 
-  query['sslmode'] = config().POSTGRES_SSL_MODE
-
   const querystring = qs.stringify(query)
   if (querystring !== '') {
     url = `${url}?${querystring}`
@@ -49,7 +47,11 @@ const getDBUrl = async () => {
 
 async function main() {
   const dbUrl = await getDBUrl()
-  db.init(dbUrl)
+  db.init(
+    dbUrl,
+    config().POSTGRES_SSL_REJECT_UNAUTHORIZED,
+    config().POSTGRES_SSL_CA
+  )
 
   const app = express()
   const server = http.createServer(app)

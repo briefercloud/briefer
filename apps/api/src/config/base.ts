@@ -24,7 +24,8 @@ export interface IBaseConfig {
   POSTGRES_PASSWORD: string
   POSTGRES_CONNECTION_LIMIT: number
   POSTGRES_POOL_TIMEOUT: number
-  POSTGRES_SSL_MODE: string
+  POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
+  POSTGRES_SSL_CA: string | null
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
   WORKSPACE_SECRETS_ENCRYPTION_KEY: string
@@ -56,7 +57,8 @@ export class BaseConfig implements IBaseConfig {
   public readonly POSTGRES_PASSWORD: string
   public readonly POSTGRES_CONNECTION_LIMIT: number
   public readonly POSTGRES_POOL_TIMEOUT: number
-  public readonly POSTGRES_SSL_MODE: string
+  public readonly POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
+  public readonly POSTGRES_SSL_CA: string | null
   public readonly ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   public readonly DATASOURCES_ENCRYPTION_KEY: string
   public readonly WORKSPACE_SECRETS_ENCRYPTION_KEY: string
@@ -93,8 +95,14 @@ export class BaseConfig implements IBaseConfig {
       process.env['POSTGRES_POOL_TIMEOUT'] ?? '5',
       5
     )
-    this.POSTGRES_SSL_MODE =
-      process.env['POSTGRES_SSL_MODE']?.trim() || 'prefer'
+
+    this.POSTGRES_SSL_REJECT_UNAUTHORIZED = getBooleanVar(
+      'POSTGRES_SSL_REJECT_UNAUTHORIZED',
+      true
+    )
+
+    this.POSTGRES_SSL_CA = process.env['POSTGRES_SSL_CA'] || null
+
     this.ENVIRONMENT_VARIABLES_ENCRYPTION_KEY = getVar(
       'ENVIRONMENT_VARIABLES_ENCRYPTION_KEY'
     )
