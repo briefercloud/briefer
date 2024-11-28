@@ -1,4 +1,4 @@
-import { UserWorkspaceRole, WorkspaceUser } from '@briefer/database'
+import type { UserWorkspaceRole, WorkspaceUser } from '@briefer/database'
 import { Menu, Transition } from '@headlessui/react'
 import { EllipsisVerticalIcon } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
@@ -105,15 +105,15 @@ interface UserItemProps {
 }
 function UserItem(props: UserItemProps) {
   const onMakeAdmin = useCallback(() => {
-    props.onChangeRole(props.user.id, UserWorkspaceRole.admin)
+    props.onChangeRole(props.user.id, 'admin')
   }, [props.onChangeRole, props.user.id])
 
   const onMakeEditor = useCallback(() => {
-    props.onChangeRole(props.user.id, UserWorkspaceRole.editor)
+    props.onChangeRole(props.user.id, 'editor')
   }, [props.onChangeRole, props.user.id])
 
   const onMakeViewer = useCallback(() => {
-    props.onChangeRole(props.user.id, UserWorkspaceRole.viewer)
+    props.onChangeRole(props.user.id, 'viewer')
   }, [props.onChangeRole, props.user.id])
 
   const onRemoveUser = useCallback(() => {
@@ -144,17 +144,13 @@ function UserItem(props: UserItemProps) {
   }, [props.user.role])
 
   const promotions = useMemo(() => {
-    return [
-      UserWorkspaceRole.admin,
-      UserWorkspaceRole.editor,
-      UserWorkspaceRole.viewer,
-    ]
+    return ['admin', 'editor', 'viewer']
       .filter((r) => r !== props.user.role)
       .map((role) => {
         const onClick =
-          role === UserWorkspaceRole.admin
+          role === 'admin'
             ? onMakeAdmin
-            : role === UserWorkspaceRole.editor
+            : role === 'editor'
               ? onMakeEditor
               : onMakeViewer
 
@@ -204,13 +200,11 @@ function UserItem(props: UserItemProps) {
           <Menu.Button
             as="span"
             className={clsx(
-              props.isCurrentUser || props.role !== UserWorkspaceRole.admin
+              props.isCurrentUser || props.role !== 'admin'
                 ? 'hover:cursor-not-allowed'
                 : 'hover:cursor-pointer hover:text-gray-900'
             )}
-            disabled={
-              props.isCurrentUser || props.role !== UserWorkspaceRole.admin
-            }
+            disabled={props.isCurrentUser || props.role !== 'admin'}
           >
             <EllipsisVerticalIcon
               className="h-5 w-5 text-gray-400 "
@@ -218,7 +212,7 @@ function UserItem(props: UserItemProps) {
             />
             <span className="sr-only">Options for {props.user.name}</span>
 
-            {!props.isCurrentUser && props.role === UserWorkspaceRole.admin && (
+            {!props.isCurrentUser && props.role === 'admin' && (
               <Transition
                 as={Fragment}
                 enter="transition ease-out duration-100"

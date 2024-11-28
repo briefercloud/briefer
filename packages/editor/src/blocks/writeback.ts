@@ -6,19 +6,15 @@ import {
   getBaseAttributes,
   duplicateBaseAttributes,
   duplicateYText,
-  ExecStatus,
+  ResultStatus,
+  YBlock,
 } from './index.js'
 import { WriteBackErrorResult, WriteBackResult } from '@briefer/types'
+import { ExecutionStatus } from '../execution/item.js'
+import { ExecutionQueue } from '../execution/queue.js'
+import { head } from 'ramda'
 
 export type WritebackBlock = BaseBlock<BlockType.Writeback> & {
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'running'
-    | 'abort-requested'
-    | 'aborting'
-    | 'run-all-enqueued'
-    | 'run-all-running'
   dataframeName: string | null
   dataSourceId: string | null
   tableName: Y.Text
@@ -38,7 +34,6 @@ export const makeWritebackBlock = (
     index: null,
     type: BlockType.Writeback,
     title: '',
-    status: 'idle',
     dataframeName: null,
     dataSourceId: null,
     tableName: new Y.Text(''),
@@ -65,7 +60,6 @@ export function getWritebackAttributes(
 ): WritebackBlock {
   return {
     ...getBaseAttributes(block),
-    status: block.getAttribute('status') ?? 'idle',
     dataframeName: getAttributeOr(block, 'dataframeName', null),
     dataSourceId: getAttributeOr(block, 'dataSourceId', null),
     tableName: getAttributeOr(block, 'tableName', new Y.Text('')),
@@ -86,7 +80,6 @@ export function duplicateWritebackBlock(
 
   const nextAttributes: WritebackBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
-    status: 'idle',
     dataframeName: prevAttributes.dataframeName,
     dataSourceId: prevAttributes.dataSourceId
       ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
@@ -197,36 +190,36 @@ export function getWritebackBlockErrorMessage(
 }
 
 export function getWritebackBlockExecStatus(
-  block: Y.XmlElement<WritebackBlock>
-): ExecStatus {
-  const status = block.getAttribute('status')
-  switch (status) {
-    case undefined:
-    case 'idle':
-      return getWritebackBlockResultStatus(block)
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-requested':
-    case 'running':
-    case 'abort-requested':
-    case 'aborting':
-    case 'run-all-running':
-      return 'loading'
+  block: Y.XmlElement<WritebackBlock>,
+  executionQueue: ExecutionQueue
+): ExecutionStatus {
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(blockId, 'writeback')
+
+  const execution = head(executions)
+  if (execution) {
+    return execution.item.getStatus()._tag
   }
+
+  return 'completed'
 }
 
 export function getWritebackBlockResultStatus(
   block: Y.XmlElement<WritebackBlock>
-): ExecStatus {
+): ResultStatus {
   const result = block.getAttribute('result')
-  if (result) {
-    switch (result._tag) {
-      case 'success':
-        return 'success'
-      case 'error':
-        return 'error'
-    }
+  switch (result?._tag) {
+    case 'success':
+      return 'success'
+    case 'error':
+      return 'error'
+    case undefined:
+      return 'idle'
   }
+}
 
-  return 'idle'
+export function isWritebackBlock(
+  block: YBlock
+): block is Y.XmlElement<WritebackBlock> {
+  return block.getAttribute('type') === BlockType.Writeback
 }

@@ -5,12 +5,9 @@ import {
   YBlock,
   getInputAttributes,
   isTextInputBlock,
-  getInputValueExecStatus,
-  getInputVariableExecStatus,
   makeInputBlock,
   updateInputLabel,
   updateInputValue,
-  updateInputVariable,
 } from './index.js'
 
 describe('isYInputBlock', () => {
@@ -46,13 +43,11 @@ describe('makeInputBlock', () => {
     expect(inputBlock.getAttribute('value')).toEqual({
       value: '',
       newValue: '',
-      status: 'idle',
       error: null,
     })
     expect(inputBlock.getAttribute('variable')).toEqual({
       value: 'input_1',
       newValue: 'input_1',
-      status: 'idle',
       error: null,
     })
     expect(inputBlock.getAttribute('inputType')).toBe('text')
@@ -96,104 +91,17 @@ describe('updateInputValue', () => {
     expect(inputBlock.getAttribute('value')).toEqual({
       value: '',
       newValue: '',
-      status: 'idle',
       error: null,
     })
 
     updateInputValue(inputBlock, {
       newValue: 'New value',
-      status: 'save-requested',
     })
     expect(inputBlock.getAttribute('value')).toEqual({
       value: '',
       newValue: 'New value',
-      status: 'save-requested',
       error: null,
     })
-  })
-})
-
-describe('getInputValueExecStatus', () => {
-  it('should return false when the status is idle', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputValue(inputBlock, { status: 'idle' })
-    expect(getInputValueExecStatus(inputBlock)).toBe('idle')
-  })
-
-  it('should return true when the status is save-requested', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputValue(inputBlock, { status: 'save-requested' })
-    expect(getInputValueExecStatus(inputBlock)).toBe('loading')
-  })
-
-  it('should return true when the status is saving', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputValue(inputBlock, { status: 'saving' })
-    expect(getInputValueExecStatus(inputBlock)).toBe('loading')
-  })
-})
-
-describe('updateInputVariable', () => {
-  it('should update the variable of an Input block', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputVariable(inputBlock, blocks, {
-      newValue: 'input_2',
-      status: 'save-requested',
-    })
-    expect(inputBlock.getAttribute('variable')).toEqual({
-      value: 'input_1',
-      newValue: 'input_2',
-      status: 'save-requested',
-      error: null,
-    })
-  })
-})
-
-describe('getInputVariableExecStatus', () => {
-  it('should return false when the status is idle', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputVariable(inputBlock, blocks, { status: 'idle' })
-    expect(getInputVariableExecStatus(inputBlock, blocks)).toBe('idle')
-  })
-
-  it('should return true when the status is save-requested', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputVariable(inputBlock, blocks, { status: 'save-requested' })
-    expect(getInputVariableExecStatus(inputBlock, blocks)).toBe('loading')
-  })
-
-  it('should return true when the status is saving', () => {
-    const ydoc = new Y.Doc()
-    const blocks = ydoc.getMap<YBlock>('blocks')
-    const inputBlock = makeInputBlock('blockId', blocks)
-    blocks.set('blockId', inputBlock)
-
-    updateInputVariable(inputBlock, blocks, { status: 'saving' })
-    expect(getInputVariableExecStatus(inputBlock, blocks)).toBe('loading')
   })
 })
 
@@ -214,13 +122,11 @@ describe('getInputAttributes', () => {
       variable: {
         value: 'input_1',
         newValue: 'input_1',
-        status: 'idle',
         error: null,
       },
       value: {
         value: '',
         newValue: '',
-        status: 'idle',
         error: null,
       },
       inputType: 'text',

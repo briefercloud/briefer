@@ -1,7 +1,7 @@
 // adapted from: https://github.com/yjs/y-websocket/tree/master/bin
 
+import { v4 as uuidv4 } from 'uuid'
 import { LRUCache } from 'lru-cache'
-import pAll from 'p-all'
 import * as Y from 'yjs'
 import qs from 'querystring'
 import cookie from 'cookie'
@@ -18,6 +18,8 @@ import prisma, {
   Document,
   ApiUser,
   getDocument,
+  subscribe,
+  publish,
 } from '@briefer/database'
 import { decoding, encoding } from 'lib0'
 import { logger } from '../../logger.js'
@@ -32,7 +34,6 @@ import {
 import PQueue from 'p-queue'
 import { IOServer } from '../../websocket/index.js'
 import { broadcastDocument } from '../../websocket/workspace/documents.js'
-import { MainObserver } from './observers/index.js'
 import {
   AppPersistor,
   DocumentPersistor,
@@ -44,11 +45,12 @@ import {
   getDashboard,
   getDataframes,
   getLayout,
-  getRunAll,
 } from '@briefer/editor'
-import { UserNotebookEvents } from '../../events/user.js'
-import { uuidSchema } from '@briefer/types'
+import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
+import { Executor } from './executor/index.js'
+import { AIExecutor } from './executor/ai/index.js'
+import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -248,20 +250,16 @@ export function setupYJSSocketServerV2(
             { docsCount: docs.size },
             '[shutdown] Waiting for YJS docs to close'
           )
-          await pAll(
-            Array.from(docs.values()).map((doc) => async () => {
-              await doc.persist(false)
-              if (doc.conns.size > 0) {
-                doc.conns.forEach((_, conn) => {
-                  closeConn(doc, conn)
-                })
-              } else if (doc.canCollect()) {
-                doc.destroy()
-                docs.delete(doc.id)
-              }
-            }),
-            { concurrency: 10 }
-          )
+          for (const doc of docs.values()) {
+            if (doc.conns.size > 0) {
+              doc.conns.forEach((_, conn) => {
+                closeConn(doc, conn)
+              })
+            } else if (doc.canCollect()) {
+              await doc.destroy()
+              docs.delete(doc.id)
+            }
+          }
           await new Promise((resolve) => setTimeout(resolve, 200))
         }
 
@@ -280,7 +278,7 @@ export function setupYJSSocketServerV2(
 const wsReadyStateConnecting = 0
 const wsReadyStateOpen = 1
 
-const DOCUMENT_COLLECTION_INTERVAL = 1000 * 5 // 5 seconds
+const DOCUMENT_COLLECTION_INTERVAL = 1000 * 20 // 20 seconds
 export const docs = new Map<string, WSSharedDocV2>()
 
 export const docsCache = new LRUCache<string, WSSharedDocV2>({
@@ -313,33 +311,13 @@ function startDocumentCollection() {
         logger().trace({ docId }, 'Checking if doc can be collected')
         if (doc.canCollect()) {
           logger().trace({ docId }, 'Doc can be collected')
-          queue.add(async () => {
-            if (!doc.canCollect()) {
-              logger().trace(
-                { docId },
-                'Doc was referenced again, collectiong aborted'
-              )
-              return
-            }
-
-            logger().trace({ docId }, 'Persisting doc state')
-            await doc.persist(false)
-            if (!doc.canCollect()) {
-              logger().trace(
-                { docId },
-                'Doc was referenced again while persisting, collection aborted'
-              )
-              return
-            }
-
-            docs.delete(docId)
-            if (!docsCache.has(docId)) {
-              // only destroy if the doc is not in cache
-              doc.destroy()
-            }
-            logger().trace({ docId }, 'Doc collected')
-            collected++
-          })
+          docs.delete(docId)
+          if (!docsCache.has(docId)) {
+            // only destroy if the doc is not in cache
+            doc.destroy()
+          }
+          logger().trace({ docId }, 'Doc collected')
+          collected++
         }
       }
 
@@ -395,10 +373,13 @@ export class WSSharedDocV2 {
 
   private socketServer: IOServer
   private title: string = ''
-  private observer: MainObserver
+  private executor: Executor
+  private aiExecutor: AIExecutor
   private persistor: Persistor
   private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
   private byteLength: number = 0
+  private publisherId: string
+  private subscription?: () => Promise<void>
 
   private constructor(
     id: string,
@@ -420,29 +401,123 @@ export class WSSharedDocV2 {
     this.byteLength = loadStateResult.byteLength
     this.awareness = this.configAwareness()
 
-    const events = new UserNotebookEvents(this.workspaceId, this.documentId)
-    this.observer = MainObserver.make(
-      this.workspaceId,
-      this.documentId,
-      this,
-      events
-    )
+    this.executor = Executor.fromWSSharedDocV2(this)
+    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
+    this.publisherId = uuidv4()
   }
 
-  public init() {
+  private getPubSubChannel() {
+    return `yjs-updates-${this.documentId}`
+  }
+
+  public async init() {
+    this.subscription = await subscribe(
+      this.getPubSubChannel(),
+      this.onSubMessage
+    )
+
     this.ydoc.on('update', this.updateHandler)
     this.awareness.on('update', this.awarenessHandler)
-    this.observer.start()
+    this.executor.start()
+    this.aiExecutor.start()
   }
 
-  public async replaceState(state: Uint8Array | Buffer): Promise<void> {
-    await this.serialUpdatesQueue.add(async () => {
-      const result = await this.persistor.replaceState(
-        state instanceof Buffer ? state : Buffer.from(state)
+  private onSubMessage = async (message?: string) => {
+    if (!message) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+        },
+        'Received empty sub message'
       )
+      return
+    }
 
-      this.reset(result.ydoc, result.clock, result.byteLength)
+    const parsedMessage = jsonString
+      .pipe(
+        z.object({
+          id: z.string().min(1),
+          publisherId: uuidSchema,
+          message: uuidSchema,
+          clock: z.number().int(),
+        })
+      )
+      .safeParse(message)
+    if (!parsedMessage.success) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          err: parsedMessage.error,
+        },
+        'Received invalid sub message'
+      )
+      return
+    }
+
+    if (
+      parsedMessage.data.publisherId === this.publisherId ||
+      parsedMessage.data.id !== this.id
+    ) {
+      return
+    }
+
+    logger().trace(
+      {
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+      },
+      'Handling foreign sub message'
+    )
+
+    const update = await prisma().yjsUpdate.findUnique({
+      where: {
+        id: parsedMessage.data.message,
+      },
     })
+    if (!update) {
+      logger().error(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          updateId: parsedMessage.data.message,
+        },
+        'Could not find foreign update in database'
+      )
+      return
+    }
+
+    if (this.clock === parsedMessage.data.clock) {
+      Y.applyUpdate(this.ydoc, update.update)
+    } else if (parsedMessage.data.clock > this.clock) {
+      // we have a previous version of the document, we need to reset
+      const newDoc = new Y.Doc()
+      Y.applyUpdate(newDoc, update.update)
+      this.reset(newDoc, parsedMessage.data.clock, update.update.byteLength)
+    } else {
+      // we have a newer version of the document, ignore the update
+    }
+  }
+
+  public async replaceState(state: Buffer) {
+    const result = await this.persistor.replaceState(this.id, state)
+    this.reset(result.ydoc, result.clock, result.byteLength)
+    const updateId = await this.persistor.persistUpdate(this, state)
+    await publish(
+      this.getPubSubChannel(),
+      JSON.stringify({
+        id: this.id,
+        publisherId: this.publisherId,
+        message: updateId,
+        clock: this.clock,
+      })
+    )
+    broadcastDocument(this.socketServer, this.workspaceId, this.documentId)
   }
 
   private reset(newYDoc: Y.Doc, newClock: number, newByteLength: number) {
@@ -452,21 +527,23 @@ export class WSSharedDocV2 {
     this.awareness.off('update', this.awarenessHandler)
     this.awareness.destroy()
 
+    this.executor.stop()
+    this.aiExecutor.stop()
+
     this.ydoc = newYDoc
     this.clock = newClock
     this.byteLength = newByteLength
-    this.observer = MainObserver.make(
-      this.workspaceId,
-      this.documentId,
-      this,
-      new UserNotebookEvents(this.workspaceId, this.documentId)
-    )
 
     this.title = this.getTitleFromDoc()
 
     this.awareness = this.configAwareness()
     this.ydoc.on('update', this.updateHandler)
-    this.observer.start()
+
+    this.executor = Executor.fromWSSharedDocV2(this)
+    this.executor.start()
+
+    this.aiExecutor = AIExecutor.fromWSSharedV2(this)
+    this.aiExecutor.start()
   }
 
   private awarenessHandler = (
@@ -530,30 +607,18 @@ export class WSSharedDocV2 {
     return getLayout(this.ydoc)
   }
 
-  public get runAll() {
-    return getRunAll(this.ydoc)
+  public get executionQueue() {
+    return this.ydoc.getArray('executionQueue')
   }
 
-  public destroy() {
-    this.observer.stop()
+  public async destroy() {
+    await Promise.all([
+      this.subscription?.(),
+      this.executor.stop(),
+      this.aiExecutor.stop(),
+    ])
+
     this.ydoc.destroy()
-  }
-
-  public async persist(cleanHistory: boolean) {
-    await this.serialUpdatesQueue.add(async () => {
-      if (cleanHistory) {
-        const result = await this.persistor.cleanHistory(this)
-
-        this.reset(result.ydoc, result.clock, result.byteLength)
-        await broadcastDocument(
-          this.socketServer,
-          this.workspaceId,
-          this.documentId
-        )
-      }
-
-      this.byteLength = await this.persistor.persist(this)
-    })
   }
 
   private get refs() {
@@ -561,7 +626,7 @@ export class WSSharedDocV2 {
   }
 
   public canCollect() {
-    return this.refs === 0 && this.observer.isIdle()
+    return this.refs === 0 && this.executor.isIdle() && this.aiExecutor.isIdle()
   }
 
   public canWrite(
@@ -579,12 +644,55 @@ export class WSSharedDocV2 {
     return this.byteLength
   }
 
-  private updateHandler = async (update: Uint8Array) => {
+  private updateHandler = async (
+    update: Uint8Array,
+    _arg1: any,
+    _arg2: any,
+    tr: Y.Transaction
+  ) => {
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     syncProtocol.writeUpdate(encoder, update)
     const message = encoding.toUint8Array(encoder)
     this.conns.forEach((_, conn) => send(this, conn, message))
+
+    // only call this when the update originates from this connection
+    if (tr.local || (tr.origin && 'user' in tr.origin)) {
+      const pubsubChannel = this.getPubSubChannel()
+      try {
+        const updateId = await this.persistor.persistUpdate(this, update)
+        await publish(
+          pubsubChannel,
+          JSON.stringify({
+            id: this.id,
+            publisherId: this.publisherId,
+            message: updateId,
+            clock: this.clock,
+          })
+        )
+        logger().trace(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            updateId,
+          },
+          'Published Yjs update'
+        )
+      } catch (err) {
+        logger().error(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            pubsubChannel,
+            err,
+          },
+          'Failed to persist Yjs update'
+        )
+        throw err
+      }
+    }
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
 
@@ -722,7 +830,7 @@ export class WSSharedDocV2 {
     persistor: Persistor,
     tx?: PrismaTransaction
   ): Promise<WSSharedDocV2> {
-    const loadStateResult = await persistor.load(tx)
+    const loadStateResult = await persistor.load(id, tx)
     const doc = new WSSharedDocV2(
       id,
       documentId,
@@ -731,7 +839,7 @@ export class WSSharedDocV2 {
       loadStateResult,
       persistor
     )
-    doc.init()
+    await doc.init()
     return doc
   }
 }

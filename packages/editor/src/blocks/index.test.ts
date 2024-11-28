@@ -26,7 +26,9 @@ describe('computeDepencyQueue', () => {
   })
 
   it('should return a queue that includes all executable blocks that come before the block that are dirty or have not ran since env started or have a previous block that ran after them', () => {
-    const envStartedAt = new Date(Date.now() - 1000 * 60 * 60 * 24) // 1 day ago
+    const envStartedAt = new Date(
+      Date.now() - 1000 * 60 * 60 * 24
+    ).toISOString() // 1 day ago
 
     // ran after env started
     // do not expect this block to be in the queue
@@ -86,8 +88,8 @@ describe('computeDepencyQueue', () => {
       clickedBlock,
       layout,
       blocks,
-      envStartedAt,
-      false
+      false,
+      envStartedAt
     ).map((b) => b.getAttribute('id'))
 
     const expected = [secondBlock].map((b) => b.getAttribute('id'))

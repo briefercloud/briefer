@@ -1,6 +1,8 @@
 import * as Y from 'yjs'
 import {
+  AITasks,
   BlockType,
+  ExecutionQueue,
   YBlock,
   YBlockGroup,
   addDashboardItemToYDashboard,
@@ -45,6 +47,9 @@ interface Props {
   yDoc: Y.Doc
   onDragStart: (draggingBlock: DraggingBlock) => void
   onAddBlock: (blockId: string) => void
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function DashboardControls(props: Props) {
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
@@ -201,6 +206,9 @@ function DashboardControls(props: Props) {
             blocks={blocks.value}
             layout={layout.value}
             onDragStart={props.onDragStart}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         </ScrollBar>
       </div>
@@ -216,6 +224,9 @@ interface BlocksListProps {
   blocks: Y.Map<YBlock>
   layout: Y.Array<YBlockGroup>
   onDragStart: (draggingBlock: DraggingBlock) => void
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function BlocksList(props: BlocksListProps) {
   return (
@@ -232,6 +243,9 @@ function BlocksList(props: BlocksListProps) {
             blocks={props.blocks}
             layout={props.layout}
             onDragStart={props.onDragStart}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         )
       })}
@@ -247,6 +261,9 @@ interface BlockListItemProps {
   blocks: Y.Map<YBlock>
   layout: Y.Array<YBlockGroup>
   onDragStart: (draggingBlock: DraggingBlock) => void
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function BlockListItem(props: BlockListItemProps) {
   const { id, type } = getBaseAttributes(props.block)
@@ -304,8 +321,6 @@ function BlockListItem(props: BlockListItemProps) {
               dataSources={props.dataSources}
               isEditable={false}
               dragPreview={null}
-              onRun={() => {}}
-              onTry={() => {}}
               dashboardMode="editing"
               isPublicMode={false}
               hasMultipleTabs={false}
@@ -313,6 +328,9 @@ function BlockListItem(props: BlockListItemProps) {
               onToggleIsBlockHiddenInPublished={() => {}}
               onSchemaExplorer={() => {}}
               insertBelow={() => {}}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
+              aiTasks={props.aiTasks}
             />
           </div>
         ),
@@ -323,14 +341,15 @@ function BlockListItem(props: BlockListItemProps) {
             blocks={props.blocks}
             isEditable={false}
             dragPreview={null}
-            onTry={() => {}}
-            onRun={() => {}}
             isPDF={false}
             dashboardPlace="controls"
             isPublicMode={false}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onVisualization: (block) => (
@@ -339,10 +358,10 @@ function BlockListItem(props: BlockListItemProps) {
               document={props.document}
               dataframes={props.dataframes}
               block={block}
+              blocks={props.blocks}
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
-              onRun={() => {}}
               isDashboard={true}
               renderer="svg"
               isPublicMode={false}
@@ -351,6 +370,8 @@ function BlockListItem(props: BlockListItemProps) {
               onToggleIsBlockHiddenInPublished={() => {}}
               isCursorWithin={false}
               isCursorInserting={false}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
             />
           </div>
         ),
@@ -362,10 +383,12 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
-            onRun={() => {}}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            workspaceId={props.document.workspaceId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDropdownInput: (block) => (
@@ -377,10 +400,12 @@ function BlockListItem(props: BlockListItemProps) {
             isEditable={false}
             isApp={true}
             isDashboard={true}
-            onRun={() => {}}
             dataframes={props.dataframes}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            workspaceId={props.document.workspaceId}
+            executionQueue={props.executionQueue}
           />
         ),
         onFileUpload: () => null,
@@ -388,14 +413,16 @@ function BlockListItem(props: BlockListItemProps) {
           <DateInputBlock
             block={block}
             blocks={props.blocks}
+            workspaceId={props.document.workspaceId}
             dragPreview={null}
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
             isDashboard={true}
-            onRun={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onPivotTable: (block) => (
@@ -408,13 +435,14 @@ function BlockListItem(props: BlockListItemProps) {
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
-              onRun={() => {}}
               dashboardMode="editing"
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
               isCursorWithin={false}
               isCursorInserting={false}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
             />
           </div>
         ),

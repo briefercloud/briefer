@@ -1,8 +1,10 @@
 import { APIDataSources } from '@/hooks/useDatasources'
 import {
   execStatusIsDisabled,
+  ExecutionQueue,
   getWritebackAttributes,
   getWritebackBlockExecStatus,
+  getWritebackBlockResultStatus,
   type WritebackBlock,
 } from '@briefer/editor'
 import {
@@ -25,6 +27,8 @@ import { WritebackExecTooltip } from '../../ExecTooltip'
 import { XCircleIcon } from 'lucide-react'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
 
 interface Props {
   workspaceId: string
@@ -38,16 +42,19 @@ interface Props {
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   isCursorWithin: boolean
   isCursorInserting: boolean
+  userId: string | null
+  executionQueue: ExecutionQueue
 }
 function WritebackBlock(props: Props) {
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.workspaceId
-  )
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.workspaceId)
 
   const {
     id: blockId,
     title,
-    status,
     tableName,
     isCollapsed,
     dataframeName,
@@ -100,15 +107,40 @@ function WritebackBlock(props: Props) {
     props.onToggleIsBlockHiddenInPublished(blockId)
   }, [props.onToggleIsBlockHiddenInPublished, blockId])
 
-  const execStatus = getWritebackBlockExecStatus(props.block)
+  const execStatus = getWritebackBlockExecStatus(
+    props.block,
+    props.executionQueue
+  )
+  const resultStatus = getWritebackBlockResultStatus(props.block)
   const statusIsDisabled = execStatusIsDisabled(execStatus)
 
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'writeback'
+  )
+  const execution = head(executions)
+  const status = execution?.item.getStatus()._tag ?? 'idle'
   const onRunAbort = useCallback(() => {
-    props.block.setAttribute(
-      'status',
-      status === 'idle' ? 'running' : 'aborting'
-    )
-  }, [props.block])
+    if (execution) {
+      execution.item.setAborting()
+    } else {
+      props.executionQueue.enqueueBlock(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'writeback',
+        }
+      )
+    }
+  }, [
+    blockId,
+    environmentStartedAt,
+    execution,
+    props.executionQueue,
+    props.userId,
+  ])
 
   const onChangeOnConflictColumns = useCallback(
     (value: string[]) => {
@@ -166,7 +198,7 @@ function WritebackBlock(props: Props) {
                 disabled={!props.isEditable}
               />
               {isCollapsed &&
-                (execStatus === 'success' ? (
+                (resultStatus === 'success' ? (
                   <CheckCircleIcon className="w-4 h-4 text-green-600" />
                 ) : (
                   <XCircleIcon className="w-4 h-4 text-red-500" />
@@ -219,10 +251,13 @@ function WritebackBlock(props: Props) {
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
+                status === 'enqueued' || status === 'aborting',
               'bg-red-200': status === 'running' && envStatus === 'Running',
               'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
+              'bg-primary-200':
+                status === 'idle' ||
+                status === 'completed' ||
+                status === 'unknown',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
@@ -237,8 +272,8 @@ function WritebackBlock(props: Props) {
               <WritebackExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={status}
+                execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>
           ) : (

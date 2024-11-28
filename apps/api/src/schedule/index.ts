@@ -1,4 +1,3 @@
-import * as Y from 'yjs'
 import {
   prisma,
   Document,
@@ -10,12 +9,10 @@ import { CronJob } from 'cron'
 import { logger } from '../logger.js'
 import { IOServer } from '../websocket/index.js'
 import * as yjs from '../yjs/v2/index.js'
-import { RunAllExecutor } from '../yjs/v2/executors/run-all.js'
-import PQueue from 'p-queue'
-import { AppPersistor, DocumentPersistor } from '../yjs/v2/persistors.js'
-import { YBlock } from '@briefer/editor'
-import { ScheduleNotebookEvents } from '../events/schedule.js'
+import { AppPersistor } from '../yjs/v2/persistors.js'
+import { ExecutionQueue } from '@briefer/editor'
 import { updateAppState } from '../yjs/v2/documents.js'
+import { acquireLock } from '../lock.js'
 
 function convertToCron(schedule: ExecutionSchedule): string {
   switch (schedule.type) {
@@ -187,33 +184,57 @@ export async function runSchedule(socketServer: IOServer) {
       counters.deleted++
     }
 
-    logger().info(
-      {
-        created: counters.created,
-        updated: counters.updated,
-        deleted: counters.deleted,
-        unchanged: counters.unchanged,
-        module: 'schedule',
-      },
-      'Updated schedules'
-    )
+    if (counters.created > 0 || counters.updated > 0 || counters.deleted > 0) {
+      logger().info(
+        {
+          created: counters.created,
+          updated: counters.updated,
+          deleted: counters.deleted,
+          unchanged: counters.unchanged,
+          module: 'schedule',
+        },
+        'Updated schedules'
+      )
+    }
   }
 
   let stop = false
   const loop = new Promise<void>(async (resolve) => {
-    while (true) {
-      try {
-        await updateSchedule()
-      } catch (err) {
-        logger().error({ err, module: 'schedule' }, 'Failed to update schedule')
-      }
+    logger().trace('Acquiring lock to be the schedule executor')
+    await acquireLock(
+      'schedule-executor',
+      async () => {
+        if (stop) {
+          logger().trace(
+            'Schedule executor lock acquired but server is shutting down'
+          )
+          return
+        }
 
-      if (stop) {
-        break
-      }
+        logger().trace('Schedule executor lock acquired')
+        while (true) {
+          if (stop) {
+            break
+          }
 
-      await new Promise((resolve) => setTimeout(resolve, 5000))
-    }
+          try {
+            await updateSchedule()
+          } catch (err) {
+            logger().error(
+              { err, module: 'schedule' },
+              'Failed to update schedule'
+            )
+          }
+
+          if (stop) {
+            break
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 5000))
+        }
+      },
+      { acquireTimeout: Infinity }
+    )
 
     resolve()
   })
@@ -271,56 +292,34 @@ async function executeNotebook(
   scheduleId: string,
   socketServer: IOServer,
   doc: Document,
-  app?: YjsAppDocument
-): Promise<YBlock | null> {
-  const events = new ScheduleNotebookEvents()
-
-  while (true) {
+  app: YjsAppDocument
+): Promise<void> {
+  let emptyLayout = true
+  while (emptyLayout) {
     const id = yjs.getDocId(doc.id, app ? { id: app.id, userId: null } : null)
-    const failedBlock = await yjs.getYDocForUpdate(
+    emptyLayout = await yjs.getYDocForUpdate(
       id,
       socketServer,
       doc.id,
       doc.workspaceId,
       async (ydoc) => {
-        const runAll = ydoc.runAll
-        runAll.setAttribute('status', 'schedule-running')
-
         if (ydoc.layout.length === 0) {
-          return undefined
+          return true
         }
 
-        const executor = RunAllExecutor.make(
-          doc.workspaceId,
-          doc.id,
-          ydoc.blocks,
-          ydoc.layout,
-          ydoc.runAll,
-          ydoc.dataframes,
-          new PQueue({ concurrency: 1 }),
-          events
-        )
-        try {
-          const tr = new Y.Transaction(ydoc.ydoc, { scheduleId }, true)
-          const failedBlock = await executor.run(tr)
-          runAll.setAttribute('status', 'idle')
-          await ydoc.persist(false)
-
-          if (app) {
-            await updateAppState(ydoc, app, socketServer)
-          }
-
-          return failedBlock
-        } catch (e) {
-          runAll.setAttribute('status', 'idle')
-          throw e
-        }
+        const executionQueue = ExecutionQueue.fromYjs(ydoc.ydoc)
+        const batch = executionQueue.enqueueRunAll(ydoc.layout, ydoc.blocks, {
+          _tag: 'schedule',
+          scheduleId,
+        })
+        await batch.waitForCompletion()
+        await updateAppState(ydoc, app, socketServer)
+        return false
       },
-      app
-        ? new AppPersistor(app.id, null) // user is null when running a schedule
-        : new DocumentPersistor(doc.id)
+      new AppPersistor(app.id, null) // user is null when running a schedule
     )
-    if (failedBlock === undefined) {
+
+    if (emptyLayout) {
       logger().error(
         {
           documentId: doc.id,
@@ -331,9 +330,6 @@ async function executeNotebook(
         'doc had empty layout, retrying'
       )
       await new Promise((resolve) => setTimeout(resolve, 1000))
-      continue
     }
-
-    return failedBlock
   }
 }

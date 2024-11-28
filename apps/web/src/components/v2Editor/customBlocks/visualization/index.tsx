@@ -1,15 +1,18 @@
 import { v4 as uuidv4 } from 'uuid'
+
 import { VisualizationSpec } from 'react-vega'
 import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
 import * as Y from 'yjs'
 import {
   type VisualizationBlock,
-  getVisualizationBlockExecStatus,
   BlockType,
   isVisualizationBlock,
-  execStatusIsDisabled,
   getVisualizationAttributes,
   getDataframe,
+  ExecutionQueue,
+  isExecutionStatusLoading,
+  YBlockGroup,
+  YBlock,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
@@ -28,17 +31,19 @@ import {
   isInvalidVisualizationFilter,
   NumpyDateTypes,
   YAxis,
+  exhaustiveCheck,
 } from '@briefer/types'
 import VisualizationControls from './VisualizationControls'
 import VisualizationView from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
-import { equals } from 'ramda'
+import { equals, head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { downloadFile } from '@/utils/file'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -72,6 +77,7 @@ interface Props {
   document: ApiDocument
   dataframes: Y.Map<DataFrame>
   block: Y.XmlElement<VisualizationBlock>
+  blocks: Y.Map<YBlock>
   dragPreview: ConnectDragPreview | null
   isEditable: boolean
   isPublicMode: boolean
@@ -80,7 +86,6 @@ interface Props {
     blockType: BlockType,
     position: 'before' | 'after'
   ) => void
-  onRun: (block: Y.XmlElement<VisualizationBlock>) => void
   isDashboard: boolean
   renderer?: 'canvas' | 'svg'
   hasMultipleTabs: boolean
@@ -88,6 +93,8 @@ interface Props {
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   isCursorWithin: boolean
   isCursorInserting: boolean
+  executionQueue: ExecutionQueue
+  userId: string | null
 }
 function VisualizationBlock(props: Props) {
   const dataframe = getDataframe(props.block, props.dataframes)
@@ -112,7 +119,6 @@ function VisualizationBlock(props: Props) {
     title,
     xAxis,
     xAxisName,
-    status,
     filters,
     controlsHidden,
     chartType,
@@ -155,18 +161,55 @@ function VisualizationBlock(props: Props) {
     [props.block]
   )
 
-  const isEditable =
-    props.isEditable &&
-    status !== 'run-all-enqueued' &&
-    status !== 'run-all-running'
-  const execStatus = getVisualizationBlockExecStatus(props.block)
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'visualization'
+  )
+  const execution = head(executions) ?? null
+  const status = execution?.item.getStatus()._tag ?? 'idle'
+
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.document.workspaceId)
+
+  const onRun = useCallback(() => {
+    executions.forEach((e) => e.item.setAborting())
+    props.executionQueue.enqueueBlock(
+      blockId,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'visualization',
+      }
+    )
+  }, [
+    executions,
+    blockId,
+    props.executionQueue,
+    environmentStartedAt,
+    props.userId,
+  ])
+
   const onRunAbort = useCallback(() => {
-    if (status === 'running') {
-      props.block.setAttribute('status', 'abort-requested')
-    } else {
-      props.onRun(props.block)
+    switch (status) {
+      case 'enqueued':
+      case 'running':
+        execution?.item.setAborting()
+        break
+      case 'idle':
+      case 'unknown':
+      case 'completed':
+        onRun()
+        break
+      case 'aborting':
+        break
+      default:
+        exhaustiveCheck(status)
     }
-  }, [props.block, props.onRun, status])
+  }, [status, execution, onRun])
 
   const onAddFilter = useCallback(() => {
     const newFilter: VisualizationFilter = {
@@ -375,14 +418,10 @@ function VisualizationBlock(props: Props) {
 
   useEffect(() => {
     if (isDirty) {
-      props.onRun(props.block)
+      onRun()
       setIsDirty(false)
     }
-  }, [isDirty, props.block, props.onRun])
-
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.document.workspaceId
-  )
+  }, [isDirty, props.block, onRun])
 
   const [isFullscreen] = useFullScreenDocument(props.document.id)
 
@@ -404,26 +443,27 @@ function VisualizationBlock(props: Props) {
     [props.block]
   )
 
-  useEffect(() => {
-    if (status === 'running' || status === 'run-requested') {
-      // 30 seconds timeout
-      const timeout = setTimeout(() => {
-        const status = props.block.getAttribute('status')
-        if (status === 'running') {
-          props.block.setAttribute('status', 'run-requested')
-        } else if (status === 'run-requested') {
-          props.block.setAttribute('status', 'idle')
-          requestAnimationFrame(() => {
-            props.block.setAttribute('status', 'run-requested')
-          })
-        }
-      }, 1000 * 30)
+  // TODO
+  // useEffect(() => {
+  //   if (status === 'running' || status === 'run-requested') {
+  //     // 30 seconds timeout
+  //     const timeout = setTimeout(() => {
+  //       const status = props.block.getAttribute('status')
+  //       if (status === 'running') {
+  //         props.block.setAttribute('status', 'run-requested')
+  //       } else if (status === 'run-requested') {
+  //         props.block.setAttribute('status', 'idle')
+  //         requestAnimationFrame(() => {
+  //           props.block.setAttribute('status', 'run-requested')
+  //         })
+  //       }
+  //     }, 1000 * 30)
 
-      return () => {
-        clearTimeout(timeout)
-      }
-    }
-  }, [props.block, status])
+  //     return () => {
+  //       clearTimeout(timeout)
+  //     }
+  //   }
+  // }, [props.block, status])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(blockId)
@@ -434,6 +474,8 @@ function VisualizationBlock(props: Props) {
     editorAPI.insert(blockId, { scrollIntoView: false })
   }, [blockId, editorAPI.insert])
 
+  const viewLoading = isExecutionStatusLoading(status)
+
   if (props.isDashboard) {
     return (
       <VisualizationView
@@ -442,7 +484,7 @@ function VisualizationBlock(props: Props) {
         spec={spec}
         tooManyDataPointsHidden={tooManyDataPointsHidden}
         onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
-        loading={execStatus === 'loading'}
+        loading={viewLoading}
         error={error}
         dataframe={dataframe}
         onNewSQL={onNewSQL}
@@ -453,7 +495,7 @@ function VisualizationBlock(props: Props) {
         onToggleHidden={onToggleHidden}
         onExportToPNG={onExportToPNG}
         isDashboard={props.isDashboard}
-        isEditable={isEditable}
+        isEditable={props.isEditable}
       />
     )
   }
@@ -480,7 +522,7 @@ function VisualizationBlock(props: Props) {
             <div className="flex gap-x-4 h-full w-full">
               <input
                 type="text"
-                disabled={!isEditable}
+                disabled={!props.isEditable}
                 className={clsx(
                   'font-sans bg-transparent pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 disabled:ring-0 hover:ring-1 focus:ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs h-full'
                 )}
@@ -495,7 +537,7 @@ function VisualizationBlock(props: Props) {
                     props.isPublicMode ? 'hidden' : 'inline-block'
                   )}
                   onClick={onAddFilter}
-                  disabled={!isEditable}
+                  disabled={!props.isEditable}
                 >
                   <FunnelIcon className="h-3 w-3" />
                   <span>Add filter</span>
@@ -506,7 +548,7 @@ function VisualizationBlock(props: Props) {
                   options={dataframeOptions}
                   onAdd={onNewSQL}
                   onAddLabel="New query"
-                  disabled={!isEditable}
+                  disabled={!props.isEditable}
                 />
               </div>
             </div>
@@ -536,7 +578,7 @@ function VisualizationBlock(props: Props) {
                   ) ||
                     isInvalidVisualizationFilter(filter, dataframe)))
               }
-              disabled={!isEditable}
+              disabled={!props.isEditable}
             />
           ))}
         </div>
@@ -564,7 +606,7 @@ function VisualizationBlock(props: Props) {
             onChangeNumberValuesFormat={onChangeNumberValuesFormat}
             showDataLabels={showDataLabels}
             onChangeShowDataLabels={onChangeShowDataLabels}
-            isEditable={isEditable}
+            isEditable={props.isEditable}
           />
           <VisualizationView
             title={title}
@@ -572,7 +614,7 @@ function VisualizationBlock(props: Props) {
             spec={spec}
             tooManyDataPointsHidden={tooManyDataPointsHidden}
             onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
-            loading={execStatus === 'loading'}
+            loading={viewLoading}
             error={error}
             dataframe={dataframe}
             onNewSQL={onNewSQL}
@@ -583,7 +625,7 @@ function VisualizationBlock(props: Props) {
             onToggleHidden={onToggleHidden}
             onExportToPNG={onExportToPNG}
             isDashboard={props.isDashboard}
-            isEditable={isEditable}
+            isEditable={props.isEditable}
           />
         </div>
       </div>
@@ -591,7 +633,7 @@ function VisualizationBlock(props: Props) {
       <div
         className={clsx(
           'absolute transition-opacity opacity-0 group-hover/block:opacity-100 right-0 translate-x-full pl-1.5 top-0 flex flex-col gap-y-1',
-          execStatusIsDisabled(execStatus) ? 'opacity-100' : 'opacity-0',
+          viewLoading ? 'opacity-100' : 'opacity-0',
           {
             hidden: !props.isEditable,
           }
@@ -613,13 +655,13 @@ function VisualizationBlock(props: Props) {
             !dataframe ||
             (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
             (!hasAValidYAxis && chartType !== 'histogram') ||
-            !isEditable ||
+            !props.isEditable ||
             (status !== 'idle' && status !== 'running')
           }
         >
           {status !== 'idle' ? (
             <div>
-              {execStatus === 'enqueued' ? (
+              {status === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
               ) : (
                 <StopIcon className="w-3 h-3 text-gray-500" />
@@ -627,8 +669,8 @@ function VisualizationBlock(props: Props) {
               <VisualizationExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={status}
+                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={execution?.batch.isRunAll() ?? false}
               />
             </div>
           ) : (

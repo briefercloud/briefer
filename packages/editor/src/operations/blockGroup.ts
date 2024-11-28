@@ -1,11 +1,6 @@
 import * as Y from 'yjs'
 import { v4 as uuidv4 } from 'uuid'
-import {
-  BlockType,
-  ExecStatus,
-  YBlock,
-  getExecStatus,
-} from '../blocks/index.js'
+import { BlockType, YBlock } from '../blocks/index.js'
 import { duplicateBlock } from '../blocks/index.js'
 import {
   getBlocks,
@@ -21,7 +16,6 @@ export type TabRef = {
   type: BlockType
   title: string | null
   isCurrent: boolean
-  execStatus: ExecStatus
   isHiddenInPublished: boolean
 }
 
@@ -188,7 +182,6 @@ export const getTabsFromBlockGroup = (
         blockId,
         type,
         title: block.getAttribute('title') ?? null,
-        execStatus: getExecStatus(block, yBlocks),
         isCurrent,
         isHiddenInPublished: tab.getAttribute('isHiddenInPublished') ?? false,
       }

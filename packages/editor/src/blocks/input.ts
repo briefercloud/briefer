@@ -5,13 +5,14 @@ import {
   YBlock,
   getAttributeOr,
   getBaseAttributes,
-  ExecStatus,
   duplicateBaseAttributes,
+  ResultStatus,
 } from './index.js'
-import { clone } from 'ramda'
+import { clone, head } from 'ramda'
+import { ExecutionQueue } from '../execution/queue.js'
+import { ExecutionStatus } from '../execution/item.js'
 
-export type EditableField<E, S = never, V = string> = {
-  status: 'idle' | 'save-requested' | 'saving' | S
+export type EditableField<E, V = string> = {
   value: V
   newValue: V
   error: E | null
@@ -19,10 +20,7 @@ export type EditableField<E, S = never, V = string> = {
 
 export type InputBlock = BaseBlock<BlockType.Input> & {
   label: string
-  value: EditableField<
-    'invalid-value' | 'unexpected-error',
-    'run-all-enqueued' | 'run-all-running'
-  >
+  value: EditableField<'invalid-value' | 'unexpected-error'>
   variable: EditableField<
     'invalid-value' | 'invalid-variable-name' | 'unexpected-error'
   >
@@ -52,7 +50,6 @@ export const makeInputBlock = (
     value: {
       value: '',
       newValue: '',
-      status: 'idle',
       error: null,
     },
     variable,
@@ -140,7 +137,6 @@ function getInputValue(block: Y.XmlElement<InputBlock>): InputBlock['value'] {
   return getAttributeOr(block, 'value', {
     value: '',
     newValue: '',
-    status: 'idle',
     error: null,
   })
 }
@@ -158,19 +154,20 @@ export function updateInputValue(
 }
 
 export function getInputValueExecStatus(
-  block: Y.XmlElement<InputBlock>
-): ExecStatus {
-  const value = getInputValue(block)
-  switch (value.status) {
-    case 'idle':
-      return value.error ? 'error' : 'idle'
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'save-requested':
-    case 'saving':
-    case 'run-all-running':
-      return 'loading'
+  block: Y.XmlElement<InputBlock>,
+  executionQueue: ExecutionQueue
+): ExecutionStatus {
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(
+    blockId,
+    'text-input-save-value'
+  )
+  const execution = head(executions)
+  if (execution) {
+    return execution.item.getStatus()._tag
   }
+
+  return 'completed'
 }
 
 function getInputVariable(
@@ -201,34 +198,54 @@ export function updateInputVariable(
 
 export function getInputVariableExecStatus(
   block: Y.XmlElement<InputBlock>,
-  blocks: Y.Map<YBlock>
-): ExecStatus {
-  const variable = getInputVariable(block, blocks)
-  switch (variable.status) {
-    case 'idle':
-      return variable.error ? 'error' : 'idle'
-    case 'save-requested':
-    case 'saving':
-      return 'loading'
+  executionQueue: ExecutionQueue
+): ExecutionStatus {
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(
+    blockId,
+    'text-input-rename-variable'
+  )
+
+  const execution = head(executions)
+
+  if (!execution) {
+    return 'completed'
   }
+
+  return execution.item.getStatus()._tag
 }
 
 export function getInputBlockExecStatus(
   block: Y.XmlElement<InputBlock>,
-  blocks: Y.Map<YBlock>
-): ExecStatus {
-  const variableStatus = getInputVariableExecStatus(block, blocks)
-
+  executionQueue: ExecutionQueue
+): ExecutionStatus {
+  const variableStatus = getInputVariableExecStatus(block, executionQueue)
   switch (variableStatus) {
-    case 'success':
+    case 'unknown':
+    case 'completed':
     case 'idle':
-      return getInputValueExecStatus(block)
-    case 'loading':
+      return getInputValueExecStatus(block, executionQueue)
+    case 'running':
+      return 'running'
     case 'enqueued':
-      return 'loading'
-    case 'error':
-      return 'error'
+      return 'enqueued'
+    case 'aborting':
+      return 'aborting'
   }
+}
+
+export function getInputBlockResultStatus(
+  block: Y.XmlElement<InputBlock>,
+  blocks: Y.Map<YBlock>
+): ResultStatus {
+  const variable = getInputVariable(block, blocks)
+  const value = getInputValue(block)
+
+  if (variable.error || value.error) {
+    return 'error'
+  }
+
+  return value.error ? 'error' : 'success'
 }
 
 function getAvailableInputVariable(
@@ -247,31 +264,7 @@ function getAvailableInputVariable(
   return {
     value: `input_${i}`,
     newValue: `input_${i}`,
-    status: 'idle',
     error: null,
-  }
-}
-
-export function inputRequestSaveValue(
-  block: Y.XmlElement<InputBlock>,
-  status?: 'saving' | 'save-requested'
-): void {
-  const operation = () => {
-    const oldVal = block.getAttribute('value')
-    if (!oldVal) {
-      return
-    }
-
-    block.setAttribute('value', {
-      ...oldVal,
-      status: status ?? 'save-requested',
-    })
-  }
-
-  if (block.doc) {
-    block.doc.transact(operation)
-  } else {
-    operation()
   }
 }
 

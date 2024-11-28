@@ -9,7 +9,10 @@ import clsx from 'clsx'
 import { SaveIcon } from 'lucide-react'
 import { useState } from 'react'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
-import { APIReusableComponent, ReusableComponentType } from '@briefer/database'
+import type {
+  APIReusableComponent,
+  ReusableComponentType,
+} from '@briefer/database'
 import { addComponentToDocument, decodeComponentState } from '@briefer/editor'
 import ScrollBar from './ScrollBar'
 
@@ -115,9 +118,9 @@ export default function ReusableComponents(props: Props) {
 
 function showType(type: ReusableComponentType): string {
   switch (type) {
-    case ReusableComponentType.sql:
+    case 'sql':
       return 'SQL'
-    case ReusableComponentType.python:
+    case 'python':
       return 'Python'
   }
 }

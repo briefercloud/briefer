@@ -27,10 +27,11 @@ import { PivotTableBlock } from './blocks/pivotTable.js'
 
 export * from './operations/index.js'
 export * from './blocks/index.js'
-export * from './run-all.js'
 export * from './dashboard.js'
 export * from './metadata.js'
 export * from './component.js'
+export * from './execution/index.js'
+export * from './ai-tasks/index.js'
 
 export function getBlocks(doc: Y.Doc) {
   const map = doc.getMap<YBlock>('blocks')

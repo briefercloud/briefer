@@ -29,15 +29,11 @@ import {
   groupBlocks,
   BlockType,
   addGroupedBlock,
-  getExecStatus,
-  requestRun,
-  execStatusIsDisabled,
   switchBlockType,
   getPrettyTitle,
   duplicateTab,
   duplicateBlockGroup,
   removeBlock,
-  requestTrySuggestion,
   addBlockGroupAfterBlock,
   getBaseAttributes,
   TabRef as TabRefT,
@@ -55,6 +51,8 @@ import {
   RemoveBlockDashboardConflictResult,
   getNextBlockIdAfterDelete,
   isRunnableBlock,
+  ExecutionQueue,
+  AITasks,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -211,6 +209,7 @@ export function getTabIcon(
 
 interface TabProps {
   tabRef: TabRefT
+  blocks: Y.Map<YBlock>
   onSwitchActiveTab: (tabId: string) => void
   onReorderTab: (
     blockGroupId: string,
@@ -226,6 +225,7 @@ interface TabProps {
   ) => boolean
   isFirst?: boolean
   isDraggable: boolean
+  executionQueue: ExecutionQueue
 }
 function Tab(props: TabProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -373,7 +373,11 @@ function Tab(props: TabProps) {
             </span>
           )}
         </div>
-        <ExecIndicator execStatus={props.tabRef.execStatus} />
+        <ExecIndicator
+          tabRef={props.tabRef}
+          blocks={props.blocks}
+          executionQueue={props.executionQueue}
+        />
       </button>
       {draggingSide === 'right' && isOver && canDrop && (
         <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
@@ -411,6 +415,9 @@ const DraggableTabbedBlock = (props: {
   isPDF: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -483,37 +490,6 @@ const DraggableTabbedBlock = (props: {
     [props.onAddGroupedBlock, props.id]
   )
 
-  const onRun = useCallback(
-    <B extends YBlock>(block: B, customCallback?: (block: B) => void) => {
-      requestRun(
-        block,
-        blocks.value,
-        layout.value,
-        environmentStartedAt,
-        !props.document.runUnexecutedBlocks,
-        customCallback
-      )
-    },
-    [
-      blocks.value,
-      layout.value,
-      props.document.runUnexecutedBlocks,
-      environmentStartedAt?.toISOString(),
-    ]
-  )
-
-  const onTry = useCallback(
-    (block: YBlock) => {
-      requestTrySuggestion(
-        block,
-        blocks.value,
-        layout.value,
-        environmentStartedAt
-      )
-    },
-    [blocks.value, layout.value, environmentStartedAt]
-  )
-
   const onFileUploadBlockPythonUsage = useCallback(
     (block: Y.XmlElement<FileUploadBlock>, filename: string, type: string) => {
       const fileExtension =
@@ -551,15 +527,14 @@ file`
         return
       }
 
-      requestRun(
+      props.executionQueue.enqueueBlock(
         pythonBlock,
-        blocks.value,
-        layout.value,
+        props.userId,
         environmentStartedAt,
-        true
+        { _tag: 'python', isSuggestion: false }
       )
     },
-    [blocks, layout, environmentStartedAt]
+    [layout, blocks, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onFileUploadBlockQueryUsage = useCallback(
@@ -595,15 +570,14 @@ file`
         return
       }
 
-      requestRun(
+      props.executionQueue.enqueueBlock(
         sqlBlock,
-        blocks.value,
-        layout.value,
+        props.userId,
         environmentStartedAt,
-        true
+        { _tag: 'sql', isSuggestion: false, selectedCode: null }
       )
     },
-    []
+    [layout, blocks, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onToggleIsBlockHiddenInPublished = useCallback(
@@ -641,8 +615,6 @@ file`
         isPublicViewer={props.isPublicViewer}
         document={props.document}
         dataSources={props.dataSources}
-        onRun={onRun}
-        onTry={onTry}
         onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
         onSchemaExplorer={props.onSchemaExplorer}
         insertBelow={props.insertBelow}
@@ -654,6 +626,9 @@ file`
         onFileUploadBlockQueryUsage={onFileUploadBlockQueryUsage}
         currentBlockId={currentBlockId}
         dragPreview={dragPreview}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ))
   }, [
@@ -665,8 +640,6 @@ file`
     props.isPublicViewer,
     props.document,
     props.dataSources,
-    onRun,
-    onTry,
     onToggleIsBlockHiddenInPublished,
     props.onSchemaExplorer,
     props.insertBelow,
@@ -678,6 +651,8 @@ file`
     onFileUploadBlockQueryUsage,
     currentBlockId,
     dragPreview,
+    props.userId,
+    props.executionQueue,
   ])
 
   const onSwitchActiveTab = useCallback(
@@ -724,63 +699,50 @@ file`
   }, [currentBlockId, props.id, props.onRemoveBlock])
 
   const runAllTabs = useCallback(() => {
-    tabRefs.forEach((tab, i) => {
-      const block = blocks.value.get(tab.blockId)
-      if (!block) {
-        return
-      }
-
-      if (!execStatusIsDisabled(getExecStatus(block, blocks.value))) {
-        requestRun(
-          block,
-          blocks.value,
-          layout.value,
-          environmentStartedAt,
-          i > 0
-        )
-      }
-    })
-  }, [blocks, layout, tabRefs, environmentStartedAt])
+    props.executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
+  }, [props.executionQueue, props.yDoc, props.id])
 
   const runBelowBlock = useCallback(() => {
-    const currentBlockGroupIndex = layout.value.toArray().findIndex((bg) => {
-      return bg.getAttribute('id') === props.id
-    })
-    const currentTabIndex = tabRefs.findIndex((tab) => tab.isCurrent)
-
-    if (currentBlockGroupIndex === -1 || currentTabIndex === -1) {
+    const blockGroup = getBlockGroup(layout.value, props.id)
+    if (!blockGroup) {
       return
     }
 
-    const blocksBelow = layout.value.toArray().slice(currentBlockGroupIndex)
-    for (const blockGroup of blocksBelow) {
-      const currBlockGroupId = blockGroup.getAttribute('id')
-      const tabs = getTabsFromBlockGroup(blockGroup, blocks.value)
-
-      tabs.forEach((tab, i) => {
-        const tabBlock = blocks.value.get(tab.blockId)
-        if (
-          !tabBlock ||
-          (i < currentTabIndex && currBlockGroupId === props.id)
-        ) {
-          return
-        }
-
-        if (!execStatusIsDisabled(getExecStatus(tabBlock, blocks.value))) {
-          requestRun(
-            tabBlock,
-            blocks.value,
-            layout.value,
-            environmentStartedAt,
-            // we must skip dependency checks because running any blocks above
-            // is counterintuitive given the user's intention is to run the
-            // blocks below
-            true
-          )
-        }
-      })
+    const current = blockGroup.getAttribute('current')
+    if (!current) {
+      return
     }
-  }, [blocks, layout, tabRefs, environmentStartedAt])
+
+    const currentBlockId = current.getAttribute('id')
+    if (!currentBlockId) {
+      return
+    }
+
+    const block = blocks.value.get(currentBlockId)
+    if (!block) {
+      return
+    }
+
+    const metadata =
+      props.executionQueue.getExecutionQueueMetadataForBlock(block)
+    if (!metadata) {
+      return
+    }
+
+    props.executionQueue.enqueueBlockOnwards(
+      currentBlockId,
+      props.userId,
+      environmentStartedAt,
+      metadata
+    )
+  }, [
+    layout,
+    blocks,
+    props.executionQueue,
+    props.id,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const popupContainerRef = useRef<HTMLDivElement>(null)
 
@@ -891,6 +853,8 @@ file`
                   onReorderTab={onReorderTab}
                   onCheckCanReorderTab={onCheckCanReorderTab}
                   isDraggable={hasMultipleTabs && !props.isApp}
+                  blocks={blocks.value}
+                  executionQueue={props.executionQueue}
                 />
               ))}
               {isScrollable && !isScrolledAllTheWayRight && (
@@ -983,6 +947,9 @@ const V2EditorRow = (props: {
   writebackEnabled: boolean
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }) => {
   return (
     <div>
@@ -1015,6 +982,9 @@ const V2EditorRow = (props: {
         isPDF={props.isPDF}
         onSchemaExplorer={props.onSchemaExplorer}
         insertBelow={props.insertBelow}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
       <Dropzone
         index={props.index + 1}
@@ -1046,6 +1016,8 @@ interface Props {
   onOpenFiles: () => void
   onSchemaExplorer: (dataSourceId: string | null) => void
   scrollViewRef: React.RefObject<HTMLDivElement>
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 const Editor = (props: Props) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
@@ -1422,6 +1394,9 @@ const Editor = (props: Props) => {
           writebackEnabled={true}
           onSchemaExplorer={props.onSchemaExplorer}
           insertBelow={insertBelow}
+          userId={props.userId}
+          executionQueue={props.executionQueue}
+          aiTasks={props.aiTasks}
         />
       )
     })
@@ -1440,6 +1415,7 @@ const Editor = (props: Props) => {
     props.isPDF,
     props.isApp,
     props.onSchemaExplorer,
+    props.userId,
   ])
 
   const addBlockToBottom = useCallback(
@@ -1567,8 +1543,6 @@ interface TabRefProps {
   isPublicViewer: boolean
   document: ApiDocument
   dataSources: APIDataSources
-  onRun: (block: YBlock) => void
-  onTry: (block: YBlock) => void
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
   onSchemaExplorer: (dataSourceId: string | null) => void
   insertBelow: () => void
@@ -1591,6 +1565,9 @@ interface TabRefProps {
   ) => void
   currentBlockId: string | undefined
   dragPreview: ConnectDragPreview | null
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 function TabRef(props: TabRefProps) {
   const [editorState] = useEditorAwareness()
@@ -1624,8 +1601,6 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         dataSources={props.dataSources}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        onRun={props.onRun}
-        onTry={props.onTry}
         dashboardMode="none"
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
@@ -1634,6 +1609,9 @@ function TabRef(props: TabRefProps) {
         }
         onSchemaExplorer={props.onSchemaExplorer}
         insertBelow={props.insertBelow}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ),
     onPython: (block) => (
@@ -1644,8 +1622,6 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         document={props.document}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        onRun={props.onRun}
-        onTry={props.onTry}
         isPDF={props.isPDF}
         dashboardPlace={null}
         hasMultipleTabs={props.hasMultipleTabs}
@@ -1654,6 +1630,9 @@ function TabRef(props: TabRefProps) {
           props.onToggleIsBlockHiddenInPublished
         }
         insertBelow={props.insertBelow}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
       />
     ),
     onVisualization: (block) => (
@@ -1663,9 +1642,9 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         onAddGroupedBlock={props.addGroupedBlock}
         block={block}
+        blocks={props.blocks}
         dataframes={props.dataframes}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        onRun={props.onRun}
         isDashboard={false}
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
@@ -1674,6 +1653,8 @@ function TabRef(props: TabRefProps) {
         }
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onInput: (block) => (
@@ -1684,10 +1665,12 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        onRun={props.onRun}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        workspaceId={props.document.workspaceId}
+        executionQueue={props.executionQueue}
       />
     ),
     onDropdownInput: (block) => (
@@ -1699,10 +1682,12 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         isApp={props.isApp}
         dataframes={props.dataframes}
-        onRun={props.onRun}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        workspaceId={props.document.workspaceId}
+        executionQueue={props.executionQueue}
       />
     ),
     onDateInput: (block) => (
@@ -1713,10 +1698,12 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        onRun={props.onRun}
         isDashboard={false}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        workspaceId={props.document.workspaceId}
+        executionQueue={props.executionQueue}
       />
     ),
     onFileUpload: (block) => (
@@ -1758,6 +1745,8 @@ function TabRef(props: TabRefProps) {
         }
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
     onPivotTable: (block) => (
@@ -1767,7 +1756,6 @@ function TabRef(props: TabRefProps) {
         blocks={props.blocks}
         hasMultipleTabs={props.hasMultipleTabs}
         isEditable={props.isEditable}
-        onRun={props.onRun}
         onAddGroupedBlock={props.addGroupedBlock}
         dragPreview={props.dragPreview}
         dataframes={props.dataframes}
@@ -1778,6 +1766,8 @@ function TabRef(props: TabRefProps) {
         dashboardMode="none"
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
       />
     ),
   })

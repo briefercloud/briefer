@@ -1,7 +1,7 @@
 import { NotebookEvents } from './index.js'
 
 export class ScheduleNotebookEvents implements NotebookEvents {
-  public constructor() {}
+  public constructor(private readonly scheduleId: string) {}
 
   public pythonRun() {}
 

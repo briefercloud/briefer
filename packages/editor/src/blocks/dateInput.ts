@@ -6,11 +6,16 @@ import {
   YBlock,
   getAttributeOr,
   getBaseAttributes,
-  ExecStatus,
   duplicateBaseAttributes,
 } from './index.js'
-import { updateYText } from '../index.js'
-import { clone } from 'ramda'
+import {
+  ExecutionQueue,
+  ExecutionStatus,
+  ResultStatus,
+  updateYText,
+  YBlockGroup,
+} from '../index.js'
+import { clone, head } from 'ramda'
 
 export type DateInputValue = {
   year: number
@@ -123,16 +128,6 @@ export function formatDateInputValue(
 
 export type DateInputBlock = BaseBlock<BlockType.DateInput> & {
   label: Y.Text
-  status:
-    | 'idle'
-    | 'run-requested'
-    | 'running'
-    | 'run-all-enqueued'
-    | 'run-all-running'
-    | 'invalid-value'
-    | 'invalid-variable'
-    | 'invalid-variable-and-value'
-    | 'unexpected-error'
   variable: string
   value: {
     year: number
@@ -148,6 +143,12 @@ export type DateInputBlock = BaseBlock<BlockType.DateInput> & {
   dateType: 'date' | 'datetime'
   newValue: Y.Text
   newVariable: Y.Text
+  error:
+    | 'invalid-value'
+    | 'invalid-variable'
+    | 'invalid-variable-and-value'
+    | 'unexpected-error'
+    | null
 }
 
 export const makeDateInputBlock = (
@@ -161,7 +162,6 @@ export const makeDateInputBlock = (
   const value = dateInputValueFromDate(now, 'UTC')
   const attrs: DateInputBlock = {
     id,
-    status: 'idle',
     index: null,
     title: '',
     type: BlockType.DateInput,
@@ -173,6 +173,7 @@ export const makeDateInputBlock = (
     executedAt: null,
     configOpen: true,
     dateType: 'date',
+    error: null,
   }
 
   for (const [key, value] of Object.entries(attrs)) {
@@ -196,7 +197,6 @@ export function duplicateDateInputBlock(
   const nextAttrs: DateInputBlock = {
     ...duplicateBaseAttributes(newId, prevAttributes),
     label: new Y.Text(prevAttributes.label.toString()),
-    status: prevAttributes.status,
     variable: prevAttributes.variable,
     newVariable: new Y.Text(prevAttributes.newVariable.toString()),
     value: clone(prevAttributes.value),
@@ -204,6 +204,7 @@ export function duplicateDateInputBlock(
     executedAt: null,
     configOpen: prevAttributes.configOpen,
     dateType: prevAttributes.dateType,
+    error: null,
   }
 
   const yBlock = new Y.XmlElement<DateInputBlock>('block')
@@ -219,25 +220,17 @@ export function duplicateDateInputBlock(
 }
 
 export function getDateInputBlockExecStatus(
-  block: Y.XmlElement<DateInputBlock>
-): ExecStatus {
-  const status = getAttributeOr(block, 'status', 'idle')
-  switch (status) {
-    case 'idle':
-      return 'idle'
-    case 'run-all-enqueued':
-      return 'enqueued'
-    case 'run-all-running':
-      return 'loading'
-    case 'run-requested':
-    case 'running':
-      return 'loading'
-    case 'invalid-value':
-    case 'invalid-variable':
-    case 'invalid-variable-and-value':
-    case 'unexpected-error':
-      return 'error'
+  block: Y.XmlElement<DateInputBlock>,
+  executionQueue: ExecutionQueue
+): ExecutionStatus {
+  const blockId = getBaseAttributes(block).id
+  const executions = executionQueue.getBlockExecutions(blockId, 'date-input')
+  const execution = head(executions)
+  if (execution) {
+    return execution.item.getStatus()._tag
   }
+
+  return 'completed'
 }
 
 export function isDateInputBlock(
@@ -272,7 +265,6 @@ export function getDateInputAttributes(
   const attrs: DateInputBlock = {
     ...baseAttrs,
     label: getAttributeOr(block, 'label', getLabelFromVariable(variable)),
-    status: getAttributeOr(block, 'status', 'idle'),
     value,
     newValue: getAttributeOr(
       block,
@@ -284,6 +276,7 @@ export function getDateInputAttributes(
     executedAt: getAttributeOr(block, 'executedAt', null),
     configOpen: getAttributeOr(block, 'configOpen', true),
     dateType,
+    error: getAttributeOr(block, 'error', null),
   }
 
   return attrs
@@ -351,8 +344,11 @@ function getAvailableDateInputVariable(
 }
 
 export function requestDateInputRun(
+  executionQueue: ExecutionQueue,
   block: Y.XmlElement<DateInputBlock>,
-  blocks: Y.Map<YBlock>
+  blocks: Y.Map<YBlock>,
+  userId: string | null,
+  environmentStartedAt: string | null
 ): void {
   const operation = () => {
     const attrs = getDateInputAttributes(block, blocks)
@@ -368,21 +364,23 @@ export function requestDateInputRun(
     const invalidVariable = !dfNameRegex.test(nextVariable)
 
     if (invalidValue && invalidVariable) {
-      block.setAttribute('status', 'invalid-variable-and-value')
+      block.setAttribute('error', 'invalid-variable-and-value')
       return
     }
     if (invalidValue) {
-      block.setAttribute('status', 'invalid-value')
+      block.setAttribute('error', 'invalid-value')
       return
     }
     if (invalidVariable) {
-      block.setAttribute('status', 'invalid-variable')
+      block.setAttribute('error', 'invalid-variable')
       return
     }
 
     block.setAttribute('variable', nextVariable)
     block.setAttribute('value', nextValue)
-    block.setAttribute('status', 'run-requested')
+    executionQueue.enqueueBlock(block, userId, environmentStartedAt, {
+      _tag: 'date-input',
+    })
   }
 
   if (block.doc) {
@@ -425,5 +423,21 @@ export function updateDateInputBlockDateType(
     block.doc.transact(operation)
   } else {
     operation()
+  }
+}
+
+export function getDateInputBlockResultStatus(
+  block: Y.XmlElement<DateInputBlock>,
+  blocks: Y.Map<YBlock>
+): ResultStatus {
+  const { error, executedAt } = getDateInputAttributes(block, blocks)
+  switch (error) {
+    case 'invalid-variable':
+    case 'invalid-value':
+    case 'invalid-variable-and-value':
+    case 'unexpected-error':
+      return 'error'
+    case null:
+      return executedAt ? 'success' : 'idle'
   }
 }

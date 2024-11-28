@@ -1,5 +1,10 @@
 import * as Y from 'yjs'
-import prisma, { PrismaTransaction } from '@briefer/database'
+import prisma, {
+  PrismaTransaction,
+  UserYjsAppDocument,
+  YjsAppDocument,
+  YjsUpdate,
+} from '@briefer/database'
 import { TransactionOrigin, WSSharedDocV2 } from './index.js'
 import { logger } from '../../logger.js'
 import { decoding } from 'lib0'
@@ -18,20 +23,13 @@ import {
   switchBlockType,
   DashboardHeaderBlock,
   getBaseAttributes,
-  getInputAttributes,
-  isInputBlock,
   DropdownInputBlock,
-  getDropdownInputAttributes,
-  isDropdownInputBlock,
   DateInputBlock,
-  isDateInputBlock,
   getDateInputAttributes,
   PivotTableBlock,
-  isTextInputBlock,
 } from '@briefer/editor'
 import { equals, omit } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
-import { getYDocWithoutHistory } from './documents.js'
 import { WritebackBlock } from '@briefer/editor/types/blocks/writeback.js'
 import { acquireLock } from '../../lock.js'
 
@@ -40,20 +38,15 @@ export type LoadStateResult = {
   clock: number
   byteLength: number
 }
-type CleanHistoryResult = LoadStateResult
 export interface Persistor {
-  load: (tx?: PrismaTransaction) => Promise<LoadStateResult>
-  persist: (ydoc: WSSharedDocV2, tx?: PrismaTransaction) => Promise<number>
-  cleanHistory: (
-    ydoc: WSSharedDocV2,
-    tx?: PrismaTransaction
-  ) => Promise<CleanHistoryResult>
+  load: (id: string, tx?: PrismaTransaction) => Promise<LoadStateResult>
+  persistUpdate: (ydoc: WSSharedDocV2, update: Uint8Array) => Promise<string>
   canWrite: (
     decoder: decoding.Decoder,
     doc: WSSharedDocV2,
     transactionOrigin: TransactionOrigin
   ) => boolean
-  replaceState: (newState: Buffer) => Promise<LoadStateResult>
+  replaceState: (id: string, newState: Buffer) => Promise<LoadStateResult>
 }
 
 export class DocumentPersistor implements Persistor {
@@ -63,9 +56,73 @@ export class DocumentPersistor implements Persistor {
     Y.applyUpdate(ydoc, update)
   }
 
-  public async load(tx?: PrismaTransaction) {
+  public async load(id: string, tx?: PrismaTransaction) {
     try {
-      return acquireLock(`document:${this.documentId}`, () => this._load(tx))
+      return acquireLock(`document-persistor:${id}`, async () => {
+        const ydoc = new Y.Doc()
+        const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
+          where: { documentId: this.documentId },
+          include: {
+            yjsUpdates: {
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        })
+
+        if (!dbDoc) {
+          return {
+            ydoc,
+            clock: 0,
+            byteLength: Y.encodeStateAsUpdate(ydoc).length,
+          }
+        }
+
+        const updates = dbDoc.yjsUpdates.filter(
+          (update) => update.clock === dbDoc.clock
+        )
+        logger().trace(
+          {
+            documentId: this.documentId,
+            clock: dbDoc.clock,
+            updates: updates.length,
+          },
+          'Applying updates to Yjs document'
+        )
+
+        this.applyUpdate(ydoc, dbDoc.state)
+        for (const update of updates) {
+          this.applyUpdate(ydoc, update.update)
+        }
+
+        if (updates.length > 100) {
+          const cleanUpdates = async (tx: PrismaTransaction) => {
+            await tx.yjsUpdate.deleteMany({
+              where: {
+                id: { in: updates.map((update) => update.id) },
+              },
+            })
+
+            await tx.yjsDocument.update({
+              where: { documentId: this.documentId },
+              data: {
+                state: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+              },
+            })
+          }
+
+          if (tx) {
+            await cleanUpdates(tx)
+          } else {
+            await prisma().$transaction(cleanUpdates)
+          }
+        }
+
+        return {
+          ydoc,
+          clock: dbDoc.clock,
+          byteLength: dbDoc.state.length,
+        }
+      })
     } catch (err) {
       logger().error(
         { documentId: this.documentId, err },
@@ -75,81 +132,35 @@ export class DocumentPersistor implements Persistor {
     }
   }
 
-  private async _load(tx?: PrismaTransaction) {
-    const ydoc = new Y.Doc()
-    const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
-      where: { documentId: this.documentId },
-    })
-
-    if (!dbDoc) {
-      return {
-        ydoc,
-        clock: 0,
-        byteLength: Y.encodeStateAsUpdate(ydoc).length,
-      }
-    }
-
-    this.applyUpdate(ydoc, dbDoc.state)
-
-    return {
-      ydoc,
-      clock: dbDoc.clock,
-      byteLength: dbDoc.state.length,
-    }
-  }
-
-  public async persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    try {
-      return acquireLock(`document:${this.documentId}`, () =>
-        this._persist(ydoc, tx)
-      )
-    } catch (err) {
-      logger().error(
-        { documentId: this.documentId, err },
-        'Failed to persist Yjs document'
-      )
-      throw err
-    }
-  }
-
-  private async _persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const save = async (state: Buffer, tx: PrismaTransaction) => {
-      const doc = await tx.document.findUnique({
-        where: { id: this.documentId },
-      })
-      if (!doc) {
-        logger().trace(
-          { documentId: this.documentId },
-          'Document was deleted, not persisting state'
-        )
-        return
-      }
-
-      await tx.yjsDocument.upsert({
+  public async persistUpdate(doc: WSSharedDocV2, update: Uint8Array) {
+    return acquireLock(`document-persistor:${doc.id}`, async () => {
+      let yjsDoc = await prisma().yjsDocument.findUnique({
+        select: { id: true, clock: true },
         where: { documentId: this.documentId },
-        create: {
-          documentId: this.documentId,
-          state,
-        },
-        update: {
-          state,
-        },
-        select: {
-          id: true,
-        },
       })
+      if (!yjsDoc) {
+        yjsDoc = await prisma().yjsDocument.upsert({
+          where: { documentId: this.documentId },
+          create: {
+            documentId: this.documentId,
+            state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
+          },
+          update: {},
+          select: { id: true, clock: true },
+        })
+      }
 
-      await tx.document.update({
-        where: { id: this.documentId },
+      const { id } = await prisma().yjsUpdate.create({
         data: {
-          isSyncedWithYjs: true,
+          yjsDocumentId: yjsDoc.id,
+          update: Buffer.from(update),
+          clock: yjsDoc.clock,
         },
+        select: { id: true },
       })
-    }
 
-    const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
-    await save(state, tx ?? prisma())
-    return state.length
+      return id
+    })
   }
 
   public canWrite(
@@ -166,57 +177,27 @@ export class DocumentPersistor implements Persistor {
     }
   }
 
-  public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    return acquireLock(`document:${this.documentId}`, () =>
-      this._cleanHistory(wsdoc, tx)
-    )
-  }
-
-  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const ydoc = getYDocWithoutHistory(wsdoc)
-    const state = Y.encodeStateAsUpdate(ydoc)
-    const buffer = Buffer.from(state)
-
-    const yjsAppDoc = await (tx ?? prisma()).yjsDocument.upsert({
-      where: { documentId: this.documentId },
-      create: {
-        documentId: this.documentId,
-        state: buffer,
-      },
-      update: {
-        clock: {
-          increment: 1,
+  public async replaceState(id: string, newState: Buffer) {
+    return acquireLock(`document-persistor:${id}`, async () => {
+      const clock = await prisma().yjsDocument.update({
+        where: { documentId: this.documentId },
+        data: {
+          state: newState,
+          clock: {
+            increment: 1,
+          },
         },
-        state: buffer,
-      },
+      })
+
+      const ydoc = new Y.Doc()
+      this.applyUpdate(ydoc, newState)
+
+      return {
+        ydoc,
+        clock: clock.clock,
+        byteLength: newState.length,
+      }
     })
-
-    return {
-      ydoc,
-      clock: yjsAppDoc.clock,
-      byteLength: state.byteLength,
-    }
-  }
-
-  public async replaceState(newState: Buffer) {
-    const clock = await prisma().yjsDocument.update({
-      where: { documentId: this.documentId },
-      data: {
-        state: newState,
-        clock: {
-          increment: 1,
-        },
-      },
-    })
-
-    const ydoc = new Y.Doc()
-    this.applyUpdate(ydoc, newState)
-
-    return {
-      ydoc,
-      clock: clock.clock,
-      byteLength: newState.length,
-    }
   }
 }
 
@@ -231,9 +212,159 @@ export class AppPersistor implements Persistor {
     Y.applyUpdate(ydoc, update)
   }
 
-  public async load(tx?: PrismaTransaction | undefined) {
+  public async load(id: string, tx?: PrismaTransaction | undefined) {
     try {
-      return acquireLock(`app:${this.yjsAppDocumentId}`, () => this._load(tx))
+      return acquireLock(`app-persistor:${id}`, async () => {
+        const bind = async (tx: PrismaTransaction) => {
+          const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
+            where: {
+              id: this.yjsAppDocumentId,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+            include: {
+              yjsUpdates: {
+                orderBy: { createdAt: 'asc' },
+              },
+              userYjsAppDocuments: {
+                where: {
+                  // use a new uuid when there is no user
+                  // since uuid is always unique, nothing
+                  // will be returned, which means we will
+                  // be manipulating the published state
+                  userId: this.userId ?? uuidv4(),
+                },
+                include: {
+                  yjsUpdates: {
+                    orderBy: { createdAt: 'asc' },
+                  },
+                },
+              },
+            },
+          })
+
+          const cleanUpdates = async (
+            ydoc: Y.Doc,
+            doc:
+              | { _tag: 'user'; userYjsAppDocument: UserYjsAppDocument }
+              | { _tag: 'app'; yjsAppDocument: YjsAppDocument },
+            updates: YjsUpdate[],
+            tx: PrismaTransaction
+          ) => {
+            await tx.yjsUpdate.deleteMany({
+              where: {
+                id: { in: updates.map((update) => update.id) },
+              },
+            })
+            if (doc._tag === 'user') {
+              await tx.userYjsAppDocument.update({
+                where: {
+                  yjsAppDocumentId_userId: {
+                    yjsAppDocumentId: this.yjsAppDocumentId,
+                    userId: doc.userYjsAppDocument.userId,
+                  },
+                },
+                data: {
+                  state: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+                },
+              })
+            } else {
+              await tx.yjsAppDocument.update({
+                where: { id: this.yjsAppDocumentId },
+                data: {
+                  state: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+                },
+              })
+            }
+          }
+
+          const ydoc = new Y.Doc()
+          const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
+          let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
+          let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
+          if (!userYjsAppDoc || !this.userId) {
+            // no user or user never opened the app before. bind to the published state
+            const updates = yjsAppDoc.yjsUpdates.filter(
+              (update) => update.clock === yjsAppDoc.clock
+            )
+            this.applyUpdate(ydoc, yjsAppDoc.state)
+            for (const update of updates) {
+              this.applyUpdate(ydoc, update.update)
+            }
+
+            if (updates.length > 100) {
+              if (tx) {
+                await cleanUpdates(
+                  ydoc,
+                  {
+                    _tag: 'app',
+                    yjsAppDocument: yjsAppDoc,
+                  },
+                  updates,
+                  tx
+                )
+              } else {
+                await prisma().$transaction((tx) =>
+                  cleanUpdates(
+                    ydoc,
+                    { _tag: 'app', yjsAppDocument: yjsAppDoc },
+                    updates,
+                    tx
+                  )
+                )
+              }
+            }
+          } else {
+            // bind to the user's state
+            const updates = userYjsAppDoc.yjsUpdates.filter(
+              (update) => update.clock === userYjsAppDoc.clock
+            )
+            this.applyUpdate(ydoc, userYjsAppDoc.state)
+            for (const update of updates) {
+              this.applyUpdate(ydoc, update.update)
+            }
+
+            if (updates.length > 100) {
+              if (tx) {
+                await cleanUpdates(
+                  ydoc,
+                  {
+                    _tag: 'user',
+                    userYjsAppDocument: userYjsAppDoc,
+                  },
+                  updates,
+                  tx
+                )
+              } else {
+                await prisma().$transaction((tx) =>
+                  cleanUpdates(
+                    ydoc,
+                    { _tag: 'user', userYjsAppDocument: userYjsAppDoc },
+                    updates,
+                    tx
+                  )
+                )
+              }
+            }
+          }
+
+          return {
+            ydoc,
+            clock,
+            byteLength,
+          }
+        }
+
+        if (tx) {
+          return await bind(tx)
+        }
+
+        return await prisma().$transaction(bind, {
+          maxWait: 31000,
+          timeout: 30000,
+        })
+      })
     } catch (err) {
       logger().error(
         { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
@@ -243,78 +374,10 @@ export class AppPersistor implements Persistor {
     }
   }
 
-  private async _load(tx?: PrismaTransaction | undefined) {
-    const bind = async (tx: PrismaTransaction) => {
-      const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
-        where: {
-          id: this.yjsAppDocumentId,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          userYjsAppDocuments: {
-            where: {
-              // use a new uuid when there is no user
-              // since uuid is always unique, nothing
-              // will be returned, which means we will
-              // be manipulating the published state
-              userId: this.userId ?? uuidv4(),
-            },
-          },
-        },
-      })
-
-      const ydoc = new Y.Doc()
-      const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
-      let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
-      let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
-      if (!userYjsAppDoc || !this.userId) {
-        // no user or user never opened the app before. bind to the published state
-        this.applyUpdate(ydoc, yjsAppDoc.state)
-      } else {
-        // bind to the user's state
-        this.applyUpdate(ydoc, userYjsAppDoc.state)
-      }
-
-      return {
-        ydoc,
-        clock,
-        byteLength,
-      }
-    }
-
-    if (tx) {
-      return await bind(tx)
-    }
-
-    return await prisma().$transaction(bind, {
-      maxWait: 31000,
-      timeout: 30000,
-    })
-  }
-
-  public async persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    try {
-      return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
-        this._persist(ydoc, tx)
-      )
-    } catch (err) {
-      logger().error(
-        { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
-        'Failed to persist Yjs app document'
-      )
-      throw err
-    }
-  }
-
-  private async _persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const upsert = async (tx: PrismaTransaction) => {
-      const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
+  public async persistUpdate(doc: WSSharedDocV2, update: Uint8Array) {
+    return acquireLock(`app-persistor:${doc.id}`, async () => {
       if (this.userId) {
-        const userChangedState = await this.userChangedState(ydoc, tx)
-        // update this user specific state
-        await tx.userYjsAppDocument.upsert({
+        await prisma().userYjsAppDocument.upsert({
           where: {
             yjsAppDocumentId_userId: {
               yjsAppDocumentId: this.yjsAppDocumentId,
@@ -322,112 +385,69 @@ export class AppPersistor implements Persistor {
             },
           },
           create: {
-            userId: this.userId,
             yjsAppDocumentId: this.yjsAppDocumentId,
-            userChangedState,
-            state,
+            userId: this.userId,
+            state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
+            clock: doc.clock,
           },
-          update: {
-            state,
-            userChangedState,
-          },
-        })
-      } else {
-        // no user means we are manipulating the published state
-        await tx.yjsAppDocument.update({
-          where: {
-            id: this.yjsAppDocumentId,
-          },
-          data: {
-            state,
-          },
+          update: {},
         })
 
-        // update all user states that have not changed
-        // to be in sync with the published state
-        await tx.userYjsAppDocument.updateMany({
-          where: {
-            yjsAppDocumentId: this.yjsAppDocumentId,
-            userChangedState: false,
-          },
+        const { id } = await prisma().yjsUpdate.create({
           data: {
-            state,
+            userYjsAppDocumentUserId: this.userId,
+            userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
+            update: Buffer.from(update),
+            clock: doc.clock,
           },
+          select: { id: true },
         })
+        return id
       }
 
-      return state.length
-    }
-
-    return await upsert(tx ?? prisma())
-  }
-
-  public async cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
-      this._cleanHistory(wsdoc, tx)
-    )
-  }
-
-  private async _cleanHistory(wsdoc: WSSharedDocV2, tx?: PrismaTransaction) {
-    const ydoc = getYDocWithoutHistory(wsdoc)
-
-    if (this.userId) {
-      const yjsAppDoc = await (tx ?? prisma()).userYjsAppDocument.update({
-        where: {
-          yjsAppDocumentId_userId: {
-            yjsAppDocumentId: this.yjsAppDocumentId,
-            userId: this.userId,
-          },
-        },
+      const { id } = await prisma().yjsUpdate.create({
         data: {
-          clock: {
-            increment: 1,
-          },
+          yjsAppDocumentId: this.yjsAppDocumentId,
+          update: Buffer.from(update),
+          clock: doc.clock,
         },
+        select: { id: true },
       })
-
-      return {
-        ydoc,
-        clock: yjsAppDoc.clock,
-        byteLength: Y.encodeStateAsUpdate(ydoc).length,
-      }
-    }
-
-    const yjsAppDoc = await (tx ?? prisma()).yjsAppDocument.update({
-      where: { id: this.yjsAppDocumentId },
-      data: {
-        clock: {
-          increment: 1,
-        },
-      },
+      return id
     })
-
-    return {
-      ydoc,
-      clock: yjsAppDoc.clock,
-      byteLength: Y.encodeStateAsUpdate(ydoc).length,
-    }
   }
 
-  public async replaceState(newState: Buffer) {
-    return acquireLock(`app:${this.yjsAppDocumentId}`, () =>
-      this._replaceState(newState)
-    )
-  }
+  public async replaceState(id: string, newState: Buffer) {
+    return acquireLock(`app-persistor:${id}`, async () => {
+      const ydoc = new Y.Doc()
 
-  private async _replaceState(newState: Buffer) {
-    const ydoc = new Y.Doc()
+      this.applyUpdate(ydoc, newState)
 
-    this.applyUpdate(ydoc, newState)
-
-    if (this.userId) {
-      const clock = await prisma().userYjsAppDocument.update({
-        where: {
-          yjsAppDocumentId_userId: {
-            yjsAppDocumentId: this.yjsAppDocumentId,
-            userId: this.userId,
+      if (this.userId) {
+        const clock = await prisma().userYjsAppDocument.update({
+          where: {
+            yjsAppDocumentId_userId: {
+              yjsAppDocumentId: this.yjsAppDocumentId,
+              userId: this.userId,
+            },
           },
-        },
+          data: {
+            state: newState,
+            clock: {
+              increment: 1,
+            },
+          },
+        })
+
+        return {
+          ydoc,
+          clock: clock.clock,
+          byteLength: newState.length,
+        }
+      }
+
+      const clock = await prisma().yjsAppDocument.update({
+        where: { id: this.yjsAppDocumentId },
         data: {
           state: newState,
           clock: {
@@ -441,23 +461,7 @@ export class AppPersistor implements Persistor {
         clock: clock.clock,
         byteLength: newState.length,
       }
-    }
-
-    const clock = await prisma().yjsAppDocument.update({
-      where: { id: this.yjsAppDocumentId },
-      data: {
-        state: newState,
-        clock: {
-          increment: 1,
-        },
-      },
     })
-
-    return {
-      ydoc,
-      clock: clock.clock,
-      byteLength: newState.length,
-    }
   }
 
   public canWrite(
@@ -482,201 +486,6 @@ export class AppPersistor implements Persistor {
     const nextBlocks = getBlocks(nextDoc)
     const areBlocksAcceptable = this.areBlocksAcceptable(blocks, nextBlocks)
     return areBlocksAcceptable
-  }
-
-  private async getPublishedDoc(tx: PrismaTransaction): Promise<Y.Doc> {
-    const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
-      where: {
-        id: this.yjsAppDocumentId,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
-
-    const doc = new Y.Doc()
-    this.applyUpdate(doc, yjsAppDoc.state)
-    return doc
-  }
-
-  private async userChangedState(
-    currentDoc: WSSharedDocV2,
-    tx: PrismaTransaction
-  ): Promise<boolean> {
-    // did the user interact with the app?
-    const currentBlocks = Array.from(currentDoc.blocks.values())
-    let publishedDoc: Y.Doc | null = null
-    for (const block of currentBlocks) {
-      const interacted = await switchBlockType(block, {
-        onRichText: async () => false,
-        onSQL: async () => false,
-        onPython: async () => false,
-        onVisualization: async () => false,
-        onWriteback: async () => false,
-        onFileUpload: async () => false,
-        onDashboardHeader: async () => false,
-        onPivotTable: async () => false,
-
-        // interactive blocks
-        onInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isTextInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-        onDropdownInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isDropdownInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedDropdownInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-        onDateInput: async (block) => {
-          publishedDoc ??= await this.getPublishedDoc(tx)
-
-          const blockId = getBaseAttributes(block).id
-          const publishedBlocks = getBlocks(publishedDoc)
-          const publishedBlock = publishedBlocks.get(blockId)
-          if (!publishedBlock) {
-            throw new Error(`Block(${blockId}) not found in published state`)
-          }
-
-          if (!isDateInputBlock(publishedBlock)) {
-            return true
-          }
-
-          return this.userChangedDateInputBlock(
-            block,
-            getBlocks(currentDoc.ydoc),
-            publishedBlock,
-            publishedBlocks
-          )
-        },
-      })
-
-      if (interacted) {
-        return true
-      }
-    }
-
-    return false
-  }
-
-  private async userChangedInputBlock(
-    block: Y.XmlElement<InputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<InputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getInputAttributes(block, blocks)
-    const publishedAttrs = getInputAttributes(publishedBlock, publishedBlocks)
-
-    return !equals(attrs.value, publishedAttrs.value)
-  }
-
-  private async userChangedDropdownInputBlock(
-    block: Y.XmlElement<DropdownInputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<DropdownInputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getDropdownInputAttributes(block, blocks)
-    const publishedAttrs = getDropdownInputAttributes(
-      publishedBlock,
-      publishedBlocks
-    )
-
-    return !equals(attrs.value, publishedAttrs.value)
-  }
-
-  private async userChangedDateInputBlock(
-    block: Y.XmlElement<DateInputBlock>,
-    blocks: Y.Map<YBlock>,
-    publishedBlock: Y.XmlElement<DateInputBlock>,
-    publishedBlocks: Y.Map<YBlock>
-  ): Promise<boolean> {
-    const attrs = getDateInputAttributes(block, blocks)
-    const publishedAttrs = getDateInputAttributes(
-      publishedBlock,
-      publishedBlocks
-    )
-
-    if (compareText(attrs.label, publishedAttrs.label) !== 0) {
-      return true
-    }
-
-    if (compareText(attrs.newValue, publishedAttrs.newValue) !== 0) {
-      return true
-    }
-
-    if (compareText(attrs.newVariable, publishedAttrs.newVariable) !== 0) {
-      return true
-    }
-
-    // this code is written like this so that it wont compile
-    // if new attributes are added.
-    // that ensures that we will remember to update this
-    // method when new attributes are introduced
-    type ToCompare = Omit<
-      DateInputBlock,
-      // label is checked above
-      | 'label'
-
-      // newVariable is checked above
-      | 'newVariable'
-
-      // newValue is checked above
-      | 'newValue'
-    >
-    const currentToCompare: ToCompare = {
-      ...getBaseAttributes(block),
-      status: attrs.status,
-      variable: attrs.variable,
-      value: attrs.value,
-      executedAt: attrs.executedAt,
-      configOpen: attrs.configOpen,
-      dateType: attrs.dateType,
-    }
-    const publishedToCompare: ToCompare = {
-      ...getBaseAttributes(publishedBlock),
-      status: publishedAttrs.status,
-      variable: publishedAttrs.variable,
-      value: publishedAttrs.value,
-      executedAt: publishedAttrs.executedAt,
-      configOpen: publishedAttrs.configOpen,
-      dateType: publishedAttrs.dateType,
-    }
-
-    return !equals(currentToCompare, publishedToCompare)
   }
 
   private areBlocksAcceptable(
@@ -934,8 +743,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'source', 'editWithAIPrompt'], prevAttributes),
-      omit(['status', 'source', 'editWithAIPrompt'], nextAttributes)
+      omit(['source', 'editWithAIPrompt'], prevAttributes),
+      omit(['source', 'editWithAIPrompt'], nextAttributes)
     )
   }
 
@@ -960,8 +769,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'source', 'editWithAIPrompt'], prevAttributes),
-      omit(['status', 'source', 'editWithAIPrompt'], nextAttributes)
+      omit(['source', 'editWithAIPrompt'], prevAttributes),
+      omit(['source', 'editWithAIPrompt'], nextAttributes)
     )
   }
 
@@ -972,10 +781,7 @@ export class AppPersistor implements Persistor {
     const prevAttributes = prevBlock.getAttributes()
     const nextAttributes = nextBlock.getAttributes()
 
-    return equals(
-      omit(['status'], prevAttributes),
-      omit(['status'], nextAttributes)
-    )
+    return equals(prevAttributes, nextAttributes)
   }
 
   private isInputBlockAcceptable(
@@ -1059,12 +865,14 @@ export class AppPersistor implements Persistor {
       executedAt: prevAttributes.executedAt,
       configOpen: prevAttributes.configOpen,
       dateType: prevAttributes.dateType,
+      error: prevAttributes.error,
     }
     const nextToCompare: ToCompare = {
       ...getBaseAttributes(nextBlock),
       executedAt: nextAttributes.executedAt,
       configOpen: nextAttributes.configOpen,
       dateType: nextAttributes.dateType,
+      error: nextAttributes.error,
     }
 
     return equals(prevToCompare, nextToCompare)
@@ -1146,8 +954,8 @@ export class AppPersistor implements Persistor {
     }
 
     return equals(
-      omit(['status', 'tableName'], prevAttributes),
-      omit(['status', 'tableName'], nextAttributes)
+      omit(['tableName'], prevAttributes),
+      omit(['tableName'], nextAttributes)
     )
   }
 
@@ -1159,8 +967,8 @@ export class AppPersistor implements Persistor {
     const nextAttributes = nextBlock.getAttributes()
 
     return equals(
-      omit(['status', 'page', 'sort'], prevAttributes),
-      omit(['status', 'page', 'sort'], nextAttributes)
+      omit(['page', 'sort'], prevAttributes),
+      omit(['page', 'sort'], nextAttributes)
     )
   }
 }

@@ -1,13 +1,12 @@
 import * as Y from 'yjs'
 import {
+  AITasks,
   BlockType,
-  DateInputBlock as DateInputBlockT,
+  ExecutionQueue,
   YBlock,
   getBlocks,
   getDataframes,
   getLayout,
-  requestDateInputRun,
-  requestRun,
   switchBlockType,
 } from '@briefer/editor'
 import { useCallback, useEffect, useState } from 'react'
@@ -27,7 +26,6 @@ import clsx from 'clsx'
 import DashboardHeader from '../v2Editor/customBlocks/dashboardHeader'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
-import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 interface Props {
   item: GridLayout.Layout
@@ -38,6 +36,9 @@ interface Props {
   dataSources: APIDataSources
   isEditingDashboard: boolean
   latestBlockId: string | null
+  userId: string | null
+  executionQueue: ExecutionQueue
+  aiTasks: AITasks
 }
 
 const NO_TITLE_BLOCKS = [
@@ -52,9 +53,6 @@ function GridElement(props: Props) {
   const { state: blocks } = useYDocState(props.yDoc, getBlocks)
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
   const { state: yLayout } = useYDocState(props.yDoc, getLayout)
-  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
-    props.document.workspaceId
-  )
 
   // set editing when adding a new block to the dashboard
   useEffect(() => {
@@ -64,27 +62,6 @@ function GridElement(props: Props) {
   }, [props.latestBlockId, props.block?.getAttribute('id')])
 
   const [isEditingBlock, setIsEditingBlock] = useState(false)
-
-  const onRun = useCallback(
-    <B extends YBlock>(block: B, customCallback?: (block: B) => void) => {
-      requestRun(
-        block,
-        blocks.value,
-        layout.value,
-        environmentStartedAt,
-        false,
-        customCallback
-      )
-    },
-    [blocks.value, layout.value, environmentStartedAt]
-  )
-
-  const onSaveDateInput = useCallback(
-    (block: Y.XmlElement<DateInputBlockT>) => {
-      requestDateInputRun(block, blocks.value)
-    },
-    [blocks.value]
-  )
 
   const renderItem = useCallback(
     (block: YBlock, item: GridLayout.Layout) =>
@@ -109,8 +86,6 @@ function GridElement(props: Props) {
             dataSources={props.dataSources}
             isEditable={false}
             dragPreview={null}
-            onRun={() => {}}
-            onTry={() => {}}
             isPublicMode={false}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
             hasMultipleTabs={false}
@@ -118,6 +93,9 @@ function GridElement(props: Props) {
             onToggleIsBlockHiddenInPublished={() => {}}
             onSchemaExplorer={() => {}}
             insertBelow={() => {}}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onPython: (block) => (
@@ -128,14 +106,15 @@ function GridElement(props: Props) {
             blocks={blocks.value}
             isEditable={false}
             dragPreview={null}
-            onRun={() => {}}
-            onTry={() => {}}
             isPDF={false}
             dashboardPlace="view"
             isPublicMode={false}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+            aiTasks={props.aiTasks}
           />
         ),
         onVisualization: (block) => (
@@ -143,10 +122,10 @@ function GridElement(props: Props) {
             document={props.document}
             dataframes={dataframes.value}
             block={block}
+            blocks={blocks.value}
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            onRun={() => {}}
             isDashboard={true}
             isPublicMode={false}
             hasMultipleTabs={false}
@@ -154,6 +133,8 @@ function GridElement(props: Props) {
             onToggleIsBlockHiddenInPublished={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onPivotTable: (block) => (
@@ -165,13 +146,14 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            onRun={onRun}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
           />
         ),
         onInput: (block) => (
@@ -182,10 +164,12 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={() => {}}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            workspaceId={props.document.workspaceId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDropdownInput: (block) => (
@@ -196,11 +180,13 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={() => {}}
             dataframes={dataframes.value}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            workspaceId={props.document.workspaceId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDateInput: (block) => (
@@ -211,10 +197,12 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            onRun={onSaveDateInput}
             isDashboard={true}
             isCursorWithin={false}
             isCursorInserting={false}
+            userId={props.userId}
+            workspaceId={props.document.workspaceId}
+            executionQueue={props.executionQueue}
           />
         ),
         onDashboardHeader: (block) => (
@@ -235,8 +223,8 @@ function GridElement(props: Props) {
       yLayout,
       props.isEditingDashboard,
       isEditingBlock,
-      onRun,
-      onSaveDateInput,
+      props.userId,
+      props.executionQueue,
     ]
   )
 

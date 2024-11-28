@@ -1192,3 +1192,5 @@ export type SQLQueryConfiguration = {
     }
   }
 }
+
+export function exhaustiveCheck(_param: never) {}

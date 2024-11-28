@@ -77,6 +77,17 @@ services:
     volumes:
       - ./data/mysql/ecommerce/data:/var/lib/mysql
 
+  haproxy:
+    image: haproxy:3.0
+    volumes:
+      - type: bind
+        source: ./haproxy.cfg
+        target: /usr/local/etc/haproxy/haproxy.cfg
+        volume:
+          nocopy: true
+    ports:
+      - '8080:8080'
+
 volumes:
   postgres_dev_data:
   ecommerce_data:

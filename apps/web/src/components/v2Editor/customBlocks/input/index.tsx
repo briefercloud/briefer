@@ -6,9 +6,9 @@ import {
   getInputAttributes,
   updateInputLabel,
   updateInputValue,
-  getInputVariableExecStatus,
-  getInputValueExecStatus,
   updateInputVariable,
+  ExecutionQueue,
+  isExecutionStatusLoading,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import { useCallback, useEffect, useRef } from 'react'
@@ -16,6 +16,9 @@ import Spin from '@/components/Spin'
 import { ConnectDragPreview } from 'react-dnd'
 import { ClockIcon } from '@heroicons/react/20/solid'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 function errorMessage(
   error: InputBlock['variable']['error'],
@@ -61,9 +64,11 @@ interface Props {
   isEditable: boolean
   isApp: boolean
   isDashboard: boolean
-  onRun: (block: Y.XmlElement<InputBlock>) => void
   isCursorWithin: boolean
   isCursorInserting: boolean
+  userId: string | null
+  workspaceId: string
+  executionQueue: ExecutionQueue
 }
 function InputBlock(props: Props) {
   const attrs = getInputAttributes(props.block, props.blocks)
@@ -92,35 +97,72 @@ function InputBlock(props: Props) {
     [props.block, props.blocks]
   )
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.workspaceId
+  )
   const onBlurVariable: React.FocusEventHandler<HTMLInputElement> = useCallback(
     (e) => {
       if (attrs.variable.newValue !== attrs.variable.value) {
         updateInputVariable(props.block, props.blocks, {
           newValue: e.target.value.trim(),
-          status: 'save-requested',
           error: null,
         })
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'text-input-rename-variable',
+          }
+        )
       }
     },
-    [props.block, props.blocks, attrs]
+    [props.block, props.userId, environmentStartedAt]
   )
 
-  const onRetryValue = useCallback(() => {
-    props.onRun(props.block)
-  }, [props.block, props.onRun])
+  const onSaveValue = useCallback(() => {
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'text-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, environmentStartedAt])
 
-  const onRetryVariable = useCallback(() => {
+  const onRunValue = useCallback(() => {
     updateInputVariable(props.block, props.blocks, {
-      status: 'save-requested',
       error: null,
     })
-  }, [props.block, props.blocks])
 
-  const inputVariableExecStatus = getInputVariableExecStatus(
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'text-input-rename-variable',
+      }
+    )
+  }, [props.block, props.userId, environmentStartedAt])
+
+  const variableExecutions = useBlockExecutions(
+    props.executionQueue,
     props.block,
-    props.blocks
+    'text-input-rename-variable'
   )
-  const inputValueExecStatus = getInputValueExecStatus(props.block)
+  const variableStatus = head(variableExecutions)?.item.getStatus() ?? {
+    _tag: 'idle',
+  }
+
+  const valueExecutions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'text-input-save-value'
+  )
+  const valueStatus = head(valueExecutions)?.item.getStatus() ?? {
+    _tag: 'idle',
+  }
 
   const selectRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -136,11 +178,11 @@ function InputBlock(props: Props) {
 
   const onBlur = useCallback(() => {
     if (attrs.value.newValue !== attrs.value.value) {
-      props.onRun(props.block)
+      onSaveValue()
     }
 
     editorAPI.blur()
-  }, [props.block, props.onRun, attrs.value, editorAPI.blur])
+  }, [attrs.value.newValue, attrs.value.value, onSaveValue, editorAPI.blur])
 
   const unfocusOnEscape = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -192,30 +234,37 @@ function InputBlock(props: Props) {
                 'ring-0 px-1 py-0.5 rounded-md text-ceramic-500 bg-ceramic-100 text-xs font-medium min-w-12 min-h-4 focus:ring-0 border-0 block text-right',
                 {
                   'text-red-500 bg-red-100':
-                    attrs.variable.error && inputVariableExecStatus === 'idle',
+                    attrs.variable.error &&
+                    (variableStatus._tag === 'idle' ||
+                      variableStatus._tag === 'completed'),
                   'text-ceramic-500 bg-ceramic-100':
-                    !attrs.variable.error && inputVariableExecStatus === 'idle',
+                    !attrs.variable.error &&
+                    (variableStatus._tag === 'idle' ||
+                      variableStatus._tag === 'completed'),
                   'text-gray-300 bg-gray-100':
-                    inputVariableExecStatus === 'loading',
+                    variableStatus._tag === 'running' ||
+                    variableStatus._tag === 'enqueued' ||
+                    variableStatus._tag === 'aborting',
                 }
               )}
               type="text"
               value={attrs.variable.newValue}
               onChange={onChangeVariable}
               onBlur={onBlurVariable}
-              disabled={inputVariableExecStatus !== 'idle'}
+              disabled={isExecutionStatusLoading(variableStatus._tag)}
             />
             <div className="absolute inset-y-0 flex items-center pl-1 group z-10">
-              {(attrs.variable.error || inputVariableExecStatus !== 'idle') &&
-                (inputVariableExecStatus === 'loading' ? (
-                  <Spin />
-                ) : inputVariableExecStatus === 'enqueued' ? (
+              {(attrs.variable.error ||
+                isExecutionStatusLoading(variableStatus._tag)) &&
+                (variableStatus._tag === 'enqueued' ? (
                   <ClockIcon className="w-4 h-4 text-gray-300" />
+                ) : isExecutionStatusLoading(variableStatus._tag) ? (
+                  <Spin />
                 ) : attrs.variable.error ? (
                   <>
                     <button
                       disabled={attrs.variable.error === null}
-                      onClick={onRetryVariable}
+                      onClick={onRunValue}
                     >
                       <ExclamationCircleIcon
                         className="h-3 w-3 text-red-300"
@@ -253,21 +302,22 @@ function InputBlock(props: Props) {
             value={attrs.value.newValue}
             onChange={onChangeValue}
             disabled={
-              inputValueExecStatus !== 'idle' ||
+              isExecutionStatusLoading(valueStatus._tag) ||
               (!props.isEditable && !props.isApp)
             }
           />
           <div className="absolute inset-y-0 right-0 flex items-center pr-3 group">
-            {(attrs.value.error || inputValueExecStatus !== 'idle') &&
-              (inputValueExecStatus === 'loading' ? (
-                <Spin />
-              ) : inputValueExecStatus === 'enqueued' ? (
+            {(attrs.value.error ||
+              isExecutionStatusLoading(valueStatus._tag)) &&
+              (valueStatus._tag === 'enqueued' ? (
                 <ClockIcon className="w-4 h-4 text-gray-300" />
+              ) : isExecutionStatusLoading(valueStatus._tag) ? (
+                <Spin />
               ) : attrs.value.error ? (
                 <>
                   <button
                     disabled={attrs.value.error === null}
-                    onClick={onRetryValue}
+                    onClick={onSaveValue}
                   >
                     <ExclamationCircleIcon
                       className="h-4 w-4 text-red-300"

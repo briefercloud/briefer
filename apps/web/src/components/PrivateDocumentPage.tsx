@@ -32,6 +32,7 @@ import ShortcutsModal from './ShortcutsModal'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import ReusableComponents from './ReusableComponents'
 import PageSettingsPanel from './PageSettingsPanel'
+import { AITasks, ExecutionQueue } from '@briefer/editor'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -207,6 +208,15 @@ function PrivateDocumentPageInner(
     null
   )
 
+  const executionQueue = useMemo(
+    () =>
+      ExecutionQueue.fromYjs(yDoc, {
+        skipDependencyCheck: !props.document.runUnexecutedBlocks,
+      }),
+    [yDoc, props.document.runUnexecutedBlocks]
+  )
+  const aiTasks = useMemo(() => AITasks.fromYjs(yDoc), [yDoc])
+
   const onPublish = useCallback(async () => {
     if (props.publishing) {
       return
@@ -348,13 +358,21 @@ function PrivateDocumentPageInner(
           role={props.user.roles[props.workspaceId]}
           isFullScreen={isFullScreen}
           yDoc={yDoc}
+          executionQueue={executionQueue}
+          aiTasks={aiTasks}
           provider={provider}
           isSyncing={syncing}
           onOpenFiles={onToggleFiles}
           onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
         >
           {!isViewer && (
-            <RunAllV2 disabled={false} yDoc={yDoc} primary={props.isApp} />
+            <RunAllV2
+              disabled={false}
+              yDoc={yDoc}
+              primary={props.isApp}
+              userId={props.user.id}
+              executionQueue={executionQueue}
+            />
           )}
         </V2Editor>
 
@@ -404,7 +422,9 @@ function PrivateDocumentPageInner(
               workspaceId={props.workspaceId}
               visible={selectedSidebar?._tag === 'files'}
               onHide={onHideSidebar}
+              userId={props.user.id}
               yDoc={yDoc}
+              executionQueue={executionQueue}
             />
             <ReusableComponents
               workspaceId={props.workspaceId}

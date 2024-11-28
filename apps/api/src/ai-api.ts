@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { CanceledError } from 'axios'
 import split2 from 'split2'
 import { config } from './config/index.js'
 import { z } from 'zod'
@@ -23,7 +23,7 @@ export async function sqlEditStreamed(
   abortController: AbortController
 }> {
   const abortController = new AbortController()
-  const response = await axios.post(
+  const responseP = axios.post(
     `${config().AI_API_URL}/v1/stream/sql/edit`,
     {
       query,
@@ -48,27 +48,37 @@ export async function sqlEditStreamed(
   return {
     abortController,
     promise: new Promise(async (resolve, reject) => {
-      let success = false
-      let error: Error | null = null
-      response.data
-        .pipe(split2(JSON.parse))
-        .on('data', (obj: any) => {
-          const parse = z.object({ sql: z.string() }).safeParse(obj)
-          if (parse.success) {
-            onSQL(parse.data.sql)
-            success = true
-          } else {
-            error = parse.error
-          }
-        })
-        .on('error', reject)
-        .on('finish', () => {
-          if (!success) {
-            reject(error ?? new Error('Got no data'))
-          } else {
-            resolve()
-          }
-        })
+      try {
+        const response = await responseP
+
+        let success = false
+        let error: Error | null = null
+        response.data
+          .pipe(split2(JSON.parse))
+          .on('data', (obj: any) => {
+            const parse = z.object({ sql: z.string() }).safeParse(obj)
+            if (parse.success) {
+              onSQL(parse.data.sql)
+              success = true
+            } else {
+              error = parse.error
+            }
+          })
+          .on('error', reject)
+          .on('finish', () => {
+            if (!success) {
+              reject(error ?? new Error('Got no data'))
+            } else {
+              resolve()
+            }
+          })
+      } catch (e) {
+        if (e instanceof CanceledError) {
+          resolve()
+          return
+        }
+        reject(e)
+      }
     }),
   }
 }
@@ -117,14 +127,18 @@ export async function pythonEditStreamed(
   onSource: (source: string) => void,
   modelId: string | null,
   openaiApiKey: string | null
-): Promise<void> {
+): Promise<{
+  promise: Promise<void>
+  abortController: AbortController
+}> {
   const allowedLibraries = (config().PYTHON_ALLOWED_LIBRARIES ?? '')
     .split(',')
     .map((s) => s.trim())
 
   const variables = dataframesToPython(dataFrames)
 
-  const response = await axios.post(
+  const abortController = new AbortController()
+  const responseP = axios.post(
     `${config().AI_API_URL}/v1/stream/python/edit`,
     {
       source,
@@ -145,27 +159,39 @@ export async function pythonEditStreamed(
     }
   )
 
-  return new Promise(async (resolve, reject) => {
-    let success = false
-    let error: Error | null = null
-    response.data
-      .pipe(split2(JSON.parse))
-      .on('data', (obj: any) => {
-        const parse = z.object({ source: z.string() }).safeParse(obj)
-        if (parse.success) {
-          onSource(parse.data.source)
-          success = true
-        } else {
-          error = parse.error
-        }
-      })
-      .on('error', reject)
-      .on('finish', () => {
-        if (!success) {
-          reject(error ?? new Error('Got no data'))
-        } else {
+  return {
+    abortController,
+    promise: new Promise<void>(async (resolve, reject) => {
+      try {
+        const response = await responseP
+        let success = false
+        let error: Error | null = null
+        response.data
+          .pipe(split2(JSON.parse))
+          .on('data', (obj: any) => {
+            const parse = z.object({ source: z.string() }).safeParse(obj)
+            if (parse.success) {
+              onSource(parse.data.source)
+              success = true
+            } else {
+              error = parse.error
+            }
+          })
+          .on('error', reject)
+          .on('finish', () => {
+            if (!success) {
+              reject(error ?? new Error('Got no data'))
+            } else {
+              resolve()
+            }
+          })
+      } catch (e) {
+        if (e instanceof CanceledError) {
           resolve()
+          return
         }
-      })
-  })
+        reject(e)
+      }
+    }),
+  }
 }

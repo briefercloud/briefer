@@ -3,6 +3,7 @@ import * as Y from 'yjs'
 import { DataFrame, PivotTableSort } from '@briefer/types'
 import {
   BlockType,
+  ExecutionQueue,
   PivotTableColumn,
   PivotTableMetric,
   PivotTableRow,
@@ -11,20 +12,22 @@ import {
   getDataframe,
   getPivotTableAttributes,
   getPivotTableBlockExecStatus,
+  isExecutionStatusLoading,
   type PivotTableBlock,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import PivotTableControls from './PivotTableControls'
 import PivotTableView from './PivotTableView'
-import { equals } from 'ramda'
+import { equals, head } from 'ramda'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { PivotTableExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
 
 interface Props {
   workspaceId: string
@@ -33,10 +36,6 @@ interface Props {
   blocks: Y.Map<YBlock>
   dragPreview: ConnectDragPreview | null
   isEditable: boolean
-  onRun: (
-    block: Y.XmlElement<PivotTableBlock>,
-    customCallback?: (block: Y.XmlElement<PivotTableBlock>) => void
-  ) => void
   onAddGroupedBlock: (
     blockId: string,
     blockType: BlockType,
@@ -48,6 +47,8 @@ interface Props {
   dashboardMode: 'live' | 'editing' | 'none'
   isCursorWithin: boolean
   isCursorInserting: boolean
+  userId: string | null
+  executionQueue: ExecutionQueue
 }
 function PivotTableBlock(props: Props) {
   const attrs = getPivotTableAttributes(props.block, props.blocks)
@@ -128,12 +129,32 @@ function PivotTableBlock(props: Props) {
       props.block.unobserve(observe)
     }
   }, [props.block, dataframe])
+
+  const {
+    status: envStatus,
+    loading: envLoading,
+    startedAt: environmentStartedAt,
+  } = useEnvironmentStatus(props.workspaceId)
+
   useEffect(() => {
     if (isDirty) {
-      props.onRun(props.block)
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
+      )
       setIsDirty(false)
     }
-  }, [isDirty, props.block, props.onRun])
+  }, [
+    isDirty,
+    props.block,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onChangeTitle = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -189,8 +210,13 @@ function PivotTableBlock(props: Props) {
   const onPrevPage = useCallback(() => {
     const run = () => {
       props.block.setAttribute('page', attrs.page - 1)
-      props.onRun(props.block, (b) =>
-        b.setAttribute('status', 'page-requested')
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table-load-page',
+        }
       )
     }
     if (props.block.doc) {
@@ -198,13 +224,24 @@ function PivotTableBlock(props: Props) {
     } else {
       run()
     }
-  }, [props.block, attrs.page, props.onRun])
+  }, [
+    props.block,
+    attrs.page,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onNextPage = useCallback(() => {
     const run = () => {
       props.block.setAttribute('page', attrs.page + 1)
-      props.onRun(props.block, (b) =>
-        b.setAttribute('status', 'page-requested')
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table-load-page',
+        }
       )
     }
     if (props.block.doc) {
@@ -212,14 +249,19 @@ function PivotTableBlock(props: Props) {
     } else {
       run()
     }
-  }, [props.block, attrs.page, props.onRun])
+  }, [props.block, attrs.page, props.executionQueue, props.userId])
 
   const setPage = useCallback(
     (page: number) => {
       const run = () => {
         props.block.setAttribute('page', page + 1)
-        props.onRun(props.block, (b) =>
-          b.setAttribute('status', 'page-requested')
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'pivot-table-load-page',
+          }
         )
       }
 
@@ -229,72 +271,83 @@ function PivotTableBlock(props: Props) {
         run()
       }
     },
-    [props.block, props.onRun]
+    [props.block, props.executionQueue, props.userId]
   )
 
-  const loadingTable: boolean = useMemo(() => {
-    switch (attrs.status) {
-      case 'page-requested':
-      case 'loading-page':
-      case 'idle':
-        return false
-      case 'run-requested':
-      case 'running':
-      case 'abort-requested':
-      case 'aborting':
-      case 'run-all-enqueued':
-      case 'run-all-running':
-        return true
-    }
-  }, [attrs.status])
+  const executions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'pivot-table'
+  )
+  const execution = head(executions)
+  const status = execution?.item.getStatus()._tag ?? 'idle'
 
-  const loadingPage: boolean = useMemo(() => {
-    switch (attrs.status) {
-      case 'page-requested':
-      case 'loading-page':
-        return true
-      case 'idle':
-      case 'run-requested':
-      case 'running':
-      case 'abort-requested':
-      case 'aborting':
-      case 'run-all-enqueued':
-      case 'run-all-running':
-        return false
-    }
-  }, [attrs.status])
+  const pageExecutions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'pivot-table-load-page'
+  )
+  const pageExecution = head(pageExecutions)
+  const pageStatus = pageExecution?.item.getStatus()._tag ?? 'idle'
+
+  const loadingTable = isExecutionStatusLoading(pageStatus)
+  const loadingPage = isExecutionStatusLoading(status)
 
   const isEditable =
     props.isEditable &&
-    attrs.status !== 'run-all-enqueued' &&
-    attrs.status !== 'run-all-running'
+    execution?.batch.isRunAll() !== true &&
+    pageExecution?.batch.isRunAll() !== true
 
-  const execStatus = getPivotTableBlockExecStatus(props.block)
+  // TODO: should introduce a useBlockExecutionStatus hook
+  const execStatus = getPivotTableBlockExecStatus(
+    props.block,
+    props.executionQueue
+  )
 
   const onRunAbort = useCallback(() => {
-    if (attrs.status === 'running') {
-      props.block.setAttribute('status', 'abort-requested')
+    if (execution || pageExecution) {
+      if (execution) {
+        execution.item.setAborting()
+      }
+      if (pageExecution) {
+        pageExecution.item.setAborting()
+      }
     } else {
-      props.onRun(props.block)
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
+      )
     }
-  }, [props.block, props.onRun, attrs.status])
+  }, [
+    execution,
+    pageExecution,
+    props.executionQueue,
+    props.block,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(attrs.id)
   }, [props.onToggleIsBlockHiddenInPublished, attrs.id])
 
-  const { status: envStatus, loading: envLoading } = useEnvironmentStatus(
-    props.workspaceId
-  )
-
   const onSort = useCallback(
     (sort: PivotTableSort | null) => {
       props.block.setAttribute('sort', sort)
-      props.onRun(props.block, (b) =>
-        b.setAttribute('status', 'page-requested')
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'pivot-table',
+        }
       )
     },
-    [props.block, props.onRun]
+    [props.block, props.executionQueue, props.userId, props.executionQueue]
   )
 
   const [, editorAPI] = useEditorAwareness()
@@ -306,7 +359,7 @@ function PivotTableBlock(props: Props) {
     if (!attrs.result) {
       return (
         <div className="flex items-center justify-center h-full">
-          {attrs.status !== 'idle' ? (
+          {isExecutionStatusLoading(execStatus) ? (
             <LargeSpinner color="#b8f229" />
           ) : (
             <div className="text-gray-500">No query results</div>
@@ -432,12 +485,17 @@ function PivotTableBlock(props: Props) {
           className={clsx(
             {
               'bg-gray-200 cursor-not-allowed':
-                attrs.status !== 'idle' && attrs.status !== 'running',
-              'bg-red-200':
-                attrs.status === 'running' && envStatus === 'Running',
+                execStatus !== 'idle' &&
+                execStatus !== 'running' &&
+                execStatus !== 'completed' &&
+                execStatus !== 'unknown',
+              'bg-red-200': execStatus === 'running' && envStatus === 'Running',
               'bg-yellow-300':
-                attrs.status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': attrs.status === 'idle',
+                execStatus === 'running' && envStatus !== 'Running',
+              'bg-primary-200':
+                execStatus === 'idle' ||
+                execStatus === 'completed' ||
+                execStatus === 'unknown',
             },
             'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
           )}
@@ -445,10 +503,13 @@ function PivotTableBlock(props: Props) {
           disabled={
             !dataframe ||
             !isEditable ||
-            (attrs.status !== 'idle' && attrs.status !== 'running')
+            (execStatus !== 'idle' &&
+              execStatus !== 'running' &&
+              execStatus !== 'completed' &&
+              execStatus !== 'unknown')
           }
         >
-          {attrs.status !== 'idle' ? (
+          {isExecutionStatusLoading(execStatus) ? (
             <div>
               {execStatus === 'enqueued' ? (
                 <ClockIcon className="w-3 h-3 text-gray-500" />
@@ -458,8 +519,12 @@ function PivotTableBlock(props: Props) {
               <PivotTableExecTooltip
                 envStatus={envStatus}
                 envLoading={envLoading}
-                execStatus={execStatus}
-                status={attrs.status}
+                execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
+                runningAll={
+                  execution?.batch.isRunAll() ??
+                  pageExecution?.batch.isRunAll() ??
+                  false
+                }
               />
             </div>
           ) : (

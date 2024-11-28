@@ -241,6 +241,7 @@ export default function EnvirontVariablesPage() {
           workspaceId={workspaceId}
           visible={filesOpen}
           onHide={() => setFilesOpen(false)}
+          userId={session.data?.id ?? null}
         />
         <EnvBar
           isViewer={session.data?.roles[workspaceId] === 'viewer'}

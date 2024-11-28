@@ -6,12 +6,11 @@ import {
   getDropdownInputAttributes,
   updateDropdownInputLabel,
   updateDropdownInputValue,
-  getDropdownInputVariableExecStatus,
-  getDropdownInputValueExecStatus,
   dropdownInputToggleConfigOpen,
-  dropdownInputRequestSaveValue,
   updateDropdownInputVariable,
-  dropdownInputRequestSaveVariable,
+  ExecutionQueue,
+  isExecutionStatusLoading,
+  YBlockGroup,
 } from '@briefer/editor'
 import clsx from 'clsx'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -24,6 +23,9 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { Combobox } from '@headlessui/react'
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/20/solid'
 import ReactDOM from 'react-dom'
+import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { head } from 'ramda'
+import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -71,9 +73,11 @@ interface Props {
   isApp: boolean
   isDashboard: boolean
   dataframes: Y.Map<DataFrame>
-  onRun: (block: Y.XmlElement<DropdownInputBlock>) => void
   isCursorWithin: boolean
   isCursorInserting: boolean
+  userId: string | null
+  workspaceId: string
+  executionQueue: ExecutionQueue
 }
 function DropdownInputBlock(props: Props) {
   const attrs = getDropdownInputAttributes(props.block, props.blocks)
@@ -95,25 +99,27 @@ function DropdownInputBlock(props: Props) {
     [props.block]
   )
 
+  const { startedAt: environmentStartedAt } = useEnvironmentStatus(
+    props.workspaceId
+  )
+
   const onRetryValue = useCallback(() => {
-    dropdownInputRequestSaveValue(props.block)
-  }, [props.block])
+    updateDropdownInputValue(props.block, {
+      error: null,
+    })
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   const toggleConfigOpen = useCallback(() => {
     dropdownInputToggleConfigOpen(props.block)
   }, [props.block])
-
-  const isLoadingDropdownInputValue =
-    getDropdownInputValueExecStatus(props.block) !== 'idle'
-
-  const dropdownInputValueExecStatus = getDropdownInputValueExecStatus(
-    props.block
-  )
-
-  const dropdownInputVariableExecStatus = getDropdownInputVariableExecStatus(
-    props.block,
-    props.blocks
-  )
 
   const onChangeVariable = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,17 +135,34 @@ function DropdownInputBlock(props: Props) {
       if (attrs.variable.newValue !== attrs.variable.value) {
         updateDropdownInputVariable(props.block, props.blocks, {
           newValue: e.target.value.trim(),
-          status: 'save-requested',
           error: null,
         })
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'dropdown-input-rename-variable',
+          }
+        )
       }
     },
-    [props.block, props.blocks, attrs]
+    [props.block, props.userId, props.executionQueue]
   )
 
   const onRetryVariable = useCallback(() => {
-    dropdownInputRequestSaveVariable(props.block)
-  }, [props.block])
+    updateDropdownInputVariable(props.block, props.blocks, {
+      error: null,
+    })
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-rename-variable',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   const selectRef = useRef<HTMLUListElement>(null)
 
@@ -164,6 +187,48 @@ function DropdownInputBlock(props: Props) {
   )
 
   const dropdownWrapperRef = useRef<HTMLInputElement>(null)
+
+  const variableExecutions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'dropdown-input-rename-variable'
+  )
+  const variableStatus =
+    head(variableExecutions)?.item.getStatus()._tag ?? 'idle'
+
+  const valueExecutions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'dropdown-input-save-value'
+  )
+  const valueStatus = head(valueExecutions)?.item.getStatus()._tag ?? 'idle'
+
+  const onSelectValue = useCallback(
+    (value: string) => {
+      setSelected(value)
+      updateDropdownInputValue(props.block, { newValue: value })
+      props.executionQueue.enqueueBlock(
+        props.block,
+        props.userId,
+        environmentStartedAt,
+        {
+          _tag: 'dropdown-input-save-value',
+        }
+      )
+    },
+    [props.block, props.userId, props.executionQueue, environmentStartedAt]
+  )
+
+  const onRun = useCallback(() => {
+    props.executionQueue.enqueueBlock(
+      props.block,
+      props.userId,
+      environmentStartedAt,
+      {
+        _tag: 'dropdown-input-save-value',
+      }
+    )
+  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
 
   return (
     <div
@@ -208,27 +273,28 @@ function DropdownInputBlock(props: Props) {
                       {
                         'text-red-500 bg-red-100':
                           attrs.variable.error &&
-                          dropdownInputVariableExecStatus === 'idle',
+                          !isExecutionStatusLoading(variableStatus),
                         'text-ceramic-500 bg-ceramic-100':
                           !attrs.variable.error &&
-                          dropdownInputVariableExecStatus === 'idle',
+                          !isExecutionStatusLoading(variableStatus),
                         'text-gray-300 bg-gray-100':
-                          dropdownInputVariableExecStatus === 'loading',
+                          isExecutionStatusLoading(variableStatus),
                       }
                     )}
                     type="text"
                     value={attrs.variable.newValue}
                     onChange={onChangeVariable}
                     onBlur={onBlurVariable}
-                    disabled={dropdownInputVariableExecStatus !== 'idle'}
+                    disabled={isExecutionStatusLoading(variableStatus)}
                     ref={dropdownWrapperRef}
                   />
                   <div className="absolute inset-y-0 pl-1 flex items-center group z-10">
                     {(attrs.variable.error ||
-                      dropdownInputVariableExecStatus !== 'idle') &&
-                      (dropdownInputVariableExecStatus === 'loading' ? (
+                      isExecutionStatusLoading(variableStatus)) &&
+                      (variableStatus === 'running' ||
+                      variableStatus === 'aborting' ? (
                         <Spin />
-                      ) : dropdownInputVariableExecStatus === 'enqueued' ? (
+                      ) : variableStatus === 'enqueued' ? (
                         <ClockIcon className="w-4 h-4 text-gray-300" />
                       ) : attrs.variable.error ? (
                         <>
@@ -261,13 +327,9 @@ function DropdownInputBlock(props: Props) {
           <div className="relative">
             <Combobox
               value={selected}
-              onChange={(value) => {
-                setSelected(value)
-                updateDropdownInputValue(props.block, { newValue: value })
-                props.onRun(props.block)
-              }}
+              onChange={onSelectValue}
               disabled={
-                dropdownInputValueExecStatus !== 'idle' ||
+                isExecutionStatusLoading(valueStatus) ||
                 (!props.isEditable && !props.isApp)
               }
             >
@@ -286,7 +348,8 @@ function DropdownInputBlock(props: Props) {
                         !props.belongsToMultiTabGroup
                         ? 'ring-primary-400'
                         : 'ring-gray-200',
-                      (isLoadingDropdownInputValue || attrs.value.error) &&
+                      (isExecutionStatusLoading(valueStatus) ||
+                        attrs.value.error) &&
                         'bg-none' // this removes the caret
                     )}
                     displayValue={(value: string) => value}
@@ -360,10 +423,10 @@ function DropdownInputBlock(props: Props) {
               )}
             </Combobox>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 group">
-              {(attrs.value.error || dropdownInputValueExecStatus !== 'idle') &&
-                (dropdownInputValueExecStatus === 'loading' ? (
+              {(attrs.value.error || isExecutionStatusLoading(valueStatus)) &&
+                (valueStatus === 'running' || valueStatus === 'aborting' ? (
                   <Spin />
-                ) : dropdownInputValueExecStatus === 'enqueued' ? (
+                ) : valueStatus === 'enqueued' ? (
                   <ClockIcon className="w-4 h-4 text-gray-300" />
                 ) : attrs.value.error ? (
                   <>
@@ -389,7 +452,7 @@ function DropdownInputBlock(props: Props) {
               block={props.block}
               blocks={props.blocks}
               dataframes={props.dataframes}
-              onRun={props.onRun}
+              onRun={onRun}
             />
           )}
         </div>

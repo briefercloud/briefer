@@ -22,7 +22,7 @@ export type StateItem = {
   loading: boolean
   error: string | null
   status: EnvironmentStatus
-  startedAt: Date | null
+  startedAt: string | null
 }
 type State = Map<string, StateItem>
 
@@ -62,7 +62,7 @@ export function EnvironmentStatusProvider(props: Props) {
           loading: false,
           error: null,
           status: data.status,
-          startedAt: data.startedAt ? new Date(data.startedAt) : null,
+          startedAt: data.startedAt ? data.startedAt : null,
         })
       )
     }
@@ -139,7 +139,7 @@ type UseEnvironmentStatus = {
   loading: boolean
   error: string | null
   restart: () => void
-  startedAt: Date | null
+  startedAt: string | null
 }
 export function useEnvironmentStatus(
   workspaceId: string

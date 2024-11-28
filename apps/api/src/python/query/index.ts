@@ -251,6 +251,13 @@ export async function makeQuery(
   abortFns.push(abortQuery)
 
   const resultPromise = queryPromise.then(async (): Promise<RunQueryResult> => {
+    if (aborted) {
+      return {
+        type: 'abort-error',
+        message: 'Query aborted',
+      }
+    }
+
     if (error) {
       throw error
     }
@@ -317,8 +324,10 @@ del _briefer_read_query`
 
   const abortFunction = async () => {
     aborted = true
-    await Promise.all(abortFns.map((fn) => fn()))
-    await getJupyterManager().deleteFile(workspaceId, flagFilePath)
+    await Promise.all([
+      getJupyterManager().deleteFile(workspaceId, flagFilePath),
+      ...abortFns.map((fn) => fn()),
+    ])
 
     await queryPromise
   }

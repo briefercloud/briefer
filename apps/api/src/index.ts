@@ -52,7 +52,7 @@ async function main() {
   const server = http.createServer(app)
 
   let shutdownFunctions: (() => Promise<void> | void)[] = []
-  const socketServer = createSocketServer(server)
+  const socketServer = await createSocketServer(server)
   shutdownFunctions.push(() => socketServer.shutdown())
 
   const stopSchedules = await runSchedule(socketServer.io)
@@ -122,8 +122,9 @@ async function main() {
     res.end(res.sentry + '\n')
   })
 
-  server.listen(8080, () => {
-    logger().info('Server is running on port 8080')
+  const port = process.env['PORT'] || 8080
+  server.listen(port, () => {
+    logger().info(`Server is running on port ${port}`)
   })
 
   const jupyterManager = getJupyterManager()

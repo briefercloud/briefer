@@ -5,6 +5,7 @@ import { CircleStackIcon, Cog8ToothIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import Files from '@/components/Files'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -47,6 +48,7 @@ export default function DataSourcesPage() {
   const onToggleFiles = useCallback(() => {
     setFilesOpen((prev) => !prev)
   }, [])
+  const session = useSession()
 
   return (
     <Layout pagePath={pagePath(workspaceId)}>
@@ -123,6 +125,7 @@ export default function DataSourcesPage() {
         workspaceId={workspaceId}
         visible={filesOpen}
         onHide={() => setFilesOpen(false)}
+        userId={session.data?.id ?? null}
       />
     </Layout>
   )

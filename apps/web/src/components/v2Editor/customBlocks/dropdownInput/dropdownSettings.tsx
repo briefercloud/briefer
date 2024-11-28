@@ -23,7 +23,6 @@ type Props = {
   onRun: (block: Y.XmlElement<DropdownInputBlock>) => void
   dataframes: Y.Map<DataFrame>
 }
-
 export default function DropdownSettings(props: Props) {
   const attrs = getDropdownInputAttributes(props.block, props.blocks)
 
