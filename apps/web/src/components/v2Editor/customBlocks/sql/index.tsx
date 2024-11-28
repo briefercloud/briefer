@@ -193,7 +193,7 @@ function SQLBlock(props: Props) {
       case 'running':
       case 'enqueued':
       case 'aborting':
-        return false
+        return true
     }
   })()
 
