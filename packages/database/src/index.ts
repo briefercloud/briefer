@@ -28,25 +28,25 @@ export * from './components.js'
 
 export type PrismaTransaction = Omit<PrismaClient, ITXClientDenyList>
 
-let connectionString: string | null = null
-let ssl: { rejectUnauthorized: boolean; ca?: string } | null | undefined
 let singleton: PrismaClient | null = null
-export const init = (
-  _connectionString: string,
-  rejectUnauthorized: boolean,
-  ca: string | null
-) => {
-  connectionString = _connectionString
-  if (rejectUnauthorized && ca === null) {
-    // these are the default values, so the same as not providing them
-    ssl = null
-  } else {
-    ssl = {
-      rejectUnauthorized,
-      ca: ca ?? undefined,
-    }
-  }
-  singleton = new PrismaClient({ datasourceUrl: connectionString })
+
+type InitOptions = {
+  connectionString: string
+  ssl:
+    | {
+        enabled: true
+        rejectUnauthorized: boolean
+        ca: string | null
+      }
+    | {
+        enabled: false
+      }
+}
+let dbOptions: InitOptions | null = null
+
+export const init = (initOptions: InitOptions) => {
+  dbOptions = initOptions
+  singleton = new PrismaClient({ datasourceUrl: dbOptions.connectionString })
 }
 
 export const prisma = () => {
@@ -78,7 +78,7 @@ export async function getPGInstance(): Promise<{
   pubSubClient: pg.Client
   pool: pg.Pool
 }> {
-  if (!connectionString || ssl === undefined) {
+  if (!dbOptions) {
     throw new Error(`Access db before calling init()`)
   }
 
@@ -86,10 +86,23 @@ export async function getPGInstance(): Promise<{
     return pgInstance
   }
 
-  const pgPool = new pg.Pool({ connectionString, ssl: ssl ?? undefined })
+  const pgPool = new pg.Pool({
+    connectionString: dbOptions.connectionString,
+    ssl: dbOptions.ssl.enabled
+      ? {
+          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized,
+          ca: dbOptions.ssl.ca ?? undefined,
+        }
+      : undefined,
+  })
   const pubSubClient = new pg.Client({
-    connectionString,
-    ssl: ssl ?? undefined,
+    connectionString: dbOptions.connectionString,
+    ssl: dbOptions.ssl.enabled
+      ? {
+          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized,
+          ca: dbOptions.ssl.ca ?? undefined,
+        }
+      : undefined,
   })
   await pubSubClient.connect()
 

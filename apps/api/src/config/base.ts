@@ -96,9 +96,9 @@ export class BaseConfig implements IBaseConfig {
       5
     )
 
-    this.POSTGRES_SSL_REJECT_UNAUTHORIZED = getBooleanVar(
+    this.POSTGRES_SSL_REJECT_UNAUTHORIZED = this.getBooleanVar(
       'POSTGRES_SSL_REJECT_UNAUTHORIZED',
-      true
+      false
     )
 
     this.POSTGRES_SSL_CA = process.env['POSTGRES_SSL_CA'] || null
