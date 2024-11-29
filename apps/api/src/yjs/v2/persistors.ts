@@ -79,6 +79,7 @@ export class DocumentPersistor implements Persistor {
           select: { update: true },
           orderBy: { createdAt: 'desc' },
         })
+        this.applyUpdate(ydoc, dbDoc.state)
         if (update) {
           this.applyUpdate(ydoc, update.update)
         }
