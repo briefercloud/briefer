@@ -42,7 +42,6 @@ export class AIExecutor {
   private readonly id = uuidv4()
   private isRunning = false
   private readonly pQueue = new PQueue({ concurrency: 4 })
-  private timeout: NodeJS.Timeout | null = null
 
   private constructor(
     private readonly docId: string,
@@ -65,10 +64,6 @@ export class AIExecutor {
 
   public async stop(): Promise<void> {
     this.isRunning = false
-
-    if (this.timeout) {
-      clearTimeout(this.timeout)
-    }
 
     await this.pQueue.onIdle()
   }
@@ -141,7 +136,7 @@ export class AIExecutor {
                 }
 
                 if (this.isRunning) {
-                  this.timeout = setTimeout(() => tick(), timeout)
+                  setTimeout(() => tick(), timeout)
                 }
               } catch (err) {
                 reject(err)
