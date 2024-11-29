@@ -38,10 +38,19 @@ export const useSessionRedirect = (shouldRedirect = true) => {
       } else {
         redirectToLogin(router)
       }
-    } else if (workspaces.data.length === 0) {
-      signOut()
     } else {
-      router.replace(`/workspaces/${workspaces.data[0].id}/documents`)
+      const user = session.data
+      const workspace =
+        workspaces.data.find(
+          (workspace) => workspace.id === user.lastVisitedWorkspaceId
+        ) ??
+        workspaces.data.find((workspace) => workspace.ownerId === user.id) ??
+        workspaces.data[0]
+      if (workspace) {
+        router.replace(`/workspaces/${workspace.id}/documents`)
+      } else {
+        signOut()
+      }
     }
   }, [properties, workspaces, session, router, shouldRedirect, signOut])
 }

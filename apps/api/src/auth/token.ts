@@ -110,6 +110,7 @@ export async function sessionFromCookies(
       email: true,
       name: true,
       picture: true,
+      lastVisitedWorkspaceId: true,
       createdAt: true,
       updatedAt: true,
       workspaces: true,
@@ -130,6 +131,7 @@ export async function sessionFromCookies(
       email: user.email,
       name: user.name,
       picture: user.picture,
+      lastVisitedWorkspaceId: user.lastVisitedWorkspaceId,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     },
@@ -319,9 +321,7 @@ export const isAuthorizedForDataSource = async (
       return result !== null
     }
     case 'databrickssql': {
-      const result = await prisma().databricksSQLDataSource.findFirst(
-        query,
-      )
+      const result = await prisma().databricksSQLDataSource.findFirst(query)
       return result !== null
     }
   }
