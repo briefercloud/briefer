@@ -3,7 +3,6 @@ import prisma, {
   PrismaTransaction,
   UserYjsAppDocument,
   YjsAppDocument,
-  YjsUpdate,
 } from '@briefer/database'
 import { TransactionOrigin, WSSharedDocV2 } from './index.js'
 import { logger } from '../../logger.js'
@@ -104,6 +103,7 @@ export class DocumentPersistor implements Persistor {
           const cleanUpdates = async (tx: PrismaTransaction) => {
             const deleted = await tx.yjsUpdate.deleteMany({
               where: {
+                yjsDocumentId: dbDoc.id,
                 clock: { lte: dbDoc.clock },
               },
             })
@@ -298,22 +298,25 @@ export class AppPersistor implements Persistor {
             doc:
               | { _tag: 'user'; userYjsAppDocument: UserYjsAppDocument }
               | { _tag: 'app'; yjsAppDocument: YjsAppDocument },
-            updates: Pick<YjsUpdate, 'id'>[],
             tx: PrismaTransaction
           ) => {
+            const where =
+              doc._tag === 'user'
+                ? {
+                    userYjsAppDocumentUserId: doc.userYjsAppDocument.userId,
+                    userYjsAppDocumentYjsAppDocumentId:
+                      doc.userYjsAppDocument.yjsAppDocumentId,
+                  }
+                : { yjsAppDocumentId: doc.yjsAppDocument.id }
             const deleted = await tx.yjsUpdate.deleteMany({
               where: {
-                OR: [
-                  { id: { in: updates.map((update) => update.id) } },
-                  {
-                    clock: {
-                      lt:
-                        doc._tag === 'user'
-                          ? doc.userYjsAppDocument.clock
-                          : doc.yjsAppDocument.clock,
-                    },
-                  },
-                ],
+                ...where,
+                clock: {
+                  lt:
+                    doc._tag === 'user'
+                      ? doc.userYjsAppDocument.clock
+                      : doc.yjsAppDocument.clock,
+                },
               },
             })
             if (doc._tag === 'user') {
@@ -380,7 +383,6 @@ export class AppPersistor implements Persistor {
               const deleted = await cleanUpdates(
                 ydoc,
                 { _tag: 'app', yjsAppDocument: yjsAppDoc },
-                [],
                 tx
               )
               logger().trace(
@@ -434,7 +436,6 @@ export class AppPersistor implements Persistor {
               const deleted = await cleanUpdates(
                 ydoc,
                 { _tag: 'user', userYjsAppDocument: userYjsAppDoc },
-                [],
                 tx
               )
               logger().trace(
