@@ -264,8 +264,13 @@ def briefer_make_athena_query():
             print(json.dumps(result, ensure_ascii=False, default=str))
             return
 
-        statistics = athena_client.get_query_runtime_statistics(QueryExecutionId=query_id)
-        total_rows = statistics.get("QueryRuntimeStatistics", {}).get("Rows", {}).get("OutputRows", None)
+        try:
+            statistics = athena_client.get_query_runtime_statistics(QueryExecutionId=query_id)
+            total_rows = statistics.get("QueryRuntimeStatistics", {}).get("Rows", {}).get("OutputRows", None)
+        except Exception as e:
+            print(json.dumps({"type": "log", "message": f"Error getting total rows: {e}"}))
+            total_rows = None
+            pass
 
         data = athena_client.get_query_results(QueryExecutionId=query_id)
         if not os.path.exists(flag_file_path):
