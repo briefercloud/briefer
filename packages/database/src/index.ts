@@ -29,7 +29,7 @@ export * from './components.js'
 export type PrismaTransaction = Omit<PrismaClient, ITXClientDenyList>
 
 let connectionString: string | null = null
-let ssl: { rejectUnauthorized: boolean; ca?: string } | null = null
+let ssl: { rejectUnauthorized: boolean; ca?: string } | null | undefined
 let singleton: PrismaClient | null = null
 export const init = (
   _connectionString: string,
@@ -37,9 +37,14 @@ export const init = (
   ca: string | null
 ) => {
   connectionString = _connectionString
-  ssl = {
-    rejectUnauthorized,
-    ca: ca ?? undefined,
+  if (rejectUnauthorized && ca === null) {
+    // these are the default values, so the same as not providing them
+    ssl = null
+  } else {
+    ssl = {
+      rejectUnauthorized,
+      ca: ca ?? undefined,
+    }
   }
   singleton = new PrismaClient({ datasourceUrl: connectionString })
 }
@@ -73,7 +78,7 @@ export async function getPGInstance(): Promise<{
   pubSubClient: pg.Client
   pool: pg.Pool
 }> {
-  if (!connectionString || !ssl) {
+  if (!connectionString || ssl === undefined) {
     throw new Error(`Access db before calling init()`)
   }
 
@@ -81,8 +86,11 @@ export async function getPGInstance(): Promise<{
     return pgInstance
   }
 
-  const pgPool = new pg.Pool({ connectionString, ssl })
-  const pubSubClient = new pg.Client({ connectionString, ssl })
+  const pgPool = new pg.Pool({ connectionString, ssl: ssl ?? undefined })
+  const pubSubClient = new pg.Client({
+    connectionString,
+    ssl: ssl ?? undefined,
+  })
   await pubSubClient.connect()
 
   pubSubClient.on('notification', (notification) => {
