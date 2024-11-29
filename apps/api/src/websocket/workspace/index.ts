@@ -37,6 +37,12 @@ export const joinWorkspace =
 
       if (!socket.rooms.has(workspaceId)) {
         await socket.join(workspaceId)
+        await prisma().user.update({
+          where: { id: session.user.id },
+          data: {
+            lastVisitedWorkspaceId: workspaceId,
+          },
+        })
       }
 
       await emitInitialData(io, socket, workspaceId)

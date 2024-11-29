@@ -63,6 +63,7 @@ export function unknownUser(): ApiUser {
     name: 'unknown',
     email: 'unknown',
     picture: null,
+    lastVisitedWorkspaceId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }

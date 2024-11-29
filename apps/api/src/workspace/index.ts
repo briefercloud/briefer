@@ -50,6 +50,7 @@ export class WorkspaceCreator implements IWorkspaceCreator {
                 email: true,
                 name: true,
                 picture: true,
+                lastVisitedWorkspaceId: true,
                 createdAt: true,
                 updatedAt: true,
               },

@@ -398,11 +398,13 @@ model User {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @default(now()) @updatedAt
 
-  workspacesInvitees UserWorkspace[] @relation("UserWorkspaceInviter")
-  workspaces         UserWorkspace[] @relation("UserWorkspaceUser")
-  ownedWorkspaces    Workspace[]
-  confirmedAt        DateTime?
+  workspacesInvitees   UserWorkspace[] @relation("UserWorkspaceInviter")
+  workspaces           UserWorkspace[] @relation("UserWorkspaceUser")
+  ownedWorkspaces      Workspace[]
+  confirmedAt          DateTime?
+  lastVisitedWorkspaceId String? @db.Uuid
 
+  lastVisitedWorkspace Workspace? @relation(fields: [lastVisitedWorkspaceId], references: [id], name: "lastVisitedWorkspace", onDelete: SetNull)
   comments           Comment[]
   Favorite           Favorite[]
   UserYjsAppDocument UserYjsAppDocument[]
@@ -502,6 +504,7 @@ model Workspace {
   snowflakeDataSources     SnowflakeDataSource[]
   databricksSQLDataSources DatabricksSQLDataSource[]
   environmentVariables     EnvironmentVariable[]
+  lastVisitors             User[] @relation("lastVisitedWorkspace")
 }
 
 enum UserWorkspaceRole {
