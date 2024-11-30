@@ -272,11 +272,13 @@ export async function makeQuery(
 
     const code = `
 def _briefer_read_query():
+    import pyarrow.parquet as pq
     import pandas as pd
     retries = 3
     while retries > 0:
         try:
-            return pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
+            table = pq.read_table("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
+            return table.to_pandas(timestamp_as_object=True)
         except:
             retries -= 1
             if retries == 0:
@@ -347,8 +349,9 @@ export async function readDataframePage(
 
 if not ("${dataframeName}" in globals()):
     import pandas as pd
+    import pyarrow.parquet as pq
     try:
-      ${dataframeName} = pd.read_parquet("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip")
+      ${dataframeName} = pq.read_table("/home/jupyteruser/.briefer/query-${queryId}.parquet.gzip").to_pandas(timestamp_as_object=True)
     except:
       print(json.dumps({"type": "not-found"}))
 
