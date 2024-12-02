@@ -34,20 +34,6 @@ export async function acquireLock<T>(
   const channel = `lock_releases_${getPartition(name)}`
 
   return new Promise<T>(async (resolve, reject) => {
-    const cleanSubscription = await subscribe(channel, async (event) => {
-      if (acquired) {
-        return
-      }
-
-      if (event === name) {
-        logger().trace(
-          { name, ownerId, channel },
-          'Got lock released message. Anticipating lock acquisition attempt'
-        )
-        tryAcquire()
-      }
-    })
-
     const tryAcquire = async () => {
       if (acquired) {
         return
@@ -178,6 +164,20 @@ export async function acquireLock<T>(
         logger().debug({ name, ownerId, channel }, 'Lock released')
       }
     }
+
+    const cleanSubscription = await subscribe(channel, async (event) => {
+      if (acquired) {
+        return
+      }
+
+      if (event === name) {
+        logger().trace(
+          { name, ownerId, channel },
+          'Got lock released message. Anticipating lock acquisition attempt'
+        )
+        tryAcquire()
+      }
+    })
 
     tryAcquire()
   })
