@@ -2,7 +2,7 @@ jupyter_server==2.12.1
 ipykernel==6.27.1
 matplotlib==3.8.2
 numpy==1.26.2
-pandas==1.5.3
+pandas==2.2.3
 psycopg2==2.9.9
 plotly==5.18.0
 scipy==1.11.4
