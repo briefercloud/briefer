@@ -197,8 +197,7 @@ export class Executor {
             }
 
             tick()
-          }),
-        { acquireTimeout: Infinity }
+          })
       )
     } catch (err) {
       logger().error(
