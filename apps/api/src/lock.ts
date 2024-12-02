@@ -4,6 +4,7 @@ import prisma, { publish, subscribe } from '@briefer/database'
 import { logger } from './logger.js'
 import { z } from 'zod'
 import { exhaustiveCheck } from '@briefer/types'
+import PQueue from 'p-queue'
 
 const EXPIRATION_TIME = 1000 * 5 // 5 seconds
 const RETRY_TIMEOUT = 1000 * 30 // 30 seconds in case pubsub fails
@@ -26,6 +27,8 @@ export async function acquireLock<T>(
   name: string,
   cb: () => Promise<T>
 ): Promise<T> {
+  const acquisitionQueue = new PQueue({ concurrency: 1 })
+
   const ownerId = uuidv4()
   let acquired = false
   let attempt = 0
@@ -34,6 +37,8 @@ export async function acquireLock<T>(
   const channel = `lock_releases_${getPartition(name)}`
 
   return new Promise<T>(async (resolve, reject) => {
+    let cleanSubscription: () => Promise<void> = async () => {}
+
     const tryAcquire = async () => {
       if (acquired) {
         return
@@ -116,7 +121,10 @@ export async function acquireLock<T>(
           if (timeout) {
             clearTimeout(timeout)
           }
-          timeout = setTimeout(tryAcquire, RETRY_TIMEOUT)
+          timeout = setTimeout(
+            () => acquisitionQueue.add(tryAcquire),
+            RETRY_TIMEOUT
+          )
           return
         }
 
@@ -142,15 +150,30 @@ export async function acquireLock<T>(
 
       logger().debug({ name, ownerId, channel }, 'Lock acquired')
       acquired = true
-      await cleanSubscription()
+      try {
+        await cleanSubscription()
+      } catch (err) {
+        logger().error(
+          { name, ownerId, channel, err },
+          'Failed to clean subscription'
+        )
+      }
+
+      let r:
+        | { success: true; data: T }
+        | { success: false; error: unknown }
+        | null = null
+      try {
+        const data = await cb()
+        r = { success: true, data }
+      } catch (err) {
+        r = { success: false, error: err }
+      }
+
+      logger().trace({ name, ownerId, channel }, 'Releasing lock')
+      clearInterval(extendExpirationInterval)
 
       try {
-        resolve(await cb())
-      } catch (err) {
-        reject(err)
-      } finally {
-        logger().trace({ name, ownerId, channel }, 'Releasing lock')
-        clearInterval(extendExpirationInterval)
         await prisma().lock.updateMany({
           where: {
             name,
@@ -160,13 +183,33 @@ export async function acquireLock<T>(
             isLocked: false,
           },
         })
-        await publish(channel, name)
         logger().debug({ name, ownerId, channel }, 'Lock released')
+      } catch (err) {
+        logger().error(
+          { name, ownerId, channel, err },
+          'Failed to release lock'
+        )
+      }
+
+      try {
+        await publish(channel, name)
+      } catch (err) {
+        logger().error(
+          { name, ownerId, channel, err },
+          'Failed to publish lock release'
+        )
+      }
+
+      if (r.success) {
+        resolve(r.data)
+      } else {
+        reject(r.error)
       }
     }
 
-    const cleanSubscription = await subscribe(channel, async (event) => {
+    cleanSubscription = await subscribe(channel, async (event) => {
       if (acquired) {
+        await cleanSubscription()
         return
       }
 
@@ -175,10 +218,10 @@ export async function acquireLock<T>(
           { name, ownerId, channel },
           'Got lock released message. Anticipating lock acquisition attempt'
         )
-        tryAcquire()
+        acquisitionQueue.add(tryAcquire)
       }
     })
 
-    tryAcquire()
+    acquisitionQueue.add(tryAcquire)
   })
 }
