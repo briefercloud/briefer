@@ -51,9 +51,9 @@ async function main() {
   const initOptions = {
     connectionString: dbUrl,
     ssl:
-      config().NODE_ENV !== 'development'
+      config().NODE_ENV !== 'development' && !config().POSTGRES_SSL_DISABLED
         ? {
-            enabled: true as const,
+            enabled: true,
             ca: config().POSTGRES_SSL_CA,
             rejectUnauthorized: config().POSTGRES_SSL_REJECT_UNAUTHORIZED,
           }

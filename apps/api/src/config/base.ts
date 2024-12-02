@@ -24,6 +24,7 @@ export interface IBaseConfig {
   POSTGRES_PASSWORD: string
   POSTGRES_CONNECTION_LIMIT: number
   POSTGRES_POOL_TIMEOUT: number
+  POSTGRES_SSL_DISABLED: boolean
   POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
   POSTGRES_SSL_CA: string | null
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
@@ -57,6 +58,7 @@ export class BaseConfig implements IBaseConfig {
   public readonly POSTGRES_PASSWORD: string
   public readonly POSTGRES_CONNECTION_LIMIT: number
   public readonly POSTGRES_POOL_TIMEOUT: number
+  public readonly POSTGRES_SSL_DISABLED: boolean
   public readonly POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
   public readonly POSTGRES_SSL_CA: string | null
   public readonly ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
@@ -94,6 +96,11 @@ export class BaseConfig implements IBaseConfig {
     this.POSTGRES_POOL_TIMEOUT = parseIntOr(
       process.env['POSTGRES_POOL_TIMEOUT'] ?? '5',
       5
+    )
+
+    this.POSTGRES_SSL_DISABLED = this.getBooleanVar(
+      'POSTGRES_SSL_DISABLED',
+      false
     )
 
     this.POSTGRES_SSL_REJECT_UNAUTHORIZED = this.getBooleanVar(

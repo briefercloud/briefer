@@ -59,7 +59,9 @@ def run_api(cfg):
     for k, v in default_env.items():
         if k not in env:
             env[k] = v
-    
+
+    if env["POSTGRES_HOSTNAME"] == "localhost" and not env.get("POSTGRES_SSL_DISABLED"):
+        env["POSTGRES_SSL_DISABLED"] = "true"
 
     with open("/app/api/apps/api/package.json", "r") as f:
         pkgjson = json.load(f)
