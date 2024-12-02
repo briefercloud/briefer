@@ -4,7 +4,8 @@ function useDropdownPosition(
   buttonRef: React.RefObject<HTMLElement>,
   anchor: 'top' | 'bottom' = 'bottom',
   paddingX = 0,
-  paddingY = 0
+  paddingY = 0,
+  ignoreScrollableAncestor = false
 ) {
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
@@ -28,7 +29,7 @@ function useDropdownPosition(
         currentButtonRef.closest('.overflow-scroll') ??
         currentButtonRef.closest('.overflow-auto')
 
-      if (scrollableAncestor) {
+      if (!ignoreScrollableAncestor && scrollableAncestor) {
         const scrollableRect = scrollableAncestor.getBoundingClientRect()
 
         setDropdownPosition({
