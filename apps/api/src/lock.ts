@@ -31,6 +31,7 @@ export async function acquireLock<T>(
 
   const ownerId = uuidv4()
   let acquired = false
+  let failed = false
   let attempt = 0
   let timeout: NodeJS.Timeout | null = null
 
@@ -40,7 +41,7 @@ export async function acquireLock<T>(
     let cleanSubscription: () => Promise<void> = async () => {}
 
     const tryAcquire = async () => {
-      if (acquired) {
+      if (acquired || failed) {
         return
       }
 
@@ -132,6 +133,15 @@ export async function acquireLock<T>(
           { name, ownerId, channel, err },
           'Failed to acquire lock'
         )
+        failed = true
+        try {
+          await cleanSubscription()
+        } catch (err) {
+          logger().error(
+            { name, ownerId, channel, err },
+            'Failed to clean subscription'
+          )
+        }
         reject(err)
         return
       }
@@ -203,12 +213,13 @@ export async function acquireLock<T>(
       if (r.success) {
         resolve(r.data)
       } else {
+        failed = true
         reject(r.error)
       }
     }
 
     cleanSubscription = await subscribe(channel, async (event) => {
-      if (acquired) {
+      if (acquired || failed) {
         await cleanSubscription()
         return
       }
