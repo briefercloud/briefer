@@ -88,19 +88,14 @@ def _briefer_make_bq_query():
                 if bq_type in ['DATE', 'DATETIME']:
                     df[col] = pd.to_datetime(df[col], errors='coerce')
                 elif bq_type == 'TIMESTAMP':
-                    # Define fallback and maximum possible date
-                    # This is useful because timestamps that are too small or large for pandas are converted to NaT
+                    # handle out-of-bounds dates
                     fallback_date = datetime(1, 1, 1, 0, 0, 0, 0, tzinfo=pytz.utc)
                     max_date = datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=pytz.utc)
-
-                    # Replace large values with the maximum possible date
-                    df[col] = df[col].apply(lambda x: max_date if x > max_date else x)
-
-                    # Replace small values with the fallback date
-                    df[col] = df[col].apply(lambda x: fallback_date if x < fallback_date else x)
+                    df[col] = df[col].apply(lambda x: max_date if not pd.isnull(x) and x > max_date else x)
+                    df[col] = df[col].apply(lambda x: fallback_date if not pd.isnull(x) and x < fallback_date else x)
 
                     # make sure timezone is in utc and preserve timezone info
-                    df[col] = df[col].apply(lambda x: x.astimezone(pytz.utc) if x.tzinfo else x)
+                    df[col] = df[col].apply(lambda x: x.astimezone(pytz.utc) if not pd.isnull(x) and x.tzinfo else x)
                 elif bq_type == 'TIME':
                     df[col] = pd.to_datetime(df[col], errors='coerce').dt.time
                 elif bq_type == 'NUMERIC':
