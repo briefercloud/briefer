@@ -226,9 +226,11 @@ export async function acquireLock<T>(
 
       if (event === name) {
         logger().trace(
-          { name, ownerId, channel },
+          { name, ownerId, channel, queueSize: acquisitionQueue.size },
           'Got lock released message. Anticipating lock acquisition attempt'
         )
+
+        acquisitionQueue.clear()
         acquisitionQueue.add(tryAcquire)
       }
     })
