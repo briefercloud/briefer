@@ -11,7 +11,6 @@ import {
   getDataframe,
   ExecutionQueue,
   isExecutionStatusLoading,
-  YBlockGroup,
   YBlock,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
@@ -32,11 +31,12 @@ import {
   NumpyDateTypes,
   YAxis,
   exhaustiveCheck,
+  JsonObject,
 } from '@briefer/types'
 import VisualizationControls from './VisualizationControls'
 import VisualizationView from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
-import { equals, head } from 'ramda'
+import { clone, equals, head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
@@ -71,6 +71,68 @@ function didChangeFilters(
   })
 
   return didChange || toCompare.size > 0
+}
+
+function fixSpecTimezones(
+  inputSpec: JsonObject,
+  xAxis: DataFrameColumn,
+  xAxisTimezone: string | null,
+  xAxisName: string | null
+) {
+  const spec = clone(inputSpec)
+  try {
+    const timeZone = xAxisTimezone ?? 'UTC'
+    const datasets = spec.datasets
+    if (
+      datasets == null ||
+      Array.isArray(datasets) ||
+      typeof datasets !== 'object'
+    ) {
+      console.error('Failed to fix timezones: datasets is not an object')
+      return datasets
+    }
+
+    for (const [datasetName, dataset] of Object.entries(datasets)) {
+      if (!Array.isArray(dataset)) {
+        console.error(
+          `Failed to fix timezones for dataset ${datasetName}. Dataset is not an array`
+        )
+        continue
+      }
+
+      for (const [i, row] of Array.from(dataset.entries())) {
+        if (row === null || Array.isArray(row) || typeof row !== 'object') {
+          console.error(
+            `Failed to fix timezones for dataset ${datasetName}, row ${i}. Row is not an object`
+          )
+          continue
+        }
+
+        for (const [columnName, value] of Object.entries(row)) {
+          if (
+            typeof value === 'string' &&
+            (xAxisName === columnName ||
+              columnName.startsWith(xAxis.name.toString()))
+          ) {
+            const date = new Date(value)
+            const dateInTimezone = new Date(
+              date.toLocaleString(undefined, {
+                timeZone,
+              })
+            )
+
+            const newValue = dateInTimezone.toISOString()
+
+            row[columnName] = newValue
+          }
+        }
+      }
+    }
+    return datasets
+  } catch (e) {
+    console.error('Failed to fix timezones', e)
+    return spec['datasets']
+  }
 }
 
 interface Props {
@@ -131,6 +193,7 @@ function VisualizationBlock(props: Props) {
     showDataLabels,
     error,
     spec: blockSpec,
+    xAxisTimezone,
   } = getVisualizationAttributes(props.block)
 
   const onNewSQL = useCallback(() => {
@@ -340,6 +403,15 @@ function VisualizationBlock(props: Props) {
           }
         : blockSpec.config
 
+    if (xAxis && NumpyDateTypes.safeParse(xAxis.type).success) {
+      blockSpec['datasets'] = fixSpecTimezones(
+        blockSpec,
+        xAxis,
+        xAxisTimezone,
+        xAxisName
+      )
+    }
+
     return {
       ...blockSpec,
       width: 'container',
@@ -347,7 +419,7 @@ function VisualizationBlock(props: Props) {
       padding: { left: 16, right: 16, top: 12, bottom: 12 },
       config: blockSpecConfig,
     } as VisualizationSpec
-  }, [blockSpec])
+  }, [blockSpec, xAxis, xAxisTimezone, xAxisName])
 
   const onChangeTitle = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -386,6 +458,7 @@ function VisualizationBlock(props: Props) {
             key === 'spec' ||
             key === 'controlsHidden' ||
             key === 'tooManyDataPointsHidden' ||
+            key === 'xAxisTimezone' ||
             key === 'error' ||
             key === 'updatedAt' ||
             (key === 'filters' &&

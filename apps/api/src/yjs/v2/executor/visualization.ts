@@ -167,6 +167,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       }
 
       block.setAttribute('spec', result.spec)
+      block.setAttribute('xAxisTimezone', result.xAxisTimezone)
       const capped = parseOrElse(
         z.object({ usermeta: z.object({ capped: z.boolean() }) }),
         result.spec,
