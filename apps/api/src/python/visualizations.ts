@@ -105,6 +105,15 @@ from jinja2 import Template
 
 axisTitlePadding = 10
 
+def _briefer_get_timezone(series):
+    """
+    Determine the timezone of a pandas Series if it is datetime-like.
+    """
+    if pd.api.types.is_datetime64_any_dtype(series):
+        if series.dt.tz is not None:
+            return str(series.dt.tz)
+        return None
+    return None
 
 def _briefer_render_filter_value(filter):
     try:
@@ -848,8 +857,17 @@ def _briefer_create_visualization(
 
     vis = alt.layer(*layers, usermeta=usermeta).resolve_scale(y='independent').configure_view(stroke=None).configure_range(category={"scheme": "tableau20"})
 
+    x_axis_timezone = None
+    # if xAxis is time like
+    if x_axis_type == "T":
+        # compute timezone
+        try:
+            x_axis_timezone = _briefer_get_timezone(df[x_axis])
+        except:
+            pass
+
     # return spec as json
-    print(json.dumps({"type": "result", "success": True, "spec": vis.to_json(default=str)}, default=str))
+    print(json.dumps({"type": "result", "success": True, "spec": vis.to_json(default=str), "xAxisTimezone": x_axis_timezone}, default=str))
 
 if not "${dataframe.name}" in globals():
     try:
@@ -887,6 +905,7 @@ const CreateVisualizationPythonResult = z.union([
     type: z.literal('result'),
     success: z.literal(true),
     spec: jsonString.pipe(JsonObject),
+    xAxisTimezone: z.string().nullable(),
   }),
   z.object({
     type: z.literal('result'),
@@ -914,6 +933,7 @@ export type CreateVisualizationResult = {
         success: true
         spec: JsonObject
         filterResults: Record<string, VisualizationFilter>
+        xAxisTimezone: string | null
       }
     | {
         success: false
@@ -1059,7 +1079,12 @@ export async function createVisualization(
         return { ...result, filterResults }
       }
 
-      return { success: true, spec: result.spec, filterResults }
+      return {
+        success: true,
+        spec: result.spec,
+        filterResults,
+        xAxisTimezone: result.xAxisTimezone,
+      }
     }
   )
 

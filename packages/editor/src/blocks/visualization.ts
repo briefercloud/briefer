@@ -27,6 +27,7 @@ export type VisualizationBlock = BaseBlock<BlockType.Visualization> & {
   chartType: ChartType
   xAxis: DataFrameColumn | null
   xAxisName: string | null
+  xAxisTimezone: string | null
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
   yAxes: YAxis[]
@@ -72,6 +73,7 @@ export const makeVisualizationBlock = (
     chartType: 'groupedColumn',
     xAxis: null,
     xAxisName: null,
+    xAxisTimezone: null,
     xAxisSort: 'ascending',
     xAxisGroupFunction: null,
     yAxis: null,
@@ -177,6 +179,7 @@ export function getVisualizationAttributes(
     chartType: getAttributeOr(block, 'chartType', 'groupedColumn'),
     xAxis: getAttributeOr(block, 'xAxis', null),
     xAxisName: getAttributeOr(block, 'xAxisName', null),
+    xAxisTimezone: getAttributeOr(block, 'xAxisTimezone', null),
     xAxisSort: getAttributeOr(block, 'xAxisSort', 'ascending'),
     xAxisGroupFunction: getAttributeOr(block, 'xAxisGroupFunction', null),
     yAxis: getAttributeOr(block, 'yAxis', null),
@@ -219,6 +222,7 @@ export function duplicateVisualizationBlock(
     chartType: prevAttributes.chartType,
     xAxis: prevAttributes.xAxis,
     xAxisName: prevAttributes.xAxisName,
+    xAxisTimezone: prevAttributes.xAxisTimezone,
     xAxisSort: prevAttributes.xAxisSort,
     xAxisGroupFunction: prevAttributes.xAxisGroupFunction,
     yAxis: prevAttributes.yAxis,
