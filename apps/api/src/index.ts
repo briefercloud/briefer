@@ -50,15 +50,16 @@ async function main() {
 
   const initOptions = {
     connectionString: dbUrl,
-    ssl:
-      config().NODE_ENV !== 'development' && !config().POSTGRES_SSL_DISABLED
-        ? {
-            enabled: true,
-            ca: config().POSTGRES_SSL_CA,
-            rejectUnauthorized: config().POSTGRES_SSL_REJECT_UNAUTHORIZED,
-          }
-        : { enabled: false as const },
+    ssl: !config().POSTGRES_SSL_DISABLED
+      ? {
+          enabled: true,
+          ca: config().POSTGRES_SSL_CA ?? undefined,
+          rejectUnauthorized:
+            config().POSTGRES_SSL_REJECT_UNAUTHORIZED ?? undefined,
+        }
+      : { enabled: false as const },
   }
+
   db.init(initOptions)
 
   const app = express()

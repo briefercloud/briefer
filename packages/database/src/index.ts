@@ -35,8 +35,8 @@ type InitOptions = {
   ssl:
     | {
         enabled: true
-        rejectUnauthorized: boolean
-        ca: string | null
+        rejectUnauthorized: boolean | undefined
+        ca: string | null | undefined
       }
     | {
         enabled: false
