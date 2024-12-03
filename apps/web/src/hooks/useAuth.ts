@@ -1,5 +1,5 @@
 import { NEXT_PUBLIC_API_URL, NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
-import fetcher from '@/utils/fetcher'
+import fetcher, { AuthenticationError } from '@/utils/fetcher'
 import type { ApiUser, UserWorkspaceRole } from '@briefer/database'
 import { useRouter } from 'next/router'
 import { useCallback, useMemo, useState } from 'react'
@@ -60,8 +60,11 @@ export const useSignup = (): UseSignup => {
 }
 
 type LoginAPI = {
-  loginWithEmail: (email: string) => void
-  loginWithPassword: (email: string, password: string) => void
+  loginWithPassword: (
+    email: string,
+    password: string,
+    callback?: string
+  ) => void
 }
 type UseLogin = [AuthState, LoginAPI]
 export const useLogin = (): UseLogin => {
@@ -71,45 +74,14 @@ export const useLogin = (): UseLogin => {
     error: undefined,
   })
 
-  const loginWithEmail = useCallback(
-    (email: string) => {
-      setState((s) => ({ ...s, loading: true }))
-      fetch(`${NEXT_PUBLIC_API_URL()}/auth/link/request`, {
-        credentials: 'include',
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          callback: NEXT_PUBLIC_PUBLIC_URL(),
-        }),
-      })
-        .then(async (res) => {
-          if (res.ok) {
-            setState({
-              loading: false,
-              data: await res.json(),
-              error: undefined,
-            })
-            return
-          }
-
-          throw new Error(`Unexpected status ${res.status}`)
-        })
-        .catch(() => {
-          setState((s) => ({ ...s, loading: false, error: 'unexpected' }))
-        })
-    },
-    [setState]
-  )
-
   const loginWithPassword = useCallback(
-    (email: string, password: string) => {
+    (email: string, password: string, callback?: string) => {
       setState((s) => ({ ...s, loading: true }))
       fetch(`${NEXT_PUBLIC_API_URL()}/auth/sign-in/password`, {
         credentials: 'include',
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, callback }),
       })
         .then(async (res) => {
           if (res.ok) {
@@ -138,10 +110,7 @@ export const useLogin = (): UseLogin => {
     [setState]
   )
 
-  return useMemo(
-    () => [state, { loginWithEmail, loginWithPassword }],
-    [state, loginWithEmail]
-  )
+  return useMemo(() => [state, { loginWithPassword }], [state])
 }
 
 export type SessionUser = ApiUser & {
@@ -149,20 +118,33 @@ export type SessionUser = ApiUser & {
   roles: Record<string, UserWorkspaceRole>
 }
 
-export const useSession = () =>
-  useSWR<SessionUser>(`${NEXT_PUBLIC_API_URL()}/auth/session`, fetcher)
+export const useSession = ({
+  redirectToLogin,
+}: {
+  redirectToLogin: boolean
+}) => {
+  const router = useRouter()
+  const session = useSWR<SessionUser>(`${NEXT_PUBLIC_API_URL()}/auth/session`, {
+    fetcher,
+    refreshInterval: redirectToLogin ? 1000 * 30 : undefined,
+    dedupingInterval: redirectToLogin ? 1000 * 2 : undefined,
+    onError: (err: Error) => {
+      if (err instanceof AuthenticationError && redirectToLogin) {
+        const callback = encodeURIComponent(
+          `${location.pathname}${location.search}`
+        )
+        router.replace(`/auth/signin?callback=${callback}`)
+      }
+    },
+  })
+
+  return session
+}
 
 export const useSignout = () => {
   const router = useRouter()
-  return useCallback(
-    (callback?: string) => {
-      const cb = callback ?? NEXT_PUBLIC_PUBLIC_URL()
-      router.push(
-        `${NEXT_PUBLIC_API_URL()}/auth/logout?callback=${encodeURIComponent(
-          cb
-        )}`
-      )
-    },
-    [router]
-  )
+  return useCallback(() => {
+    const url = `${NEXT_PUBLIC_API_URL()}/auth/logout`
+    router.push(url)
+  }, [router])
 }

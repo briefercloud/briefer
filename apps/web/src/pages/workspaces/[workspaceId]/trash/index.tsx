@@ -11,6 +11,7 @@ import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useDocuments } from '@/hooks/useDocuments'
 import { ApiDeletedDocument } from '@briefer/database'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -49,8 +50,13 @@ export default function TrashPage() {
     [restoreDocument]
   )
 
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId ?? '')}>
+    <Layout pagePath={pagePath(workspaceId ?? '')} user={session.data}>
       <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

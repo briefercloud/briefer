@@ -10,6 +10,7 @@ import { useCallback } from 'react'
 import { useNewDataSource } from '@/hooks/useDatasource'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -51,8 +52,13 @@ export default function NewDataSourcePostgresSQLPage() {
     [workspaceId]
   )
 
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId)} hideOnboarding>
+    <Layout pagePath={pagePath(workspaceId)} hideOnboarding user={session.data}>
       <ScrollBar className="w-full overflow-auto">
         <OracleForm workspaceId={workspaceId} onSubmit={onSubmit} />
       </ScrollBar>

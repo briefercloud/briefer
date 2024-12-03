@@ -5,6 +5,7 @@ import { PuzzlePieceIcon, Cog8ToothIcon } from '@heroicons/react/24/outline'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import IntegrationsList from '@/components/IntegrationsList'
 import Link from 'next/link'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -17,10 +18,16 @@ const pagePath = (workspaceId: string) => [
 ]
 
 export default function IntegrationsPage() {
+  const session = useSession({ redirectToLogin: true })
+
   const workspaceId = useStringQuery('workspaceId')
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(useStringQuery('workspaceId') ?? '')}>
+    <Layout pagePath={pagePath(workspaceId)} user={session.data}>
       <div className="bg-white w-full h-full">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

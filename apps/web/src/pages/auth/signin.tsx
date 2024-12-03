@@ -7,23 +7,15 @@ import {
 } from 'react'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
-import { useLogin, useSession } from '@/hooks/useAuth'
+import { useLogin } from '@/hooks/useAuth'
 import Link from 'next/link'
 import Spin from '@/components/Spin'
-import Cookies from 'js-cookie'
 import useProperties from '@/hooks/useProperties'
+import { useStringQuery } from '@/hooks/useQueryArgs'
 
 export default function SignIn() {
   const properties = useProperties()
   const router = useRouter()
-  const session = useSession()
-  const tokenExists = Cookies.get('sessionExpiry')
-
-  useEffect(() => {
-    if (session.data && tokenExists) {
-      router.replace('/')
-    }
-  }, [session])
 
   const [email, setEmail] = useState('')
   const onChangeEmail: ChangeEventHandler<HTMLInputElement> = useCallback(
@@ -41,14 +33,16 @@ export default function SignIn() {
     [setPassword]
   )
 
-  const [auth, { loginWithEmail, loginWithPassword }] = useLogin()
+  const callback = useStringQuery('callback')
+
+  const [auth, { loginWithPassword }] = useLogin()
   const onPasswordAuth: FormEventHandler<HTMLFormElement> = useCallback(
     (e) => {
       e.preventDefault()
 
-      loginWithPassword(email, password)
+      loginWithPassword(email, password, callback || undefined)
     },
-    [email, password, loginWithEmail]
+    [email, password, loginWithPassword, callback]
   )
 
   useEffect(() => {
@@ -63,12 +57,14 @@ export default function SignIn() {
     }
   }, [auth.data, router])
 
-  if (!properties.data) {
-    if (properties.isLoading) {
-      return null
-    }
+  if (properties.isLoading) {
+    return null
+  }
 
-    return <h4>Something went wrong. Please try again or contact support.</h4>
+  if (!properties.data) {
+    return (
+      <h4>Could not load properties. Please try again or contact support.</h4>
+    )
   }
 
   return (

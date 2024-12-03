@@ -1,31 +1,58 @@
-import { useSession, useSignout } from '@/hooks/useAuth'
+import { useSession } from '@/hooks/useAuth'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useRouter } from 'next/router'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
+
+export function getUserRedirectWorkspace(
+  workspaces: { id: string; ownerId: string }[],
+  user: { id: string; lastVisitedWorkspaceId: string | null }
+) {
+  return (
+    workspaces.find(
+      (workspace) => workspace.id === user.lastVisitedWorkspaceId
+    ) ??
+    workspaces.find((workspace) => workspace.ownerId === user.id) ??
+    workspaces[0]
+  )
+}
 
 export default function WorkspacesPage() {
   const router = useRouter()
-  const [{ isLoading, data }] = useWorkspaces()
-  const signOut = useSignout()
-  const session = useSession()
+  const [workspaces] = useWorkspaces()
+  const session = useSession({ redirectToLogin: true })
+
+  const workspaceId = useMemo(() => {
+    if (
+      !workspaces.isLoading &&
+      !session.isLoading &&
+      workspaces.data &&
+      session.data
+    ) {
+      return getUserRedirectWorkspace(workspaces.data, session.data)?.id
+    }
+
+    return null
+  }, [workspaces.isLoading, workspaces.data, session.data, session.isLoading])
 
   useEffect(() => {
-    if (isLoading || session.isLoading) {
+    if (session.isLoading) {
       return
     }
 
-    const workspace =
-      data.find(
-        (workspace) => workspace.id === session.data?.lastVisitedWorkspaceId
-      ) ??
-      data.find((workspace) => workspace.ownerId === session.data?.id) ??
-      data[0]
-    if (!workspace) {
-      signOut()
-    } else {
-      router.replace(`/workspaces/${workspace.id}/documents`)
+    if (workspaceId) {
+      router.replace(`/workspaces/${workspaceId}/documents`)
     }
-  }, [isLoading, data, signOut, router])
+  }, [workspaceId, session.isLoading, router])
+
+  if (!session.data) {
+    return null
+  }
+
+  if (!workspaces.isLoading && !workspaceId) {
+    return (
+      <h4>You do not have access to any workspaces. Contact your admin.</h4>
+    )
+  }
 
   return null
 }

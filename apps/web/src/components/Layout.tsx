@@ -30,17 +30,14 @@ import { useRouter } from 'next/router'
 import { Page } from '@/components/PagePath'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useFavorites } from '@/hooks/useFavorites'
-import { useWorkspaces } from '@/hooks/useWorkspaces'
 import { useStringQuery } from '@/hooks/useQueryArgs'
-import { useSession, useSignout } from '@/hooks/useAuth'
+import { SessionUser, useSession, useSignout } from '@/hooks/useAuth'
 import { CpuChipIcon } from '@heroicons/react/24/solid'
 import type { UserWorkspaceRole } from '@briefer/database'
 import ReactDOM from 'react-dom'
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import DocumentTree from './DocumentsTree'
 import useSideBar from '@/hooks/useSideBar'
-import { isBanned } from '@/utils/isBanned'
-import BannedPage from './BannedPage'
 import { SubscriptionBadge } from './SubscriptionBadge'
 import MobileWarning from './MobileWarning'
 import ScrollBar from './ScrollBar'
@@ -110,6 +107,7 @@ interface Props {
   topBarClassname?: string
   topBarContent?: React.ReactNode
   hideOnboarding?: boolean
+  user: SessionUser
 }
 
 export default function Layout({
@@ -117,10 +115,9 @@ export default function Layout({
   pagePath,
   topBarClassname,
   topBarContent,
+  user,
   hideOnboarding,
 }: Props) {
-  const session = useSession()
-
   const [isSearchOpen, setSearchOpen] = useState(false)
   useHotkeys(['mod+k'], () => {
     setSearchOpen((prev) => !prev)
@@ -137,21 +134,6 @@ export default function Layout({
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
   const documentId = useStringQuery('documentId')
-
-  const [{ data: workspaces, isLoading: isLoadingWorkspaces }] = useWorkspaces()
-
-  const signOut = useSignout()
-  useEffect(() => {
-    const workspace = workspaces.find((w) => w.id === workspaceId)
-
-    if (!workspace && !isLoadingWorkspaces) {
-      if (workspaces.length > 0) {
-        router.replace(`/workspaces/${workspaces[0].id}/documents`)
-      } else {
-        signOut()
-      }
-    }
-  }, [workspaces, isLoadingWorkspaces, signOut])
 
   const [
     documentsState,
@@ -271,14 +253,14 @@ export default function Layout({
         return false
       }
 
-      const role = session.data?.roles[workspaceId]
+      const role = user.roles[workspaceId]
       if (!role) {
         return false
       }
 
       return item.allowedRoles.has(role)
     },
-    [session.data, workspaceId]
+    [user, workspaceId]
   )
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -303,11 +285,6 @@ export default function Layout({
       scrollRef.current.scrollTop = parseInt(scroll)
     }
   }, [workspaceId, scrollRef])
-
-  const userEmail = session.data?.email
-  if (userEmail && isBanned(userEmail)) {
-    return <BannedPage />
-  }
 
   return (
     <div className={`flex w-full h-full ${syne.className}`}>
@@ -352,7 +329,7 @@ export default function Layout({
                 onFavorite={onFavoriteDocument}
                 onUnfavorite={onUnfavoriteDocument}
                 onSetIcon={onSetIcon}
-                role={session.data?.roles[workspaceId] ?? 'viewer'}
+                role={user.roles[workspaceId] ?? 'viewer'}
                 flat={true}
                 onCreate={onCreateDocument}
                 onUpdateParent={onUpdateDocumentParent}
@@ -375,7 +352,7 @@ export default function Layout({
                     />
                   </button>
 
-                  {session.data?.roles[workspaceId] !== 'viewer' && (
+                  {user.roles[workspaceId] !== 'viewer' && (
                     <button
                       onClick={onCreateDocumentHandler}
                       className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
@@ -395,7 +372,7 @@ export default function Layout({
                 onFavorite={onFavoriteDocument}
                 onUnfavorite={onUnfavoriteDocument}
                 onSetIcon={onSetIcon}
-                role={session.data?.roles[workspaceId] ?? 'viewer'}
+                role={user.roles[workspaceId] ?? 'viewer'}
                 onCreate={onCreateDocument}
                 onUpdateParent={onUpdateDocumentParent}
               />
@@ -442,10 +419,10 @@ export default function Layout({
                   className="text-gray-500 hover:bg-ceramic-100/80 group text-sm font-medium leading-6 w-full flex py-1 rounded-sm hover:text-ceramic-600"
                 >
                   <div className="w-full flex items-center gap-x-2 px-4">
-                    {session.data?.picture ? (
+                    {user.picture ? (
                       <img
                         className="h-4 w-4 rounded-full"
-                        src={session.data.picture}
+                        src={user.picture}
                         referrerPolicy="no-referrer"
                       />
                     ) : (
@@ -453,7 +430,7 @@ export default function Layout({
                     )}
                     <span className="sr-only">Your profile</span>
                     <span aria-hidden="true" className="mt-0.5">
-                      {session.data?.name}
+                      {user.name}
                     </span>
                   </div>
                   <UserDropdown workspaceId={workspaceId} />
