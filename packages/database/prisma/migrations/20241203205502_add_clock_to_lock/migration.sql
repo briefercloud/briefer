@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Lock" ADD COLUMN     "clock" BIGINT NOT NULL DEFAULT 0;

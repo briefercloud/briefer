@@ -67,18 +67,21 @@ export async function acquireLock<T>(
           })
         } else if (!lock.isLocked || lock.expiresAt < new Date()) {
           // this is safe because if someone else updates the lock in the meantime
-          // this will fail to find the lock to update because expiresAt will be changed
+          // this will fail to find the lock to update because clock will be different
           // that will raise a not found error that we catch below to retry
           await prisma().lock.update({
             where: {
               id: lock.id,
-              expiresAt: lock.expiresAt,
+              clock: lock.clock,
             },
             data: {
               isLocked: true,
               ownerId,
               expiresAt: new Date(Date.now() + EXPIRATION_TIME),
               acquiredAt: new Date(),
+              clock: {
+                increment: 1,
+              },
             },
           })
         } else {
@@ -138,7 +141,7 @@ export async function acquireLock<T>(
           await cleanSubscription()
         } catch (err) {
           logger().error(
-            { name, ownerId, channel, err },
+            { name, ownerId, channel, attempt, err },
             'Failed to clean subscription'
           )
         }
@@ -158,13 +161,13 @@ export async function acquireLock<T>(
         })
       }, EXPIRATION_TIME / 3)
 
-      logger().debug({ name, ownerId, channel }, 'Lock acquired')
+      logger().debug({ name, ownerId, channel, attempt }, 'Lock acquired')
       acquired = true
       try {
         await cleanSubscription()
       } catch (err) {
         logger().error(
-          { name, ownerId, channel, err },
+          { name, ownerId, channel, attempt, err },
           'Failed to clean subscription'
         )
       }
@@ -180,7 +183,7 @@ export async function acquireLock<T>(
         r = { success: false, error: err }
       }
 
-      logger().trace({ name, ownerId, channel }, 'Releasing lock')
+      logger().trace({ name, ownerId, channel, attempt }, 'Releasing lock')
       clearInterval(extendExpirationInterval)
 
       try {
@@ -193,10 +196,10 @@ export async function acquireLock<T>(
             isLocked: false,
           },
         })
-        logger().debug({ name, ownerId, channel }, 'Lock released')
+        logger().debug({ name, ownerId, channel, attempt }, 'Lock released')
       } catch (err) {
         logger().error(
-          { name, ownerId, channel, err },
+          { name, ownerId, channel, attempt, err },
           'Failed to release lock'
         )
       }
@@ -205,7 +208,7 @@ export async function acquireLock<T>(
         await publish(channel, name)
       } catch (err) {
         logger().error(
-          { name, ownerId, channel, err },
+          { name, ownerId, channel, attempt, err },
           'Failed to publish lock release'
         )
       }
@@ -226,7 +229,7 @@ export async function acquireLock<T>(
 
       if (event === name) {
         logger().trace(
-          { name, ownerId, channel, queueSize: acquisitionQueue.size },
+          { name, ownerId, channel, attempt, queueSize: acquisitionQueue.size },
           'Got lock released message. Anticipating lock acquisition attempt'
         )
 

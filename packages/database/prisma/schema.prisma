@@ -569,6 +569,7 @@ model Lock {
   expiresAt  DateTime
   isLocked   Boolean  @default(false)
   ownerId    String   @db.Uuid
+  clock      BigInt   @default(0)
 }
 
 model WorkspaceSecrets {
