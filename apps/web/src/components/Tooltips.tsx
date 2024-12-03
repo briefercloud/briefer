@@ -63,11 +63,18 @@ interface PortalTooltipProps {
   className?: string
   children: React.ReactNode
   content: React.ReactNode
+  ignoreScrollableAncestor?: boolean
 }
 export function PortalTooltip(props: PortalTooltipProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(false)
-  const { onOpen, dropdownPosition } = useDropdownPosition(ref, 'top')
+  const { onOpen, dropdownPosition } = useDropdownPosition(
+    ref,
+    'top',
+    0,
+    0,
+    props.ignoreScrollableAncestor
+  )
   useEffect(() => {
     if (active) {
       onOpen()

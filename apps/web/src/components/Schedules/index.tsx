@@ -19,7 +19,7 @@ import cronstrue from 'cronstrue'
 import { useSchedules } from '@/hooks/useSchedules'
 import AddScheduleForm from './AddScheduleForm'
 import { ChevronDoubleRightIcon } from '@heroicons/react/24/outline'
-import { Tooltip } from '../Tooltips'
+import { PortalTooltip, Tooltip } from '../Tooltips'
 import ScrollBar from '../ScrollBar'
 
 interface Props {
@@ -139,17 +139,22 @@ const CronSchedule = ({ schedule }: { schedule: CronSchedule }) => {
 
   return (
     <div>
-      <div className="font-medium pb-2">
-        <span className="pr-2">Cron: </span>
+      <div className="font-medium pb-2 flex items-center gap-x-2">
+        <span className="">Cron: </span>
         <span className="rounded-sm px-2 py-1 font-mono bg-gray-100 border border-gray-200">
           {cron}
         </span>
-        <span className="ml-2 group relative">
-          <QuestionMarkCircleIcon className="w-4 h-4 inline-block text-gray-300" />
-
-          <div className="pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 w-[124px] opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-gray-400 text-xs p-2 rounded-md flex flex-col gap-y-1">
-            {tooltipText}
-          </div>
+        <span className="group relative">
+          <PortalTooltip
+            ignoreScrollableAncestor
+            content={
+              <div className="pointer-events-none w-[124px] bg-hunter-950 text-gray-400 text-xs p-2 rounded-md flex flex-col gap-y-1 -translate-x-1/2 translate-y-[2px]">
+                {tooltipText}
+              </div>
+            }
+          >
+            <QuestionMarkCircleIcon className="w-4 h-4 inline-block text-gray-300" />
+          </PortalTooltip>
         </span>
       </div>
       <div className="pt-0.5 flex flex-col text-gray-400 gap-y-0.5">
