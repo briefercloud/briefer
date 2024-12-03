@@ -11,6 +11,7 @@ import Layout from '@/components/Layout'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import clsx from 'clsx'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -29,10 +30,15 @@ const pagePath = (workspaceId: string) => [
 ]
 
 export default function CurrentEnvironmentPage() {
+  const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId')
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId ?? '')}>
+    <Layout pagePath={pagePath(workspaceId ?? '')} user={session.data}>
       <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 flex items-center justify-between">

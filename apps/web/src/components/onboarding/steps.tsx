@@ -167,7 +167,7 @@ export const DataSourceStep = () => {
 }
 
 export const ActivateTrialStep = () => {
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const email = session.data?.email
 
   return (

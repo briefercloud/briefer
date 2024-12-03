@@ -12,7 +12,7 @@ interface Props {
 }
 export function WebsocketProvider({ children }: Props) {
   const [socket, setSocket] = useState<Socket | null>(null)
-  const session = useSession()
+  const session = useSession({ redirectToLogin: false })
   const workspaceId = useStringQuery('workspaceId')
   useEffect(() => {
     if (session.data?.id) {

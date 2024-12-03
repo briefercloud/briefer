@@ -6,6 +6,7 @@ import { useStringQuery } from '@/hooks/useQueryArgs'
 import { ChevronRightIcon } from '@heroicons/react/20/solid'
 import { Tooltip } from '@/components/Tooltips'
 import clsx from 'clsx'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -74,10 +75,15 @@ function IntegrationBlock(props: IntegrationBlockProps) {
 }
 
 export default function IntegrationsNewPage() {
+  const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId') ?? ''
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId)}>
+    <Layout pagePath={pagePath(workspaceId)} user={session.data}>
       <div className="bg-white w-full h-full">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

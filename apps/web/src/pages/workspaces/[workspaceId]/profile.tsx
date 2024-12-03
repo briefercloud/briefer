@@ -3,10 +3,9 @@ import { XMarkIcon } from '@heroicons/react/20/solid'
 import Layout from '@/components/Layout'
 import Spin from '@/components/Spin'
 import FormError from '@/components/forms/formError'
-import { useSession } from '@/hooks/useAuth'
+import { SessionUser, useSession } from '@/hooks/useAuth'
 import { useStringQuery } from '@/hooks/useQueryArgs'
 import { useUsers } from '@/hooks/useUsers'
-import { ApiUser } from '@briefer/database'
 import { UserIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
@@ -23,7 +22,7 @@ type FormValues = {
 
 function ProfilePage() {
   const workspaceId = useStringQuery('workspaceId')
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
 
   const onSuccess = useCallback(() => {
     session.mutate()
@@ -44,7 +43,7 @@ function ProfilePage() {
 
 interface Props {
   workspaceId: string
-  user: ApiUser
+  user: SessionUser
   onSuccess: () => void
 }
 function Profile(props: Props) {
@@ -104,7 +103,7 @@ function Profile(props: Props) {
   )
 
   return (
-    <Layout pagePath={pagePath}>
+    <Layout pagePath={pagePath} user={props.user}>
       <div className="w-full flex justify-center">
         <div className="w-full scrollable-div">
           <form

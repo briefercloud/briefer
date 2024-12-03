@@ -4,16 +4,9 @@ import useDocument from '@/hooks/useDocument'
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { UserWorkspaceRole } from '@briefer/database'
-import {
-  ContentSkeleton,
-  TitleSkeleton,
-} from '@/components/v2Editor/ContentSkeleton'
-import Layout from '@/components/Layout'
-import clsx from 'clsx'
-import { widthClasses } from '@/components/v2Editor/constants'
 
 export default function DocumentPage() {
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId')
   const documentId = useStringQuery('documentId')
   const role = session.data?.roles[workspaceId]
@@ -21,22 +14,10 @@ export default function DocumentPage() {
 
   useEffect(() => {
     if (!role && !session.isLoading) {
-      router.replace(`/workspaces/${workspaceId}/documents`)
+      // this user does not belong to this workspace
+      router.replace('/')
     }
   }, [role, session.isLoading, workspaceId, router])
-
-  if (!session.data && session.isLoading && !session.error) {
-    return (
-      <Layout>
-        <div className="w-full flex justify-center">
-          <div className={clsx(widthClasses, 'py-20')}>
-            <TitleSkeleton visible />
-            <ContentSkeleton visible />
-          </div>
-        </div>
-      </Layout>
-    )
-  }
 
   if (session.data && role) {
     return (
@@ -90,16 +71,7 @@ function PrivateDocumentPage(props: PrivateDocumentPageProps) {
         `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook`
       )
     }
-  }, [document, loading, props.user])
+  }, [document, loading, props.workspaceId, props.documentId, props.user])
 
-  return (
-    <Layout>
-      <div className="w-full flex justify-center">
-        <div className={clsx(widthClasses, 'py-20')}>
-          <TitleSkeleton visible />
-          <ContentSkeleton visible />
-        </div>
-      </div>
-    </Layout>
-  )
+  return null
 }

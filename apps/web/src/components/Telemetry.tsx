@@ -4,7 +4,7 @@ import { usePostHog } from 'posthog-js/react'
 
 export default function Telemetry() {
   const posthog = usePostHog()
-  const session = useSession()
+  const session = useSession({ redirectToLogin: false })
 
   useEffect(() => {
     posthog.init('phc_hHNB1GN3QFdyn0eMH6VW4dNezbXsbSq4PE5PcL9xbju', {

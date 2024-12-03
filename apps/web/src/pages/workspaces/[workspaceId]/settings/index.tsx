@@ -40,7 +40,7 @@ export function getDomain(email: string): string {
 
 export default function SettingsPage() {
   const workspaceId = useStringQuery('workspaceId')
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const properties = useProperties()
 
   const [state, setState] = useState({
@@ -65,8 +65,12 @@ export default function SettingsPage() {
 
   const domain = getDomain(owner?.email ?? '')
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId ?? '')}>
+    <Layout pagePath={pagePath(workspaceId ?? '')} user={session.data}>
       <div className="w-full bg-white h-full">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

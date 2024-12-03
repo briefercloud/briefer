@@ -62,7 +62,7 @@ function errorToMessage(error: ErrorType): string {
 }
 
 export default function EnvirontVariablesPage() {
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
   const [saving, setSaving] = useState(false)
@@ -162,8 +162,12 @@ export default function EnvirontVariablesPage() {
     setFilesOpen((prev) => !prev)
   }, [])
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId)}>
+    <Layout pagePath={pagePath(workspaceId)} user={session.data}>
       <div className="flex flex-col flex-grow h-full">
         <ScrollBar className="w-full bg-white h-full overflow-auto">
           <div className="px-4 sm:p-6 lg:p-8">

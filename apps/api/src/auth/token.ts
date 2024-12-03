@@ -147,7 +147,7 @@ export async function authenticationMiddleware(
   try {
     const session = await sessionFromCookies(req.cookies)
     if (!session) {
-      res.status(401).end()
+      res.status(401).json('Unauthorized')
       return
     }
 
@@ -156,12 +156,12 @@ export async function authenticationMiddleware(
     next()
   } catch (err) {
     if (err instanceof jwt.JsonWebTokenError) {
-      res.status(403).send('Invalid token')
+      res.status(403).json('Forbidden')
       return
     }
 
     req.log.error({ err }, 'Error verifying token')
-    res.status(500).end()
+    res.status(500).json('Internal server error')
   }
 }
 
