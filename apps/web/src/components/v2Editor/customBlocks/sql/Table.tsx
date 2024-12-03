@@ -84,6 +84,10 @@ function Table(props: Props) {
 export function getColumnTypeIcon(
   type: DataFrameColumn['type']
 ): typeof FlagIcon {
+  if (type.startsWith('datetime64')) {
+    return CalendarIcon
+  }
+
   switch (type) {
     case 'byte':
     case 'ubyte':
