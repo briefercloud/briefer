@@ -48,6 +48,12 @@ spec:
               value: '{{ .Values.api.env.postgresPort }}'
             - name: POSTGRES_DATABASE
               value: '{{ .Values.api.env.postgresDatabase }}'
+            - name: POSTGRES_SSL_DISABLED
+              value: '{{ .Values.api.env.postgresSslDisabled | default "false" }}'
+            - name: POSTGRES_SSL_REJECT_UNAUTHORIZED
+              value: '{{ .Values.api.env.postgresSslRejectUnauthorized }}'
+            - name: POSTGRES_SSL_CA
+              value: '{{ .Values.api.env.postgresSslCa }}'
           resources:
             requests:
               cpu: 100m
@@ -117,6 +123,12 @@ spec:
               value: '{{ .Values.api.env.postgresConnectionLimit | default "30" }}'
             - name: POSTGRES_POOL_TIMEOUT
               value: '{{ .Values.api.env.postgresPoolTimeout | default "10" }}'
+            - name: POSTGRES_SSL_DISABLED
+              value: '{{ .Values.api.env.postgresSslDisabled | default "false" }}'
+            - name: POSTGRES_SSL_REJECT_UNAUTHORIZED
+              value: '{{ .Values.api.env.postgresSslRejectUnauthorized }}'
+            - name: POSTGRES_SSL_CA
+              value: '{{ .Values.api.env.postgresSslCa }}'
 
             - name: LOGIN_LINK_EXPIRATION
               value: '{{ .Values.api.env.loginLinkExpiration | default "24h" }}'

@@ -138,6 +138,10 @@ Briefer accepts the following environment variables to configure the SSL connect
 - `POSTGRES_SSL_REJECT_UNAUTHORIZED` (optional): Set this to `true` to reject unauthorized (self-signed) SSL certificates.
 - `POSTGRES_SSL_CA`: (optional): The path to the CA certificate file to validate the server certificate.
 
+<Note>
+If you're deploying Briefer using our Helm chart, you can set these values in the `values.yaml` file as `api.env.postgresSslDisabled`, `api.env.postgresSslRejectUnauthorized`, and `api.env.postgresSslCa`, respectively.
+</Note>
+
 If you're having issues with your Postgres SSL settings, make sure that you've set these environment variables correctly.
 
 By default, Briefer's connection will have the same SSL settings as using `sslmode=prefer` in a Postgres connection string.
