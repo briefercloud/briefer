@@ -1,5 +1,5 @@
 import { ascend, sortWith } from 'ramda'
-import { useDrag, useDrop } from 'react-dnd'
+import { useDrag, useDrop, useDragLayer, XYCoord } from 'react-dnd'
 import {
   EllipsisHorizontalIcon,
   TrashIcon,
@@ -14,7 +14,9 @@ import IconSelector from './IconSelector'
 import { Menu, Transition } from '@headlessui/react'
 import ReactDOM from 'react-dom'
 import {
+  CSSProperties,
   MouseEventHandler,
+  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -28,6 +30,81 @@ import {
   PlusSmallIcon,
 } from '@heroicons/react/20/solid'
 import { List, Stack } from 'immutable'
+import { getEmptyImage } from 'react-dnd-html5-backend'
+
+function getItemStyles(
+  initialCursorOffset: XYCoord | null,
+  initialOffset: XYCoord | null,
+  currentOffset: XYCoord | null
+) {
+  if (!initialOffset || !currentOffset || !initialCursorOffset) {
+    return {
+      display: 'none',
+    }
+  }
+
+  const x = initialCursorOffset?.x + (currentOffset.x - initialOffset.x)
+  const y = initialCursorOffset?.y + (currentOffset.y - initialOffset.y)
+  const transform = `translate(${x}px, ${y}px)`
+
+  return {
+    transform,
+    WebkitTransform: transform,
+  }
+}
+
+const layerStyles: CSSProperties = {
+  position: 'fixed',
+  pointerEvents: 'none',
+  zIndex: 100,
+  left: 0,
+  top: 0,
+  width: '100%',
+  height: '100%',
+}
+
+const DocDragLayer = () => {
+  const {
+    item,
+    itemType,
+    isDragging,
+    initialCursorOffset,
+    initialFileOffset,
+    currentFileOffset,
+  } = useDragLayer((monitor) => ({
+    item: monitor.getItem(),
+    itemType: monitor.getItemType(),
+    initialCursorOffset: monitor.getInitialClientOffset(),
+    initialFileOffset: monitor.getInitialSourceClientOffset(),
+    currentFileOffset: monitor.getSourceClientOffset(),
+    isDragging: monitor.isDragging(),
+  }))
+
+  if (!isDragging) {
+    return null
+  }
+
+  return (
+    <div style={layerStyles}>
+      <div
+        style={getItemStyles(
+          initialCursorOffset,
+          initialFileOffset,
+          currentFileOffset
+        )}
+      >
+        <div className="p-1 bg-ceramic-200 rounded-md max-w-48 text-sm opacity-25 truncate flex gap-x-1 items-center py-2 -translate-x-1/2 -translate-y-1/2 scale-[.85] -rotate-6">
+          <IconSelector
+            workspaceId={item.workspaceId}
+            documentId={item.id}
+            disabled={true}
+          />
+          {item.title || 'Untitled'}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function useIsDocExpanded(doc: ApiDocument, startsOpen: boolean) {
   const [isExpanded, _setIsExpanded] = useState(
@@ -136,33 +213,36 @@ function DocumentTree(props: Props) {
   )
 
   return (
-    <ul role="list" className="space-y-1">
-      {trees.map((node, i) => {
-        const isLast = i === trees.size - 1
-        return (
-          <NodeComponent
-            key={node.document.id}
-            workspaceId={props.workspaceId}
-            current={props.current}
-            document={node.document}
-            descendants={node.children}
-            role={props.role}
-            onDuplicate={props.onDuplicate}
-            onSetIcon={props.onSetIcon}
-            onFavorite={props.onFavorite}
-            onUnfavorite={props.onUnfavorite}
-            onDelete={props.onDelete}
-            onCreate={props.onCreate}
-            onUpdateParent={props.onUpdateParent}
-            level={0}
-            flat={props.flat}
-            documents={props.documents}
-            isLast={isLast}
-            firstNonLastParentId={isLast ? null : node.document.id}
-          />
-        )
-      })}
-    </ul>
+    <>
+      <DocDragLayer />
+      <ul role="list" className="space-y-1">
+        {trees.map((node, i) => {
+          const isLast = i === trees.size - 1
+          return (
+            <NodeComponent
+              key={node.document.id}
+              workspaceId={props.workspaceId}
+              current={props.current}
+              document={node.document}
+              descendants={node.children}
+              role={props.role}
+              onDuplicate={props.onDuplicate}
+              onSetIcon={props.onSetIcon}
+              onFavorite={props.onFavorite}
+              onUnfavorite={props.onUnfavorite}
+              onDelete={props.onDelete}
+              onCreate={props.onCreate}
+              onUpdateParent={props.onUpdateParent}
+              level={0}
+              flat={props.flat}
+              documents={props.documents}
+              isLast={isLast}
+              firstNonLastParentId={isLast ? null : node.document.id}
+            />
+          )
+        })}
+      </ul>
+    </>
   )
 }
 
@@ -241,7 +321,7 @@ function NodeComponent(props: NodeComponentProps) {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
-  const [, drag] = useDrag({
+  const [{ isDragging }, drag, dragPreview] = useDrag({
     type: 'document',
     item: props.document,
     collect: (monitor) => ({
@@ -249,6 +329,10 @@ function NodeComponent(props: NodeComponentProps) {
     }),
     canDrag: () => !props.flat,
   })
+
+  useEffect(() => {
+    dragPreview(getEmptyImage(), { captureDraggingState: true })
+  }, [])
 
   const [dropHoverState, setDropHoverState] = useState<
     'above' | 'below' | 'center'
@@ -354,125 +438,134 @@ function NodeComponent(props: NodeComponentProps) {
       className="relative"
       key={props.document.id}
       ref={(li) => {
-        drag(drop(li))
+        drop(li)
       }}
     >
-      <div ref={containerRef}>
-        {isDropping &&
-          (dropHoverState === 'above' || dropHoverState === 'center') && (
-            <div className="absolute top-0 left-0 w-full h-1 bg-ceramic-200" />
-          )}
-        {isDropping &&
-          (dropHoverState === 'below' || dropHoverState === 'center') && (
-            <div
-              className="absolute left-0 w-full h-1 bg-ceramic-200"
-              style={{
-                top: isExpanded
-                  ? containerRef.current?.offsetHeight
-                  : linkRef.current?.offsetHeight,
-              }}
-            />
-          )}
-        <Link
-          href={`/workspaces/${props.workspaceId}/documents/${props.document.id}`}
-          className={clsx(
-            props.document.id === props.current
-              ? 'text-gray-800 bg-ceramic-100/50'
-              : 'text-gray-500 hover:bg-ceramic-100/80',
-            isDropping &&
-              dropHoverState === 'center' &&
-              'bg-ceramic-200 border-ceramic-200',
-            'group text-sm font-medium leading-6 w-full flex py-1 rounded-sm hover:text-ceramic-600'
-          )}
-          style={{
-            paddingLeft: `${props.level}rem`,
-          }}
-          ref={linkRef}
-        >
-          <div className="w-full flex items-center justify-between pr-1.5 gap-x-0.5 pl-4">
-            <div className="flex items-center">
-              {!props.flat && (
-                <button
-                  className="hover:bg-ceramic-200 rounded-md p-0.5 flex items-center justify-center"
-                  onClick={toggleIsExpanded}
-                >
-                  {isExpanded ? (
-                    <ChevronDownIcon className="h-4 w-4" />
-                  ) : (
-                    <ChevronRightIcon className="h-4 w-4" />
-                  )}
-                </button>
-              )}
-              <IconSelector
-                workspaceId={props.workspaceId}
-                documentId={props.document.id}
-                disabled={props.role === 'viewer'}
+      <div
+        ref={(docDiv) => {
+          drag(docDiv)
+        }}
+      >
+        <div ref={containerRef}>
+          {isDropping &&
+            (dropHoverState === 'above' || dropHoverState === 'center') && (
+              <div className="absolute top-0 left-0 w-full h-1 bg-ceramic-200" />
+            )}
+          {isDropping &&
+            (dropHoverState === 'below' || dropHoverState === 'center') && (
+              <div
+                className="absolute left-0 w-full h-1 bg-ceramic-200"
+                style={{
+                  top: isExpanded
+                    ? containerRef.current?.offsetHeight
+                    : linkRef.current?.offsetHeight,
+                }}
               />
-            </div>
-            <div className="flex items-center flex-1 overflow-auto">
-              <span className="mt-0.5 truncate">
-                {props.document.title || 'Untitled'}
-              </span>
-            </div>
-            <DropDown
-              documentId={props.document.id}
-              isFavoriteDropdown={Boolean(props.flat)}
-              onDelete={props.onDelete}
-              onDuplicate={props.onDuplicate}
-              onFavorite={props.onFavorite}
-              onUnfavorite={props.onUnfavorite}
-              role={props.role ?? 'viewer'}
-              onCreate={props.onCreate}
-            />
-          </div>
-        </Link>
-        {isExpanded && (
-          <ul
-            role="list"
+            )}
+          <Link
+            href={`/workspaces/${props.workspaceId}/documents/${props.document.id}`}
             className={clsx(
+              props.document.id === props.current
+                ? 'text-gray-800 bg-ceramic-100/50'
+                : 'text-gray-500 hover:bg-ceramic-100/80',
               isDropping &&
                 dropHoverState === 'center' &&
                 'bg-ceramic-200 border-ceramic-200',
-              'space-y-1'
+              'group text-sm font-medium leading-6 w-full flex py-1 rounded-sm hover:text-ceramic-600'
             )}
+            style={{
+              paddingLeft: `${props.level}rem`,
+            }}
+            ref={linkRef}
           >
-            {props.descendants.size === 0 && (
-              <li
-                className="text-gray-400 text-sm font-medium leading-6 py-1 rounded-sm pointer-events-none overflow-auto truncate"
-                style={{ paddingLeft: `${props.level + 3}rem` }}
+            <div className="w-full flex items-center justify-between pr-1.5 gap-x-1 pl-4">
+              <div
+                className={clsx('flex items-center', { 'pl-1': props.flat })}
               >
-                No documents inside
-              </li>
-            )}
-            {props.descendants.map((node, i) => {
-              const isLast = i === props.descendants.size - 1
-              return (
-                <NodeComponent
-                  key={node.document.id}
+                {!props.flat && (
+                  <button
+                    className="hover:bg-ceramic-200 rounded-md p-0.5 flex items-center justify-center"
+                    onClick={toggleIsExpanded}
+                  >
+                    {isExpanded ? (
+                      <ChevronDownIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronRightIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+                <IconSelector
                   workspaceId={props.workspaceId}
-                  current={props.current}
-                  document={node.document}
-                  descendants={node.children}
-                  role={props.role}
-                  onDuplicate={props.onDuplicate}
-                  onSetIcon={props.onSetIcon}
-                  onFavorite={props.onFavorite}
-                  onUnfavorite={props.onUnfavorite}
-                  onDelete={props.onDelete}
-                  onCreate={props.onCreate}
-                  onUpdateParent={props.onUpdateParent}
-                  level={props.level + 1}
-                  documents={props.documents}
-                  isLast={isLast}
-                  firstNonLastParentId={
-                    isLast ? props.firstNonLastParentId : props.document.id
-                  }
+                  documentId={props.document.id}
+                  disabled={props.role === 'viewer'}
                 />
-              )
-            })}
-          </ul>
-        )}
+              </div>
+              <div className="flex items-center flex-1 overflow-auto">
+                <span className="truncate">
+                  {props.document.title || 'Untitled'}
+                </span>
+              </div>
+              <DropDown
+                documentId={props.document.id}
+                isFavoriteDropdown={Boolean(props.flat)}
+                onDelete={props.onDelete}
+                onDuplicate={props.onDuplicate}
+                onFavorite={props.onFavorite}
+                onUnfavorite={props.onUnfavorite}
+                role={props.role ?? 'viewer'}
+                onCreate={props.onCreate}
+              />
+            </div>
+          </Link>
+          {isExpanded && (
+            <ul
+              role="list"
+              className={clsx(
+                isDropping &&
+                  dropHoverState === 'center' &&
+                  'bg-ceramic-200 border-ceramic-200',
+                'space-y-1'
+              )}
+            >
+              {props.descendants.size === 0 && (
+                <li
+                  className="text-gray-400 text-sm font-medium leading-6 py-1 rounded-sm pointer-events-none overflow-auto truncate"
+                  style={{ paddingLeft: `${props.level + 3}rem` }}
+                >
+                  No documents inside
+                </li>
+              )}
+              {props.descendants.map((node, i) => {
+                const isLast = i === props.descendants.size - 1
+                return (
+                  <NodeComponent
+                    key={node.document.id}
+                    workspaceId={props.workspaceId}
+                    current={props.current}
+                    document={node.document}
+                    descendants={node.children}
+                    role={props.role}
+                    onDuplicate={props.onDuplicate}
+                    onSetIcon={props.onSetIcon}
+                    onFavorite={props.onFavorite}
+                    onUnfavorite={props.onUnfavorite}
+                    onDelete={props.onDelete}
+                    onCreate={props.onCreate}
+                    onUpdateParent={props.onUpdateParent}
+                    level={props.level + 1}
+                    documents={props.documents}
+                    isLast={isLast}
+                    firstNonLastParentId={
+                      isLast ? props.firstNonLastParentId : props.document.id
+                    }
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </div>
       </div>
+      {props.isLast && <div className="h-10" />}
     </li>
   )
 }

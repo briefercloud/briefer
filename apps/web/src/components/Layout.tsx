@@ -43,7 +43,6 @@ import { isBanned } from '@/utils/isBanned'
 import BannedPage from './BannedPage'
 import { SubscriptionBadge } from './SubscriptionBadge'
 import MobileWarning from './MobileWarning'
-import ScrollBar from './ScrollBar'
 import { DataSourceBlinkingSignal } from './BlinkingSignal'
 import CommandPalette from './commandPalette'
 import { useHotkeys } from 'react-hotkeys-hook'
@@ -329,10 +328,7 @@ export default function Layout({
             <SubscriptionBadge planName="open-source" />
           </div>
 
-          <ScrollBar
-            className="flex-1 overflow-auto simplebar-vertical-only"
-            ref={scrollRef}
-          >
+          <div className="flex-1 overflow-y-auto" ref={scrollRef}>
             {/* Favorites */}
             <div
               className={clsx(
@@ -360,7 +356,12 @@ export default function Layout({
             </div>
 
             {/* Pages */}
-            <div className="pt-8 overflow-x-hidden">
+            <div
+              className={clsx(
+                'overflow-hidden',
+                favoriteDocuments.size === 0 ? 'pt-8' : 'pt-6'
+              )}
+            >
               <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1 justify-between">
                 <span>Pages</span>
 
@@ -400,7 +401,7 @@ export default function Layout({
                 onUpdateParent={onUpdateDocumentParent}
               />
             </div>
-          </ScrollBar>
+          </div>
 
           {/* Configurations */}
           <div className="pt-8 pb-4">
