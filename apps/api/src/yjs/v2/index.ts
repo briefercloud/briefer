@@ -50,7 +50,6 @@ import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
 import { AIExecutor } from './executor/ai/index.js'
-import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -658,40 +657,53 @@ export class WSSharedDocV2 {
 
     // only call this when the update originates from this connection
     if (tr.local || (tr.origin && 'user' in tr.origin)) {
-      const pubsubChannel = this.getPubSubChannel()
-      try {
-        const updateId = await this.persistor.persistUpdate(this, update)
-        await publish(
-          pubsubChannel,
-          JSON.stringify({
-            id: this.id,
-            publisherId: this.publisherId,
-            message: updateId,
-            clock: this.clock,
-          })
-        )
-        logger().trace(
-          {
-            id: this.id,
-            documentId: this.documentId,
-            workspaceId: this.workspaceId,
-            updateId,
-          },
-          'Published Yjs update'
-        )
-      } catch (err) {
-        logger().error(
-          {
-            id: this.id,
-            documentId: this.documentId,
-            workspaceId: this.workspaceId,
+      logger().trace({
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+        serialUpdatesQueue: this.serialUpdatesQueue.size,
+      }, 'Enqueuing Yjs update for publishing')
+      await this.serialUpdatesQueue.add(async () => {
+        const pubsubChannel = this.getPubSubChannel()
+        try {
+          const updateId = await this.persistor.persistUpdate(this, update)
+          await publish(
             pubsubChannel,
-            err,
-          },
-          'Failed to persist Yjs update'
-        )
-        throw err
-      }
+            JSON.stringify({
+              id: this.id,
+              publisherId: this.publisherId,
+              message: updateId,
+              clock: this.clock,
+            })
+          )
+          logger().trace(
+            {
+              id: this.id,
+              documentId: this.documentId,
+              workspaceId: this.workspaceId,
+              updateId,
+            },
+            'Published Yjs update'
+          )
+        } catch (err) {
+          logger().error(
+            {
+              id: this.id,
+              documentId: this.documentId,
+              workspaceId: this.workspaceId,
+              pubsubChannel,
+              err,
+            },
+            'Failed to persist Yjs update'
+          )
+          throw err
+        }
+      })
+      logger().trace({
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+      }, 'Finished publishing Yjs update')
     }
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
