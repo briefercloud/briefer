@@ -16,7 +16,6 @@ import ReactDOM from 'react-dom'
 import {
   CSSProperties,
   MouseEventHandler,
-  ReactNode,
   useCallback,
   useEffect,
   useMemo,
@@ -66,7 +65,6 @@ const layerStyles: CSSProperties = {
 const DocDragLayer = () => {
   const {
     item,
-    itemType,
     isDragging,
     initialCursorOffset,
     initialFileOffset,
@@ -321,7 +319,7 @@ function NodeComponent(props: NodeComponentProps) {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const linkRef = useRef<HTMLAnchorElement>(null)
-  const [{ isDragging }, drag, dragPreview] = useDrag({
+  const [, drag, dragPreview] = useDrag({
     type: 'document',
     item: props.document,
     collect: (monitor) => ({
@@ -565,7 +563,7 @@ function NodeComponent(props: NodeComponentProps) {
           )}
         </div>
       </div>
-      {props.isLast && <div className="h-10" />}
+      {props.isLast && props.level === 0 && <div className="h-10" />}
     </li>
   )
 }
