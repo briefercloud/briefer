@@ -657,12 +657,15 @@ export class WSSharedDocV2 {
 
     // only call this when the update originates from this connection
     if (tr.local || (tr.origin && 'user' in tr.origin)) {
-      logger().trace({
-        id: this.id,
-        documentId: this.documentId,
-        workspaceId: this.workspaceId,
-        serialUpdatesQueue: this.serialUpdatesQueue.size,
-      }, 'Enqueuing Yjs update for publishing')
+      logger().trace(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          serialUpdatesQueue: this.serialUpdatesQueue.size,
+        },
+        'Enqueuing Yjs update for publishing'
+      )
       await this.serialUpdatesQueue.add(async () => {
         const pubsubChannel = this.getPubSubChannel()
         try {
@@ -699,11 +702,15 @@ export class WSSharedDocV2 {
           throw err
         }
       })
-      logger().trace({
-        id: this.id,
-        documentId: this.documentId,
-        workspaceId: this.workspaceId,
-      }, 'Finished publishing Yjs update')
+      logger().trace(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          serialUpdatesQueue: this.serialUpdatesQueue.size,
+        },
+        'Finished publishing Yjs update'
+      )
     }
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
