@@ -30,17 +30,15 @@ export type PrismaTransaction = Omit<PrismaClient, ITXClientDenyList>
 
 let singleton: PrismaClient | null = null
 
-type InitOptions = {
+export type InitOptions = {
   connectionString: string
   ssl:
+    | 'prefer'
     | {
-        enabled: true
         rejectUnauthorized: boolean | undefined
-        ca: string | null | undefined
+        ca: string | undefined
       }
-    | {
-        enabled: false
-      }
+    | false
 }
 let dbOptions: InitOptions | null = null
 
@@ -86,25 +84,48 @@ export async function getPGInstance(): Promise<{
     return pgInstance
   }
 
-  const pgPool = new pg.Pool({
-    connectionString: dbOptions.connectionString,
-    ssl: dbOptions.ssl.enabled
+  let connectionString = dbOptions.connectionString
+
+  const ssl =
+    dbOptions.ssl === 'prefer'
+      ? undefined
+      : dbOptions.ssl
       ? {
-          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized,
+          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized ?? undefined,
           ca: dbOptions.ssl.ca ?? undefined,
         }
-      : undefined,
+      : false
+
+  let pgPool = new pg.Pool({
+    connectionString,
+    ssl,
   })
-  const pubSubClient = new pg.Client({
-    connectionString: dbOptions.connectionString,
-    ssl: dbOptions.ssl.enabled
-      ? {
-          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized,
-          ca: dbOptions.ssl.ca ?? undefined,
-        }
-      : undefined,
+  let pubSubClient = new pg.Client({
+    connectionString,
+    ssl,
   })
-  await pubSubClient.connect()
+
+  try {
+    await pubSubClient.connect()
+  } catch (err) {
+    if (
+      dbOptions.ssl === 'prefer' &&
+      err instanceof Error &&
+      err.message === 'The server does not support SSL connections'
+    ) {
+      pgPool = new pg.Pool({
+        connectionString: dbOptions.connectionString,
+        ssl: false,
+      })
+      pubSubClient = new pg.Client({
+        connectionString: dbOptions.connectionString,
+        ssl: false,
+      })
+      await pubSubClient.connect()
+    } else {
+      throw err
+    }
+  }
 
   pubSubClient.on('notification', (notification) => {
     const subs = subscribers[notification.channel]

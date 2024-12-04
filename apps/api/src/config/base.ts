@@ -25,7 +25,7 @@ export interface IBaseConfig {
   POSTGRES_CONNECTION_LIMIT: number
   POSTGRES_POOL_TIMEOUT: number
   POSTGRES_SSL_DISABLED: boolean
-  POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
+  POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean | null
   POSTGRES_SSL_CA: string | null
   ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   DATASOURCES_ENCRYPTION_KEY: string
@@ -59,7 +59,7 @@ export class BaseConfig implements IBaseConfig {
   public readonly POSTGRES_CONNECTION_LIMIT: number
   public readonly POSTGRES_POOL_TIMEOUT: number
   public readonly POSTGRES_SSL_DISABLED: boolean
-  public readonly POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean
+  public readonly POSTGRES_SSL_REJECT_UNAUTHORIZED: boolean | null
   public readonly POSTGRES_SSL_CA: string | null
   public readonly ENVIRONMENT_VARIABLES_ENCRYPTION_KEY: string
   public readonly DATASOURCES_ENCRYPTION_KEY: string
@@ -103,12 +103,11 @@ export class BaseConfig implements IBaseConfig {
       false
     )
 
-    this.POSTGRES_SSL_REJECT_UNAUTHORIZED = this.getBooleanVar(
-      'POSTGRES_SSL_REJECT_UNAUTHORIZED',
-      false
+    this.POSTGRES_SSL_REJECT_UNAUTHORIZED = this.getMaybeBooleanVar(
+      'POSTGRES_SSL_REJECT_UNAUTHORIZED'
     )
 
-    this.POSTGRES_SSL_CA = process.env['POSTGRES_SSL_CA'] || null
+    this.POSTGRES_SSL_CA = process.env['POSTGRES_SSL_CA']?.trim() || null
 
     this.ENVIRONMENT_VARIABLES_ENCRYPTION_KEY = getVar(
       'ENVIRONMENT_VARIABLES_ENCRYPTION_KEY'
@@ -157,7 +156,7 @@ export class BaseConfig implements IBaseConfig {
   }
 
   private getBooleanVar(name: string, or?: boolean): boolean {
-    const value = process.env[name]?.toLowerCase()
+    const value = process.env[name]?.toLowerCase().trim()
     if (value === undefined && or !== undefined) {
       return or
     }
@@ -167,5 +166,19 @@ export class BaseConfig implements IBaseConfig {
     }
 
     return false
+  }
+
+  private getMaybeBooleanVar(name: string): boolean | null {
+    const value = process.env[name]?.toLowerCase().trim()
+
+    if (value === 'true' || value === '1' || value === 'yes') {
+      return true
+    }
+
+    if (value === 'false' || value === '0' || value === 'no') {
+      return false
+    }
+
+    return null
   }
 }
