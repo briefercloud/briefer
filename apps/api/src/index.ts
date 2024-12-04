@@ -46,19 +46,27 @@ const getDBUrl = async () => {
 }
 
 async function main() {
+  const cfg = config()
   const dbUrl = await getDBUrl()
 
-  const initOptions = {
+  const initOptions: db.InitOptions = {
     connectionString: dbUrl,
-    ssl:
-      config().NODE_ENV !== 'development' && !config().POSTGRES_SSL_DISABLED
-        ? {
-            enabled: true,
-            ca: config().POSTGRES_SSL_CA,
-            rejectUnauthorized: config().POSTGRES_SSL_REJECT_UNAUTHORIZED,
-          }
-        : { enabled: false as const },
+    ssl: false,
   }
+  if (!cfg.POSTGRES_SSL_DISABLED) {
+    if (
+      cfg.POSTGRES_SSL_CA !== null ||
+      cfg.POSTGRES_SSL_REJECT_UNAUTHORIZED !== null
+    ) {
+      initOptions.ssl = {
+        rejectUnauthorized: cfg.POSTGRES_SSL_REJECT_UNAUTHORIZED ?? undefined,
+        ca: cfg.POSTGRES_SSL_CA ?? undefined,
+      }
+    } else {
+      initOptions.ssl = 'prefer'
+    }
+  }
+
   db.init(initOptions)
 
   const app = express()
