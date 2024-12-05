@@ -379,6 +379,7 @@ export class WSSharedDocV2 {
   private byteLength: number = 0
   private publisherId: string
   private subscription?: () => Promise<void>
+  private pendingUpdates: Uint8Array[] = []
 
   private constructor(
     id: string,
@@ -506,16 +507,18 @@ export class WSSharedDocV2 {
   public async replaceState(state: Buffer) {
     const result = await this.persistor.replaceState(this.id, state)
     this.reset(result.ydoc, result.clock, result.byteLength)
-    const updateId = await this.persistor.persistUpdate(this, state)
-    await publish(
-      this.getPubSubChannel(),
-      JSON.stringify({
-        id: this.id,
-        publisherId: this.publisherId,
-        message: updateId,
-        clock: this.clock,
-      })
-    )
+    const updateIds = await this.persistor.persistUpdates(this, [state])
+    for (const updateId of updateIds) {
+      await publish(
+        this.getPubSubChannel(),
+        JSON.stringify({
+          id: this.id,
+          publisherId: this.publisherId,
+          message: updateId,
+          clock: this.clock,
+        })
+      )
+    }
     broadcastDocument(this.socketServer, this.workspaceId, this.documentId)
   }
 
@@ -657,6 +660,7 @@ export class WSSharedDocV2 {
 
     // only call this when the update originates from this connection
     if (tr.local || (tr.origin && 'user' in tr.origin)) {
+      this.pendingUpdates.push(update)
       logger().trace(
         {
           id: this.id,
@@ -667,26 +671,34 @@ export class WSSharedDocV2 {
         'Enqueuing Yjs update for publishing'
       )
       await this.serialUpdatesQueue.add(async () => {
+        const updates = this.pendingUpdates
+        this.pendingUpdates = []
+        if (updates.length === 0) {
+          return
+        }
+
         const pubsubChannel = this.getPubSubChannel()
         try {
-          const updateId = await this.persistor.persistUpdate(this, update)
-          await publish(
-            pubsubChannel,
-            JSON.stringify({
-              id: this.id,
-              publisherId: this.publisherId,
-              message: updateId,
-              clock: this.clock,
-            })
-          )
+          const updateIds = await this.persistor.persistUpdates(this, updates)
+          for (const updateId of updateIds) {
+            await publish(
+              pubsubChannel,
+              JSON.stringify({
+                id: this.id,
+                publisherId: this.publisherId,
+                message: updateId,
+                clock: this.clock,
+              })
+            )
+          }
           logger().trace(
             {
               id: this.id,
               documentId: this.documentId,
               workspaceId: this.workspaceId,
-              updateId,
+              updateIds,
             },
-            'Published Yjs update'
+            'Published Yjs updates'
           )
         } catch (err) {
           logger().error(
@@ -701,6 +713,8 @@ export class WSSharedDocV2 {
           )
           throw err
         }
+
+        await this.persistor.persist(this)
       })
       logger().trace(
         {

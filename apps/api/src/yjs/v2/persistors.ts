@@ -39,7 +39,11 @@ export type LoadStateResult = {
 }
 export interface Persistor {
   load: (id: string, tx?: PrismaTransaction) => Promise<LoadStateResult>
-  persistUpdate: (ydoc: WSSharedDocV2, update: Uint8Array) => Promise<string>
+  persist(ydoc: WSSharedDocV2): Promise<void>
+  persistUpdates: (
+    ydoc: WSSharedDocV2,
+    updates: Uint8Array[]
+  ) => Promise<string[]>
   canWrite: (
     decoder: decoding.Decoder,
     doc: WSSharedDocV2,
@@ -154,71 +158,85 @@ export class DocumentPersistor implements Persistor {
     }
   }
 
-  public async persistUpdate(doc: WSSharedDocV2, update: Uint8Array) {
+  public async persist(ydoc: WSSharedDocV2): Promise<void> {
+    const yjsDoc = await this.getYjsDoc(ydoc)
+
+    await prisma().yjsDocument.update({
+      where: { id: yjsDoc.id },
+      data: {
+        state: Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc)),
+      },
+    })
+  }
+
+  public async persistUpdates(doc: WSSharedDocV2, updates: Uint8Array[]) {
     return acquireLock(`document-persistor:${doc.id}`, async () => {
-      let yjsDoc = await prisma().yjsDocument.findUnique({
-        select: { id: true, clock: true },
-        where: { documentId: this.documentId },
-      })
-      const isNew = !yjsDoc
-      if (!yjsDoc) {
-        yjsDoc = await prisma().yjsDocument.upsert({
-          where: { documentId: this.documentId },
-          create: {
-            documentId: this.documentId,
-            state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
-          },
-          update: {},
-          select: { id: true, clock: true },
-        })
-      }
+      const yjsDoc = await this.getYjsDoc(doc)
 
-      if (!isNew) {
-        const updatesCount = await prisma().yjsUpdate.count({
-          where: {
-            yjsDocumentId: yjsDoc.id,
-          },
-        })
-
-        if (updatesCount > 100) {
-          logger().trace(
-            {
-              documentId: this.documentId,
-              clock: yjsDoc.clock,
-              updates: updatesCount,
-            },
-            'Too many updates, cleaning up'
-          )
-          await prisma().yjsUpdate.deleteMany({
-            where: {
-              OR: [
-                { yjsDocumentId: yjsDoc.id },
-                { clock: { lt: yjsDoc.clock } },
-              ],
-            },
-          })
-          logger().trace(
-            {
-              documentId: this.documentId,
-              clock: yjsDoc.clock,
-              updates: updatesCount,
-            },
-            'Finished cleaning up updates'
-          )
-        }
-      }
-
-      const { id } = await prisma().yjsUpdate.create({
-        data: {
+      const ids = await prisma().yjsUpdate.createManyAndReturn({
+        data: updates.map((update) => ({
           yjsDocumentId: yjsDoc.id,
           update: Buffer.from(update),
           clock: yjsDoc.clock,
-        },
+        })),
         select: { id: true },
       })
 
-      return id
+      return ids.map((id) => id.id)
     })
+  }
+
+  private async getYjsDoc(doc: WSSharedDocV2) {
+    let yjsDoc = await prisma().yjsDocument.findUnique({
+      select: { id: true, clock: true },
+      where: { documentId: this.documentId },
+    })
+    const isNew = !yjsDoc
+    if (!yjsDoc) {
+      yjsDoc = await prisma().yjsDocument.upsert({
+        where: { documentId: this.documentId },
+        create: {
+          documentId: this.documentId,
+          state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
+        },
+        update: {},
+        select: { id: true, clock: true },
+      })
+    }
+
+    if (!isNew) {
+      const updatesCount = await prisma().yjsUpdate.count({
+        where: {
+          yjsDocumentId: yjsDoc.id,
+        },
+      })
+
+      if (updatesCount > 100) {
+        logger().trace(
+          {
+            documentId: this.documentId,
+            clock: yjsDoc.clock,
+            updates: updatesCount,
+          },
+          'Too many updates, cleaning up'
+        )
+        await prisma().yjsUpdate.deleteMany({
+          where: {
+            OR: [{ yjsDocumentId: yjsDoc.id }, { clock: { lt: yjsDoc.clock } }],
+          },
+        })
+        logger().trace(
+          {
+            documentId: this.documentId,
+            clock: yjsDoc.clock,
+            updates: updatesCount,
+          },
+          'Finished cleaning up updates'
+        )
+      }
+    }
+
+    return yjsDoc
   }
 
   public canWrite(
@@ -478,7 +496,37 @@ export class AppPersistor implements Persistor {
     }
   }
 
-  public async persistUpdate(doc: WSSharedDocV2, update: Uint8Array) {
+  public async persist(ydoc: WSSharedDocV2): Promise<void> {
+    if (this.userId) {
+      const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
+      await prisma().userYjsAppDocument.upsert({
+        where: {
+          yjsAppDocumentId_userId: {
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            userId: this.userId,
+          },
+        },
+        create: {
+          yjsAppDocumentId: this.yjsAppDocumentId,
+          userId: this.userId,
+          state,
+          clock: ydoc.clock,
+        },
+        update: {
+          state,
+        },
+      })
+    } else {
+      await prisma().yjsAppDocument.update({
+        where: { id: this.yjsAppDocumentId },
+        data: {
+          state: Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc)),
+        },
+      })
+    }
+  }
+
+  public async persistUpdates(doc: WSSharedDocV2, updates: Uint8Array[]) {
     return acquireLock(`app-persistor:${doc.id}`, async () => {
       if (this.userId) {
         await prisma().userYjsAppDocument.upsert({
@@ -530,16 +578,17 @@ export class AppPersistor implements Persistor {
           )
         }
 
-        const { id } = await prisma().yjsUpdate.create({
-          data: {
+        const ids = await prisma().yjsUpdate.createManyAndReturn({
+          data: updates.map((update) => ({
             userYjsAppDocumentUserId: this.userId,
             userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
             update: Buffer.from(update),
             clock: doc.clock,
-          },
+          })),
           select: { id: true },
         })
-        return id
+
+        return ids.map((id) => id.id)
       }
 
       const updatesCount = await prisma().yjsUpdate.count({
@@ -571,15 +620,16 @@ export class AppPersistor implements Persistor {
         )
       }
 
-      const { id } = await prisma().yjsUpdate.create({
-        data: {
+      const ids = await prisma().yjsUpdate.createManyAndReturn({
+        data: updates.map((update) => ({
           yjsAppDocumentId: this.yjsAppDocumentId,
           update: Buffer.from(update),
           clock: doc.clock,
-        },
+        })),
         select: { id: true },
       })
-      return id
+
+      return ids.map((id) => id.id)
     })
   }
 
