@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import * as Y from 'yjs'
 import React, { useCallback } from 'react'
 import { ChevronDoubleRightIcon, TrashIcon } from '@heroicons/react/24/outline'
@@ -18,6 +19,7 @@ import ScrollBar from './ScrollBar'
 
 interface Props {
   workspaceId: string
+  documentId: string
   visible: boolean
   onHide: () => void
   yDoc?: Y.Doc
@@ -27,15 +29,24 @@ export default function ReusableComponents(props: Props) {
   const [{ data, isLoading }, api] = useReusableComponents(props.workspaceId)
 
   const onUse = useCallback(
-    (component: APIReusableComponent) => {
+    async (component: APIReusableComponent) => {
       if (!props.yDoc) {
         return
       }
 
-      const block = decodeComponentState(component.state)
-      addComponentToDocument(block, props.yDoc)
+      const blockId = uuidv4()
+      try {
+        const block = decodeComponentState(component.state)
+        await api.createInstance(props.workspaceId, component.id, {
+          documentId: props.documentId,
+          blockId,
+        })
+        addComponentToDocument(block, blockId, props.yDoc)
+      } catch (err) {
+        alert('Failed to create instance of reusable component')
+      }
     },
-    [props.yDoc]
+    [props.workspaceId, props.documentId, props.yDoc]
   )
 
   const onRemove = useCallback(

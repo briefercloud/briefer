@@ -3,13 +3,17 @@ import { useEffect, useRef, useState } from 'react'
 import useResettableState from './useResettableState'
 import { getDocId, useProvider } from './useYProvider'
 import {
+  getBlocks,
   getLastUpdatedAt,
   getMetadata,
   isDirty,
   setDirty,
+  switchBlockType,
+  YBlock,
 } from '@briefer/editor'
 import { LRUCache } from 'lru-cache'
 import Dexie, { EntityTable } from 'dexie'
+import { useReusableComponents } from './useReusableComponents'
 
 const db = new Dexie('YjsDatabase') as Dexie & {
   yDocs: EntityTable<{ id: string; data: Uint8Array }, 'id'>
@@ -84,6 +88,7 @@ function getYDoc(
 }
 
 export function useYDoc(
+  workspaceId: string,
   documentId: string,
   isDataApp: boolean,
   clock: number,
@@ -186,6 +191,64 @@ export function useYDoc(
       yDoc.off('update', update)
     }
   }, [yDoc, syncing])
+
+  const [, { removeInstance: removeComponentInstance }] =
+    useReusableComponents(workspaceId)
+  useEffect(() => {
+    const blocks = getBlocks(yDoc)
+
+    // map of blockId to componentId
+    const components: Map<string, string> = new Map()
+    const updateComponents = (blockId: string) => {
+      const block = blocks.get(blockId)
+      if (!block) {
+        return
+      }
+
+      const componentId = switchBlockType(block, {
+        onSQL: (block) => block.getAttribute('componentId'),
+        onPython: (block) => block.getAttribute('componentId'),
+        onRichText: () => null,
+        onVisualization: () => null,
+        onInput: () => null,
+        onDropdownInput: () => null,
+        onDateInput: () => null,
+        onFileUpload: () => null,
+        onDashboardHeader: () => null,
+        onWriteback: () => null,
+        onPivotTable: () => null,
+      })
+
+      if (componentId) {
+        components.set(blockId, componentId)
+      }
+    }
+
+    for (const blockId of Array.from(blocks.keys())) {
+      updateComponents(blockId)
+    }
+
+    const onUpdate = (evt: Y.YMapEvent<YBlock>) => {
+      const changes = evt.changes.keys
+      for (const [blockId, { action }] of Array.from(changes.entries())) {
+        if (action === 'add' || action === 'update') {
+          updateComponents(blockId)
+        } else if (action === 'delete') {
+          const componentId = components.get(blockId)
+          if (componentId) {
+            components.delete(blockId)
+            removeComponentInstance(workspaceId, componentId, blockId)
+          }
+        }
+      }
+    }
+
+    blocks.observe(onUpdate)
+
+    return () => {
+      blocks.unobserve(onUpdate)
+    }
+  }, [yDoc, removeComponentInstance])
 
   return {
     yDoc,

@@ -35,6 +35,7 @@ model Document {
   Favorite           Favorite[]
   executionSchedules ExecutionSchedule[]
   reusableComponents ReusableComponent[]
+  reusableComponentInstances ReusableComponentInstance[]
 
   runUnexecutedBlocks Boolean @default(false)
   runSQLSelection     Boolean @default(false)
@@ -593,9 +594,24 @@ model ReusableComponent {
   documentId String                @db.Uuid
   createdAt  DateTime              @default(now())
   updatedAt  DateTime              @default(now()) @updatedAt
+  instancesCreated Boolean         @default(true)
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  reusableComponentInstances ReusableComponentInstance[]
 }
+
+model ReusableComponentInstance {
+  id                  String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  blockId             String @unique @db.Uuid
+  reusableComponentId String @db.Uuid
+  documentId          String @db.Uuid
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @default(now()) @updatedAt
+
+  reusableComponent   ReusableComponent @relation(fields: [reusableComponentId], references: [id], onDelete: Cascade)
+  document            Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
 
 model YjsUpdate {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

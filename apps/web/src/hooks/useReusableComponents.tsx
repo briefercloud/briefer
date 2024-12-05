@@ -29,6 +29,16 @@ type API = {
     data: UpdateReusableComponent
   ) => void
   remove: (workspaceId: string, id: string) => void
+  createInstance: (
+    workspaceId: string,
+    componentId: string,
+    data: { documentId: string; blockId: string }
+  ) => Promise<void>
+  removeInstance: (
+    workspaceId: string,
+    componentId: string,
+    blockId: string
+  ) => void
 }
 
 type State = Map<string, ReusableComponents>
@@ -49,6 +59,16 @@ const Context = createContext<[State, API]>([
     remove: async () => {
       throw new Error(
         'Attempted to call component remove without ReusableComponentsProvider'
+      )
+    },
+    createInstance: async () => {
+      throw new Error(
+        'Attempted to call createInstance without ReusableComponentsProvider'
+      )
+    },
+    removeInstance: async () => {
+      throw new Error(
+        'Attempted to call removeInstance without ReusableComponentsProvider'
       )
     },
   },
@@ -159,6 +179,7 @@ export function ReusableComponentsProvider(props: Props) {
             },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            instancesCreated: true,
           })
         )
       })
@@ -303,6 +324,52 @@ export function ReusableComponentsProvider(props: Props) {
     [state]
   )
 
+  const createInstance = useCallback(
+    async (
+      workspaceId: string,
+      componentId: string,
+      data: { documentId: string; blockId: string }
+    ) => {
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/components/${componentId}/instances`,
+        {
+          credentials: 'include',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error(
+          `Failed to create component instance, status ${res.status}.`
+        )
+      }
+    },
+    []
+  )
+
+  const removeInstance = useCallback(
+    async (workspaceId: string, componentId: string, blockId: string) => {
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/components/${componentId}/instances/${blockId}`,
+        {
+          credentials: 'include',
+          method: 'DELETE',
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error(
+          `Failed to remove component instance, status ${res.status}.`
+        )
+      }
+    },
+    []
+  )
+
   const value: [State, API] = useMemo(
     () => [
       state,
@@ -310,9 +377,11 @@ export function ReusableComponentsProvider(props: Props) {
         create,
         update,
         remove,
+        createInstance,
+        removeInstance,
       },
     ],
-    [state, create, update, remove]
+    [state, create, update, remove, createInstance, removeInstance]
   )
 
   return <Context.Provider value={value}>{props.children}</Context.Provider>

@@ -199,6 +199,7 @@ function PrivateDocumentPageInner(
   ])
 
   const { yDoc, provider, syncing, isDirty } = useYDoc(
+    props.document.workspaceId,
     props.document.id,
     props.isApp,
     clock,
@@ -428,6 +429,7 @@ function PrivateDocumentPageInner(
             />
             <ReusableComponents
               workspaceId={props.workspaceId}
+              documentId={props.documentId}
               visible={selectedSidebar?._tag === 'reusableComponents'}
               onHide={onHideSidebar}
               yDoc={yDoc}

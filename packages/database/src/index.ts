@@ -11,6 +11,7 @@ export type {
   YjsAppDocument,
   UserYjsAppDocument,
   YjsUpdate,
+  ReusableComponentInstance,
 } from '@prisma/client'
 
 export { UserWorkspaceRole } from '@prisma/client'

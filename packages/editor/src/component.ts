@@ -136,6 +136,7 @@ export function updateBlockFromComponent(
 
 export function addComponentToDocument(
   component: Y.XmlElement<SQLBlock | PythonBlock>,
+  newBlockId: string,
   doc: Y.Doc
 ) {
   const componentId = component.getAttribute('componentId')
@@ -145,10 +146,9 @@ export function addComponentToDocument(
 
   const layout = getLayout(doc)
   const blocks = getBlocks(doc)
-  const blockId = uuidv4()
-  const block = duplicateBlock(blockId, component, blocks, false, {
+  const block = duplicateBlock(newBlockId, component, blocks, false, {
     componentId,
     noState: true,
   })
-  appendBlock(blockId, block, blocks, layout)
+  appendBlock(newBlockId, block, blocks, layout)
 }
