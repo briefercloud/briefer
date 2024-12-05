@@ -57,7 +57,8 @@ export default function publishRouter(socketServer: IOServer) {
           )
         },
         {
-          timeout: 10000,
+          maxWait: 31000,
+          timeout: 30000,
         }
       )
 

@@ -64,8 +64,8 @@ export default function documentsRouter(socketServer: IOServer) {
             return result.document
           },
           {
-            maxWait: 11000,
-            timeout: 10000,
+            maxWait: 31000,
+            timeout: 30000,
           }
         )
 

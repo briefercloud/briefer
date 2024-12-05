@@ -130,7 +130,10 @@ export class DocumentPersistor implements Persistor {
           if (tx) {
             deleted = await cleanUpdates(tx)
           } else {
-            deleted = await prisma().$transaction(cleanUpdates)
+            deleted = await prisma().$transaction(cleanUpdates, {
+              maxWait: 31000,
+              timeout: 30000,
+            })
           }
 
           logger().trace(

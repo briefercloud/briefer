@@ -74,7 +74,9 @@ export class WorkspaceCreator implements IWorkspaceCreator {
       return { workspace, invitedUsers: guestUsers }
     }
 
-    const workspace = tx ? await run(tx) : await prisma().$transaction(run)
+    const workspace = tx
+      ? await run(tx)
+      : await prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
 
     return workspace
   }

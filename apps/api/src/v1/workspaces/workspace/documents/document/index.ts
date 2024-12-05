@@ -69,33 +69,39 @@ export default function documentRouter(socketServer: IOServer) {
       const payload = bodyResult.data
       let status = 500
       try {
-        const doc = await prisma().$transaction(async (tx) => {
-          const previousDoc = await getDocument(documentId, tx)
-          if (!previousDoc) {
-            status = 404
-            throw new Error('Document not found')
-          }
+        const doc = await prisma().$transaction(
+          async (tx) => {
+            const previousDoc = await getDocument(documentId, tx)
+            if (!previousDoc) {
+              status = 404
+              throw new Error('Document not found')
+            }
 
-          if (payload.relations) {
-            await moveDocument(
-              previousDoc.id,
-              workspaceId,
-              payload.relations.parentId,
-              payload.relations.orderIndex,
+            if (payload.relations) {
+              await moveDocument(
+                previousDoc.id,
+                workspaceId,
+                payload.relations.parentId,
+                payload.relations.orderIndex,
+                tx
+              )
+            }
+
+            const updatedDoc = await updateDocument(
+              documentId,
+              {
+                title: bodyResult.data.title,
+              },
               tx
             )
+
+            return updatedDoc
+          },
+          {
+            maxWait: 31000,
+            timeout: 30000,
           }
-
-          const updatedDoc = await updateDocument(
-            documentId,
-            {
-              title: bodyResult.data.title,
-            },
-            tx
-          )
-
-          return updatedDoc
-        })
+        )
 
         res.json(await toApiDocument(doc))
       } catch (err) {
@@ -124,22 +130,28 @@ export default function documentRouter(socketServer: IOServer) {
 
       let status: number = 500
       try {
-        const document = await prisma().$transaction(async (tx) => {
-          const document = await getDocument(documentId, tx)
-          if (!document || document.workspaceId !== workspaceId) {
-            status = 404
-            throw new Error('Document not found')
+        const document = await prisma().$transaction(
+          async (tx) => {
+            const document = await getDocument(documentId, tx)
+            if (!document || document.workspaceId !== workspaceId) {
+              status = 404
+              throw new Error('Document not found')
+            }
+
+            const deletedDoc = await deleteDocument(
+              document.id,
+              workspaceId,
+              !isPermanent,
+              tx
+            )
+
+            return { ...document, deletedAt: deletedDoc.deletedAt }
+          },
+          {
+            maxWait: 31000,
+            timeout: 30000,
           }
-
-          const deletedDoc = await deleteDocument(
-            document.id,
-            workspaceId,
-            !isPermanent,
-            tx
-          )
-
-          return { ...document, deletedAt: deletedDoc.deletedAt }
-        })
+        )
 
         res.json(document)
       } catch (err) {
@@ -166,21 +178,24 @@ export default function documentRouter(socketServer: IOServer) {
 
       let status = 500
       try {
-        const restoredDocument = await prisma().$transaction(async (tx) => {
-          let document = await tx.document.findUnique({
-            where: {
-              id: documentId,
-              workspaceId,
-              deletedAt: { not: null },
-            },
-          })
-          if (!document) {
-            status = 400
-            throw new Error('Document not found or not deleted')
-          }
+        const restoredDocument = await prisma().$transaction(
+          async (tx) => {
+            let document = await tx.document.findUnique({
+              where: {
+                id: documentId,
+                workspaceId,
+                deletedAt: { not: null },
+              },
+            })
+            if (!document) {
+              status = 400
+              throw new Error('Document not found or not deleted')
+            }
 
-          return restoreDocument(document.id, workspaceId, tx)
-        })
+            return restoreDocument(document.id, workspaceId, tx)
+          },
+          { maxWait: 31000, timeout: 30000 }
+        )
 
         res.json(await toApiDocument(restoredDocument))
       } catch (err) {

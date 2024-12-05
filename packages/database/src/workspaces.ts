@@ -84,38 +84,41 @@ export async function updateWorkspace(
   id: string,
   data: WorkspaceEditFormValues
 ) {
-  const w = await prisma().$transaction(async (tx) => {
-    const ws = await tx.workspace.findUnique({
-      where: { id },
-      select: { secretsId: true },
-    })
+  const w = await prisma().$transaction(
+    async (tx) => {
+      const ws = await tx.workspace.findUnique({
+        where: { id },
+        select: { secretsId: true },
+      })
 
-    let secretsId = ws?.secretsId
-    if (!secretsId) {
-      const secrets = await tx.workspaceSecrets.create({
+      let secretsId = ws?.secretsId
+      if (!secretsId) {
+        const secrets = await tx.workspaceSecrets.create({
+          data: {
+            openAiApiKey: data.openAiApiKey,
+          },
+        })
+        secretsId = secrets.id
+      } else {
+        await tx.workspaceSecrets.upsert({
+          where: { id: secretsId },
+          update: { openAiApiKey: data.openAiApiKey },
+          create: { openAiApiKey: data.openAiApiKey },
+        })
+      }
+
+      return await tx.workspace.update({
+        where: { id },
+        include: { secrets: true },
         data: {
-          openAiApiKey: data.openAiApiKey,
+          name: data.name,
+          assistantModel: data.assistantModel,
+          secretsId: secretsId,
         },
       })
-      secretsId = secrets.id
-    } else {
-      await tx.workspaceSecrets.upsert({
-        where: { id: secretsId },
-        update: { openAiApiKey: data.openAiApiKey },
-        create: { openAiApiKey: data.openAiApiKey },
-      })
-    }
-
-    return await tx.workspace.update({
-      where: { id },
-      include: { secrets: true },
-      data: {
-        name: data.name,
-        assistantModel: data.assistantModel,
-        secretsId: secretsId,
-      },
-    })
-  })
+    },
+    { maxWait: 31000, timeout: 30000 }
+  )
 
   return transformSecrets(w)
 }
@@ -151,5 +154,7 @@ export async function createWorkspace(
     return transformSecrets(w)
   }
 
-  return tx ? run(tx) : prisma().$transaction(run)
+  return tx
+    ? run(tx)
+    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
 }

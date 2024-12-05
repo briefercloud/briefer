@@ -56,68 +56,71 @@ export type ExecutionSchedule = {
 export function createSchedule(
   scheduleParams: ScheduleParams
 ): Promise<ExecutionSchedule> {
-  return prisma().$transaction(async (prisma) => {
-    let schedule: PrismaExecutionSchedule
-    switch (scheduleParams.type) {
-      case 'hourly':
-        schedule = await prisma.executionSchedule.create({
-          data: {
-            type: 'hourly',
-            documentId: scheduleParams.documentId,
-            minute: scheduleParams.minute!,
-            timezone: scheduleParams.timezone,
-          },
-        })
-        break
-      case 'daily':
-        schedule = await prisma.executionSchedule.create({
-          data: {
-            type: 'daily',
-            documentId: scheduleParams.documentId,
-            hour: scheduleParams.hour,
-            minute: scheduleParams.minute,
-            timezone: scheduleParams.timezone,
-          },
-        })
-        break
-      case 'weekly':
-        schedule = await prisma.executionSchedule.create({
-          data: {
-            type: 'weekly',
-            documentId: scheduleParams.documentId,
-            hour: scheduleParams.hour,
-            minute: scheduleParams.minute,
-            weekdays: JSON.stringify(scheduleParams.weekdays),
-            timezone: scheduleParams.timezone,
-          },
-        })
-        break
-      case 'monthly':
-        schedule = await prisma.executionSchedule.create({
-          data: {
-            type: 'monthly',
-            documentId: scheduleParams.documentId,
-            hour: scheduleParams.hour,
-            minute: scheduleParams.minute,
-            days: JSON.stringify(scheduleParams.days),
-            timezone: scheduleParams.timezone,
-          },
-        })
-        break
-      case 'cron':
-        schedule = await prisma.executionSchedule.create({
-          data: {
-            type: 'cron',
-            documentId: scheduleParams.documentId,
-            cron: scheduleParams.cron,
-            timezone: scheduleParams.timezone,
-          },
-        })
-        break
-    }
+  return prisma().$transaction(
+    async (prisma) => {
+      let schedule: PrismaExecutionSchedule
+      switch (scheduleParams.type) {
+        case 'hourly':
+          schedule = await prisma.executionSchedule.create({
+            data: {
+              type: 'hourly',
+              documentId: scheduleParams.documentId,
+              minute: scheduleParams.minute!,
+              timezone: scheduleParams.timezone,
+            },
+          })
+          break
+        case 'daily':
+          schedule = await prisma.executionSchedule.create({
+            data: {
+              type: 'daily',
+              documentId: scheduleParams.documentId,
+              hour: scheduleParams.hour,
+              minute: scheduleParams.minute,
+              timezone: scheduleParams.timezone,
+            },
+          })
+          break
+        case 'weekly':
+          schedule = await prisma.executionSchedule.create({
+            data: {
+              type: 'weekly',
+              documentId: scheduleParams.documentId,
+              hour: scheduleParams.hour,
+              minute: scheduleParams.minute,
+              weekdays: JSON.stringify(scheduleParams.weekdays),
+              timezone: scheduleParams.timezone,
+            },
+          })
+          break
+        case 'monthly':
+          schedule = await prisma.executionSchedule.create({
+            data: {
+              type: 'monthly',
+              documentId: scheduleParams.documentId,
+              hour: scheduleParams.hour,
+              minute: scheduleParams.minute,
+              days: JSON.stringify(scheduleParams.days),
+              timezone: scheduleParams.timezone,
+            },
+          })
+          break
+        case 'cron':
+          schedule = await prisma.executionSchedule.create({
+            data: {
+              type: 'cron',
+              documentId: scheduleParams.documentId,
+              cron: scheduleParams.cron,
+              timezone: scheduleParams.timezone,
+            },
+          })
+          break
+      }
 
-    return convertSchedule(schedule)
-  })
+      return convertSchedule(schedule)
+    },
+    { maxWait: 31000, timeout: 30000 }
+  )
 }
 
 export function convertSchedule(

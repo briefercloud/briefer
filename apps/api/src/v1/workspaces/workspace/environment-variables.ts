@@ -45,33 +45,42 @@ environmentVariablesRouter.post('/', async (req, res) => {
   const workspaceId = getParam(req, 'workspaceId')
 
   try {
-    await prisma().$transaction(async (tx) => {
-      const removeNames = await tx.environmentVariable.findMany({
-        where: { id: { in: body.data.remove }, workspaceId },
-        select: { name: true },
-      })
-      await tx.environmentVariable.deleteMany({
-        where: { id: { in: body.data.remove }, workspaceId },
-      })
+    await prisma().$transaction(
+      async (tx) => {
+        const removeNames = await tx.environmentVariable.findMany({
+          where: { id: { in: body.data.remove }, workspaceId },
+          select: { name: true },
+        })
+        await tx.environmentVariable.deleteMany({
+          where: { id: { in: body.data.remove }, workspaceId },
+        })
 
-      await tx.environmentVariable.createMany({
-        data: body.data.add.map((v) => ({
-          name: encrypt(v.name, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY),
-          value: encrypt(
-            v.value,
-            config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+        await tx.environmentVariable.createMany({
+          data: body.data.add.map((v) => ({
+            name: encrypt(
+              v.name,
+              config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+            ),
+            value: encrypt(
+              v.value,
+              config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY
+            ),
+            workspaceId,
+          })),
+        })
+
+        await getJupyterManager().setEnvironmentVariables(workspaceId, {
+          add: body.data.add,
+          remove: removeNames.map((v) =>
+            decrypt(v.name, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY)
           ),
-          workspaceId,
-        })),
-      })
-
-      await getJupyterManager().setEnvironmentVariables(workspaceId, {
-        add: body.data.add,
-        remove: removeNames.map((v) =>
-          decrypt(v.name, config().ENVIRONMENT_VARIABLES_ENCRYPTION_KEY)
-        ),
-      })
-    })
+        })
+      },
+      {
+        maxWait: 31000,
+        timeout: 30000,
+      }
+    )
 
     const envVars = await prisma().environmentVariable.findMany({
       where: { workspaceId },

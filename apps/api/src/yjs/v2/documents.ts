@@ -144,7 +144,7 @@ export async function duplicateDocument(
       return cb(tx)
     }
 
-    return prisma().$transaction(cb, { maxWait: 11000, timeout: 10000 })
+    return prisma().$transaction(cb, { maxWait: 31000, timeout: 30000 })
   }
 
   await transaction(async (tx) => {

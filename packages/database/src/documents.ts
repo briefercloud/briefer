@@ -169,7 +169,9 @@ export async function restoreDocumentAndChildren(
     return doc
   }
 
-  return tx ? run(tx) : prisma().$transaction(run)
+  return tx
+    ? run(tx)
+    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
 }
 
 export async function createDocument(
@@ -270,7 +272,9 @@ export async function deleteDocumentAndChildren(
     return doc
   }
 
-  return tx ? run(tx) : prisma().$transaction(run)
+  return tx
+    ? run(tx)
+    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
 }
 
 export const createFavorite = async (userId: string, documentId: string) => {
