@@ -15,7 +15,7 @@ export function WebsocketProvider({ children }: Props) {
   const session = useSession()
   const workspaceId = useStringQuery('workspaceId')
   useEffect(() => {
-    if (session.data) {
+    if (session.data?.id) {
       const url = new URL(NEXT_PUBLIC_API_URL())
       const withoutPathname = url.origin
 
@@ -30,7 +30,7 @@ export function WebsocketProvider({ children }: Props) {
         socket.disconnect()
       }
     }
-  }, [session.data, setSocket])
+  }, [session.data?.id, setSocket])
 
   useEffect(() => {
     if (!socket || !validate(workspaceId)) {
