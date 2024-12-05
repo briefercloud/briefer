@@ -17,6 +17,7 @@ import {
   getDashboardItem,
   getDataframes,
   getLayout,
+  switchBlockType,
 } from '@briefer/editor'
 import { AppPersistor, DocumentPersistor } from './persistors.js'
 import { WSSharedDocV2, getDocId, getYDocForUpdate } from './index.js'
@@ -149,7 +150,6 @@ export async function duplicateDocument(
 
   await transaction(async (tx) => {
     const prevId = getDocId(prevDoc.id, null)
-    // TODO: copy app
     await getYDocForUpdate(
       prevId,
       socketServer,
@@ -162,11 +162,47 @@ export async function duplicateDocument(
           socketServer,
           newDoc.id,
           newDoc.workspaceId,
-          (newYDoc) => {
+          async (newYDoc) => {
             duplicateYDoc(existingYDoc, newYDoc.ydoc, getDuplicatedTitle, {
               keepIds: false,
               datasourceMap,
             })
+
+            const blocks = newYDoc.blocks
+            const componentInstances: {
+              blockId: string
+              componentId: string
+            }[] = []
+            for (const [blockId, block] of blocks) {
+              const componentId = switchBlockType(block, {
+                onSQL: (block) => block.getAttribute('componentId'),
+                onPython: (block) => block.getAttribute('componentId'),
+                onRichText: () => null,
+                onVisualization: () => null,
+                onInput: () => null,
+                onDropdownInput: () => null,
+                onDateInput: () => null,
+                onFileUpload: () => null,
+                onDashboardHeader: () => null,
+                onWriteback: () => null,
+                onPivotTable: () => null,
+              })
+
+              if (componentId) {
+                componentInstances.push({ blockId, componentId })
+              }
+            }
+
+            if (componentInstances.length > 0) {
+              await tx.reusableComponentInstance.createMany({
+                data: componentInstances.map((ci) => ({
+                  blockId: ci.blockId,
+                  reusableComponentId: ci.componentId,
+                  documentId: newDoc.id,
+                })),
+                skipDuplicates: true,
+              })
+            }
           },
           new DocumentPersistor(newDoc.id),
           tx
