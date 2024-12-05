@@ -39,7 +39,7 @@ export type LoadStateResult = {
 }
 export interface Persistor {
   load: (id: string, tx?: PrismaTransaction) => Promise<LoadStateResult>
-  persist(ydoc: WSSharedDocV2): Promise<void>
+  persist(ydoc: WSSharedDocV2, tx?: PrismaTransaction): Promise<void>
   persistUpdates: (
     ydoc: WSSharedDocV2,
     updates: Uint8Array[]
@@ -160,10 +160,13 @@ export class DocumentPersistor implements Persistor {
     }
   }
 
-  public async persist(ydoc: WSSharedDocV2): Promise<void> {
-    const yjsDoc = await this.getYjsDoc(ydoc)
+  public async persist(
+    ydoc: WSSharedDocV2,
+    tx?: PrismaTransaction
+  ): Promise<void> {
+    const yjsDoc = await this.getYjsDoc(ydoc, tx)
 
-    await prisma().yjsDocument.update({
+    await (tx ?? prisma()).yjsDocument.update({
       where: { id: yjsDoc.id },
       data: {
         state: Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc)),
@@ -230,14 +233,14 @@ export class DocumentPersistor implements Persistor {
     })
   }
 
-  private async getYjsDoc(doc: WSSharedDocV2) {
-    let yjsDoc = await prisma().yjsDocument.findUnique({
+  private async getYjsDoc(doc: WSSharedDocV2, tx?: PrismaTransaction) {
+    let yjsDoc = await (tx ?? prisma()).yjsDocument.findUnique({
       select: { id: true, clock: true },
       where: { documentId: this.documentId },
     })
     const isNew = !yjsDoc
     if (!yjsDoc) {
-      yjsDoc = await prisma().yjsDocument.upsert({
+      yjsDoc = await (tx ?? prisma()).yjsDocument.upsert({
         where: { documentId: this.documentId },
         create: {
           documentId: this.documentId,
@@ -250,7 +253,7 @@ export class DocumentPersistor implements Persistor {
 
     if (!isNew) {
       const now = new Date()
-      const updatesCount = await prisma().yjsUpdate.count({
+      const updatesCount = await (tx ?? prisma()).yjsUpdate.count({
         where: {
           yjsDocumentId: yjsDoc.id,
         },
@@ -265,7 +268,7 @@ export class DocumentPersistor implements Persistor {
           },
           'Too many updates, cleaning up'
         )
-        const deleted = await prisma().yjsUpdate.deleteMany({
+        const deleted = await (tx ?? prisma()).yjsUpdate.deleteMany({
           where: {
             yjsDocumentId: yjsDoc.id,
             createdAt: { lt: now },
@@ -550,10 +553,13 @@ export class AppPersistor implements Persistor {
     }
   }
 
-  public async persist(ydoc: WSSharedDocV2): Promise<void> {
+  public async persist(
+    ydoc: WSSharedDocV2,
+    tx?: PrismaTransaction
+  ): Promise<void> {
     if (this.userId) {
       const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))
-      await prisma().userYjsAppDocument.upsert({
+      await (tx ?? prisma()).userYjsAppDocument.upsert({
         where: {
           yjsAppDocumentId_userId: {
             yjsAppDocumentId: this.yjsAppDocumentId,
@@ -571,7 +577,7 @@ export class AppPersistor implements Persistor {
         },
       })
     } else {
-      await prisma().yjsAppDocument.update({
+      await (tx ?? prisma()).yjsAppDocument.update({
         where: { id: this.yjsAppDocumentId },
         data: {
           state: Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc)),

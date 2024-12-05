@@ -873,6 +873,7 @@ export class WSSharedDocV2 {
       persistor
     )
     await doc.init()
+    await persistor.persist(doc, tx)
     return doc
   }
 }
