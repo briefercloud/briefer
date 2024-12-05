@@ -54,6 +54,7 @@ export default function Dashboard(props: Props) {
   ])
 
   const { yDoc, syncing, isDirty } = useYDoc(
+    props.document.workspaceId,
     props.document.id,
     !props.isEditing,
     clock,
