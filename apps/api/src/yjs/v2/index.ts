@@ -236,12 +236,23 @@ export function setupYJSSocketServerV2(
         wss.close()
         stopCollection()
         while (docs.size > 0) {
+          // 2 minutes
           if (Date.now() - startTime > 60 * 1000 * 2) {
             logger().error(
               { count: docs.size },
-              '[shutdown] Some YJS docs did not close in time'
+              '[shutdown] Some YJS docs did not close in time, force closing'
             )
-            // 2 minutes
+
+            for (const doc of docs.values()) {
+              await doc.destroy()
+            }
+
+            logger().info(
+              {
+                count: docs.size,
+              },
+              '[shutdown] All remaining YJS docs force closed'
+            )
             break
           }
 
