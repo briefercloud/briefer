@@ -88,6 +88,7 @@ export class DocumentPersistor implements Persistor {
           this.applyUpdate(ydoc, update.update)
         }
 
+        const now = new Date()
         const updatesCount = await (tx ?? prisma()).yjsUpdate.count({
           where: {
             yjsDocumentId: dbDoc.id,
@@ -109,6 +110,7 @@ export class DocumentPersistor implements Persistor {
             const deleted = await tx.yjsUpdate.deleteMany({
               where: {
                 yjsDocumentId: dbDoc.id,
+                createdAt: { lt: now },
                 clock: { lte: dbDoc.clock },
               },
             })
@@ -205,6 +207,7 @@ export class DocumentPersistor implements Persistor {
     }
 
     if (!isNew) {
+      const now = new Date()
       const updatesCount = await prisma().yjsUpdate.count({
         where: {
           yjsDocumentId: yjsDoc.id,
@@ -220,9 +223,11 @@ export class DocumentPersistor implements Persistor {
           },
           'Too many updates, cleaning up'
         )
-        await prisma().yjsUpdate.deleteMany({
+        const deleted = await prisma().yjsUpdate.deleteMany({
           where: {
-            OR: [{ yjsDocumentId: yjsDoc.id }, { clock: { lt: yjsDoc.clock } }],
+            yjsDocumentId: yjsDoc.id,
+            createdAt: { lt: now },
+            clock: { lte: yjsDoc.clock },
           },
         })
         logger().trace(
@@ -230,6 +235,7 @@ export class DocumentPersistor implements Persistor {
             documentId: this.documentId,
             clock: yjsDoc.clock,
             updates: updatesCount,
+            deleted: deleted.count,
           },
           'Finished cleaning up updates'
         )
@@ -317,6 +323,7 @@ export class AppPersistor implements Persistor {
             doc:
               | { _tag: 'user'; userYjsAppDocument: UserYjsAppDocument }
               | { _tag: 'app'; yjsAppDocument: YjsAppDocument },
+            before: Date,
             tx: PrismaTransaction
           ) => {
             const where =
@@ -330,8 +337,9 @@ export class AppPersistor implements Persistor {
             const deleted = await tx.yjsUpdate.deleteMany({
               where: {
                 ...where,
+                createdAt: { lt: before },
                 clock: {
-                  lt:
+                  lte:
                     doc._tag === 'user'
                       ? doc.userYjsAppDocument.clock
                       : doc.yjsAppDocument.clock,
@@ -382,6 +390,7 @@ export class AppPersistor implements Persistor {
               this.applyUpdate(ydoc, update.update)
             }
 
+            const now = new Date()
             const updatesCount = await tx.yjsUpdate.count({
               where: {
                 yjsAppDocumentId: this.yjsAppDocumentId,
@@ -402,6 +411,7 @@ export class AppPersistor implements Persistor {
               const deleted = await cleanUpdates(
                 ydoc,
                 { _tag: 'app', yjsAppDocument: yjsAppDoc },
+                now,
                 tx
               )
               logger().trace(
@@ -433,6 +443,7 @@ export class AppPersistor implements Persistor {
               this.applyUpdate(ydoc, update.update)
             }
 
+            const now = new Date()
             const updatesCount = await tx.yjsUpdate.count({
               where: {
                 userYjsAppDocumentUserId: this.userId,
@@ -455,6 +466,7 @@ export class AppPersistor implements Persistor {
               const deleted = await cleanUpdates(
                 ydoc,
                 { _tag: 'user', userYjsAppDocument: userYjsAppDoc },
+                now,
                 tx
               )
               logger().trace(
@@ -545,6 +557,7 @@ export class AppPersistor implements Persistor {
           update: {},
         })
 
+        const now = new Date()
         const updatesCount = await prisma().yjsUpdate.count({
           where: {
             userYjsAppDocumentUserId: this.userId,
@@ -561,10 +574,12 @@ export class AppPersistor implements Persistor {
             },
             'Too many updates, cleaning up'
           )
-          await prisma().yjsUpdate.deleteMany({
+          const deleted = await prisma().yjsUpdate.deleteMany({
             where: {
               userYjsAppDocumentUserId: this.userId,
               userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
+              createdAt: { lt: now },
+              clock: { lte: doc.clock },
             },
           })
           logger().trace(
@@ -573,6 +588,7 @@ export class AppPersistor implements Persistor {
               userId: this.userId,
               clock: doc.clock,
               updates: updatesCount,
+              deleted: deleted.count,
             },
             'Finished cleaning up updates'
           )
@@ -591,6 +607,7 @@ export class AppPersistor implements Persistor {
         return ids.map((id) => id.id)
       }
 
+      const now = new Date()
       const updatesCount = await prisma().yjsUpdate.count({
         where: {
           yjsAppDocumentId: this.yjsAppDocumentId,
@@ -605,9 +622,11 @@ export class AppPersistor implements Persistor {
           },
           'Too many updates, cleaning up'
         )
-        await prisma().yjsUpdate.deleteMany({
+        const deleted = await prisma().yjsUpdate.deleteMany({
           where: {
             yjsAppDocumentId: this.yjsAppDocumentId,
+            createdAt: { lt: now },
+            clock: { lte: doc.clock },
           },
         })
         logger().trace(
@@ -615,6 +634,7 @@ export class AppPersistor implements Persistor {
             yjsAppDocumentId: this.yjsAppDocumentId,
             clock: doc.clock,
             updates: updatesCount,
+            deleted: deleted.count,
           },
           'Finished cleaning up updates'
         )
