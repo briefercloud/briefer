@@ -27,7 +27,7 @@ import {
   getDateInputAttributes,
   PivotTableBlock,
 } from '@briefer/editor'
-import { equals, omit } from 'ramda'
+import { equals, omit, splitEvery } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
 import { WritebackBlock } from '@briefer/editor/types/blocks/writeback.js'
 import { acquireLock } from '../../lock.js'
@@ -175,16 +175,58 @@ export class DocumentPersistor implements Persistor {
     return acquireLock(`document-persistor:${doc.id}`, async () => {
       const yjsDoc = await this.getYjsDoc(doc)
 
-      const ids = await prisma().yjsUpdate.createManyAndReturn({
-        data: updates.map((update) => ({
-          yjsDocumentId: yjsDoc.id,
-          update: Buffer.from(update),
+      const batches = splitEvery(10, updates)
+      logger().trace(
+        {
+          id: doc.id,
+          workspaceId: doc.workspaceId,
+          documentId: doc.documentId,
           clock: yjsDoc.clock,
-        })),
-        select: { id: true },
-      })
+          updates: updates.length,
+          batches: batches.length,
+        },
+        'Persisting updates in batches'
+      )
 
-      return ids.map((id) => id.id)
+      let ids: string[] = []
+      for (const [i, batch] of batches.entries()) {
+        const batchIds = await prisma().yjsUpdate.createManyAndReturn({
+          data: batch.map((update) => ({
+            yjsDocumentId: yjsDoc.id,
+            update: Buffer.from(update),
+            clock: yjsDoc.clock,
+          })),
+          select: { id: true },
+        })
+        logger().trace(
+          {
+            id: doc.id,
+            workspaceId: doc.workspaceId,
+            documentId: doc.documentId,
+            clock: yjsDoc.clock,
+            updates: updates.length,
+            batch: i,
+            batchUpdates: batch.length,
+            batchIds: batchIds.length,
+          },
+          'Persisted batch of updates'
+        )
+        ids = ids.concat(batchIds.map((id) => id.id))
+      }
+
+      logger().trace(
+        {
+          id: doc.id,
+          workspaceId: doc.workspaceId,
+          documentId: doc.documentId,
+          clock: yjsDoc.clock,
+          updates: updates.length,
+          batches: batches.length,
+        },
+        'Finished persisting updates'
+      )
+
+      return ids
     })
   }
 
@@ -594,17 +636,65 @@ export class AppPersistor implements Persistor {
           )
         }
 
-        const ids = await prisma().yjsUpdate.createManyAndReturn({
-          data: updates.map((update) => ({
-            userYjsAppDocumentUserId: this.userId,
-            userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
-            update: Buffer.from(update),
-            clock: doc.clock,
-          })),
-          select: { id: true },
-        })
+        const batches = splitEvery(10, updates)
 
-        return ids.map((id) => id.id)
+        logger().trace(
+          {
+            id: doc.id,
+            workspaceId: doc.workspaceId,
+            documentId: doc.documentId,
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            userId: this.userId,
+            clock: doc.clock,
+            batches: batches.length,
+            updates: updates.length,
+          },
+          'Persisting updates in batches'
+        )
+
+        let ids: string[] = []
+        for (const [i, batch] of batches.entries()) {
+          const batchIds = await prisma().yjsUpdate.createManyAndReturn({
+            data: batch.map((update) => ({
+              userYjsAppDocumentUserId: this.userId,
+              userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
+              update: Buffer.from(update),
+              clock: doc.clock,
+            })),
+            select: { id: true },
+          })
+          ids = ids.concat(batchIds.map((id) => id.id))
+          logger().trace(
+            {
+              id: doc.id,
+              workspaceId: doc.workspaceId,
+              documentId: doc.documentId,
+              yjsAppDocumentId: this.yjsAppDocumentId,
+              userId: this.userId,
+              clock: doc.clock,
+              batch: i,
+              batchUpdates: batch.length,
+              batchIds: batchIds.length,
+            },
+            'Persisted batch of updates'
+          )
+        }
+
+        logger().trace(
+          {
+            id: doc.id,
+            workspaceId: doc.workspaceId,
+            documentId: doc.documentId,
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            userId: this.userId,
+            clock: doc.clock,
+            batches: batches.length,
+            updates: updates.length,
+          },
+          'Finished persisting updates'
+        )
+
+        return ids
       }
 
       const now = new Date()
@@ -640,16 +730,58 @@ export class AppPersistor implements Persistor {
         )
       }
 
-      const ids = await prisma().yjsUpdate.createManyAndReturn({
-        data: updates.map((update) => ({
+      const batches = splitEvery(10, updates)
+      let ids: string[] = []
+      logger().trace(
+        {
+          id: doc.id,
+          workspaceId: doc.workspaceId,
+          documentId: doc.documentId,
           yjsAppDocumentId: this.yjsAppDocumentId,
-          update: Buffer.from(update),
           clock: doc.clock,
-        })),
-        select: { id: true },
-      })
+          batches: batches.length,
+          updates: updates.length,
+        },
+        'Persisting updates in batches'
+      )
+      for (const [i, batch] of batches.entries()) {
+        const batchIds = await prisma().yjsUpdate.createManyAndReturn({
+          data: batch.map((update) => ({
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            update: Buffer.from(update),
+            clock: doc.clock,
+          })),
+          select: { id: true },
+        })
+        ids = ids.concat(batchIds.map((id) => id.id))
+        logger().trace(
+          {
+            id: doc.id,
+            workspaceId: doc.workspaceId,
+            documentId: doc.documentId,
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            clock: doc.clock,
+            batch: i,
+            batchUpdates: batch.length,
+            batchIds: batchIds.length,
+          },
+          'Persisted batch of updates'
+        )
+      }
 
-      return ids.map((id) => id.id)
+      logger().trace(
+        {
+          id: doc.id,
+          workspaceId: doc.workspaceId,
+          documentId: doc.documentId,
+          yjsAppDocumentId: this.yjsAppDocumentId,
+          clock: doc.clock,
+          batches: batches.length,
+          updates: updates.length,
+        },
+        'Finished persisting updates'
+      )
+      return ids
     })
   }
 
