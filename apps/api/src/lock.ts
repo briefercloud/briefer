@@ -25,13 +25,6 @@ class AlreadyAcquiredError extends Error {
   }
 }
 
-class LockQueueUndefinedResultError extends Error {
-  constructor(public readonly lockName: string) {
-    super(`Lock queue returned undefined result for ${lockName}.`)
-    this.name = 'LockQueueUndefinedResultError'
-  }
-}
-
 export async function acquireLock<T>(
   name: string,
   cb: () => Promise<T>
@@ -51,12 +44,7 @@ export async function acquireLock<T>(
     'Enqueueing lock acquisition'
   )
   const result = await lockQueue.add(() => acquireLockInternal(name, cb))
-  if (!result) {
-    logger().error({ name }, 'Lock queue returned undefined result')
-    throw new LockQueueUndefinedResultError(name)
-  }
-
-  return result
+  return result as T
 }
 
 async function acquireLockInternal<T>(
