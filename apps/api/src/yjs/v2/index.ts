@@ -301,10 +301,22 @@ export const docsCache = new LRUCache<string, WSSharedDocV2>({
 
   sizeCalculation: (doc) => doc.getByteLength(),
 
-  dispose: (doc, id) => {
+  dispose: async (doc, id) => {
     if (!docs.has(id)) {
       // only destroy if the doc is not in the main map
-      doc.destroy()
+      try {
+        await doc.destroy()
+      } catch (err) {
+        logger().error(
+          {
+            id: doc.id,
+            workspaceId: doc.workspaceId,
+            documentId: doc.documentId,
+            err,
+          },
+          'Failed to dispose Yjs doc after cache eviction'
+        )
+      }
     }
   },
 })
@@ -325,7 +337,7 @@ function startDocumentCollection() {
           docs.delete(docId)
           if (!docsCache.has(docId)) {
             // only destroy if the doc is not in cache
-            doc.destroy()
+            await doc.destroy()
           }
           logger().trace({ docId }, 'Doc collected')
           collected++
@@ -631,6 +643,8 @@ export class WSSharedDocV2 {
       this.executor.stop(),
       this.aiExecutor.stop(),
     ])
+
+    await this.persistor.persist(this)
 
     this.ydoc.destroy()
   }
