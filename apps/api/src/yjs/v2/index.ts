@@ -682,15 +682,30 @@ export class WSSharedDocV2 {
         'Enqueuing Yjs update for publishing'
       )
       await this.serialUpdatesQueue.add(async () => {
-        const updates = this.pendingUpdates
+        let updates = this.pendingUpdates
         this.pendingUpdates = []
         if (updates.length === 0) {
           return
         }
 
+        try {
+          const update = Y.mergeUpdates(updates)
+          updates = [update]
+        } catch (err) {
+          logger().error(
+            {
+              id: this.id,
+              documentId: this.documentId,
+              workspaceId: this.workspaceId,
+              err,
+            },
+            'Failed to merge Yjs updates, persisting individually'
+          )
+        }
+
         const pubsubChannel = this.getPubSubChannel()
         try {
-          const updateIds = await this.persistor.persistUpdates(this, updates)
+          const updateIds = await this.persistor.persistUpdates(this, [update])
           for (const updateId of updateIds) {
             await publish(
               pubsubChannel,
