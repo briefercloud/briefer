@@ -50,6 +50,7 @@ import { jsonString, uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
 import { AIExecutor } from './executor/ai/index.js'
+import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -912,73 +913,75 @@ async function getYDoc(
   persistor: Persistor,
   tx?: PrismaTransaction
 ): Promise<WSSharedDocV2> {
-  logger().trace(
-    {
-      id,
-      documentId,
-      workspaceId,
-      cacheBytesSize: docsCache.calculatedSize,
-      cacheCount: docsCache.size,
-    },
-    'Getting YDoc'
-  )
+  return acquireLock(`getYDoc:${id}`, async () => {
+    logger().trace(
+      {
+        id,
+        documentId,
+        workspaceId,
+        cacheBytesSize: docsCache.calculatedSize,
+        cacheCount: docsCache.size,
+      },
+      'Getting YDoc'
+    )
 
-  let yDoc = docs.get(id)
-  if (!yDoc) {
-    yDoc = docsCache.get(id)
-    if (yDoc) {
-      logger().trace(
-        {
-          id,
-          documentId,
-          workspaceId,
-          cacheBytesSize: docsCache.calculatedSize,
-          cacheCount: docsCache.size,
-          hit: true,
-        },
-        'YDoc cache hit'
+    let yDoc = docs.get(id)
+    if (!yDoc) {
+      yDoc = docsCache.get(id)
+      if (yDoc) {
+        logger().trace(
+          {
+            id,
+            documentId,
+            workspaceId,
+            cacheBytesSize: docsCache.calculatedSize,
+            cacheCount: docsCache.size,
+            hit: true,
+          },
+          'YDoc cache hit'
+        )
+        docs.set(id, yDoc)
+      } else {
+        logger().trace(
+          {
+            id,
+            documentId,
+            workspaceId,
+            cacheBytesSize: docsCache.calculatedSize,
+            cacheCount: docsCache.size,
+            hit: false,
+          },
+          'YDoc cache miss'
+        )
+      }
+    }
+
+    if (!yDoc) {
+      yDoc = await WSSharedDocV2.make(
+        id,
+        documentId,
+        workspaceId,
+        socketServer,
+        persistor,
+        tx
       )
       docs.set(id, yDoc)
-    } else {
-      logger().trace(
-        {
-          id,
-          documentId,
-          workspaceId,
-          cacheBytesSize: docsCache.calculatedSize,
-          cacheCount: docsCache.size,
-          hit: false,
-        },
-        'YDoc cache miss'
-      )
+      docsCache.set(id, yDoc)
     }
-  }
 
-  if (!yDoc) {
-    yDoc = await WSSharedDocV2.make(
-      id,
-      documentId,
-      workspaceId,
-      socketServer,
-      persistor,
-      tx
+    logger().trace(
+      {
+        id,
+        documentId,
+        workspaceId,
+        cacheBytesSize: docsCache.calculatedSize,
+        cacheCount: docsCache.size,
+      },
+      'Got YDoc'
     )
-    docs.set(id, yDoc)
-    docsCache.set(id, yDoc)
-  }
 
-  logger().trace(
-    {
-      id,
-      documentId,
-      workspaceId,
-      cacheBytesSize: docsCache.calculatedSize,
-      cacheCount: docsCache.size,
-    },
-    'Got YDoc'
-  )
-
-  return yDoc
+    return yDoc
+  })
 }
 
 export async function getYDocForUpdate<T>(
@@ -990,61 +993,14 @@ export async function getYDocForUpdate<T>(
   persistor: Persistor,
   tx?: PrismaTransaction
 ): Promise<T> {
-  logger().trace(
-    {
-      id,
-      documentId,
-      workspaceId,
-      cacheBytesSize: docsCache.calculatedSize,
-      cacheCount: docsCache.size,
-    },
-    'Getting YDoc for update'
+  const doc = await getYDoc(
+    socketServer,
+    id,
+    documentId,
+    workspaceId,
+    persistor,
+    tx
   )
-
-  let doc = docs.get(id)
-  if (!doc) {
-    doc = docsCache.get(id)
-    if (doc) {
-      logger().trace(
-        {
-          id,
-          documentId,
-          workspaceId,
-          cacheBytesSize: docsCache.calculatedSize,
-          cacheCount: docsCache.size,
-          hit: true,
-        },
-        'YDoc cache hit'
-      )
-      docs.set(id, doc)
-    } else {
-      logger().trace(
-        {
-          id,
-          documentId,
-          workspaceId,
-          cacheBytesSize: docsCache.calculatedSize,
-          cacheCount: docsCache.size,
-          hit: false,
-        },
-        'YDoc cache miss'
-      )
-    }
-  }
-
-  if (!doc) {
-    doc = await WSSharedDocV2.make(
-      id,
-      documentId,
-      workspaceId,
-      socketServer,
-      persistor,
-      tx
-    )
-    docs.set(id, doc)
-    docsCache.set(id, doc)
-  }
-
   doc.updating++
   try {
     const r = await cb(doc)
