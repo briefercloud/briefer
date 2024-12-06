@@ -14,21 +14,7 @@ from api.llms import initialize_llm
 from api.chains.stream.python_edit import create_python_edit_stream_query_chain
 from api.chains.stream.sql_edit import create_sql_edit_stream_query_chain
 import secrets
-from sqlalchemy.engine import create_engine
-from typing import Any
 
-def get_database_engine(databaseURL: str, credentialsInfo: Any, cert_path: str | None = None):
-    connect_args = {}
-    if cert_path:
-        connect_args["sslmode"] = "verify-ca"
-        connect_args["sslrootcert"] = cert_path
-
-    if credentialsInfo:
-        engine = create_engine(databaseURL, credentials_info=credentialsInfo, connect_args=connect_args)
-    else:
-        engine = create_engine(databaseURL, connect_args=connect_args)
-
-    return engine
 
 app = FastAPI()
 
