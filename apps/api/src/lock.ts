@@ -10,6 +10,8 @@ const EXPIRATION_TIME = 1000 * 5 // 5 seconds
 const RETRY_TIMEOUT = 1000 * 30 // 30 seconds in case pubsub fails
 const NUM_PARTITIONS = 32
 
+const queues = new Map<string, PQueue>()
+
 function getPartition(name: string): number {
   const hash = crypto.createHash('md5').update(name).digest('hex')
   const hashValue = parseInt(hash.slice(0, 8), 16) // Use first 8 hex characters
@@ -23,7 +25,41 @@ class AlreadyAcquiredError extends Error {
   }
 }
 
+class LockQueueUndefinedResultError extends Error {
+  constructor(public readonly lockName: string) {
+    super(`Lock queue returned undefined result for ${lockName}.`)
+    this.name = 'LockQueueUndefinedResultError'
+  }
+}
+
 export async function acquireLock<T>(
+  name: string,
+  cb: () => Promise<T>
+): Promise<T> {
+  let lockQueue = queues.get(name)
+  if (!lockQueue) {
+    lockQueue = new PQueue({ concurrency: 1 })
+    queues.set(name, lockQueue)
+  }
+
+  logger().trace(
+    {
+      name,
+      queueSize: lockQueue.size,
+      pending: lockQueue.pending,
+    },
+    'Enqueueing lock acquisition'
+  )
+  const result = await lockQueue.add(() => acquireLockInternal(name, cb))
+  if (!result) {
+    logger().error({ name }, 'Lock queue returned undefined result')
+    throw new LockQueueUndefinedResultError(name)
+  }
+
+  return result
+}
+
+async function acquireLockInternal<T>(
   name: string,
   cb: () => Promise<T>
 ): Promise<T> {
@@ -150,15 +186,28 @@ export async function acquireLock<T>(
       }
 
       const extendExpirationInterval = setInterval(async () => {
-        await prisma().lock.updateMany({
-          where: {
-            name,
-            ownerId,
-          },
-          data: {
-            expiresAt: new Date(Date.now() + EXPIRATION_TIME),
-          },
-        })
+        try {
+          await prisma().lock.updateMany({
+            where: {
+              name,
+              ownerId,
+            },
+            data: {
+              expiresAt: new Date(Date.now() + EXPIRATION_TIME),
+            },
+          })
+        } catch (err) {
+          logger().error(
+            {
+              name,
+              ownerId,
+              channel,
+              attempt,
+              err,
+            },
+            'Failed to extend lock expiration time'
+          )
+        }
       }, EXPIRATION_TIME / 3)
 
       logger().debug({ name, ownerId, channel, attempt }, 'Lock acquired')
