@@ -518,7 +518,23 @@ export class WSSharedDocV2 {
 
     if (this.clock === parsedMessage.data.clock) {
       Y.applyUpdate(this.ydoc, update.update)
+
+      const encoder = encoding.createEncoder()
+      encoding.writeVarUint(encoder, messageSync)
+      syncProtocol.writeUpdate(encoder, update.update)
+      const message = encoding.toUint8Array(encoder)
+      this.conns.forEach((_, conn) => send(this, conn, message))
     } else if (parsedMessage.data.clock > this.clock) {
+      logger().trace(
+        {
+          id: this.id,
+          documentId: this.documentId,
+          workspaceId: this.workspaceId,
+          clock: this.clock,
+          foreignClock: parsedMessage.data.clock,
+        },
+        'Foreign update has newer clock'
+      )
       // we have a previous version of the document, we need to reset
       const newDoc = new Y.Doc()
       Y.applyUpdate(newDoc, update.update)
@@ -685,88 +701,88 @@ export class WSSharedDocV2 {
     this.conns.forEach((_, conn) => send(this, conn, message))
 
     // only call this when the update originates from this connection
-    if (tr.local || (tr.origin && 'user' in tr.origin)) {
-      this.pendingUpdates.push(update)
-      logger().trace(
-        {
-          id: this.id,
-          documentId: this.documentId,
-          workspaceId: this.workspaceId,
-          serialUpdatesQueue: this.serialUpdatesQueue.size,
-        },
-        'Enqueuing Yjs update for publishing'
-      )
-      await this.serialUpdatesQueue.add(async () => {
-        let updates = this.pendingUpdates
-        this.pendingUpdates = []
-        if (updates.length === 0) {
-          return
-        }
+    // if (tr.local || (tr.origin && 'user' in tr.origin)) {
+    this.pendingUpdates.push(update)
+    logger().trace(
+      {
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+        serialUpdatesQueue: this.serialUpdatesQueue.size,
+      },
+      'Enqueuing Yjs update for publishing'
+    )
+    await this.serialUpdatesQueue.add(async () => {
+      let updates = this.pendingUpdates
+      this.pendingUpdates = []
+      if (updates.length === 0) {
+        return
+      }
 
-        try {
-          const update = Y.mergeUpdates(updates)
-          updates = [update]
-        } catch (err) {
-          logger().error(
-            {
+      try {
+        const update = Y.mergeUpdates(updates)
+        updates = [update]
+      } catch (err) {
+        logger().error(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            err,
+          },
+          'Failed to merge Yjs updates, persisting individually'
+        )
+      }
+
+      const pubsubChannel = this.getPubSubChannel()
+      try {
+        const updateIds = await this.persistor.persistUpdates(this, [update])
+        for (const updateId of updateIds) {
+          await publish(
+            pubsubChannel,
+            JSON.stringify({
               id: this.id,
-              documentId: this.documentId,
-              workspaceId: this.workspaceId,
-              err,
-            },
-            'Failed to merge Yjs updates, persisting individually'
+              publisherId: this.publisherId,
+              message: updateId,
+              clock: this.clock,
+            })
           )
         }
+        logger().trace(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            updateIds,
+          },
+          'Published Yjs updates'
+        )
+      } catch (err) {
+        logger().error(
+          {
+            id: this.id,
+            documentId: this.documentId,
+            workspaceId: this.workspaceId,
+            pubsubChannel,
+            err,
+          },
+          'Failed to persist Yjs update'
+        )
+        throw err
+      }
 
-        const pubsubChannel = this.getPubSubChannel()
-        try {
-          const updateIds = await this.persistor.persistUpdates(this, [update])
-          for (const updateId of updateIds) {
-            await publish(
-              pubsubChannel,
-              JSON.stringify({
-                id: this.id,
-                publisherId: this.publisherId,
-                message: updateId,
-                clock: this.clock,
-              })
-            )
-          }
-          logger().trace(
-            {
-              id: this.id,
-              documentId: this.documentId,
-              workspaceId: this.workspaceId,
-              updateIds,
-            },
-            'Published Yjs updates'
-          )
-        } catch (err) {
-          logger().error(
-            {
-              id: this.id,
-              documentId: this.documentId,
-              workspaceId: this.workspaceId,
-              pubsubChannel,
-              err,
-            },
-            'Failed to persist Yjs update'
-          )
-          throw err
-        }
-
-        await this.persistor.persist(this)
-      })
-      logger().trace(
-        {
-          id: this.id,
-          documentId: this.documentId,
-          workspaceId: this.workspaceId,
-          serialUpdatesQueue: this.serialUpdatesQueue.size,
-        },
-        'Finished publishing Yjs update'
-      )
-    }
+      await this.persistor.persist(this)
+    })
+    logger().trace(
+      {
+        id: this.id,
+        documentId: this.documentId,
+        workspaceId: this.workspaceId,
+        serialUpdatesQueue: this.serialUpdatesQueue.size,
+      },
+      'Finished publishing Yjs update'
+    )
+    // }
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
 
