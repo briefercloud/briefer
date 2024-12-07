@@ -61,99 +61,100 @@ export class DocumentPersistor implements Persistor {
 
   public async load(id: string, tx?: PrismaTransaction) {
     try {
-      return acquireLock(`document-persistor:${id}`, async () => {
-        const ydoc = new Y.Doc()
-        const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
-          where: { documentId: this.documentId },
-        })
+      // return acquireLock(`document-persistor:${id}`, async () => {
+      const ydoc = new Y.Doc()
+      const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
+        where: { documentId: this.documentId },
+      })
 
-        if (!dbDoc) {
-          return {
-            ydoc,
-            clock: 0,
-            byteLength: Y.encodeStateAsUpdate(ydoc).length,
-          }
-        }
-
-        const update = await (tx ?? prisma()).yjsUpdate.findFirst({
-          where: {
-            yjsDocumentId: dbDoc.id,
-            clock: dbDoc.clock,
-          },
-          select: { update: true },
-          orderBy: { createdAt: 'desc' },
-        })
-        this.applyUpdate(ydoc, dbDoc.state)
-        if (update) {
-          this.applyUpdate(ydoc, update.update)
-        }
-
-        const now = new Date()
-        const updatesCount = await (tx ?? prisma()).yjsUpdate.count({
-          where: {
-            yjsDocumentId: dbDoc.id,
-            clock: { lte: dbDoc.clock },
-          },
-        })
-
-        if (updatesCount > 100) {
-          logger().trace(
-            {
-              id,
-              documentId: this.documentId,
-              clock: dbDoc.clock,
-              updates: updatesCount,
-            },
-            'Too many updates, cleaning up'
-          )
-          const cleanUpdates = async (tx: PrismaTransaction) => {
-            const deleted = await tx.yjsUpdate.deleteMany({
-              where: {
-                yjsDocumentId: dbDoc.id,
-                createdAt: { lt: now },
-                clock: { lte: dbDoc.clock },
-              },
-            })
-
-            await tx.yjsUpdate.create({
-              data: {
-                yjsDocumentId: dbDoc.id,
-                update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
-                clock: dbDoc.clock,
-              },
-            })
-
-            return deleted.count
-          }
-
-          let deleted = 0
-          if (tx) {
-            deleted = await cleanUpdates(tx)
-          } else {
-            deleted = await prisma().$transaction(cleanUpdates, {
-              maxWait: 31000,
-              timeout: 30000,
-            })
-          }
-
-          logger().trace(
-            {
-              id,
-              documentId: this.documentId,
-              clock: dbDoc.clock,
-              updates: updatesCount,
-              deleted,
-            },
-            'Finished cleaning up updates'
-          )
-        }
-
+      if (!dbDoc) {
         return {
           ydoc,
-          clock: dbDoc.clock,
-          byteLength: dbDoc.state.length,
+          clock: 0,
+          byteLength: Y.encodeStateAsUpdate(ydoc).length,
         }
+      }
+
+      const updates = await (tx ?? prisma()).yjsUpdate.findMany({
+        where: {
+          yjsDocumentId: dbDoc.id,
+          clock: dbDoc.clock,
+        },
+        select: { update: true },
+        orderBy: { createdAt: 'asc' },
       })
+      this.applyUpdate(ydoc, dbDoc.state)
+      if (updates.length > 0) {
+        const update = Y.mergeUpdates(updates.map((u) => u.update))
+        this.applyUpdate(ydoc, update)
+      }
+
+      // const now = new Date()
+      // const updatesCount = await (tx ?? prisma()).yjsUpdate.count({
+      //   where: {
+      //     yjsDocumentId: dbDoc.id,
+      //     clock: { lte: dbDoc.clock },
+      //   },
+      // })
+
+      // if (updatesCount > 100) {
+      //   logger().trace(
+      //     {
+      //       id,
+      //       documentId: this.documentId,
+      //       clock: dbDoc.clock,
+      //       updates: updatesCount,
+      //     },
+      //     'Too many updates, cleaning up'
+      //   )
+      //   const cleanUpdates = async (tx: PrismaTransaction) => {
+      //     const deleted = await tx.yjsUpdate.deleteMany({
+      //       where: {
+      //         yjsDocumentId: dbDoc.id,
+      //         createdAt: { lt: now },
+      //         clock: { lte: dbDoc.clock },
+      //       },
+      //     })
+
+      //     await tx.yjsUpdate.create({
+      //       data: {
+      //         yjsDocumentId: dbDoc.id,
+      //         update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+      //         clock: dbDoc.clock,
+      //       },
+      //     })
+
+      //     return deleted.count
+      //   }
+
+      //   let deleted = 0
+      //   if (tx) {
+      //     deleted = await cleanUpdates(tx)
+      //   } else {
+      //     deleted = await prisma().$transaction(cleanUpdates, {
+      //       maxWait: 31000,
+      //       timeout: 30000,
+      //     })
+      //   }
+
+      //   logger().trace(
+      //     {
+      //       id,
+      //       documentId: this.documentId,
+      //       clock: dbDoc.clock,
+      //       updates: updatesCount,
+      //       deleted,
+      //     },
+      //     'Finished cleaning up updates'
+      //   )
+      // }
+
+      return {
+        ydoc,
+        clock: dbDoc.clock,
+        byteLength: dbDoc.state.length,
+      }
+      // })
     } catch (err) {
       logger().error(
         { documentId: this.documentId, err },
@@ -178,10 +179,32 @@ export class DocumentPersistor implements Persistor {
   }
 
   public async persistUpdates(doc: WSSharedDocV2, updates: Uint8Array[]) {
-    return acquireLock(`document-persistor:${doc.id}`, async () => {
-      const yjsDoc = await this.getYjsDoc(doc)
+    // return acquireLock(`document-persistor:${doc.id}`, async () => {
+    const yjsDoc = await this.getYjsDoc(doc)
 
-      const batches = splitEvery(10, updates)
+    const batches = splitEvery(10, updates)
+    logger().trace(
+      {
+        id: doc.id,
+        workspaceId: doc.workspaceId,
+        documentId: doc.documentId,
+        clock: yjsDoc.clock,
+        updates: updates.length,
+        batches: batches.length,
+      },
+      'Persisting updates in batches'
+    )
+
+    let ids: string[] = []
+    for (const [i, batch] of batches.entries()) {
+      const batchIds = await prisma().yjsUpdate.createManyAndReturn({
+        data: batch.map((update) => ({
+          yjsDocumentId: yjsDoc.id,
+          update: Buffer.from(update),
+          clock: yjsDoc.clock,
+        })),
+        select: { id: true },
+      })
       logger().trace(
         {
           id: doc.id,
@@ -189,51 +212,29 @@ export class DocumentPersistor implements Persistor {
           documentId: doc.documentId,
           clock: yjsDoc.clock,
           updates: updates.length,
-          batches: batches.length,
+          batch: i,
+          batchUpdates: batch.length,
+          batchIds: batchIds.length,
         },
-        'Persisting updates in batches'
+        'Persisted batch of updates'
       )
+      ids = ids.concat(batchIds.map((id) => id.id))
+    }
 
-      let ids: string[] = []
-      for (const [i, batch] of batches.entries()) {
-        const batchIds = await prisma().yjsUpdate.createManyAndReturn({
-          data: batch.map((update) => ({
-            yjsDocumentId: yjsDoc.id,
-            update: Buffer.from(update),
-            clock: yjsDoc.clock,
-          })),
-          select: { id: true },
-        })
-        logger().trace(
-          {
-            id: doc.id,
-            workspaceId: doc.workspaceId,
-            documentId: doc.documentId,
-            clock: yjsDoc.clock,
-            updates: updates.length,
-            batch: i,
-            batchUpdates: batch.length,
-            batchIds: batchIds.length,
-          },
-          'Persisted batch of updates'
-        )
-        ids = ids.concat(batchIds.map((id) => id.id))
-      }
+    logger().trace(
+      {
+        id: doc.id,
+        workspaceId: doc.workspaceId,
+        documentId: doc.documentId,
+        clock: yjsDoc.clock,
+        updates: updates.length,
+        batches: batches.length,
+      },
+      'Finished persisting updates'
+    )
 
-      logger().trace(
-        {
-          id: doc.id,
-          workspaceId: doc.workspaceId,
-          documentId: doc.documentId,
-          clock: yjsDoc.clock,
-          updates: updates.length,
-          batches: batches.length,
-        },
-        'Finished persisting updates'
-      )
-
-      return ids
-    })
+    return ids
+    // })
   }
 
   private async getYjsDoc(doc: WSSharedDocV2, tx?: PrismaTransaction) {
@@ -344,209 +345,211 @@ export class AppPersistor implements Persistor {
 
   public async load(id: string, tx?: PrismaTransaction | undefined) {
     try {
-      return acquireLock(`app-persistor:${id}`, async () => {
-        const bind = async (tx: PrismaTransaction) => {
-          const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
-            where: {
-              id: this.yjsAppDocumentId,
-            },
-            orderBy: {
-              createdAt: 'desc',
-            },
-            include: {
-              userYjsAppDocuments: {
-                where: {
-                  // use a new uuid when there is no user
-                  // since uuid is always unique, nothing
-                  // will be returned, which means we will
-                  // be manipulating the published state
-                  userId: this.userId ?? uuidv4(),
-                },
+      // return acquireLock(`app-persistor:${id}`, async () => {
+      const bind = async (tx: PrismaTransaction) => {
+        const yjsAppDoc = await tx.yjsAppDocument.findFirstOrThrow({
+          where: {
+            id: this.yjsAppDocumentId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            userYjsAppDocuments: {
+              where: {
+                // use a new uuid when there is no user
+                // since uuid is always unique, nothing
+                // will be returned, which means we will
+                // be manipulating the published state
+                userId: this.userId ?? uuidv4(),
               },
             },
+          },
+        })
+
+        // const cleanUpdates = async (
+        //   ydoc: Y.Doc,
+        //   doc:
+        //     | { _tag: 'user'; userYjsAppDocument: UserYjsAppDocument }
+        //     | { _tag: 'app'; yjsAppDocument: YjsAppDocument },
+        //   before: Date,
+        //   tx: PrismaTransaction
+        // ) => {
+        //   const where =
+        //     doc._tag === 'user'
+        //       ? {
+        //           userYjsAppDocumentUserId: doc.userYjsAppDocument.userId,
+        //           userYjsAppDocumentYjsAppDocumentId:
+        //             doc.userYjsAppDocument.yjsAppDocumentId,
+        //         }
+        //       : { yjsAppDocumentId: doc.yjsAppDocument.id }
+        //   const deleted = await tx.yjsUpdate.deleteMany({
+        //     where: {
+        //       ...where,
+        //       createdAt: { lt: before },
+        //       clock: {
+        //         lte:
+        //           doc._tag === 'user'
+        //             ? doc.userYjsAppDocument.clock
+        //             : doc.yjsAppDocument.clock,
+        //       },
+        //     },
+        //   })
+        //   if (doc._tag === 'user') {
+        //     await tx.yjsUpdate.create({
+        //       data: {
+        //         userYjsAppDocumentUserId: doc.userYjsAppDocument.userId,
+        //         userYjsAppDocumentYjsAppDocumentId:
+        //           doc.userYjsAppDocument.yjsAppDocumentId,
+        //         update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+        //         clock: doc.userYjsAppDocument.clock,
+        //       },
+        //     })
+        //   } else {
+        //     await tx.yjsUpdate.create({
+        //       data: {
+        //         yjsAppDocumentId: doc.yjsAppDocument.id,
+        //         update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
+        //         clock: doc.yjsAppDocument.clock,
+        //       },
+        //     })
+        //   }
+
+        //   return deleted.count
+        // }
+
+        const ydoc = new Y.Doc()
+        const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
+        let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
+        let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
+        if (!userYjsAppDoc || !this.userId) {
+          // no user or user never opened the app before. bind to the published state
+
+          const updates = await tx.yjsUpdate.findMany({
+            where: {
+              yjsAppDocumentId: this.yjsAppDocumentId,
+              clock: yjsAppDoc.clock,
+            },
+            select: { update: true },
+            orderBy: { createdAt: 'asc' },
           })
 
-          const cleanUpdates = async (
-            ydoc: Y.Doc,
-            doc:
-              | { _tag: 'user'; userYjsAppDocument: UserYjsAppDocument }
-              | { _tag: 'app'; yjsAppDocument: YjsAppDocument },
-            before: Date,
-            tx: PrismaTransaction
-          ) => {
-            const where =
-              doc._tag === 'user'
-                ? {
-                    userYjsAppDocumentUserId: doc.userYjsAppDocument.userId,
-                    userYjsAppDocumentYjsAppDocumentId:
-                      doc.userYjsAppDocument.yjsAppDocumentId,
-                  }
-                : { yjsAppDocumentId: doc.yjsAppDocument.id }
-            const deleted = await tx.yjsUpdate.deleteMany({
-              where: {
-                ...where,
-                createdAt: { lt: before },
-                clock: {
-                  lte:
-                    doc._tag === 'user'
-                      ? doc.userYjsAppDocument.clock
-                      : doc.yjsAppDocument.clock,
-                },
-              },
-            })
-            if (doc._tag === 'user') {
-              await tx.yjsUpdate.create({
-                data: {
-                  userYjsAppDocumentUserId: doc.userYjsAppDocument.userId,
-                  userYjsAppDocumentYjsAppDocumentId:
-                    doc.userYjsAppDocument.yjsAppDocumentId,
-                  update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
-                  clock: doc.userYjsAppDocument.clock,
-                },
-              })
-            } else {
-              await tx.yjsUpdate.create({
-                data: {
-                  yjsAppDocumentId: doc.yjsAppDocument.id,
-                  update: Buffer.from(Y.encodeStateAsUpdate(ydoc)),
-                  clock: doc.yjsAppDocument.clock,
-                },
-              })
-            }
-
-            return deleted.count
+          this.applyUpdate(ydoc, yjsAppDoc.state)
+          if (updates.length > 0) {
+            const update = Y.mergeUpdates(updates.map((u) => u.update))
+            this.applyUpdate(ydoc, update)
           }
 
-          const ydoc = new Y.Doc()
-          const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
-          let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
-          let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
-          if (!userYjsAppDoc || !this.userId) {
-            // no user or user never opened the app before. bind to the published state
+          // const now = new Date()
+          // const updatesCount = await tx.yjsUpdate.count({
+          //   where: {
+          //     yjsAppDocumentId: this.yjsAppDocumentId,
+          //     clock: { lte: yjsAppDoc.clock },
+          //   },
+          // })
+          // if (updatesCount > 100) {
+          //   logger().trace(
+          //     {
+          //       id,
+          //       yjsAppDocumentId: this.yjsAppDocumentId,
+          //       userId: this.userId,
+          //       clock: yjsAppDoc.clock,
+          //       updates: updatesCount,
+          //     },
+          //     'Too many updates, cleaning up'
+          //   )
+          //   const deleted = await cleanUpdates(
+          //     ydoc,
+          //     { _tag: 'app', yjsAppDocument: yjsAppDoc },
+          //     now,
+          //     tx
+          //   )
+          //   logger().trace(
+          //     {
+          //       id,
+          //       yjsAppDocumentId: this.yjsAppDocumentId,
+          //       userId: this.userId,
+          //       clock: yjsAppDoc.clock,
+          //       updates: updatesCount,
+          //       deleted,
+          //     },
+          //     'Finished cleaning up updates'
+          //   )
+          // }
+        } else {
+          // bind to the user's state
+          const updates = await tx.yjsUpdate.findMany({
+            where: {
+              userYjsAppDocumentUserId: this.userId,
+              userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
+              clock: userYjsAppDoc.clock,
+            },
+            select: { update: true },
+            orderBy: { createdAt: 'asc' },
+          })
 
-            const update = await tx.yjsUpdate.findFirst({
-              where: {
-                yjsAppDocumentId: this.yjsAppDocumentId,
-                clock: yjsAppDoc.clock,
-              },
-              select: { update: true },
-              orderBy: { createdAt: 'desc' },
-            })
-
-            this.applyUpdate(ydoc, yjsAppDoc.state)
-            if (update) {
-              this.applyUpdate(ydoc, update.update)
-            }
-
-            const now = new Date()
-            const updatesCount = await tx.yjsUpdate.count({
-              where: {
-                yjsAppDocumentId: this.yjsAppDocumentId,
-                clock: { lte: yjsAppDoc.clock },
-              },
-            })
-            if (updatesCount > 100) {
-              logger().trace(
-                {
-                  id,
-                  yjsAppDocumentId: this.yjsAppDocumentId,
-                  userId: this.userId,
-                  clock: yjsAppDoc.clock,
-                  updates: updatesCount,
-                },
-                'Too many updates, cleaning up'
-              )
-              const deleted = await cleanUpdates(
-                ydoc,
-                { _tag: 'app', yjsAppDocument: yjsAppDoc },
-                now,
-                tx
-              )
-              logger().trace(
-                {
-                  id,
-                  yjsAppDocumentId: this.yjsAppDocumentId,
-                  userId: this.userId,
-                  clock: yjsAppDoc.clock,
-                  updates: updatesCount,
-                  deleted,
-                },
-                'Finished cleaning up updates'
-              )
-            }
-          } else {
-            // bind to the user's state
-            const update = await tx.yjsUpdate.findFirst({
-              where: {
-                userYjsAppDocumentUserId: this.userId,
-                userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
-                clock: userYjsAppDoc.clock,
-              },
-              select: { update: true },
-              orderBy: { createdAt: 'desc' },
-            })
-
-            this.applyUpdate(ydoc, userYjsAppDoc.state)
-            if (update) {
-              this.applyUpdate(ydoc, update.update)
-            }
-
-            const now = new Date()
-            const updatesCount = await tx.yjsUpdate.count({
-              where: {
-                userYjsAppDocumentUserId: this.userId,
-                userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
-                clock: { lte: userYjsAppDoc.clock },
-              },
-            })
-
-            if (updatesCount > 100) {
-              logger().trace(
-                {
-                  id,
-                  yjsAppDocumentId: this.yjsAppDocumentId,
-                  userId: this.userId,
-                  clock: userYjsAppDoc.clock,
-                  updates: updatesCount,
-                },
-                'Too many updates, cleaning up'
-              )
-              const deleted = await cleanUpdates(
-                ydoc,
-                { _tag: 'user', userYjsAppDocument: userYjsAppDoc },
-                now,
-                tx
-              )
-              logger().trace(
-                {
-                  id,
-                  yjsAppDocumentId: this.yjsAppDocumentId,
-                  userId: this.userId,
-                  clock: userYjsAppDoc.clock,
-                  updates: updatesCount,
-                  deleted,
-                },
-                'Finished cleaning up updates'
-              )
-            }
+          this.applyUpdate(ydoc, userYjsAppDoc.state)
+          if (updates.length > 0) {
+            const update = Y.mergeUpdates(updates.map((u) => u.update))
+            this.applyUpdate(ydoc, update)
           }
 
-          return {
-            ydoc,
-            clock,
-            byteLength,
-          }
+          // const now = new Date()
+          // const updatesCount = await tx.yjsUpdate.count({
+          //   where: {
+          //     userYjsAppDocumentUserId: this.userId,
+          //     userYjsAppDocumentYjsAppDocumentId: this.yjsAppDocumentId,
+          //     clock: { lte: userYjsAppDoc.clock },
+          //   },
+          // })
+
+          // if (updatesCount > 100) {
+          //   logger().trace(
+          //     {
+          //       id,
+          //       yjsAppDocumentId: this.yjsAppDocumentId,
+          //       userId: this.userId,
+          //       clock: userYjsAppDoc.clock,
+          //       updates: updatesCount,
+          //     },
+          //     'Too many updates, cleaning up'
+          //   )
+          //   const deleted = await cleanUpdates(
+          //     ydoc,
+          //     { _tag: 'user', userYjsAppDocument: userYjsAppDoc },
+          //     now,
+          //     tx
+          //   )
+          //   logger().trace(
+          //     {
+          //       id,
+          //       yjsAppDocumentId: this.yjsAppDocumentId,
+          //       userId: this.userId,
+          //       clock: userYjsAppDoc.clock,
+          //       updates: updatesCount,
+          //       deleted,
+          //     },
+          //     'Finished cleaning up updates'
+          //   )
+          // }
         }
 
-        if (tx) {
-          return await bind(tx)
+        return {
+          ydoc,
+          clock,
+          byteLength,
         }
+      }
 
-        return await prisma().$transaction(bind, {
-          maxWait: 31000,
-          timeout: 30000,
-        })
+      if (tx) {
+        return await bind(tx)
+      }
+
+      return await prisma().$transaction(bind, {
+        maxWait: 31000,
+        timeout: 30000,
       })
+      // })
     } catch (err) {
       logger().error(
         { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
