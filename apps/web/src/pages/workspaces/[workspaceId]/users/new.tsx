@@ -19,6 +19,7 @@ import { PortalTooltip } from '@/components/Tooltips'
 import useResettableState from '@/hooks/useResettableState'
 import { UserRoundCheck } from 'lucide-react'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -66,8 +67,13 @@ export default function NewUserPage() {
     setUser(null)
   }, [router, workspaceId])
 
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId)}>
+    <Layout pagePath={pagePath(workspaceId)} user={session.data}>
       <ScrollBar className="w-full overflow-auto">
         <UserForm workspaceId={workspaceId} onSubmit={onSubmit} />
       </ScrollBar>

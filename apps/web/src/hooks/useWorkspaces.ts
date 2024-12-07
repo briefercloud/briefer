@@ -2,7 +2,6 @@ import fetcher from '@/utils/fetcher'
 import type { ApiWorkspace } from '@briefer/database'
 import { useCallback, useMemo } from 'react'
 import useSWR from 'swr'
-import { useSession } from './useAuth'
 import { OnboardingStep } from '@briefer/types'
 import { WorkspaceEditFormValues } from '@briefer/types'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
@@ -19,7 +18,6 @@ type API = {
 }
 type UseWorkspaces = [{ data: ApiWorkspace[]; isLoading: boolean }, API]
 export const useWorkspaces = (): UseWorkspaces => {
-  const session = useSession()
   const swrRes = useSWR<ApiWorkspace[]>(
     `${NEXT_PUBLIC_API_URL()}/v1/workspaces`,
     fetcher

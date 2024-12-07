@@ -48,10 +48,14 @@ export default function DataSourcesPage() {
   const onToggleFiles = useCallback(() => {
     setFilesOpen((prev) => !prev)
   }, [])
-  const session = useSession()
+
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
 
   return (
-    <Layout pagePath={pagePath(workspaceId)}>
+    <Layout pagePath={pagePath(workspaceId)} user={session.data}>
       <div className="bg-white w-full h-full">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

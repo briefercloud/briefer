@@ -1,5 +1,3 @@
-import DashboardSkeleton from '@/components/Dashboard/DashboardSkeleton'
-import Layout from '@/components/Layout'
 import { useSession } from '@/hooks/useAuth'
 import useDocument from '@/hooks/useDocument'
 import { useStringQuery } from '@/hooks/useQueryArgs'
@@ -13,18 +11,18 @@ const Dashboard = dynamic(() => import('@/components/Dashboard'), {
 })
 
 export default function DashboardPage() {
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId')
   const documentId = useStringQuery('documentId')
+  const router = useRouter()
   const [{ document, loading: loadingDocument }] = useDocument(
     workspaceId,
     documentId
   )
 
   const loading = session.isLoading || loadingDocument
-
-  const router = useRouter()
   const role = session.data?.roles[workspaceId]
+
   useEffect(() => {
     if (loading) {
       return
@@ -45,14 +43,10 @@ export default function DashboardPage() {
         )
       }
     }
-  }, [document, workspaceId, role, loading])
+  }, [loading, document, role, router, workspaceId, documentId])
 
-  if (!document || !session.data || !role || !document.publishedAt) {
-    return (
-      <Layout>
-        <DashboardSkeleton />
-      </Layout>
-    )
+  if (!document || !role || !session.data) {
+    return null
   }
 
   return (
@@ -64,7 +58,7 @@ export default function DashboardPage() {
       <Dashboard
         document={document}
         role={role}
-        userId={session.data.id}
+        user={session.data}
         isEditing={false}
         publish={() => Promise.resolve()}
         publishing={false}
