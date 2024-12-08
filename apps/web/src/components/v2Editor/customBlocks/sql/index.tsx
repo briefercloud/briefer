@@ -14,7 +14,6 @@ import * as Y from 'yjs'
 import {
   type SQLBlock,
   setTitle,
-  getSQLSource,
   toggleSQLEditWithAIPromptOpen,
   isSQLBlockEditWithAIPromptOpen,
   closeSQLEditWithAIPrompt,
@@ -63,9 +62,6 @@ import { exhaustiveCheck, SQLQueryConfiguration } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
-
-const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
--- Alternatively, you can upload files using the file upload block and query them using DuckDB as a data source.`
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -204,13 +200,6 @@ function SQLBlock(props: Props) {
 
     toggleSQLEditWithAIPromptOpen(props.block)
   }, [props.block, hasOaiKey])
-
-  useEffect(() => {
-    const currentSrc = getSQLSource(props.block)
-    if (!props.dataSources.size && currentSrc.length === 0) {
-      updateYText(getSQLSource(props.block), NO_DS_TEXT)
-    }
-  }, [props.dataSources, props.block])
 
   const dataSource = useMemo(
     () => props.dataSources.find((d) => d.config.data.id === dataSourceId),

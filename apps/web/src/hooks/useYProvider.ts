@@ -37,6 +37,7 @@ function getWSProvider(
       isDataApp: isDataApp ? 'true' : 'false',
       userId: userId ?? '',
     },
+    resyncInterval: 30000,
   })
 
   return provider
