@@ -78,14 +78,16 @@ export class PubSubProvider {
           'Peer did not respond to ping in time, removing peer.'
         )
         this.syncedPeers.delete(peer)
-        continue
       }
     }
+    const encoder = encoding.createEncoder()
+    encoding.writeVarUint(encoder, pingProtocolMessageType)
+    const data = encoding.toUint8Array(encoder)
     await pAll(
       Array.from(this.syncedPeers.keys()).map((peer) => async () => {
         await this.pubsub.publish({
           id: this.id,
-          data: new Uint8Array(pingProtocolMessageType),
+          data,
           clock: this.clock,
           senderId: this.pubsubId,
           targetId: peer,
