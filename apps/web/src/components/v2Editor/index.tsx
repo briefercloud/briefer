@@ -999,11 +999,11 @@ const V2EditorRow = (props: {
 }
 
 const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
--- Alternatively, you can upload files using the "Files" button on the bottom.`
+-- Alternatively, you can upload files using the "Files" button on the bottom bar.`
 
 const DEMO_DS_TEXT = `-- We have selected a demo data source. Feel free to query it for testing purposes.
 -- Please add your own data source using the "data sources" menu on the bottom left.
--- Alternatively, you can upload files using the "Files" button on the bottom.`
+-- Alternatively, you can upload files using the "Files" button on the bottom bar.`
 
 interface Props {
   isPublicViewer: boolean
