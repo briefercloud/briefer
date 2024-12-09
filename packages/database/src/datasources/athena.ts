@@ -35,6 +35,7 @@ function toAthenaDataSource(
     connStatus: pdataSource.connStatus,
     connError: pdataSource.connError,
     lastConnection: pdataSource.lastConnection?.toISOString() ?? null,
+    isDefault: pdataSource.isDefault,
   }
 }
 

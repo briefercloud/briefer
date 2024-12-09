@@ -212,6 +212,7 @@ interface Props {
   onPingDataSource: (id: string, type: string) => void
   onOpenOfflineDialog: (id: string) => void
   onSchemaExplorer: (id: string) => void
+  onMakeDefault: (id: string) => void
 }
 
 export default function DataSourcesList(props: Props) {
@@ -243,6 +244,11 @@ export default function DataSourcesList(props: Props) {
             <div className="min-w-0 flex-auto">
               <p className="text-sm font-semibold leading-6 text-gray-900">
                 {dataSource.data.name}
+                {dataSource.data.isDefault && (
+                  <span className="bg-blue-100 text-blue-800 border-blue-200 inline-flex items-center px-3 py-0.5 rounded-full text-xs font-medium border ml-2">
+                    Default
+                  </span>
+                )}
               </p>
               <p className="mt-1 flex text-xs leading-5 text-gray-500">
                 <span className="truncate">{databaseUrl(dataSource)}</span>
@@ -308,6 +314,26 @@ export default function DataSourcesList(props: Props) {
                           )}
                         >
                           Ping
+                          <span className="sr-only">
+                            , {dataSource.data.name}
+                          </span>
+                        </button>
+                      )}
+                    </Menu.Item>
+                  )}
+                  {!dataSource.data.isDefault && (
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => {
+                            props.onMakeDefault(dataSource.data.id)
+                          }}
+                          className={clsx(
+                            active ? 'bg-gray-50' : '',
+                            'block px-3 py-1 text-sm leading-6 text-gray-900 w-full text-left'
+                          )}
+                        >
+                          Make default
                           <span className="sr-only">
                             , {dataSource.data.name}
                           </span>

@@ -25,6 +25,7 @@ type API = {
     connStatus: 'online' | 'offline'
   }>
   remove: (workspaceId: string, id: string) => void
+  makeDefault: (workspaceId: string, id: string) => void
   refreshAll: (workspaceId: string) => Promise<void>
   refreshOne: (
     workspaceId: string,
@@ -63,6 +64,11 @@ const Context = createContext<[State, API]>([
     remove: async () => {
       throw new Error(
         'Attempted to call data source remove without DataSourcesProvider'
+      )
+    },
+    makeDefault: async () => {
+      throw new Error(
+        'Attempted to call data source make default without DataSourcesProvider'
       )
     },
     refreshAll: async () => {
@@ -255,6 +261,30 @@ export function DataSourcesProvider(props: Props) {
     }
   }, [])
 
+  const makeDefault = useCallback(async (workspaceId: string, id: string) => {
+    try {
+      const res = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/data-sources/${id}/default`,
+        {
+          credentials: 'include',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            isDefault: true,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        alert('Failed to make data source default')
+      }
+    } catch (e) {
+      alert('Failed to make data source default')
+    }
+  }, [])
+
   const refreshAll = useCallback(
     async (workspaceId: string) => {
       socket?.emit('workspace-datasources-refresh-all', workspaceId)
@@ -283,11 +313,12 @@ export function DataSourcesProvider(props: Props) {
       {
         ping,
         remove,
+        makeDefault,
         refreshAll,
         refreshOne,
       },
     ],
-    [state, ping, remove, refreshAll, refreshOne]
+    [state, ping, remove, makeDefault, refreshAll, refreshOne]
   )
 
   return <Context.Provider value={value}>{props.children}</Context.Provider>
