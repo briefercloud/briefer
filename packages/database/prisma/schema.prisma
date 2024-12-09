@@ -632,6 +632,12 @@ model YjsUpdate {
   userYjsAppDocument UserYjsAppDocument? @relation(fields: [userYjsAppDocumentYjsAppDocumentId, userYjsAppDocumentUserId], references: [yjsAppDocumentId, userId], onDelete: Cascade)
 }
 
+model PubSubPayload {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  payload    Bytes
+  createdAt  DateTime @default(now())
+}
+
 // socket.io pg adapter is case insensitive, so we can't
 // follow our naming convention here
 model socket_io_attachments {

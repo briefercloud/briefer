@@ -112,13 +112,13 @@ export class SQLExecutor implements ISQLExecutor {
       if (!datasource && !isFileDataSource) {
         // the selected datasource was deleted
         // recover this block state by removing the datasourceId
-        block.removeAttribute('dataSourceId')
+        block.setAttribute('dataSourceId', null)
         executionItem.setCompleted('error')
         cleanup()
         return
       }
 
-      block.removeAttribute('result')
+      block.setAttribute('result', null)
 
       let actualSource =
         (metadata.isSuggestion ? aiSuggestions : source)?.toJSON().trim() ?? ''

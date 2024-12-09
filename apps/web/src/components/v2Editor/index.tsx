@@ -88,7 +88,7 @@ import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { APIDataSources } from '@/hooks/useDatasources'
 import { IProvider } from '@/hooks/useYProvider'
 import { widthClasses } from './constants'
-import { descend, sortWith } from 'ramda'
+import { descend, head, sortWith } from 'ramda'
 import WritebackBlock from './customBlocks/writeback'
 import RemoveBlockDashboardConflictDialog from './RemoveBlockDashboardConflictDialog'
 import RemoveTabDashboardConflictDialog from './RemoveTabDashboardConflictDialog'
@@ -998,6 +998,13 @@ const V2EditorRow = (props: {
   )
 }
 
+const NO_DS_TEXT = `-- No data sources connected. Please add one using the "data sources" menu on the bottom left
+-- Alternatively, you can upload files using the "Files" button on the bottom bar.`
+
+const DEMO_DS_TEXT = `-- We have selected a demo data source. Feel free to query it for testing purposes.
+-- Please add your own data source using the "data sources" menu on the bottom left.
+-- Alternatively, you can upload files using the "Files" button on the bottom bar.`
+
 interface Props {
   isPublicViewer: boolean
   document: ApiDocument
@@ -1040,19 +1047,26 @@ const Editor = (props: Props) => {
     }
   }, [editorWrapperRef, props.isSyncing])
 
-  const newSQLDatasourceId = useMemo(
-    () =>
-      sortWith(
-        [
-          // put demo data source last
-          descend((d) => (d.config.data.isDemo ? 0 : 1)),
-          // put newer data sources first
-          descend((d) => d.config.data.createdAt),
-        ],
-        props.dataSources.toArray()
-      )[0]?.config.data.id,
-    [props.dataSources]
-  )
+  const [newSQLDatasourceId, newSQLDatasourceIsDemo] = useMemo(() => {
+    const dataSource =
+      head(
+        sortWith(
+          [
+            // put demo data source last
+            descend((d) => (d.config.data.isDemo ? 0 : 1)),
+            // put newer data sources first
+            descend((d) => d.config.data.createdAt),
+          ],
+          props.dataSources.toArray()
+        )
+      )?.config.data ?? null
+
+    if (dataSource) {
+      return [dataSource.id, dataSource.isDemo]
+    }
+
+    return [null, false]
+  }, [props.dataSources])
 
   const [editorState, editorAPI] = useEditorAwareness()
 
@@ -1069,6 +1083,12 @@ const Editor = (props: Props) => {
                 type,
                 dataSourceId: newSQLDatasourceId,
                 isFileDataSource: false,
+                source:
+                  newSQLDatasourceId === null
+                    ? NO_DS_TEXT
+                    : newSQLDatasourceIsDemo
+                    ? DEMO_DS_TEXT
+                    : undefined,
               },
               index
             )
