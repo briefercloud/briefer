@@ -401,7 +401,11 @@ export class WSSharedDocV2 {
   private subscription?: () => Promise<void>
   private pubSubProvider: PubSubProvider
   private hasUpdatesToPersist: boolean = false
-  private persistUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
+  private persistUpdatesQueue: PQueue = new PQueue({
+    concurrency: 1,
+    intervalCap: 1,
+    interval: 500,
+  })
 
   private constructor(
     id: string,
@@ -633,9 +637,8 @@ export class WSSharedDocV2 {
       }
     }
 
-    // TODO: we should throttle the persisting of updates to not monopolize
-    // the persistor lock
     this.persistUpdatesQueue.add(async () => {
+      this.persistUpdatesQueue.clear()
       if (this.hasUpdatesToPersist) {
         this.hasUpdatesToPersist = false
         await this.persistor.persist(this)
