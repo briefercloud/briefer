@@ -698,6 +698,8 @@ export class WSSharedDocV2 {
         },
         'A Yjs update was unauthorized'
       )
+      // disconnect the client that sent the unauthorized message
+      closeConn(this, transactionOrigin.conn)
     }
     logger().trace(
       {
