@@ -47,7 +47,6 @@ import { uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { Executor } from './executor/index.js'
 import { AIExecutor } from './executor/ai/index.js'
-import { acquireLock } from '../../lock.js'
 import { PubSubProvider } from './pubsub/index.js'
 import { PGPubSub } from './pubsub/pg.js'
 
@@ -438,6 +437,7 @@ export class WSSharedDocV2 {
           documentId: this.documentId,
         })
       ),
+      this.onNewerClock,
       logger().child({
         workspaceId: this.workspaceId,
         documentId: this.documentId,
@@ -457,12 +457,14 @@ export class WSSharedDocV2 {
   public async replaceState(state: Buffer) {
     const result = await this.persistor.replaceState(this.id, state)
     await this.reset(result.ydoc, result.clock, result.byteLength)
-    broadcastDocument(this.socketServer, this.workspaceId, this.documentId)
+  }
+
+  private onNewerClock = async (_newClock: number) => {
+    const loadResult = await this.persistor.load()
+    await this.reset(loadResult.ydoc, loadResult.clock, loadResult.byteLength)
   }
 
   private async reset(newYDoc: Y.Doc, newClock: number, newByteLength: number) {
-    await this.pubSubProvider.disconnect()
-
     this.ydoc.off('update', this.updateHandler)
     this.ydoc.destroy()
 
@@ -487,24 +489,13 @@ export class WSSharedDocV2 {
     this.aiExecutor = AIExecutor.fromWSSharedV2(this)
     this.aiExecutor.start()
 
-    this.pubSubProvider = new PubSubProvider(
-      this.id,
-      this.ydoc,
-      this.clock,
-      new PGPubSub(
-        `yjs:${this.id}`,
-        logger().child({
-          id: this.id,
-          workspaceId: this.workspaceId,
-          documentId: this.documentId,
-        })
-      ),
-      logger().child({
-        workspaceId: this.workspaceId,
-        documentId: this.documentId,
-      })
+    await this.pubSubProvider.reset(newYDoc, newClock)
+
+    await broadcastDocument(
+      this.socketServer,
+      this.workspaceId,
+      this.documentId
     )
-    await this.pubSubProvider.connect()
   }
 
   private awarenessHandler = (
@@ -620,16 +611,6 @@ export class WSSharedDocV2 {
     this.conns.forEach((_, conn) => send(this, conn, message))
 
     await this.persistor.persist(this)
-
-    logger().trace(
-      {
-        id: this.id,
-        documentId: this.documentId,
-        workspaceId: this.workspaceId,
-        serialUpdatesQueue: this.serialUpdatesQueue.size,
-      },
-      'Finished publishing Yjs update'
-    )
 
     const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
 
@@ -767,7 +748,7 @@ export class WSSharedDocV2 {
     persistor: Persistor,
     tx?: PrismaTransaction
   ): Promise<WSSharedDocV2> {
-    const loadStateResult = await persistor.load(id, tx)
+    const loadStateResult = await persistor.load(tx)
     const doc = new WSSharedDocV2(
       id,
       documentId,
@@ -777,7 +758,6 @@ export class WSSharedDocV2 {
       persistor
     )
     await doc.init()
-    await persistor.persist(doc, tx)
     return doc
   }
 }
@@ -790,75 +770,73 @@ async function getYDoc(
   persistor: Persistor,
   tx?: PrismaTransaction
 ): Promise<WSSharedDocV2> {
-  return acquireLock(`getYDoc:${id}`, async () => {
-    logger().trace(
-      {
-        id,
-        documentId,
-        workspaceId,
-        cacheBytesSize: docsCache.calculatedSize,
-        cacheCount: docsCache.size,
-      },
-      'Getting YDoc'
-    )
+  logger().trace(
+    {
+      id,
+      documentId,
+      workspaceId,
+      cacheBytesSize: docsCache.calculatedSize,
+      cacheCount: docsCache.size,
+    },
+    'Getting YDoc'
+  )
 
-    let yDoc = docs.get(id)
-    if (!yDoc) {
-      yDoc = docsCache.get(id)
-      if (yDoc) {
-        logger().trace(
-          {
-            id,
-            documentId,
-            workspaceId,
-            cacheBytesSize: docsCache.calculatedSize,
-            cacheCount: docsCache.size,
-            hit: true,
-          },
-          'YDoc cache hit'
-        )
-        docs.set(id, yDoc)
-      } else {
-        logger().trace(
-          {
-            id,
-            documentId,
-            workspaceId,
-            cacheBytesSize: docsCache.calculatedSize,
-            cacheCount: docsCache.size,
-            hit: false,
-          },
-          'YDoc cache miss'
-        )
-      }
-    }
-
-    if (!yDoc) {
-      yDoc = await WSSharedDocV2.make(
-        id,
-        documentId,
-        workspaceId,
-        socketServer,
-        persistor,
-        tx
+  let yDoc = docs.get(id)
+  if (!yDoc) {
+    yDoc = docsCache.get(id)
+    if (yDoc) {
+      logger().trace(
+        {
+          id,
+          documentId,
+          workspaceId,
+          cacheBytesSize: docsCache.calculatedSize,
+          cacheCount: docsCache.size,
+          hit: true,
+        },
+        'YDoc cache hit'
       )
       docs.set(id, yDoc)
-      docsCache.set(id, yDoc)
+    } else {
+      logger().trace(
+        {
+          id,
+          documentId,
+          workspaceId,
+          cacheBytesSize: docsCache.calculatedSize,
+          cacheCount: docsCache.size,
+          hit: false,
+        },
+        'YDoc cache miss'
+      )
     }
+  }
 
-    logger().trace(
-      {
-        id,
-        documentId,
-        workspaceId,
-        cacheBytesSize: docsCache.calculatedSize,
-        cacheCount: docsCache.size,
-      },
-      'Got YDoc'
+  if (!yDoc) {
+    yDoc = await WSSharedDocV2.make(
+      id,
+      documentId,
+      workspaceId,
+      socketServer,
+      persistor,
+      tx
     )
+    docs.set(id, yDoc)
+    docsCache.set(id, yDoc)
+  }
 
-    return yDoc
-  })
+  logger().trace(
+    {
+      id,
+      documentId,
+      workspaceId,
+      cacheBytesSize: docsCache.calculatedSize,
+      cacheCount: docsCache.size,
+    },
+    'Got YDoc'
+  )
+
+  return yDoc
 }
 
 export async function getYDocForUpdate<T>(

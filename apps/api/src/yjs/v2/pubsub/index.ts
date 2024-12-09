@@ -6,6 +6,7 @@ import { uuidSchema } from '@briefer/types'
 import { z } from 'zod'
 import { decoding, encoding } from 'lib0'
 import pino from 'pino'
+import PQueue from 'p-queue'
 
 export interface IPubSub {
   publish(message: MessageYProtocol): Promise<void>
@@ -36,12 +37,15 @@ export class PubSubProvider {
   private syncedPeers = new Map<string, { waitingPong: boolean }>()
   private resyncInterval: NodeJS.Timeout | null = null
   private pingInterval: NodeJS.Timeout | null = null
+  private updateHandlerQueue: PQueue = new PQueue({ concurrency: 1 })
+  private pendingUpdates: { update: Uint8Array; origin: any }[] = []
 
   constructor(
     private readonly id: string,
-    private readonly ydoc: Y.Doc,
-    private readonly clock: number,
+    private ydoc: Y.Doc,
+    private clock: number,
     private readonly pubsub: IPubSub,
+    private readonly onNewerClock: (clock: number) => Promise<void>,
     private readonly logger: pino.Logger
   ) {}
 
@@ -65,6 +69,36 @@ export class PubSubProvider {
     }, RESYNC_INTERVAL)
 
     this.pingInterval = setTimeout(this.onPingInterval, PING_TIMEOUT)
+  }
+
+  public async disconnect() {
+    if (!this.subscription) {
+      throw new Error('Not connected')
+    }
+
+    if (this.resyncInterval) {
+      clearInterval(this.resyncInterval)
+      this.resyncInterval = null
+    }
+
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval)
+      this.pingInterval = null
+    }
+
+    this.ydoc.off('update', this.updateHandler)
+    await this.updateHandlerQueue.onIdle()
+
+    await this.subscription()
+    this.subscription = null
+  }
+
+  public async reset(newYdoc: Y.Doc, newClock: number) {
+    await this.disconnect()
+    this.ydoc = newYdoc
+    this.clock = newClock
+    this.syncedPeers = new Map()
+    await this.connect()
   }
 
   private onPingInterval = async () => {
@@ -110,58 +144,52 @@ export class PubSubProvider {
     this.pingInterval = setTimeout(this.onPingInterval, PING_TIMEOUT)
   }
 
-  public async disconnect() {
-    if (!this.subscription) {
-      throw new Error('Not connected')
-    }
-
-    if (this.resyncInterval) {
-      clearInterval(this.resyncInterval)
-      this.resyncInterval = null
-    }
-
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval)
-      this.pingInterval = null
-    }
-
-    this.ydoc.off('update', this.updateHandler)
-
-    await this.subscription()
-    this.subscription = null
-  }
-
   private updateHandler = async (update: Uint8Array, origin: any) => {
-    if (origin === this) {
-      this.logger.trace(
-        {
-          id: this.id,
-          pubsubId: this.pubsubId,
-        },
-        'Ignoring own update'
-      )
-      return
-    }
+    this.pendingUpdates.push({ update, origin })
 
-    const encoder = encoding.createEncoder()
-    encoding.writeVarUint(encoder, syncProtocolMessageType)
-    syncProtocol.writeUpdate(encoder, update)
-    const data = encoding.toUint8Array(encoder)
-    await pAll(
-      Array.from(this.syncedPeers.keys()).map((peer) => async () => {
-        const message: MessageYProtocol = {
-          id: this.id,
-          data,
-          clock: this.clock,
-          senderId: this.pubsubId,
-          targetId: peer,
-        }
-        await this.pubsub.publish(message)
-      }),
-      {
-        concurrency: 5,
+    await this.updateHandlerQueue.add(async () => {
+      const updates = this.pendingUpdates
+      this.pendingUpdates = []
+
+      if (updates.length === 0) {
+        return
       }
-    )
+
+      const isAllOwnUpdates = updates.every(({ origin }) => origin === this)
+      if (isAllOwnUpdates) {
+        this.logger.trace(
+          {
+            id: this.id,
+            pubsubId: this.pubsubId,
+          },
+          'Ignoring own updates'
+        )
+        return
+      }
+
+      const update = Y.mergeUpdates(updates.map(({ update }) => update))
+
+      const encoder = encoding.createEncoder()
+      encoding.writeVarUint(encoder, syncProtocolMessageType)
+      syncProtocol.writeUpdate(encoder, update)
+      const data = encoding.toUint8Array(encoder)
+
+      await pAll(
+        Array.from(this.syncedPeers.keys()).map((peer) => async () => {
+          const message: MessageYProtocol = {
+            id: this.id,
+            data,
+            clock: this.clock,
+            senderId: this.pubsubId,
+            targetId: peer,
+          }
+          await this.pubsub.publish(message)
+        }),
+        {
+          concurrency: 5,
+        }
+      )
+    })
   }
 
   private async sendSync1(targetId: string) {
@@ -240,17 +268,7 @@ export class PubSubProvider {
     }
 
     if (message.clock > this.clock) {
-      // TODO: we need to resync if we receive a message with a higher clock
-      this.logger.trace(
-        {
-          id: this.id,
-          senderId: message.senderId,
-          targetId: message.targetId,
-          clock: message.clock,
-          thisClock: this.clock,
-        },
-        'Ignoring message with higher clock'
-      )
+      await this.onNewerClock(message.clock)
       return
     }
     this.logger.trace(
@@ -262,7 +280,7 @@ export class PubSubProvider {
       'Handling foreign sub message'
     )
 
-    return this.handleMessage(message)
+    await this.handleMessage(message)
   }
 
   private async handleMessage(message: MessageYProtocol) {

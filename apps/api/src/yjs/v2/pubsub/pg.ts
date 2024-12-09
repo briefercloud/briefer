@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { jsonString, uuidSchema } from '@briefer/types'
 
 const PGMessage = MessageYProtocol.omit({ data: true }).extend({
+  channel: z.string(),
   updateId: uuidSchema,
 })
 type PGMessage = z.infer<typeof PGMessage>
@@ -25,12 +26,13 @@ export class PGPubSub implements IPubSub {
 
     const pgMessage: PGMessage = {
       id: message.id,
+      channel: this.channel,
       senderId: message.senderId,
       targetId: message.targetId,
       clock: message.clock,
       updateId: update.id,
     }
-    await publish(this.channel, JSON.stringify(pgMessage))
+    await publish(this.pgChannel(), JSON.stringify(pgMessage))
   }
 
   public async subscribe(
@@ -39,14 +41,16 @@ export class PGPubSub implements IPubSub {
     this.logger.trace(
       {
         channel: this.channel,
+        pgChannel: this.pgChannel(),
       },
       'Subscribing to channel'
     )
-    const cleanup = await subscribe(this.channel, async (message) => {
+    const cleanup = await subscribe(this.pgChannel(), async (message) => {
       if (!message) {
         this.logger.error(
           {
             channel: this.channel,
+            pgChannel: this.pgChannel(),
           },
           'Received empty message'
         )
@@ -58,11 +62,17 @@ export class PGPubSub implements IPubSub {
         this.logger.error(
           {
             channel: this.channel,
+            pgChannel: this.pgChannel(),
             message,
             err: parsed.error,
           },
           'Failed to parse message'
         )
+        return
+      }
+
+      // since pg channel has a max length, we can't be sure that we wont have collisions
+      if (parsed.data.channel !== this.channel) {
         return
       }
 
@@ -75,6 +85,7 @@ export class PGPubSub implements IPubSub {
         this.logger.error(
           {
             channel: this.channel,
+            pgChannel: this.pgChannel(),
             updateId: parsed.data.updateId,
           },
           'Could not find update in database'
@@ -94,9 +105,15 @@ export class PGPubSub implements IPubSub {
     this.logger.trace(
       {
         channel: this.channel,
+        pgChannel: this.pgChannel(),
       },
       'Subscribed to channel'
     )
     return cleanup
+  }
+
+  private pgChannel(): string {
+    // max postgres channel length is 63
+    return this.channel.slice(0, 63)
   }
 }
