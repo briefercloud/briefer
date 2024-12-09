@@ -108,13 +108,6 @@ function PythonBlock(props: Props) {
     props.block,
     'python'
   )
-  useEffect(() => {
-    const interval = setInterval(() => {
-      console.log(JSON.stringify(props.executionQueue.toJSON(), null, 2))
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [props.executionQueue])
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus()._tag ?? 'idle'
 
