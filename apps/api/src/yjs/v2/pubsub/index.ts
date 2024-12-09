@@ -272,6 +272,17 @@ export class PubSubProvider {
     }
 
     if (message.clock > this.clock) {
+      this.logger.trace(
+        {
+          id: this.id,
+          senderId: message.senderId,
+          targetId: message.targetId,
+          clock: message.clock,
+          thisClock: this.clock,
+          messageType: this.getMessageType(message.data),
+        },
+        'Got a message with a newer clock'
+      )
       await this.onNewerClock(message.clock)
       return
     }
