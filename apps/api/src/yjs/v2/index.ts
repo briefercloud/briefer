@@ -566,7 +566,6 @@ export class WSSharedDocV2 {
 
   public async destroy() {
     await Promise.all([
-      this.pubSubProvider.disconnect(),
       this.subscription?.(),
       this.executor.stop(),
       this.aiExecutor.stop(),
@@ -576,6 +575,8 @@ export class WSSharedDocV2 {
     await this.persistUpdatesQueue.onIdle()
 
     await this.persistor.persist(this)
+    await this.pubSubProvider.disconnect()
+
     this.ydoc.destroy()
   }
 
@@ -632,6 +633,8 @@ export class WSSharedDocV2 {
       }
     }
 
+    // TODO: we should throttle the persisting of updates to not monopolize
+    // the persistor lock
     this.persistUpdatesQueue.add(async () => {
       if (this.hasUpdatesToPersist) {
         this.hasUpdatesToPersist = false
