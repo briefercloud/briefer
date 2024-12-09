@@ -1052,6 +1052,8 @@ const Editor = (props: Props) => {
       head(
         sortWith(
           [
+            // put default data source first
+            descend((d) => (d.config.data.isDefault ? 1 : 0)),
             // put demo data source last
             descend((d) => (d.config.data.isDemo ? 0 : 1)),
             // put newer data sources first

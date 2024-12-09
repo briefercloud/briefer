@@ -113,6 +113,7 @@ model PostgreSQLDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -138,6 +139,7 @@ model MySQLDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -163,6 +165,7 @@ model SQLServerDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -189,6 +192,7 @@ model OracleDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -212,6 +216,7 @@ model AthenaDataSource {
   connStatus        ConnStatus @default(online)
   connError         String?
   lastConnection    DateTime?
+  isDefault         Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -237,6 +242,7 @@ model SnowflakeDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -258,6 +264,7 @@ model BigQueryDataSource {
   connStatus        ConnStatus @default(online)
   connError         String?
   lastConnection    DateTime?
+  isDefault         Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -284,6 +291,7 @@ model RedshiftDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -309,6 +317,7 @@ model TrinoDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)
@@ -382,6 +391,7 @@ model DatabricksSQLDataSource {
   connStatus     ConnStatus @default(online)
   connError      String?
   lastConnection DateTime?
+  isDefault      Boolean    @default(false)
 
   dataSourceSchemaId String?           @unique @db.Uuid
   dataSourceSchema   DataSourceSchema? @relation(fields: [dataSourceSchemaId], references: [id], onDelete: SetNull)

@@ -36,7 +36,7 @@ export default function DataSourcesPage() {
   const [showMoreInfo, setShowMoreInfo] = useState(false)
   const workspaceId = useStringQuery('workspaceId')
 
-  const [{ datasources: dataSources }, { ping, remove }] =
+  const [{ datasources: dataSources }, { ping, remove, makeDefault }] =
     useDataSources(workspaceId)
 
   const openInfo = useCallback(() => setShowMoreInfo(true), [setShowMoreInfo])
@@ -96,6 +96,11 @@ export default function DataSourcesPage() {
     [workspaceId, remove]
   )
 
+  const onMakeDefault = useCallback(
+    (id: string) => makeDefault(workspaceId, id),
+    [workspaceId, makeDefault]
+  )
+
   const [schemaExplorerDataSourceId, setSchemaExplorer] = useState<
     string | null
   >(null)
@@ -144,6 +149,7 @@ export default function DataSourcesPage() {
             onPingDataSource={onPing}
             onOpenOfflineDialog={onOpenOfflineDialog}
             onSchemaExplorer={onSchemaExplorer}
+            onMakeDefault={onMakeDefault}
           />
         </div>
       </ScrollBar>

@@ -164,6 +164,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
             const ds = await createPSQLDataSource(
               payload,
@@ -180,6 +181,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
             const ds = await createRedshiftDataSource(
               payload,
@@ -196,6 +198,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
             const ds = await createMySQLDataSource(
               payload,
@@ -212,6 +215,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
             const ds = await createSQLServerDataSource(
               payload,
@@ -227,6 +231,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
             const ds = await createBigQueryDataSource(
               payload,
@@ -245,6 +250,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
 
             const ds = await createAthenaDataSource(
@@ -261,6 +267,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
 
             const ds = await createOracleDataSource(
@@ -279,6 +286,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
 
             const ds = await createTrinoDataSource(
@@ -296,6 +304,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
 
             const ds = await createSnowflakeDataSource(
@@ -312,6 +321,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
               lastConnection: null,
+              isDefault: false,
             }
 
             const ds = await createDatabricksSQLDataSource(

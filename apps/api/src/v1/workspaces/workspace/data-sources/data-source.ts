@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import {
+import prisma, {
   deleteBigQueryDataSource,
   getBigQueryDataSource,
   updateBigQueryDataSource,
@@ -32,6 +32,8 @@ import {
   getDatabricksSQLDataSource,
   updateDatabricksSQLDataSource,
   deleteDatabricksSQLDataSource,
+  listDataSources,
+  DataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -43,6 +45,7 @@ import {
   broadcastDataSources,
 } from '../../../../websocket/workspace/data-sources.js'
 import { IOServer } from '../../../../websocket/index.js'
+import { exhaustiveCheck } from '@briefer/types'
 
 const dataSourceRouter = (socketServer: IOServer) => {
   const router = Router({ mergeParams: true })
@@ -320,7 +323,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
           {
             ...data.data,
             id: dataSourceId,
-            token: data.data.token === ''? undefined : data.data.token,
+            token: data.data.token === '' ? undefined : data.data.token,
           },
           config().DATASOURCES_ENCRYPTION_KEY
         )
@@ -552,6 +555,108 @@ const dataSourceRouter = (socketServer: IOServer) => {
           err,
         },
         'Failed to ping data source'
+      )
+      res.status(500).end()
+    }
+  })
+
+  router.post('/default', async (req, res) => {
+    const workspaceId = getParam(req, 'workspaceId')
+    const dataSourceId = getParam(req, 'dataSourceId')
+    try {
+      const dataSources = await listDataSources(workspaceId)
+      const dataSource = dataSources.find((ds) => ds.data.id === dataSourceId)
+      if (!dataSource) {
+        res.status(404).end()
+        return
+      }
+
+      const actions = dataSources
+        .filter((ds) => ds.data.isDefault && ds.data.id !== dataSource.data.id)
+        .map((ds) => ({
+          type: ds.type,
+          id: ds.data.id,
+          isDefault: false,
+        }))
+        .concat([
+          { type: dataSource.type, id: dataSource.data.id, isDefault: true },
+        ])
+
+      await prisma().$transaction(
+        (tx) =>
+          Promise.all(
+            actions.map((ds) => {
+              switch (ds.type) {
+                case 'psql':
+                  return tx.postgreSQLDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'mysql':
+                  return tx.mySQLDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'trino':
+                  return tx.trinoDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'athena':
+                  return tx.athenaDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'oracle':
+                  return tx.oracleDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'bigquery':
+                  return tx.bigQueryDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'redshift':
+                  return tx.redshiftDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'sqlserver':
+                  return tx.sQLServerDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'snowflake':
+                  return tx.snowflakeDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                case 'databrickssql':
+                  return tx.databricksSQLDataSource.update({
+                    where: { id: ds.id },
+                    data: { isDefault: ds.isDefault },
+                  })
+                default:
+                  exhaustiveCheck(ds.type)
+              }
+            })
+          ),
+        {
+          maxWait: 31000,
+          timeout: 30000,
+        }
+      )
+      await broadcastDataSources(socketServer, workspaceId)
+      res.sendStatus(204)
+    } catch (err) {
+      req.log.error(
+        {
+          workspaceId,
+          dataSourceId,
+          err,
+        },
+        'Failed to set data source as default'
       )
       res.status(500).end()
     }
