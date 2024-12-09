@@ -379,7 +379,7 @@ export class AppPersistor implements Persistor {
       )
 
       if (!newClock) {
-        logger().warn(
+        logger().error(
           {
             yjsAppDocumentId: this.yjsAppDocumentId,
             userId: this.userId,
@@ -416,7 +416,7 @@ export class AppPersistor implements Persistor {
     )
 
     if (!newClock) {
-      logger().warn(
+      logger().error(
         {
           yjsAppDocumentId: this.yjsAppDocumentId,
           clock,
