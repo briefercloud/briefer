@@ -221,6 +221,7 @@ export class PubSubProvider {
         {
           thisId: this.id,
           messageId: message.id,
+          messageType: this.getMessageType(message.data),
         },
         'Ignoring sub message for different doc'
       )
@@ -231,6 +232,7 @@ export class PubSubProvider {
       this.logger.trace(
         {
           id: this.id,
+          messageType: this.getMessageType(message.data),
         },
         'Ignoring own sub message'
       )
@@ -247,6 +249,7 @@ export class PubSubProvider {
           messangeSenderId: message.senderId,
           messageTargetId: message.targetId,
           thisSenderId: this.pubsubId,
+          messageType: this.getMessageType(message.data),
         },
         'Ignoring y-protocol message for different target'
       )
@@ -261,6 +264,7 @@ export class PubSubProvider {
           targetId: message.targetId,
           clock: message.clock,
           thisClock: this.clock,
+          messageType: this.getMessageType(message.data),
         },
         'Ignoring message with old clock'
       )
@@ -276,6 +280,7 @@ export class PubSubProvider {
         id: this.id,
         senderId: message.senderId,
         targetId: message.targetId,
+        messageType: this.getMessageType(message.data),
       },
       'Handling foreign sub message'
     )
@@ -470,6 +475,42 @@ export class PubSubProvider {
     )
     if (this.syncedPeers.has(message.senderId)) {
       this.syncedPeers.set(message.senderId, { waitingPong: false })
+    }
+  }
+
+  private getMessageType(data: Uint8Array): string {
+    if (data.length === 0) {
+      return 'unknown'
+    }
+
+    const decoder = decoding.createDecoder(data)
+
+    const first = decoding.readVarUint(decoder)
+    switch (first) {
+      case syncProtocolMessageType:
+        if (decoder.pos >= decoder.arr.length) {
+          return 'sync-missingSecond'
+        }
+
+        const second = decoding.peekVarUint(decoder)
+        switch (second) {
+          case syncProtocol.messageYjsSyncStep1:
+            return 'sync-syncStep1'
+          case syncProtocol.messageYjsSyncStep2:
+            return 'sync-syncStep2'
+          case syncProtocol.messageYjsUpdate:
+            return 'sync-update'
+          default:
+            return 'sync-unknown'
+        }
+      case awarenessProtocolMessageType:
+        return 'awareness'
+      case pingProtocolMessageType:
+        return 'ping'
+      case pongProtocolMessageType:
+        return 'pong'
+      default:
+        return 'unknown'
     }
   }
 }

@@ -6,7 +6,7 @@ import { jsonString, uuidSchema } from '@briefer/types'
 
 const PGMessage = MessageYProtocol.omit({ data: true }).extend({
   channel: z.string(),
-  updateId: uuidSchema,
+  payloadId: uuidSchema,
 })
 type PGMessage = z.infer<typeof PGMessage>
 
@@ -17,11 +17,11 @@ export class PGPubSub implements IPubSub {
   ) {}
 
   public async publish(message: MessageYProtocol): Promise<void> {
-    const update = await prisma().yjsUpdate.create({
+    const payload = await prisma().pubSubPayload.create({
       data: {
-        update: Buffer.from(message.data),
-        clock: message.clock,
+        payload: Buffer.from(message.data),
       },
+      select: { id: true },
     })
 
     const pgMessage: PGMessage = {
@@ -30,7 +30,7 @@ export class PGPubSub implements IPubSub {
       senderId: message.senderId,
       targetId: message.targetId,
       clock: message.clock,
-      updateId: update.id,
+      payloadId: payload.id,
     }
     await publish(this.pgChannel(), JSON.stringify(pgMessage))
   }
@@ -76,9 +76,9 @@ export class PGPubSub implements IPubSub {
         return
       }
 
-      const dbData = await prisma().yjsUpdate.findUnique({
+      const dbData = await prisma().pubSubPayload.findUnique({
         where: {
-          id: parsed.data.updateId,
+          id: parsed.data.payloadId,
         },
       })
       if (!dbData) {
@@ -86,16 +86,16 @@ export class PGPubSub implements IPubSub {
           {
             channel: this.channel,
             pgChannel: this.pgChannel(),
-            updateId: parsed.data.updateId,
+            payloadId: parsed.data.payloadId,
           },
-          'Could not find update in database'
+          'Could not find pubsub payload in database'
         )
         return
       }
 
       const yjsMessage: MessageYProtocol = {
         id: parsed.data.id,
-        data: dbData.update,
+        data: dbData.payload,
         senderId: parsed.data.senderId,
         targetId: parsed.data.targetId,
         clock: parsed.data.clock,

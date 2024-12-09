@@ -397,10 +397,11 @@ export class WSSharedDocV2 {
   private executor: Executor
   private aiExecutor: AIExecutor
   private persistor: Persistor
-  private serialUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
   private byteLength: number = 0
   private subscription?: () => Promise<void>
   private pubSubProvider: PubSubProvider
+  private hasUpdatesToPersist: boolean = false
+  private persistUpdatesQueue: PQueue = new PQueue({ concurrency: 1 })
 
   private constructor(
     id: string,
@@ -455,7 +456,7 @@ export class WSSharedDocV2 {
   }
 
   public async replaceState(state: Buffer) {
-    const result = await this.persistor.replaceState(this.id, state)
+    const result = await this.persistor.replaceState(this.clock, state)
     await this.reset(result.ydoc, result.clock, result.byteLength)
   }
 
@@ -469,10 +470,11 @@ export class WSSharedDocV2 {
     this.ydoc.destroy()
 
     this.awareness.off('update', this.awarenessHandler)
+    await this.persistUpdatesQueue.onIdle()
+
     this.awareness.destroy()
 
-    this.executor.stop()
-    this.aiExecutor.stop()
+    await Promise.all([this.executor.stop(), this.aiExecutor.stop()])
 
     this.ydoc = newYDoc
     this.clock = newClock
@@ -482,14 +484,13 @@ export class WSSharedDocV2 {
 
     this.awareness = this.configAwareness()
     this.ydoc.on('update', this.updateHandler)
+    await this.pubSubProvider.reset(newYDoc, newClock)
 
     this.executor = Executor.fromWSSharedDocV2(this)
     this.executor.start()
 
     this.aiExecutor = AIExecutor.fromWSSharedV2(this)
     this.aiExecutor.start()
-
-    await this.pubSubProvider.reset(newYDoc, newClock)
 
     await broadcastDocument(
       this.socketServer,
@@ -565,13 +566,16 @@ export class WSSharedDocV2 {
 
   public async destroy() {
     await Promise.all([
+      this.pubSubProvider.disconnect(),
       this.subscription?.(),
       this.executor.stop(),
       this.aiExecutor.stop(),
     ])
 
-    await this.persistor.persist(this)
+    this.ydoc.off('update', this.updateHandler)
+    await this.persistUpdatesQueue.onIdle()
 
+    await this.persistor.persist(this)
     this.ydoc.destroy()
   }
 
@@ -604,16 +608,15 @@ export class WSSharedDocV2 {
     _arg2: any,
     _tr: Y.Transaction
   ) => {
+    this.hasUpdatesToPersist = true
+
     const encoder = encoding.createEncoder()
     encoding.writeVarUint(encoder, messageSync)
     syncProtocol.writeUpdate(encoder, update)
     const message = encoding.toUint8Array(encoder)
     this.conns.forEach((_, conn) => send(this, conn, message))
 
-    await this.persistor.persist(this)
-
-    const [titleChanged] = await Promise.all([this.handleTitleUpdate()])
-
+    const titleChanged = await this.handleTitleUpdate()
     if (titleChanged) {
       try {
         await broadcastDocument(
@@ -628,6 +631,13 @@ export class WSSharedDocV2 {
         )
       }
     }
+
+    this.persistUpdatesQueue.add(async () => {
+      if (this.hasUpdatesToPersist) {
+        this.hasUpdatesToPersist = false
+        await this.persistor.persist(this)
+      }
+    })
   }
 
   public readSyncStep1(decoder: decoding.Decoder, encoder: encoding.Encoder) {
@@ -719,15 +729,13 @@ export class WSSharedDocV2 {
 
       try {
         logger().trace({ docId: this.documentId }, 'Updating document title')
-        await this.serialUpdatesQueue.add(async () => {
-          await prisma().document.update({
-            where: {
-              id: this.documentId,
-            },
-            data: {
-              title: nextTitle,
-            },
-          })
+        await prisma().document.update({
+          where: {
+            id: this.documentId,
+          },
+          data: {
+            title: nextTitle,
+          },
         })
 
         return true
