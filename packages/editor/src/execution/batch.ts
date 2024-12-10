@@ -96,15 +96,24 @@ export class ExecutionQueueBatch {
   public waitForCompletion(): Promise<string | null> {
     return new Promise((resolve) => {
       let current = this.getCurrent()
+      let interval: NodeJS.Timeout | null = null
       const onObservation = () => {
         if (!current) {
           this.batch.unobserveDeep(onObservation)
+          if (interval) {
+            clearInterval(interval)
+          }
+
           resolve(null)
           return
         }
 
         if (current.getCompleteStatus() === 'error') {
           this.batch.unobserveDeep(onObservation)
+          if (interval) {
+            clearInterval(interval)
+          }
+
           resolve(current.getBlockId())
           return
         }
@@ -112,11 +121,19 @@ export class ExecutionQueueBatch {
         current = this.getCurrent()
         if (!current) {
           this.batch.unobserveDeep(onObservation)
+          if (interval) {
+            clearInterval(interval)
+          }
+
           resolve(null)
           return
         }
       }
       this.batch.observeDeep(onObservation)
+
+      // safe guard, this makes sure we don't wait forever
+      // because we missed an observation
+      interval = setInterval(onObservation, 5000)
     })
   }
 
