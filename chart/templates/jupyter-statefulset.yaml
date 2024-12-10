@@ -52,7 +52,10 @@ spec:
           timeoutSeconds: 10
         env:
         - name: JUPYTER_TOKEN
-          value: "{{ .Values.api.secrets.jupyterToken }}"
+          valueFrom:
+            secretKeyRef:
+              name: api-secrets
+              key: jupyterToken
         ports:
         - containerPort: 8888
           name: jupyter-port

@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  namespace: briefer
+  namespace: '{{ .Release.Namespace }}'
   name: briefer-postgres
 spec:
   serviceName: briefer-postgres-service
