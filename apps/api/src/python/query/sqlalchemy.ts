@@ -94,15 +94,19 @@ def briefer_make_sqlalchemy_query():
               # find out if all non-null values are strings
               are_all_non_null_values_strings = True
               is_memoryview = False
+              is_bytes = False
               for value in df[column].dropna():
                   if isinstance(value, memoryview):
                       is_memoryview = True
+                      break
+                  if isinstance(value, bytes):
+                      is_bytes = True
                       break
                   if not isinstance(value, str):
                       are_all_non_null_values_strings = False
                       break
 
-              if is_memoryview:
+              if is_memoryview or is_bytes:
                   # convert to hex
                   df[column] = df[column].apply(lambda x: x.hex() if x is not None else None)
                   continue
