@@ -183,8 +183,11 @@ function getCode(
   const code = `
 def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict_columns):
     from google.api_core.exceptions import BadRequest
+    from google.api_core.exceptions import Conflict
     from google.api_core.exceptions import NotFound
     from google.api_core.exceptions import PermissionDenied
+    import random
+    import string
     import os
     import tempfile
 
@@ -252,6 +255,7 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             pass
 
         def writeback_new_table():
+            nonlocal step
             step = "insert"
             job = client.load_table_from_file(temp_file, table_name, job_config=job_config)
             result = job.result()
@@ -272,6 +276,7 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             print(json.dumps(result))
 
         def writeback_overwrite_table():
+            nonlocal step
             # delete all rows
             step = "cleanup"
             query = f"DELETE FROM {table_name} WHERE 1=1"
@@ -298,16 +303,28 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict, on_conflict
             print(json.dumps(result))
 
         def create_temp_table():
+            nonlocal step
             step = "insert"
-            temp_table_name = f"{table_name}_{int(datetime.datetime.now().timestamp())}"
-            if table:
-                temp_table = bigquery.Table(temp_table_name, schema=table.schema)
+            max_attemtps = 5
+            attempt = 0
+            while attempt < max_attemtps:
+                attempt += 1
+                try:
+                    random_part = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+                    temp_table_name = f"{table_name}_{random_part}"
+                    if table:
+                        temp_table = bigquery.Table(temp_table_name, schema=table.schema)
 
-                client.create_table(temp_table)
+                        client.create_table(temp_table)
 
-            job = client.load_table_from_file(temp_file, temp_table_name, job_config=job_config)
-            job.result()
-            return temp_table_name
+                    job = client.load_table_from_file(temp_file, temp_table_name, job_config=job_config)
+                    job.result()
+                    return temp_table_name
+                except Conflict as e:
+                    pass
+
+            # This is extremely unlikely to happen
+            raise Exception(f"Kept getting Conflict errors while creating temp table after {max_attemtps} attempts")
 
         def merge_no_conflict_columns(temp_table_name):
             query = f"""

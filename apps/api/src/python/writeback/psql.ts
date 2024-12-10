@@ -176,6 +176,8 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict):
     from sqlalchemy.exc import DatabaseError
     import pandas as pd
     import datetime
+    import random
+    import string
 
     def clean_table(connection, table_name):
         connection.execute(text(f"DELETE FROM {table_name}"))
@@ -308,8 +310,9 @@ def _briefer_writeback(df, table_name, overwrite_table, on_conflict):
         with engine.connect() as connection:
             tx = connection.begin()
             try:
+                random_part = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+                temp_table_name = f"briefer_temp_{table_name}_{random_part}"
                 # first we use to_sql to put the dataframe in a new temporary table
-                temp_table_name = f"briefer_temp_{table_name}_{int(datetime.datetime.now().timestamp())}"
                 df.to_sql(temp_table_name, connection, if_exists='replace', index=False)
 
                 updated_rows = 0
