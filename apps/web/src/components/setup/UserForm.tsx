@@ -8,6 +8,8 @@ import {
 } from 'react-hook-form'
 import Spin from '../Spin'
 import { Tooltip } from '../Tooltips'
+import useProperties from '@/hooks/useProperties'
+import clsx from 'clsx'
 
 export type UserStepFormValues = {
   firstName: string
@@ -16,6 +18,7 @@ export type UserStepFormValues = {
   password: string
   confirmPassword: string
   shareEmail: boolean
+  source: string
 }
 
 interface Props {
@@ -28,6 +31,8 @@ interface Props {
   isSubmitting: boolean
 }
 function UserSetupForm(props: Props) {
+  const properties = useProperties()
+
   return (
     <form
       className="flex flex-col items-center justify-center gap-y-16 py-8"
@@ -102,7 +107,12 @@ function UserSetupForm(props: Props) {
                 })}
               />
             </div>
-            <div className="mt-2 flex items-center">
+            <div
+              className={clsx(
+                'mt-2 flex items-center',
+                properties.data?.disabledAnonymousTelemetry && 'hidden'
+              )}
+            >
               <input
                 {...props.register('shareEmail')}
                 id="shareEmail"
@@ -158,6 +168,7 @@ function UserSetupForm(props: Props) {
             <FormError msg={props.formErrors.password?.message} />
           </div>
         </div>
+
         <div className="w-full">
           <label className="block text-md font-medium leading-6 text-gray-900">
             Confirm password
@@ -183,6 +194,33 @@ function UserSetupForm(props: Props) {
               />
             </div>
             <FormError msg={props.formErrors.confirmPassword?.message} />
+          </div>
+        </div>
+
+        <div
+          className={clsx(
+            'w-full',
+            properties.data?.disabledAnonymousTelemetry && 'hidden'
+          )}
+        >
+          <label className="block text-md font-medium leading-6 text-gray-900">
+            How did you hear about us?
+          </label>
+          <div className="pt-2">
+            <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus:ring focus:ring-primary-200 px-2 py-1">
+              <input
+                type="text"
+                className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-md sm:leading-6"
+                placeholder="Twitter, LinkedIn, HackerNews, content creator, etc..."
+                {...props.register('source', {
+                  required: {
+                    value: true,
+                    message: "We'd love to know how you found us",
+                  },
+                })}
+              />
+            </div>
+            <FormError msg={props.formErrors.source?.message} />
           </div>
         </div>
       </div>

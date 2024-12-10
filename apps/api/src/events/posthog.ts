@@ -19,7 +19,8 @@ export function getPostHogClient() {
 export const captureWorkspaceCreated = async (
   sender: ApiUser,
   workspace: ApiWorkspace,
-  shareEmail: boolean
+  shareEmail: boolean,
+  workspaceSource: string | null
 ) => {
   const posthog = getPostHogClient()
   posthog?.capture({
@@ -28,7 +29,10 @@ export const captureWorkspaceCreated = async (
     properties: {
       workspaceId: workspace.id,
       creatorId: sender.id,
+      workspaceName: shareEmail ? workspace.name : null,
+      ownerName: shareEmail ? sender.name : null,
       ownerEmail: shareEmail ? sender.email : null,
+      workspaceSource,
     },
   })
 }

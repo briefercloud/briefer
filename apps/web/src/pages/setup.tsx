@@ -69,6 +69,7 @@ function SetupForm() {
     password: '',
     confirmPassword: '',
     shareEmail: true,
+    source: '',
   })
 
   const [currentStep, setCurrentStep] = useState<'workspace' | 'user'>(
@@ -99,6 +100,7 @@ function SetupForm() {
               email: payload.email,
               password: payload.password,
               shareEmail: payload.shareEmail,
+              source: payload.source || null,
             }),
           }
         )
