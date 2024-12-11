@@ -17,6 +17,7 @@ import { logger } from './logger.js'
 import { setupYJSSocketServerV2 } from './yjs/v2/index.js'
 import { runSchedule } from './schedule/index.js'
 import { initUpdateChecker } from './update-checker.js'
+import { startPubSubPayloadCleanup } from './yjs/v2/pubsub/pg.js'
 
 const getDBUrl = async () => {
   const username = config().POSTGRES_USERNAME
@@ -78,6 +79,9 @@ async function main() {
 
   const stopSchedules = await runSchedule(socketServer.io)
   shutdownFunctions.push(stopSchedules)
+
+  const stopPubSubPayloadCleanup = await startPubSubPayloadCleanup()
+  shutdownFunctions.push(stopPubSubPayloadCleanup)
 
   const yjsServerV2 = setupYJSSocketServerV2(server, socketServer.io)
   shutdownFunctions.push(() => yjsServerV2.shutdown())
