@@ -10,23 +10,25 @@ import useProperties from '@/hooks/useProperties'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 
 function SetupPage() {
-  const { isLoading, data: properties } = useProperties()
+  const properties = useProperties()
   const router = useRouter()
   useEffect(() => {
-    if (!isLoading && !properties) {
-      alert('Something went wrong')
+    if (properties.isLoading) {
+      return
     }
 
-    if (properties && !properties.needsSetup) {
-      router.push('/')
+    if (properties.data && !properties.data.needsSetup) {
+      router.replace('/')
     }
-  }, [properties, router])
+  }, [properties.isLoading, properties.data, router])
 
-  if (!isLoading && !properties) {
-    return <h4>Something went wrong, please try again later</h4>
+  if (!properties.isLoading && !properties.data) {
+    return (
+      <h4>Could not load properties. Please try again or contact support.</h4>
+    )
   }
 
-  if (isLoading || !properties) {
+  if (properties.isLoading || !properties.data?.needsSetup) {
     return null
   }
 

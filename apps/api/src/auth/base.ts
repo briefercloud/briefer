@@ -137,14 +137,18 @@ export default function getRouter<H extends ApiUser>(
 
   router.post('/sign-in/password', async (req, res) => {
     const payload = z
-      .object({ email: z.string().trim().email(), password: z.string() })
+      .object({
+        email: z.string().trim().email(),
+        password: z.string(),
+        callback: z.string().optional(),
+      })
       .safeParse(req.body)
     if (!payload.success) {
       res.status(400).end()
       return
     }
 
-    const { email, password } = payload.data
+    const { email, password, callback } = payload.data
 
     const user = await prisma().user.findUnique({
       where: { email },
@@ -164,7 +168,10 @@ export default function getRouter<H extends ApiUser>(
       return
     }
 
-    const loginLink = createLoginLink(user.id, config.FRONTEND_URL)
+    const loginLink = createLoginLink(
+      user.id,
+      `${config.FRONTEND_URL}/${callback ?? ''}`
+    )
 
     res.json({ email: obscureEmail(user.email), loginLink })
   })
@@ -184,7 +191,7 @@ export default function getRouter<H extends ApiUser>(
     })
   })
 
-  router.get('/logout', authenticationMiddleware, async (req, res) => {
+  router.get('/logout', async (req, res) => {
     const query = z.object({ callback: callbackUrlSchema }).safeParse(req.query)
     if (!query.success) {
       res.status(400).end()
@@ -192,7 +199,6 @@ export default function getRouter<H extends ApiUser>(
     }
 
     res.clearCookie('token')
-
     res.redirect(query.data.callback)
   })
 

@@ -21,6 +21,7 @@ import { GATEWAY_IP } from '@/utils/info'
 import { useRouter } from 'next/router'
 import SchemaExplorer from '@/components/schemaExplorer'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 const pagePath = (workspaceId: string) => [
   { name: 'Configurations', icon: Cog8ToothIcon, href: '#', current: false },
@@ -111,8 +112,13 @@ export default function DataSourcesPage() {
     setSchemaExplorer(null)
   }, [])
 
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId ?? '')}>
+    <Layout user={session.data} pagePath={pagePath(workspaceId ?? '')}>
       <DataSourcesInfo showInfo={showMoreInfo} closeInfo={closeInfo} />
       <OfflineDataSourceDialog
         dataSource={offlineDataSource}

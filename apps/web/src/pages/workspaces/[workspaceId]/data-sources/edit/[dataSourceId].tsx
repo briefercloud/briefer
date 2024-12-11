@@ -30,6 +30,7 @@ import DatabricksSQLForm, {
   DatabricksSQLDataSourceInput,
 } from '@/components/forms/databrickssql'
 import ScrollBar from '@/components/ScrollBar'
+import { useSession } from '@/hooks/useAuth'
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -90,10 +91,13 @@ export default function EditDataSourcePostgresSQLPage() {
     },
   ]
 
-  console.log(data)
+  const session = useSession({ redirectToLogin: true })
+  if (!session.data) {
+    return null
+  }
 
   return (
-    <Layout pagePath={pagePath} hideOnboarding>
+    <Layout user={session.data} pagePath={pagePath} hideOnboarding>
       <ScrollBar className="w-full overflow-auto">
         {data && data.config.type === 'psql' ? (
           <PostgreSQLForm

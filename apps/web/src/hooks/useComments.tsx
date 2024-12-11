@@ -64,7 +64,7 @@ interface Props {
 export function CommentsProvider(props: Props) {
   const [state, setState] = useState<State>(Map())
   const socket = useWebsocket()
-  const session = useSession()
+  const session = useSession({ redirectToLogin: false })
 
   useEffect(() => {
     if (!socket) {

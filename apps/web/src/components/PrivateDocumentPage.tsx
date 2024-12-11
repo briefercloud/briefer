@@ -4,7 +4,7 @@ import { useDataSources } from '@/hooks/useDatasources'
 import useDocument from '@/hooks/useDocument'
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
-import type { ApiDocument, ApiUser, UserWorkspaceRole } from '@briefer/database'
+import type { ApiDocument } from '@briefer/database'
 import { isNil } from 'ramda'
 import ShareDropdown from './ShareDropdown'
 import { useDocuments } from '@/hooks/useDocuments'
@@ -33,6 +33,7 @@ import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import ReusableComponents from './ReusableComponents'
 import PageSettingsPanel from './PageSettingsPanel'
 import { AITasks, ExecutionQueue } from '@briefer/editor'
+import { SessionUser } from '@/hooks/useAuth'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -42,7 +43,7 @@ const V2Editor = dynamic(() => import('@/components/v2Editor'), {
 interface Props {
   workspaceId: string
   documentId: string
-  user: ApiUser & { roles: Record<string, UserWorkspaceRole> }
+  user: SessionUser
   isApp: boolean
 }
 export default function PrivateDocumentPage(props: Props) {
@@ -53,7 +54,7 @@ export default function PrivateDocumentPage(props: Props) {
 
   if (!document) {
     return (
-      <Layout>
+      <Layout user={props.user}>
         <div className="w-full flex justify-center">
           <div className={clsx(widthClasses, 'py-20')}>
             <TitleSkeleton visible />
@@ -342,6 +343,7 @@ function PrivateDocumentPageInner(
     <Layout
       topBarClassname={props.isApp ? 'bg-gray-50' : undefined}
       topBarContent={topBarContent}
+      user={props.user}
     >
       <div className="w-full relative flex">
         <V2Editor
