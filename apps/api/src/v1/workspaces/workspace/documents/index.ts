@@ -15,6 +15,7 @@ import { uuidSchema } from '@briefer/types'
 import { IOServer } from '../../../../websocket/index.js'
 import { upsertDocument } from '../../../../document-tree.js'
 import { canUpdateWorkspace } from '../../../../auth/token.js'
+import { broadcastDocument } from '../../../../websocket/workspace/documents.js'
 
 export default function documentsRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
@@ -69,6 +70,7 @@ export default function documentsRouter(socketServer: IOServer) {
           }
         )
 
+        await broadcastDocument(socketServer, workspaceId, document.id)
         res.json(await toApiDocument(document))
       } catch (err) {
         if (status !== 500) {
