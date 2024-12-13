@@ -73,6 +73,30 @@ function didChangeFilters(
   return didChange || toCompare.size > 0
 }
 
+function convertToTimeZone(date: Date, timeZone: string) {
+  const dateFormatter = new Intl.DateTimeFormat(undefined, {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+
+  const parts = dateFormatter.formatToParts(date)
+  const dateParts: Record<string, string> = {}
+
+  parts.forEach(({ type, value }) => {
+    if (type !== 'literal') {
+      dateParts[type] = value
+    }
+  })
+
+  const isoString = `${dateParts.year}-${dateParts.month}-${dateParts.day}T${dateParts.hour}:${dateParts.minute}:${dateParts.second}`
+  return new Date(isoString)
+}
+
 function fixSpecTimezones(
   inputSpec: JsonObject,
   xAxis: DataFrameColumn,
@@ -115,11 +139,7 @@ function fixSpecTimezones(
               columnName.startsWith(xAxis.name.toString()))
           ) {
             const date = new Date(value)
-            const dateInTimezone = new Date(
-              date.toLocaleString(undefined, {
-                timeZone,
-              })
-            )
+            const dateInTimezone = convertToTimeZone(date, timeZone)
 
             const newValue = dateInTimezone.toISOString()
 
