@@ -49,7 +49,7 @@ spec:
             - name: POSTGRES_DATABASE
               value: '{{ .Values.api.env.postgresDatabase }}'
             - name: POSTGRES_SSL_DISABLED
-              value: '{{ .Values.api.env.postgresSslDisabled | default "false" }}'
+              value: '{{ .Values.api.env.postgresSslDisabled }}'
             - name: POSTGRES_SSL_REJECT_UNAUTHORIZED
               value: '{{ .Values.api.env.postgresSslRejectUnauthorized }}'
             - name: POSTGRES_SSL_CA
@@ -94,9 +94,9 @@ spec:
             - name: FRONTEND_URL
               value: '{{ .Values.api.env.frontendUrl }}'
             - name: JUPYTER_HOST
-              value: 'briefer-jupyter-service'
+              value: '{{ .Values.api.env.jupyterHost | default "briefer-jupyter-service" }}'
             - name: JUPYTER_PORT
-              value: '{{ .Values.api.env.jupyterPort }}'
+              value: '{{ .Values.api.env.jupyterPort | default "8888" }}'
             - name: JUPYTER_TOKEN
               valueFrom:
                 secretKeyRef:
