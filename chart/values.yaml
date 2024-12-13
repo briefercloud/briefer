@@ -20,7 +20,7 @@ ai:
       memory: 2Gi
 
   env:
-    modelName: gpt-3.5-turbo
+    modelName: gpt-4o
 
   secrets:
     aiApiUsername: ai-basic-username
@@ -97,18 +97,11 @@ api:
     frontendUrl: http://localhost:4000
     apiUrl: http://localhost:8080
     logLevel: info
-    jupyterRepository: docker.io
-    jupyterImage: briefer/enterprise/jupyter
-    jupyterTag: v566
-    jupyterPort: 8888
     postgresHostname: postgres
     postgresPort: 5432
     postgresDatabase: briefer
     aiApiUrl: http://ai:8080
     allowHttp: 'false'
-    postgresSslDisabled: false
-    postgresSslRejectUnauthorized: false
-    postgresSslCa: ''
 
   secrets:
     postgresUsername: postgres
@@ -155,7 +148,7 @@ jupyter:
   image:
     repository: docker.io
     name: briefercloud/briefer-jupyter
-    tag: v0.0.78
+    tag: v0.0.79
     pullPolicy: Always
 
   # tolerations:
