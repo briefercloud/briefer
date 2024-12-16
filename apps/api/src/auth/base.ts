@@ -6,7 +6,7 @@ import { obscureEmail } from '../emails.js'
 import { comparePassword, hashPassword, isValidPassword } from '../password.js'
 import properties from '../properties.js'
 import { IOServer } from '../websocket/index.js'
-import { callbackUrlSchema, cookieOptions } from './index.js'
+import { cookieOptions } from './index.js'
 import {
   authenticationMiddleware,
   createAuthToken,
@@ -191,15 +191,9 @@ export default function getRouter<H extends ApiUser>(
     })
   })
 
-  router.get('/logout', async (req, res) => {
-    const query = z.object({ callback: callbackUrlSchema }).safeParse(req.query)
-    if (!query.success) {
-      res.status(400).end()
-      return
-    }
-
+  router.get('/logout', async (_req, res) => {
     res.clearCookie('token')
-    res.redirect(query.data.callback)
+    res.redirect(config.FRONTEND_URL)
   })
 
   return router
