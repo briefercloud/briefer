@@ -20,7 +20,7 @@ interface Props {
   onHide: () => void
 }
 export default function Comments(props: Props) {
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const [comments, { createComment }] = useComments(props.documentId)
   const [content, setContent] = useState('')
 

@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { SquaresPlusIcon } from '@heroicons/react/24/solid'
 import { BookUpIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
@@ -28,12 +28,12 @@ import Files from '../Files'
 import { PublishBlinkingSignal } from '../BlinkingSignal'
 import { Tooltip } from '../Tooltips'
 import { NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
-import useWebsocket from '@/hooks/useWebsocket'
 import { SQLExtensionProvider } from '../v2Editor/CodeEditor/sql'
+import { SessionUser } from '@/hooks/useAuth'
 
 interface Props {
   document: ApiDocument
-  userId: string
+  user: SessionUser
   role: UserWorkspaceRole
   isEditing: boolean
   publish: () => Promise<void>
@@ -45,12 +45,12 @@ export default function Dashboard(props: Props) {
       return props.document.clock
     }
 
-    return props.document.userAppClock[props.userId] ?? props.document.appClock
+    return props.document.userAppClock[props.user.id] ?? props.document.appClock
   }, [
     props.isEditing,
     props.document.clock,
     props.document.userAppClock,
-    props.userId,
+    props.user,
   ])
 
   const { yDoc, syncing, isDirty } = useYDoc(
@@ -58,7 +58,7 @@ export default function Dashboard(props: Props) {
     props.document.id,
     !props.isEditing,
     clock,
-    props.userId,
+    props.user.id,
     props.document.publishedAt,
     true,
     null
@@ -74,7 +74,6 @@ export default function Dashboard(props: Props) {
   const aiTasks = useMemo(() => AITasks.fromYjs(yDoc), [yDoc])
 
   const router = useRouter()
-  const socket = useWebsocket()
 
   const onPublish = useCallback(async () => {
     if (props.publishing) {
@@ -232,6 +231,7 @@ export default function Dashboard(props: Props) {
     <Layout
       topBarClassname={!props.isEditing ? 'bg-gray-50' : undefined}
       topBarContent={topBarContent}
+      user={props.user}
     >
       <div className="w-full flex relative subpixel-antialiased bg-dashboard-gray">
         <div className="w-full flex flex-col relative">
@@ -264,7 +264,7 @@ export default function Dashboard(props: Props) {
             disabled={false}
             yDoc={yDoc}
             primary={true}
-            userId={props.userId}
+            userId={props.user.id}
             executionQueue={executionQueue}
           />
         )}
@@ -296,7 +296,7 @@ export default function Dashboard(props: Props) {
               workspaceId={props.document.workspaceId}
               visible={selectedSidebar === 'files'}
               onHide={onHideSidebar}
-              userId={props.userId}
+              userId={props.user.id}
               yDoc={yDoc}
               executionQueue={executionQueue}
             />
@@ -348,7 +348,7 @@ function DashboardContent(
         latestBlockId={latestBlockId}
         isEditing={props.isEditing}
         userRole={props.role}
-        userId={props.userId}
+        userId={props.user.id}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
       />
@@ -359,7 +359,7 @@ function DashboardContent(
           yDoc={props.yDoc}
           onDragStart={onDragStart}
           onAddBlock={onAddBlock}
-          userId={props.userId}
+          userId={props.user.id}
           executionQueue={props.executionQueue}
           aiTasks={props.aiTasks}
         />

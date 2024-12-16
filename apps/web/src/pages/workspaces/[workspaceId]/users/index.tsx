@@ -1,6 +1,5 @@
 import { UserPlusIcon } from '@heroicons/react/20/solid'
 import { UsersIcon, Cog8ToothIcon } from '@heroicons/react/24/outline'
-import Link from 'next/link'
 import React, { useCallback, useState } from 'react'
 
 import UsersList from '@/components/UsersList'
@@ -27,7 +26,7 @@ const pagePath = (workspaceId: string) => [
 
 export default function UsersPage() {
   const workspaceId = useStringQuery('workspaceId')
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const router = useRouter()
 
   const isAdmin = session.data?.roles[workspaceId] === 'admin'
@@ -66,8 +65,12 @@ export default function UsersPage() {
     setNewPassword(null)
   }, [])
 
+  if (!session.data) {
+    return null
+  }
+
   return (
-    <Layout pagePath={pagePath(workspaceId ?? '')}>
+    <Layout pagePath={pagePath(workspaceId ?? '')} user={session.data}>
       <ScrollBar className="w-full bg-white h-full overflow-auto">
         <div className="px-4 sm:p-6 lg:p-8">
           <div className="border-b border-gray-200 pb-4 sm:flex sm:items-center sm:justify-between">

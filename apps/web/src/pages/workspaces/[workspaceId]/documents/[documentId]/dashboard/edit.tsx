@@ -1,5 +1,3 @@
-import DashboardSkeleton from '@/components/Dashboard/DashboardSkeleton'
-import Layout from '@/components/Layout'
 import { useSession } from '@/hooks/useAuth'
 import useDocument from '@/hooks/useDocument'
 import { useStringQuery } from '@/hooks/useQueryArgs'
@@ -24,17 +22,14 @@ export default function EditDashboardPage() {
     }
   }, [initialSidebarOpen])
 
-  const session = useSession()
+  const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId')
   const documentId = useStringQuery('documentId')
   const [{ document, loading: documentLoading }] = useDocument(
     workspaceId,
     documentId
   )
-  const [{ publishing }, { publish}] = useDocument(
-    workspaceId,
-    documentId
-  )
+  const [{ publishing }, { publish }] = useDocument(workspaceId, documentId)
 
   const loading = session.isLoading || documentLoading
   const user = session.data
@@ -59,11 +54,7 @@ export default function EditDashboardPage() {
   }, [document, workspaceId, role, loading])
 
   if (!document || !user || !role || role === 'viewer') {
-    return (
-      <Layout>
-        <DashboardSkeleton />
-      </Layout>
-    )
+    return null
   }
 
   return (
@@ -75,7 +66,7 @@ export default function EditDashboardPage() {
       <Dashboard
         document={document}
         role={role}
-        userId={user.id}
+        user={user}
         isEditing={true}
         publish={publish}
         publishing={publishing}

@@ -1,8 +1,15 @@
-import { getDocument, listDocuments } from '@briefer/database'
+import { createDocument, getDocument, listDocuments } from '@briefer/database'
 import { IOServer, Socket } from '../index.js'
 
 export async function emitDocuments(socket: Socket, workspaceId: string) {
-  const documents = await listDocuments(workspaceId)
+  let documents = await listDocuments(workspaceId)
+  if (documents.length === 0) {
+    await createDocument(workspaceId, {
+      orderIndex: 0,
+      version: 2,
+    })
+    documents = await listDocuments(workspaceId)
+  }
 
   socket.emit('workspace-documents', { workspaceId, documents })
 }
