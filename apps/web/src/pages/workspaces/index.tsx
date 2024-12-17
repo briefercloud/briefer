@@ -35,14 +35,14 @@ export default function WorkspacesPage() {
   }, [workspaces.isLoading, workspaces.data, session.data, session.isLoading])
 
   useEffect(() => {
-    if (session.isLoading) {
+    if (session.isLoading || workspaces.isLoading) {
       return
     }
 
     if (workspaceId) {
       router.replace(`/workspaces/${workspaceId}/documents`)
     }
-  }, [workspaceId, session.isLoading, router])
+  }, [workspaceId, session.isLoading, router, workspaces.isLoading])
 
   if (!session.data) {
     return null
