@@ -2,7 +2,7 @@ import { NEXT_PUBLIC_API_URL, NEXT_PUBLIC_PUBLIC_URL } from '@/utils/env'
 import fetcher, { AuthenticationError } from '@/utils/fetcher'
 import type { ApiUser, UserWorkspaceRole } from '@briefer/database'
 import { useRouter } from 'next/router'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 
 type UseAuthError = 'unexpected' | 'invalid-creds'
@@ -128,15 +128,20 @@ export const useSession = ({
     fetcher,
     refreshInterval: redirectToLogin ? 1000 * 30 : undefined,
     dedupingInterval: redirectToLogin ? 1000 * 2 : undefined,
-    onError: (err: Error) => {
-      if (err instanceof AuthenticationError && redirectToLogin) {
-        const callback = encodeURIComponent(
-          `${location.pathname}${location.search}`
-        )
-        router.replace(`/auth/signin?callback=${callback}`)
-      }
-    },
   })
+
+  useEffect(() => {
+    if (
+      session.error &&
+      session.error instanceof AuthenticationError &&
+      redirectToLogin
+    ) {
+      const callback = encodeURIComponent(
+        `${location.pathname}${location.search}`
+      )
+      router.replace(`/auth/signin?callback=${callback}`)
+    }
+  }, [session.error, redirectToLogin, router])
 
   return session
 }
