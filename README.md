@@ -95,7 +95,7 @@ These volumes are for Briefer to store its data, including its pages, dashboards
 
 For more information on how to deploy Briefer in production, please refer to our [deployment guide](https://docs.briefer.cloud/get-started/deploy).
 
-If you want to contribute to Briefer, please read our [contributing guide](/.github/CONTRIBUTING.md) which explains how run Briefer in development mode.
+If you want to contribute to Briefer, please read our [contributing guide](/.github/contributing/CONTRIBUTING.md) which explains how run Briefer in development mode.
 
 <br />
 
