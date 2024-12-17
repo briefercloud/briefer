@@ -139,80 +139,80 @@ def briefer_make_sqlalchemy_query():
             oracledb.init_oracle_client()
 
         try:
-            print(json.dumps({"type": "log", "message": "Running query"}))
-            chunks = pd.read_sql_query(text(${JSON.stringify(
-              renderedQuery
-            )}), con=engine.connect(), chunksize=100000)
-            rows = None
-            columns = None
-            last_emitted_at = 0
-            count = 0
-            df = pd.DataFrame()
-            print(json.dumps({"type": "log", "message": "Iterating over chunks"}))
-            for chunk in chunks:
-                if not os.path.exists(flag_file_path):
-                    _briefer_cancel_sqlalchemy_query(engine, job_id, ${JSON.stringify(
-                      dataSourceType
-                    )})
-                    aborted = True
-                    break
+            with engine.connect() as conn:
+                print(json.dumps({"type": "log", "message": "Running query"}))
+                chunks = pd.read_sql_query(text(${JSON.stringify(
+                  renderedQuery
+                )}), con=conn, chunksize=100000)
+                rows = None
+                columns = None
+                last_emitted_at = 0
+                count = 0
+                df = pd.DataFrame()
+                print(json.dumps({"type": "log", "message": "Iterating over chunks"}))
+                for chunk in chunks:
+                    if not os.path.exists(flag_file_path):
+                        _briefer_cancel_sqlalchemy_query(engine, job_id, ${JSON.stringify(
+                          dataSourceType
+                        )})
+                        aborted = True
+                        break
 
-                count += len(chunk)
-                print(json.dumps({"type": "log", "message": f"Got chunk {len(chunk)} rows"}))
-                chunk = rename_duplicates(chunk)
-                df = convert_df(pd.concat([df, chunk], ignore_index=True))
-                if rows is None:
-                    rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+                    count += len(chunk)
+                    print(json.dumps({"type": "log", "message": f"Got chunk {len(chunk)} rows"}))
+                    chunk = rename_duplicates(chunk)
+                    df = convert_df(pd.concat([df, chunk], ignore_index=True))
+                    if rows is None:
+                        rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
 
-                    # convert all values to string to make sure we preserve the python values
-                    # when displaying this data in the browser
-                    for row in rows:
-                        for key in row:
-                            row[key] = str(row[key])
+                        # convert all values to string to make sure we preserve the python values
+                        # when displaying this data in the browser
+                        for row in rows:
+                            for key in row:
+                                row[key] = str(row[key])
 
-                if columns is None:
-                    columns = [{"name": col, "type": dtype.name} for col, dtype in chunk.dtypes.items()]
+                    if columns is None:
+                        columns = [{"name": col, "type": dtype.name} for col, dtype in chunk.dtypes.items()]
 
-                for col in columns:
-                    if col["name"] not in chunk.columns:
-                        continue
+                    for col in columns:
+                        if col["name"] not in chunk.columns:
+                            continue
 
-                    categories = col.get("categories", [])
-                    if len(categories) >= 1000:
-                        continue
+                        categories = col.get("categories", [])
+                        if len(categories) >= 1000:
+                            continue
 
-                    dtype = chunk[col["name"]].dtype
-                    if pd.api.types.is_string_dtype(dtype) or pd.api.types.is_categorical_dtype(dtype):
-                        try:
-                            chunk_categories = chunk[col["name"]].dropna().unique()
-                            categories.extend(list(chunk_categories))
+                        dtype = chunk[col["name"]].dtype
+                        if pd.api.types.is_string_dtype(dtype) or pd.api.types.is_categorical_dtype(dtype):
+                            try:
+                                chunk_categories = chunk[col["name"]].dropna().unique()
+                                categories.extend(list(chunk_categories))
 
-                            # use dict.fromkeys instead of set to keep the order
-                            categories = list(dict.fromkeys(categories))
+                                # use dict.fromkeys instead of set to keep the order
+                                categories = list(dict.fromkeys(categories))
 
-                            categories = categories[:1000]
-                            col["categories"] = categories
-                        except:
-                            pass
+                                categories = categories[:1000]
+                                col["categories"] = categories
+                            except:
+                                pass
 
-                # only emit every 1 second
-                now = time.time()
-                if now - last_emitted_at > 1:
-                    result = {
-                        "type": "success",
-                        "rows": rows,
-                        "columns": columns,
-                        "count": count
-                    }
-                    print(json.dumps(result, ensure_ascii=False, default=str))
-                    last_emitted_at = now
+                    # only emit every 1 second
+                    now = time.time()
+                    if now - last_emitted_at > 1:
+                        result = {
+                            "type": "success",
+                            "rows": rows,
+                            "columns": columns,
+                            "count": count
+                        }
+                        print(json.dumps(result, ensure_ascii=False, default=str))
+                        last_emitted_at = now
 
-            duration_ms = None
-            # query trino to get query execution time
-            if ${JSON.stringify(dataSourceType)} == "trino":
-                start_time = datetime.now()
+                duration_ms = None
+                # query trino to get query execution time
+                if ${JSON.stringify(dataSourceType)} == "trino":
+                    start_time = datetime.now()
 
-                with engine.connect() as conn:
                     while datetime.now() - start_time < timedelta(seconds=5):
                         try:
                             execution_time_query = f"""
@@ -234,34 +234,34 @@ def briefer_make_sqlalchemy_query():
                             break
 
 
-            # make sure .briefer directory exists
-            os.makedirs('/home/jupyteruser/.briefer', exist_ok=True)
+                # make sure .briefer directory exists
+                os.makedirs('/home/jupyteruser/.briefer', exist_ok=True)
 
-            # write to parquet
-            print(json.dumps({"type": "log", "message": f"Dumping {len(df)} rows as parquet."}))
-            df.to_parquet(parquet_file_path, compression='gzip', index=False)
+                # write to parquet
+                print(json.dumps({"type": "log", "message": f"Dumping {len(df)} rows as parquet."}))
+                df.to_parquet(parquet_file_path, compression='gzip', index=False)
 
-            # write to csv
-            print(json.dumps({"type": "log", "message": f"Dumping {len(df)} rows as csv."}))
-            df.to_csv(csv_file_path, index=False)
+                # write to csv
+                print(json.dumps({"type": "log", "message": f"Dumping {len(df)} rows as csv."}))
+                df.to_csv(csv_file_path, index=False)
 
-            if aborted or not os.path.exists(flag_file_path):
-                print(json.dumps({"type": "log", "message": "Query aborted"}))
+                if aborted or not os.path.exists(flag_file_path):
+                    print(json.dumps({"type": "log", "message": "Query aborted"}))
+                    result = {
+                        "type": "abort-error",
+                        "message": "Query aborted",
+                    }
+                    print(json.dumps(result, default=str))
+                    return
+
                 result = {
-                    "type": "abort-error",
-                    "message": "Query aborted",
+                    "type": "success",
+                    "rows": rows,
+                    "columns": columns,
+                    "count": count,
+                    "durationMs": duration_ms,
                 }
-                print(json.dumps(result, default=str))
-                return
-
-            result = {
-                "type": "success",
-                "rows": rows,
-                "columns": columns,
-                "count": count,
-                "durationMs": duration_ms,
-            }
-            print(json.dumps(result, ensure_ascii=False, default=str))
+                print(json.dumps(result, ensure_ascii=False, default=str))
         finally:
             print(json.dumps({"type": "log", "message": "Disposing of engine"}))
             engine.dispose()
@@ -323,8 +323,11 @@ if credentials_info:
 else:
     engine = create_engine(${JSON.stringify(databaseUrl)})
 
-connection = engine.connect()
-connection.execute(text(${JSON.stringify(query)})).fetchall()`
+try:
+    with engine.connect() as conn:
+        conn.execute(text(${JSON.stringify(query)})).fetchall()
+finally:
+    engine.dispose()`
 
   let pythonError: PythonErrorOutput | null = null
   return executeCode(
@@ -448,31 +451,34 @@ def get_data_source_structure(data_source_id, credentials_info=None):
     else:
         engine = create_engine(f"${databaseUrl}")
 
-    with engine.connect() as conn:
-        # if oracle, initialize the oracle client
-        if ${JSON.stringify(ds.type)} == "oracle":
-            import oracledb
-            oracledb.init_oracle_client()
+    try:
+        with engine.connect() as conn:
+            # if oracle, initialize the oracle client
+            if ${JSON.stringify(ds.type)} == "oracle":
+                import oracledb
+                oracledb.init_oracle_client()
 
-        inspector = inspect(engine)
-        if ${JSON.stringify(ds.type)} == "bigquery":
-            tables = inspector.get_table_names()
-            schema_from_tables(conn, inspector, tables)
-        else:
-            tables = []
-            exceptions = []
-            for schema_name in inspector.get_schema_names():
-                print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
-                try:
-                    schema_tables = inspector.get_table_names(schema=schema_name)
-                    tables += [f"{schema_name}.{table}" for table in schema_tables]
-                except Exception as e:
-                    exceptions.append(e)
-                    print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
-                    continue
-            schema_from_tables(conn, inspector, tables)
-            if len(tables) == 0 and len(exceptions) > 0:
-                raise BrieferAggregateException(exceptions)
+            inspector = inspect(engine)
+            if ${JSON.stringify(ds.type)} == "bigquery":
+                tables = inspector.get_table_names()
+                schema_from_tables(conn, inspector, tables)
+            else:
+                tables = []
+                exceptions = []
+                for schema_name in inspector.get_schema_names():
+                    print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
+                    try:
+                        schema_tables = inspector.get_table_names(schema=schema_name)
+                        tables += [f"{schema_name}.{table}" for table in schema_tables]
+                    except Exception as e:
+                        exceptions.append(e)
+                        print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
+                        continue
+                schema_from_tables(conn, inspector, tables)
+                if len(tables) == 0 and len(exceptions) > 0:
+                    raise BrieferAggregateException(exceptions)
+    finally:
+        engine.dispose()
 
 credentials_info = json.loads(${JSON.stringify(
     JSON.stringify(credentialsInfo)
