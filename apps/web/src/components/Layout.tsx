@@ -23,6 +23,7 @@ import {
   AdjustmentsHorizontalIcon,
   PuzzlePieceIcon,
   MagnifyingGlassIcon,
+  RocketLaunchIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -31,18 +32,24 @@ import { Page } from '@/components/PagePath'
 import { useDocuments } from '@/hooks/useDocuments'
 import { useFavorites } from '@/hooks/useFavorites'
 import { useStringQuery } from '@/hooks/useQueryArgs'
-import { SessionUser, useSession, useSignout } from '@/hooks/useAuth'
-import { CpuChipIcon } from '@heroicons/react/24/solid'
+import { CpuChipIcon, SparklesIcon } from '@heroicons/react/24/solid'
 import type { UserWorkspaceRole } from '@briefer/database'
 import ReactDOM from 'react-dom'
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import DocumentTree from './DocumentsTree'
 import useSideBar from '@/hooks/useSideBar'
-import { SubscriptionBadge } from './SubscriptionBadge'
 import MobileWarning from './MobileWarning'
-import { DataSourceBlinkingSignal } from './BlinkingSignal'
 import CommandPalette from './commandPalette'
 import { useHotkeys } from 'react-hotkeys-hook'
+import Onboarding from './onboarding'
+import GitHubButton from 'react-github-btn'
+import { useDataSources } from '@/hooks/useDatasources'
+import {
+  ConfigurationsMenuButton,
+  ConfigurationsMenuLink,
+} from './ConfigurationsMenuItem'
+import { FeaturesDialog } from './SubscriptionBadge'
+import { SessionUser, useSignout } from '@/hooks/useAuth'
 
 const syne = Syne({ subsets: ['latin'] })
 
@@ -54,6 +61,7 @@ type ConfigItem = {
   hidden?: boolean
   allowedRoles: Set<UserWorkspaceRole>
 }
+
 const configs = (workspaceId: string): ConfigItem[] => [
   {
     id: 'environments',
@@ -133,6 +141,11 @@ export default function Layout({
   const router = useRouter()
   const workspaceId = useStringQuery('workspaceId')
   const documentId = useStringQuery('documentId')
+
+  const [{ datasources: allDataSources, isLoading: isLoadingDataSources }] =
+    useDataSources(workspaceId)
+  const userDataSources = allDataSources.filter((ds) => !ds.config.data.isDemo)
+  const hasUserDataSource = !isLoadingDataSources && userDataSources.size > 0
 
   const [
     documentsState,
@@ -285,6 +298,8 @@ export default function Layout({
     }
   }, [workspaceId, scrollRef])
 
+  const [isUpgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
+
   return (
     <div className={`flex w-full h-full ${syne.className}`}>
       <MobileWarning />
@@ -295,14 +310,33 @@ export default function Layout({
         setOpen={setSearchOpen}
       />
 
+      <FeaturesDialog
+        open={isUpgradeDialogOpen}
+        setOpen={setUpgradeDialogOpen}
+        currentPlan="open-source"
+      />
+
+      {!hideOnboarding && <Onboarding />}
+
       {isSideBarOpen && (
         <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-auto border-r border-gray-200">
-          <div className="flex items-center justify-between pt-4 px-5">
-            <span className="font-trap tracking-tight font-semibold text-2xl antialiased text-gray-800">
-              briefer
-            </span>
+          <div className="flex items-center justify-between pt-0.5 pl-4 pr-5">
+            <div className="font-trap tracking-tight text-2xl antialiased text-gray-800 flex items-center gap-x-1 scale-90">
+              <SparklesIcon className="h-4 w-4" />
+              <span className="leading-4 mt-1">briefer</span>
+            </div>
 
-            <SubscriptionBadge planName="open-source" />
+            <div className="mt-2.5 scale-90 flex items-center">
+              <GitHubButton
+                href="https://github.com/briefercloud/briefer"
+                data-color-scheme="no-preference: light; light: light; dark: dark;"
+                data-size="large"
+                data-show-count="true"
+                aria-label="Star briefercloud/briefer on GitHub"
+              >
+                Star
+              </GitHubButton>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto" ref={scrollRef}>
@@ -386,31 +420,23 @@ export default function Layout({
               Configurations
             </div>
             <ul role="list">
+              <li>
+                <ConfigurationsMenuButton
+                  text="Upgrade Briefer"
+                  icon={RocketLaunchIcon}
+                  onClick={() => setUpgradeDialogOpen(true)}
+                />
+              </li>
               {configs(workspaceId)
                 .filter(showConfigItem)
                 .map((item) => (
                   <li key={item.name}>
-                    <Link
+                    <ConfigurationsMenuLink
                       href={item.href}
-                      className={clsx(
-                        router.pathname.startsWith(item.href)
-                          ? 'text-gray-800 bg-ceramic-100/50'
-                          : 'text-gray-500 hover:bg-ceramic-100/80',
-                        'group text-sm font-medium leading-6 w-full flex py-1 hover:text-ceramic-600'
-                      )}
-                    >
-                      <div className="w-full flex items-center gap-x-2 px-4 relative">
-                        {item.id === 'data-sources' && (
-                          <DataSourceBlinkingSignal />
-                        )}
-                        <item.icon
-                          strokeWidth={1}
-                          className="h-4 w-4 shrink-0"
-                          aria-hidden="true"
-                        />
-                        <span className="mt-0.5">{item.name}</span>
-                      </div>
-                    </Link>
+                      text={item.name}
+                      icon={item.icon}
+                      blink={item.id === 'data-sources' && !hasUserDataSource}
+                    />
                   </li>
                 ))}
 
