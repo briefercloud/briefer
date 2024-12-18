@@ -96,6 +96,7 @@
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^18",
     "react-dropzone": "^14.2.3",
+    "react-github-btn": "^1.4.0",
     "react-grid-layout": "^1.2.5",
     "react-hook-form": "^7.47.0",
     "react-hotkeys-hook": "^4.5.0",
