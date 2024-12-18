@@ -124,3 +124,18 @@ export const captureCreateSchedule = async (
     },
   })
 }
+
+export const captureUserCreated = async (
+  newUser: ApiUser,
+  workspaceId: string
+) => {
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: newUser.id,
+    event: 'user_created',
+    properties: {
+      userId: newUser.id,
+      workspaceId: workspaceId,
+    },
+  })
+}

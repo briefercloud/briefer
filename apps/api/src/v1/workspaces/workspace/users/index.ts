@@ -14,6 +14,7 @@ import { validate } from 'uuid'
 import { generatePassword, hashPassword } from '../../../../password.js'
 import { hasWorkspaceRoles } from '../../../../auth/token.js'
 import { isUserNameValid } from '../../../../utils/validation.js'
+import * as posthog from '../../../../events/posthog.js'
 
 const usersRouter = Router({ mergeParams: true })
 
@@ -64,6 +65,7 @@ usersRouter.post('/', isAdmin, async (req, res) => {
     }
 
     await addUserToWorkspace(invitee.id, workspaceId, result.data.role)
+    posthog.captureUserCreated(invitee, workspace.id)
 
     res.json({
       ...invitee,
