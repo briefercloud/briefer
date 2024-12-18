@@ -10,9 +10,9 @@ const DataSourceBlock = ({ name, icon, href }: DataSourceBlockProps) => {
   return (
     <Link
       href={href}
-      className="h-24 w-24 py-3 px-6 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
+      className="h-32 w-32 p-2 border border-gray-200 rounded-md flex flex-col items-center justify-around bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
     >
-      <img src={icon} alt="" className="h-10 w-10" />
+      <img src={icon} alt="" className="h-12 w-12" />
       <span className="text-sm">{name}</span>
     </Link>
   )
@@ -69,9 +69,9 @@ export const DataSourceIcons = ({
       />
       <button
         onClick={onCSV}
-        className="h-24 w-24 py-3 px-6 border border-gray-200 rounded-md flex flex-col items-center justify-between bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
+        className="h-32 w-32 py-3 px-6 border border-gray-200 rounded-md flex flex-col items-center justify-around bg-gray-50 hover:bg-ceramic-50 hover:border-gray-300"
       >
-        <img src="/icons/csv.png" alt="" className="h-10 w-10" />
+        <img src="/icons/csv.png" alt="" className="h-12 w-12" />
         <span className="text-sm">Files</span>
       </button>
     </div>
