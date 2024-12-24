@@ -16,7 +16,7 @@ import {
   DataSource,
 } from '@briefer/database'
 import { logger } from '../../../../logger.js'
-import { sqlEditStreamed } from '../../../../ai-api.js'
+import { sqlEditStreamed, sqlVanna } from '../../../../ai-api.js'
 import { AIEvents } from '../../../../events/index.js'
 import { WSSharedDocV2 } from '../../index.js'
 import { CanceledError } from 'axios'
@@ -48,7 +48,7 @@ async function editWithAI(
   if (datasourceId.type === 'duckdb') {
     event(assistantModelId)
 
-    return sqlEditStreamed(
+    return sqlVanna(
       source,
       instructions,
       'DuckDB',
@@ -99,7 +99,8 @@ async function editWithAI(
     }
   })()
 
-  return sqlEditStreamed(
+  return sqlVanna(
+    // return sqlEditStreamed(
     source,
     instructions,
     dialect,
@@ -120,11 +121,11 @@ async function tableInfoFromStructure(
 
   let result = ''
   for await (const schemaTable of listSchemaTables([{ config, structure }])) {
-    result += `${schemaTable.schemaName}.${schemaTable.tableName}\n`
+    result += `CREATE TABLE ${schemaTable.schemaName}.${schemaTable.tableName} (\n`
     for (const columns of schemaTable.table.columns) {
-      result += `${columns.name} ${columns.type}\n`
+      result += `  ${columns.name} ${columns.type},\n`
     }
-    result += '\n'
+    result += ');\n\n'
   }
 
   return result.trim()

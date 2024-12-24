@@ -1,9 +1,5 @@
-from langchain_community.utilities import SQLDatabase
 from langchain.output_parsers.json import SimpleJsonOutputParser
 from langchain.prompts import PromptTemplate
-from sqlalchemy import inspect
-from sqlalchemy import create_engine
-from concurrent.futures import ThreadPoolExecutor
 
 template = """You're an expert in creating queries.
 
@@ -31,56 +27,6 @@ instructions: ```{instructions}```
 
 Your response must contain just a JSON object with an `sql` key do not explain your thought process or the steps you took to get to the final query. The `sql` key should contain the final query you created.
 """
-
-def get_schema_table_info(engine, schema):
-    db = SQLDatabase(engine=engine, schema=schema, sample_rows_in_table_info=0)
-    return db.get_table_info()
-
-
-def get_catalog_table_info(catalog_engine):
-    inspector = inspect(catalog_engine)
-    schemas = inspector.get_schema_names()
-    with ThreadPoolExecutor() as executor:
-        results = executor.map(lambda schema: get_schema_table_info(catalog_engine, schema), schemas)
-    return "\n\n".join(results)
-
-
-def get_table_info(engine):
-    table_info = ""
-
-    if not engine:
-        return table_info
-
-    if engine.dialect.name == "trino":
-        if engine.url.database:
-            inspector = inspect(engine)
-            schemas = inspector.get_schema_names()
-            with ThreadPoolExecutor() as executor:
-                results = executor.map(lambda schema: get_schema_table_info(engine, schema), schemas)
-            table_info = "\n\n".join(results)
-        else:
-            system_catalogs = ["system", "information_schema", "current", "jmx", "memory"]
-            all_catalogs = [row[0] for row in engine.execute("SHOW CATALOGS").fetchall()]
-            user_catalogs = list(filter(lambda c: c not in system_catalogs, all_catalogs))
-            with ThreadPoolExecutor() as executor:
-                catalog_engines = [create_engine(engine.url.set(database=catalog)) for catalog in user_catalogs]
-                results = executor.map(lambda ce: get_catalog_table_info(ce), catalog_engines)
-            table_info = "\n\n".join(results)
-
-    elif engine.dialect.name == "awsathena":
-        inspector = inspect(engine)
-        schemas = inspector.get_schema_names()
-        with ThreadPoolExecutor() as executor:
-            results = executor.map(lambda schema: get_schema_table_info(engine, schema), schemas)
-        table_info = "\n\n".join(results)
-
-    else:
-        db = SQLDatabase(engine=engine)
-        table_info = db.get_table_info()
-
-    # truncate table_info to 100000 chars
-    return table_info[:100000]
-
 
 def create_sql_edit_stream_query_chain(llm, dialect, table_info):
     prompt = PromptTemplate(

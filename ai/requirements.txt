@@ -21,3 +21,5 @@ trino==0.329.0
 snowflake-connector-python==3.12.2
 snowflake-sqlalchemy==1.6.1
 httpx==0.27
+vanna==0.7.5
+chromadb==0.5.23

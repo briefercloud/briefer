@@ -13,6 +13,7 @@ from decouple import config
 from api.llms import initialize_llm
 from api.chains.stream.python_edit import create_python_edit_stream_query_chain
 from api.chains.stream.sql_edit import create_sql_edit_stream_query_chain
+from api.chains.vanna import create_vanna
 import secrets
 
 
@@ -45,11 +46,33 @@ async def v1_steam_sql_edit(data: SQLEditInputData, _ = Depends(get_current_user
     llm = initialize_llm(model_id=data.modelId, openai_api_key=data.openaiApiKey)
     chain = create_sql_edit_stream_query_chain(llm, data.dialect, data.tableInfo)
 
+    print(data.tableInfo)
+
     async def generate():
         async for result in chain.astream({"query": data.query, "instructions": data.instructions}):
             yield json.dumps(result) + "\n"
 
     return StreamingResponse(generate(), media_type="text/plain")
+
+class VannaInputData(BaseModel):
+    instructions: str
+    tableInfo: Optional[str] = None
+    modelId: Optional[str] = None
+    openaiApiKey: Optional[str] = None
+
+@app.post("/v1/vanna")
+async def v1_vanna(data: VannaInputData, _ = Depends(get_current_username)):
+    vn = create_vanna(data.openaiApiKey, data.modelId, data.tableInfo)
+
+    ddls = vn.get_related_ddl(data.instructions)
+    print("amount of ddls: ", len(ddls))
+    for ddl in ddls:
+        print(ddl)
+
+    result = vn.generate_sql(data.instructions, allow_llm_to_see_data=True)
+
+    return {"sql": result}
+
 
 class PythonEditInputData(BaseModel):
     source: str
@@ -58,7 +81,6 @@ class PythonEditInputData(BaseModel):
     variables: str
     modelId: Optional[str] = None
     openaiApiKey: Optional[str] = None
-
 
 @app.post("/v1/stream/python/edit")
 async def v1_stream_python_edit(data: PythonEditInputData, _ = Depends(get_current_username)):

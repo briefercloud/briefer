@@ -195,3 +195,62 @@ export async function pythonEditStreamed(
     }),
   }
 }
+
+export async function sqlVanna(
+  query: string,
+  userInstructions: string,
+  dialect: string,
+  onSQL: (sql: string) => void,
+  tableInfo: string | null,
+  modelId: string | null,
+  openaiApiKey: string | null
+): Promise<{
+  promise: Promise<void>
+  abortController: AbortController
+}> {
+  const instructions = `Update the input_query according to user_instructions
+input_query = "${query}"
+user_instructions = "${userInstructions}"`
+
+  const abortController = new AbortController()
+  const responseP = axios.post(
+    `${config().AI_API_URL}/v1/vanna`,
+    {
+      instructions,
+      tableInfo,
+      modelId,
+      openaiApiKey: openaiApiKey
+        ? decrypt(openaiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
+        : null,
+    },
+    {
+      headers: {
+        Authorization: `Basic ${base64Credentials()}`,
+        'Content-Type': 'application/json',
+      },
+      signal: abortController.signal,
+    }
+  )
+
+  return {
+    abortController,
+    promise: new Promise(async (resolve, reject) => {
+      try {
+        const response = await responseP
+        const parse = z.object({ sql: z.string() }).safeParse(response.data)
+        if (parse.success) {
+          onSQL(parse.data.sql)
+          resolve()
+        } else {
+          reject(parse.error)
+        }
+      } catch (e) {
+        if (e instanceof CanceledError) {
+          resolve()
+          return
+        }
+        reject(e)
+      }
+    }),
+  }
+}
