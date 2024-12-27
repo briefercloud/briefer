@@ -1,5 +1,3 @@
-import { useDataSources } from '@/hooks/useDatasources'
-import { useStringQuery } from '@/hooks/useQueryArgs'
 import clsx from 'clsx'
 
 interface Props {
@@ -26,17 +24,7 @@ function BlinkingSignal(props: Props) {
   )
 }
 
-export const DataSourceBlinkingSignal = () => {
-  const workspaceId = useStringQuery('workspaceId') ?? ''
-  const [{ datasources: allDataSources, isLoading }] =
-    useDataSources(workspaceId)
-
-  const userDataSources = allDataSources.filter((ds) => !ds.config.data.isDemo)
-
-  if (isLoading || !userDataSources || userDataSources.size > 0) {
-    return null
-  }
-
+export function ConfigurationsMenuBlinkingSignal() {
   return (
     <BlinkingSignal
       position="top-0.5 left-1 translate-x-full"
