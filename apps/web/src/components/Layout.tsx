@@ -41,7 +41,6 @@ import useSideBar from '@/hooks/useSideBar'
 import MobileWarning from './MobileWarning'
 import CommandPalette from './commandPalette'
 import { useHotkeys } from 'react-hotkeys-hook'
-import Onboarding from './onboarding'
 import GitHubButton from 'react-github-btn'
 import { useDataSources } from '@/hooks/useDatasources'
 import {
@@ -315,8 +314,6 @@ export default function Layout({
         setOpen={setUpgradeDialogOpen}
         currentPlan="open-source"
       />
-
-      {!hideOnboarding && <Onboarding />}
 
       {isSideBarOpen && (
         <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-auto border-r border-gray-200">
