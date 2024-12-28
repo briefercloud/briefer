@@ -16,6 +16,7 @@ import {
 import { createWorkspace } from '../workspace/index.js'
 import { isWorkspaceNameValid } from '../utils/validation.js'
 import { captureWorkspaceCreated } from '../events/posthog.js'
+import path from 'path'
 
 type BaseAuthConfig = {
   FRONTEND_URL: string
@@ -42,7 +43,9 @@ export default function getRouter<H extends ApiUser>(
     }
 
     if (isExpired) {
-      res.redirect(`${config.FRONTEND_URL}/auth/expired-signin?t=${token}`)
+      res.redirect(
+        path.join(config.FRONTEND_URL, `/auth/expired-signin?t=${token}`)
+      )
       return
     }
 
@@ -170,7 +173,7 @@ export default function getRouter<H extends ApiUser>(
 
     const loginLink = createLoginLink(
       user.id,
-      `${config.FRONTEND_URL}/${callback ?? ''}`
+      path.join(config.FRONTEND_URL, callback ?? '')
     )
 
     res.json({ email: obscureEmail(user.email), loginLink })
