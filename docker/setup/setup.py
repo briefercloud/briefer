@@ -23,19 +23,23 @@ def get_config(dir):
         cfg = json.load(f)
 
         # override config with env vars
-        for k, _ in cfg.items():
+        for k, default_value in generate_default_config().items():
             if k in os.environ:
                 cfg[k] = os.environ[k]
+            elif k not in cfg:
+                cfg[k] = default_value
 
         return cfg
 
-def generate_apps_config():
-    fpath = get_config_path(APPS_CONFIG_DIR)
-    cfg = {
+def generate_default_config():
+    return {
         "NODE_ENV": "production",
         "LOG_LEVEL": "info",
         "POSTGRES_USERNAME": "briefer",
         "POSTGRES_PASSWORD": get_random_secret(8),
+        "POSTGRES_HOSTNAME": "localhost",
+        "POSTGRES_PORT": "5432",
+        "POSTGRES_DATABASE": "briefer",
         "JUPYTER_TOKEN": get_random_secret(32),
         "AI_BASIC_AUTH_USERNAME": get_random_secret(8),
         "AI_BASIC_AUTH_PASSWORD": get_random_secret(8),
@@ -45,6 +49,10 @@ def generate_apps_config():
         "DATASOURCES_ENCRYPTION_KEY": get_random_secret(32),
         "WORKSPACE_SECRETS_ENCRYPTION_KEY": get_random_secret(32),
     }
+
+def generate_apps_config():
+    fpath = get_config_path(APPS_CONFIG_DIR)
+    cfg = generate_default_config()
 
     # override config with env vars
     for k, _ in cfg.items():
@@ -110,9 +118,12 @@ def run_migrations(cfg):
 
     username = cfg["POSTGRES_USERNAME"]
     password = cfg["POSTGRES_PASSWORD"]
+    hostname = cfg["POSTGRES_HOSTNAME"]
+    port = cfg["POSTGRES_PORT"]
+    database = cfg["POSTGRES_DATABASE"]
     default_env = {
         "NODE_ENV": "production",
-        "POSTGRES_PRISMA_URL": f"postgresql://{username}:{password}@localhost:5432/briefer?schema=public"
+        "POSTGRES_PRISMA_URL": f"postgresql://{username}:{password}@{hostname}:{port}/{database}?schema=public"
     }
 
     env = os.environ.copy()
