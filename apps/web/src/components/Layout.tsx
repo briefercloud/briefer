@@ -316,8 +316,6 @@ export default function Layout({
         currentPlan="open-source"
       />
 
-      {!hideOnboarding && <Onboarding />}
-
       {isSideBarOpen && (
         <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[33%] max-w-[33%] lg:min-w-[25%] lg:max-w-[25%] overflow-auto border-r border-gray-200">
           <div className="flex items-center justify-between pt-0.5 pl-4 pr-5">
