@@ -123,19 +123,6 @@ export async function updateWorkspace(
   return transformSecrets(w)
 }
 
-export async function updateOnboardingStep(
-  workspaceId: string,
-  onboardingStep: OnboardingStep
-) {
-  const w = await prisma().workspace.update({
-    where: { id: workspaceId },
-    data: { onboardingStep },
-    include: { secrets: true },
-  })
-
-  return transformSecrets(w)
-}
-
 export async function createWorkspace(
   wData: WorkspaceCreateInput,
   ownerId: string,

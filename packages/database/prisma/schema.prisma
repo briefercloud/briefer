@@ -477,14 +477,6 @@ enum Plan {
   professional
 }
 
-enum OnboardingStep {
-  intro
-  connectDataSource
-  activateTrial
-  joinSlack
-  done
-}
-
 model Workspace {
   id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name           String
@@ -494,7 +486,6 @@ model Workspace {
   plan           Plan           @default(free)
   ownerId        String         @db.Uuid
   secretsId      String?        @unique @db.Uuid
-  onboardingStep OnboardingStep @default(intro)
   assistantModel String         @default("gpt-4o")
 
   createdAt DateTime @default(now())

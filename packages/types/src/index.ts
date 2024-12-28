@@ -760,16 +760,6 @@ export function isInvalidVisualizationFilter(
   )
 }
 
-export const OnboardingStep = z.union([
-  z.literal('intro'),
-  z.literal('connectDataSource'),
-  z.literal('activateTrial'),
-  z.literal('joinSlack'),
-  z.literal('done'),
-])
-
-export type OnboardingStep = z.infer<typeof OnboardingStep>
-
 export const DataSourceColumn = z.object({
   name: z.string(),
   type: z.string(),
