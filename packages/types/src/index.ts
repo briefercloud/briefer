@@ -1184,3 +1184,7 @@ export type SQLQueryConfiguration = {
 }
 
 export function exhaustiveCheck(_param: never) {}
+
+export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
+
+export type TutorialSteps = Record<string, { status: TutorialStepStatus }>
