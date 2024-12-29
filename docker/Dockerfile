@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     supervisor \
     libaio1 \
+    gcc \
     alien && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -136,6 +137,16 @@ RUN /app/jupyter/venv/bin/pip install /usr/src/jupyter_briefer_extension
 RUN /app/jupyter/venv/bin/jupyter server extension enable jupyter_briefer_extension --sys-prefix
 ##### END OF JUPYTER BUILD #####
 
+### START OF AI SERVICE BUILD ###
+WORKDIR /app/ai
+
+COPY ai/. .
+
+RUN python3 -m venv /app/ai/venv
+RUN /app/ai/venv/bin/pip install --upgrade pip
+RUN /app/ai/venv/bin/pip install --no-cache-dir -r requirements.txt
+### END OF AI SERVICE BUILD ###
+
 WORKDIR /app
 
 RUN groupadd -r briefer \
@@ -150,7 +161,6 @@ RUN groupadd -r briefer \
     && chown -R jupyteruser:jupyteruser /home/jupyteruser \
     && chown -R jupyteruser:jupyteruser /app/jupyter/venv \
     && chmod 700 /home/jupyteruser
-
 
 #### START OF COPY API AND WEB BUILDS ####
 WORKDIR /app/api
