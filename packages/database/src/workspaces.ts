@@ -1,10 +1,6 @@
 import prisma, { PrismaTransaction } from './index.js'
 import { Workspace } from '@prisma/client'
-import {
-  OnboardingStep,
-  WorkspaceCreateInput,
-  WorkspaceEditFormValues,
-} from '@briefer/types'
+import { WorkspaceCreateInput, WorkspaceEditFormValues } from '@briefer/types'
 
 type WorkspaceWithSecrets = Workspace & {
   secrets: {
