@@ -1,8 +1,8 @@
 {
   "name": "briefer",
-  "version": "0.0.82",
+  "version": "0.0.83",
   "main": "index.js",
-  "repository": "git@github.com:ergomake/nora.git",
+  "repository": "git@github.com:briefercloud/briefer.git",
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
   "packageManager": "yarn@1.22.22",
