@@ -1189,3 +1189,7 @@ export enum ElementType {
   Block = 'BLOCK',
   BlockGroup = 'BLOCK_GROUP',
 }
+
+export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
+
+export type TutorialSteps = Record<string, { status: TutorialStepStatus }>

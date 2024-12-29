@@ -1,59 +1,119 @@
+import useTutorial from '@/hooks/useTutorial'
 import {
   ArrowRightIcon,
   CheckCircleIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
-import Link from 'next/link'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import type { TutorialStepStatus } from '@briefer/types'
+import React from 'react'
 
-const tutorialSteps = [
-  {
-    name: 'Connect a data source',
-  },
-  {
-    name: 'Run a query',
-  },
-  {
-    name: 'Create a visualization',
-  },
-  {
-    name: 'Publish a dashboard',
-  },
-  {
-    name: 'Invite team members',
-  },
-]
+export const OnboardingTutorial = () => {
+  const [tutorialSteps, { advanceTutorial }] = useTutorial()
 
-const Tutorial = () => {
+  return (
+    <Tutorial name={'Welcome to Briefer'} onAdvanceTutorial={advanceTutorial}>
+      <TutorialStep
+        name={'Connect a data source'}
+        description={
+          "Click on 'data sources' at the bottom left corner. Then, click the add data source button, pick your database type, and enter the connection details."
+        }
+        status={tutorialSteps['connect-data-source'].status}
+      >
+        <TutorialStepAction label="Add a data source" onClick={() => {}} />
+        <TutorialStepAction
+          label="I'll use the demo data source"
+          onClick={() => {}}
+        />
+      </TutorialStep>
+
+      <TutorialStep
+        name={'Run a query'}
+        description={
+          "Add a query block to your page, select the data source you've just connected (top right corner), and write your query. Then, press the run button to see the results."
+        }
+        status={tutorialSteps['run-query'].status}
+      >
+        <TutorialStepAction label="Add a query block" onClick={() => {}} />
+      </TutorialStep>
+
+      <TutorialStep
+        name={'Create a visualization'}
+        description={
+          'Add a visualization block to your page, select the data frame from your query, and choose the visualization type. Then pick what goes on the x and y axis to see a graph.'
+        }
+        status={tutorialSteps['create-visualization'].status}
+      >
+        <TutorialStepAction
+          label="Add a visualization block"
+          onClick={() => {}}
+        />
+      </TutorialStep>
+
+      <TutorialStep
+        name={'Publish a dashboard'}
+        description={
+          "Switch to the dashboard view using the button at the top right corner. Then, drag and drop your notebook's blocks to create a dashboard. When you're done, click the 'publish' button to save your dashboard."
+        }
+        status={tutorialSteps['publish-dashboard'].status}
+      >
+        <TutorialStepAction
+          label="Switch to dashboard view"
+          onClick={() => {}}
+        />
+        <TutorialStepAction label="Publish the dashboard" onClick={() => {}} />
+      </TutorialStep>
+
+      <TutorialStep
+        name={'Invite team members'}
+        description={
+          "Open the users page at the bottom left corner of the sidebar. Then, click the 'add user' button and enter the email of the person you want to invite. They'll receive an email with an invitation link."
+        }
+        status={tutorialSteps['invite-team-members'].status}
+      >
+        <TutorialStepAction label="Open the users page" onClick={() => {}} />
+        <TutorialStepAction label="Add a user" onClick={() => {}} />
+      </TutorialStep>
+    </Tutorial>
+  )
+}
+
+type TutorialProps = {
+  name: string
+  children:
+    | React.ReactElement<TutorialStepProps>
+    | React.ReactElement<TutorialStepProps>[]
+  onAdvanceTutorial: () => void
+}
+
+export const Tutorial = (props: TutorialProps) => {
   return (
     <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-10 border border-gray-200 font-sans overflow-hidden">
       <div className="bg-gray-50 rounded-t-lg h-12 w-full border-b border-gray-200 p-4 flex items-center justify-between">
         <div className="text-sm flex gap-x-2 items-center">
           <span className="text-gray-600 font-medium ">Welcome to Briefer</span>
-          <span className="text-gray-400 text-xs font-medium">(0/5)</span>
+          <button
+            className="text-gray-400 text-xs font-medium inline-block"
+            onClick={props.onAdvanceTutorial}
+          >
+            (0/5)
+          </button>
         </div>
         <ChevronDownIcon className="text-gray-400 h-3.5 w-3.5" />
       </div>
       <div className="p-4 flex flex-col gap-y-4 h-80 overflow-auto">
-        {tutorialSteps.map((step, index) => (
-          <TutorialStep
-            key={index}
-            name={step.name}
-            status={
-              index === 1 ? 'current' : index < 1 ? 'completed' : 'upcoming'
-            }
-            isLast={index === tutorialSteps.length - 1}
-          />
-        ))}
+        {React.Children.map(props.children, (child, index) => {
+          return React.cloneElement(child, {
+            isLast: index === React.Children.count(props.children) - 1,
+          })
+        })}
       </div>
     </div>
   )
 }
 
-type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
-
-const TutorialStepStatus = (props: {
+const TutorialStepStatusIndicator = (props: {
   status: TutorialStepStatus
   isLast: boolean
 }) => {
@@ -69,9 +129,6 @@ const TutorialStepStatus = (props: {
 
     if (props.status === 'completed') {
       return <CheckCircleIcon className="h-4 w-4 text-green-700" />
-      return (
-        <div className="size-2.5 rounded-full bg-green-600 ring-1 ring-green-600" />
-      )
     }
 
     return (
@@ -102,16 +159,54 @@ const TutorialStepStatus = (props: {
   )
 }
 
+type TutorialStepActionProps = {
+  label: string
+  onClick: () => void
+}
+
+const TutorialStepAction = (props: TutorialStepActionProps) => {
+  return (
+    <button
+      className="text-blue-600 text-xs w-full flex gap-x-1 items-center font-medium"
+      onClick={props.onClick}
+    >
+      <ArrowRightIcon className="h-3 w-3" />
+      <span>{props.label}</span>
+    </button>
+  )
+}
+
 type TutorialStepProps = {
   name: string
+  description: string
   status: TutorialStepStatus
-  isLast: boolean
+  isLast?: boolean
+  children?:
+    | React.ReactElement<TutorialStepActionProps>
+    | React.ReactElement<TutorialStepActionProps>[]
 }
 
 const TutorialStep = (props: TutorialStepProps) => {
+  const stepRef = useRef<HTMLLIElement>(null)
+
+  // focus on the current step when it changes
+  useEffect(() => {
+    if (props.status === 'current') {
+      const stepElement = stepRef.current
+      stepElement?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center',
+      })
+    }
+  }, [props.status])
+
   return (
-    <li className="relative flex gap-x-2">
-      <TutorialStepStatus status={props.status} isLast={props.isLast} />
+    <li className="relative flex gap-x-2" ref={stepRef}>
+      <TutorialStepStatusIndicator
+        status={props.status}
+        isLast={props.isLast ?? false}
+      />
 
       <div className="flex flex-col py-0.5 text-sm w-full flex gap-y-1">
         <div
@@ -128,31 +223,17 @@ const TutorialStep = (props: TutorialStepProps) => {
         </div>
         <div
           className={clsx(
-            'flex flex-col gap-y-3',
-            props.status !== 'current' ? 'hidden' : 'block'
+            'flex flex-col gap-y-3 transition-max-height duration-500 overflow-hidden',
+            props.status !== 'current' ? 'max-h-0' : 'max-h-72'
           )}
         >
-          <div className="text-xs text-gray-500">
-            Click on "data sources" at the bottom left corner. Then, click the
-            add data source button, pick your database type, and enter the
-            connection details.
-          </div>
+          <div className="text-xs text-gray-500">{props.description}</div>
 
           <div className="text-blue-600 text-xs w-full flex flex-col gap-y-1">
-            <div className="flex gap-x-1 items-center">
-              <ArrowRightIcon className="h-3 w-3" />
-              <span>Add a data source</span>
-            </div>
-
-            <div className="flex gap-x-1 items-center">
-              <ArrowRightIcon className="h-3 w-3" />
-              <span>I'll use the demo data source</span>
-            </div>
+            {props.children}
           </div>
         </div>
       </div>
     </li>
   )
 }
-
-export default Tutorial
