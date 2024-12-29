@@ -1,57 +1,96 @@
-import { TutorialSteps, TutorialStepStatus } from '@briefer/types'
-import { useCallback, useState } from 'react'
+import { NEXT_PUBLIC_API_URL } from '@/utils/env'
+import fetcher from '@/utils/fetcher'
+import { OnboardingTutorial } from '@briefer/database'
+import { OnboardingTutorialStep } from '@briefer/types'
+import { useCallback, useEffect, useState } from 'react'
+import useSWR from 'swr'
 
-const mockSteps: TutorialSteps = {
-  'connect-data-source': {
-    status: 'current',
-  },
-  'run-query': {
-    status: 'upcoming',
-  },
-  'create-visualization': {
-    status: 'upcoming',
-  },
-  'publish-dashboard': {
-    status: 'upcoming',
-  },
-  'invite-team-members': {
-    status: 'upcoming',
-  },
+export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
+
+type StepStates = Record<OnboardingTutorialStep, TutorialStepStatus>
+
+type UseTutorialState = {
+  stepStates: StepStates
+  isLoading: boolean
 }
 
 type UseTutorialAPI = {
   advanceTutorial: () => void
 }
 
-const useTutorial = (): [TutorialSteps, UseTutorialAPI] => {
-  const [tutorialSteps, setTutorialSteps] = useState<TutorialSteps>(mockSteps)
+const useTutorial = (
+  workspaceId: string,
+  tutorialType: string,
+  stepIds: OnboardingTutorialStep[]
+): [UseTutorialState, UseTutorialAPI] => {
+  const { data, isLoading, error, mutate } = useSWR<OnboardingTutorial>(
+    `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
+    fetcher
+  )
 
-  const advanceTutorial = useCallback(() => {
-    setTutorialSteps((prevStepState) => {
-      const currentStepIndex = Object.keys(prevStepState).findIndex(
-        (step) => prevStepState[step].status === 'current'
-      )
+  const [stepStates, setStepStates] = useState<StepStates>(
+    stepIds.reduce((acc, stepId) => {
+      acc[stepId] = 'upcoming'
+      return acc
+    }, {} as StepStates)
+  )
 
-      if (currentStepIndex === -1) {
-        return prevStepState
-      }
+  useEffect(() => {
+    if (!data) return
 
-      return Object.keys(prevStepState).reduce<TutorialSteps>(
-        (acc, step, index) => {
-          if (index <= currentStepIndex) {
-            return { ...acc, [step]: { status: 'completed' } }
-          } else if (index === currentStepIndex + 1) {
-            return { ...acc, [step]: { status: 'current' } }
-          } else {
-            return { ...acc, [step]: { status: 'upcoming' } }
+    const currentStepIndex = stepIds.indexOf(data.currentStep)
+
+    setStepStates(() =>
+      stepIds.reduce((acc, stepId, index) => {
+        if (index < currentStepIndex) {
+          acc[stepId] = 'completed'
+        } else if (index === currentStepIndex) {
+          acc[stepId] = 'current'
+        } else {
+          acc[stepId] = 'upcoming'
+        }
+
+        return acc
+      }, {} as StepStates)
+    )
+  }, [data, stepIds])
+
+  const advanceTutorial = useCallback(async () => {
+    if (!data) return
+
+    const currentIndex = stepIds.indexOf(data.currentStep)
+    const nextStep = stepIds[currentIndex + 1]
+
+    mutate(
+      async () => {
+        const tutorialRes = await fetch(
+          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
+          {
+            credentials: 'include',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ currentStep: nextStep }),
           }
-        },
-        {}
-      )
-    })
-  }, [])
+        )
 
-  return [tutorialSteps, { advanceTutorial }]
+        return tutorialRes.json()
+      },
+      {
+        optimisticData: { ...data, currentStep: nextStep },
+        rollbackOnError: true,
+      }
+    )
+  }, [data, mutate, stepIds])
+
+  return [
+    {
+      stepStates,
+      isLoading: isLoading || (!data && !error),
+    },
+    { advanceTutorial },
+  ]
 }
 
 export default useTutorial

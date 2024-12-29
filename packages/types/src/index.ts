@@ -1185,6 +1185,12 @@ export type SQLQueryConfiguration = {
 
 export function exhaustiveCheck(_param: never) {}
 
-export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
+export const OnboardingTutorialStep = z.enum([
+  'connectDataSource',
+  'runQuery',
+  'createVisualization',
+  'publishDashboard',
+  'inviteTeamMembers',
+])
 
-export type TutorialSteps = Record<string, { status: TutorialStepStatus }>
+export type OnboardingTutorialStep = z.infer<typeof OnboardingTutorialStep>

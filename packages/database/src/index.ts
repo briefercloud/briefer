@@ -12,6 +12,7 @@ export type {
   UserYjsAppDocument,
   YjsUpdate,
   ReusableComponentInstance,
+  OnboardingTutorial,
 } from '@prisma/client'
 
 export { UserWorkspaceRole } from '@prisma/client'

@@ -304,7 +304,7 @@ export default function Layout({
     <div className={`flex w-full h-full ${syne.className}`}>
       <MobileWarning />
 
-      <OnboardingTutorial />
+      <OnboardingTutorial workspaceId={workspaceId} />
 
       <CommandPalette
         workspaceId={workspaceId}

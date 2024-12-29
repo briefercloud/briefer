@@ -1,4 +1,5 @@
-import useTutorial from '@/hooks/useTutorial'
+import useTutorial, { TutorialStepStatus } from '@/hooks/useTutorial'
+import { OnboardingTutorialStep } from '@briefer/types'
 import {
   ArrowRightIcon,
   CheckCircleIcon,
@@ -6,11 +7,22 @@ import {
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import { useEffect, useMemo, useRef } from 'react'
-import type { TutorialStepStatus } from '@briefer/types'
 import React from 'react'
 
-export const OnboardingTutorial = () => {
-  const [tutorialSteps, { advanceTutorial }] = useTutorial()
+const onboardingStepIds: OnboardingTutorialStep[] = [
+  'connectDataSource',
+  'runQuery',
+  'createVisualization',
+  'publishDashboard',
+  'inviteTeamMembers',
+]
+
+export const OnboardingTutorial = (props: { workspaceId: string }) => {
+  const [{ stepStates }, { advanceTutorial }] = useTutorial(
+    props.workspaceId,
+    'onboarding',
+    onboardingStepIds
+  )
 
   return (
     <Tutorial name={'Welcome to Briefer'} onAdvanceTutorial={advanceTutorial}>
@@ -19,7 +31,7 @@ export const OnboardingTutorial = () => {
         description={
           "Click on 'data sources' at the bottom left corner. Then, click the add data source button, pick your database type, and enter the connection details."
         }
-        status={tutorialSteps['connect-data-source'].status}
+        status={stepStates['connectDataSource']}
       >
         <TutorialStepAction label="Add a data source" onClick={() => {}} />
         <TutorialStepAction
@@ -33,7 +45,7 @@ export const OnboardingTutorial = () => {
         description={
           "Add a query block to your page, select the data source you've just connected (top right corner), and write your query. Then, press the run button to see the results."
         }
-        status={tutorialSteps['run-query'].status}
+        status={stepStates['runQuery']}
       >
         <TutorialStepAction label="Add a query block" onClick={() => {}} />
       </TutorialStep>
@@ -43,7 +55,7 @@ export const OnboardingTutorial = () => {
         description={
           'Add a visualization block to your page, select the data frame from your query, and choose the visualization type. Then pick what goes on the x and y axis to see a graph.'
         }
-        status={tutorialSteps['create-visualization'].status}
+        status={stepStates['createVisualization']}
       >
         <TutorialStepAction
           label="Add a visualization block"
@@ -56,7 +68,7 @@ export const OnboardingTutorial = () => {
         description={
           "Switch to the dashboard view using the button at the top right corner. Then, drag and drop your notebook's blocks to create a dashboard. When you're done, click the 'publish' button to save your dashboard."
         }
-        status={tutorialSteps['publish-dashboard'].status}
+        status={stepStates['publishDashboard']}
       >
         <TutorialStepAction
           label="Switch to dashboard view"
@@ -70,7 +82,7 @@ export const OnboardingTutorial = () => {
         description={
           "Open the users page at the bottom left corner of the sidebar. Then, click the 'add user' button and enter the email of the person you want to invite. They'll receive an email with an invitation link."
         }
-        status={tutorialSteps['invite-team-members'].status}
+        status={stepStates['inviteTeamMembers']}
       >
         <TutorialStepAction label="Open the users page" onClick={() => {}} />
         <TutorialStepAction label="Add a user" onClick={() => {}} />
@@ -224,7 +236,8 @@ const TutorialStep = (props: TutorialStepProps) => {
         <div
           className={clsx(
             'flex flex-col gap-y-3 transition-max-height duration-500 overflow-hidden',
-            props.status !== 'current' ? 'max-h-0' : 'max-h-72'
+            props.status !== 'current' ? 'max-h-0' : 'max-h-72',
+            props.status === 'current' ? 'delay-600' : 'delay-0'
           )}
         >
           <div className="text-xs text-gray-500">{props.description}</div>

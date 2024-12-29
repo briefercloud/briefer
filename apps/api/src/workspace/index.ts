@@ -71,6 +71,14 @@ export class WorkspaceCreator implements IWorkspaceCreator {
         skipDuplicates: true,
       })
 
+      await tx.onboardingTutorial.create({
+        data: {
+          workspaceId: workspace.id,
+          currentStep: 'connectDataSource',
+          isComplete: false,
+        },
+      })
+
       return { workspace, invitedUsers: guestUsers }
     }
 
