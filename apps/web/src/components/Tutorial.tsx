@@ -6,7 +6,7 @@ import {
   ChevronDownIcon,
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
-import { useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import React from 'react'
 
 const onboardingStepIds: OnboardingTutorialStep[] = [
@@ -24,14 +24,35 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
     onboardingStepIds
   )
 
+  const [expandedStep, setExpandedStep] = React.useState<
+    Map<OnboardingTutorialStep, boolean>
+  >(new Map())
+
+  const toggleExpanded = useCallback((step: OnboardingTutorialStep) => {
+    setExpandedStep((prev) => {
+      const next = new Map(prev)
+      next.set(step, !prev.get(step))
+      return next
+    })
+  }, [])
+
   return (
-    <Tutorial name={'Welcome to Briefer'} onAdvanceTutorial={advanceTutorial}>
+    <Tutorial
+      name={'Welcome to Briefer'}
+      onAdvanceTutorial={advanceTutorial}
+      totalSteps={Object.values(stepStates).length}
+      completedSteps={
+        Object.values(stepStates).filter((s) => s === 'completed').length
+      }
+    >
       <TutorialStep
         name={'Connect a data source'}
         description={
           "Click on 'data sources' at the bottom left corner. Then, click the add data source button, pick your database type, and enter the connection details."
         }
         status={stepStates['connectDataSource']}
+        isExpanded={expandedStep.get('connectDataSource') ?? false}
+        onExpand={() => toggleExpanded('connectDataSource')}
       >
         <TutorialStepAction label="Add a data source" onClick={() => {}} />
         <TutorialStepAction
@@ -46,6 +67,8 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
           "Add a query block to your page, select the data source you've just connected (top right corner), and write your query. Then, press the run button to see the results."
         }
         status={stepStates['runQuery']}
+        isExpanded={expandedStep.get('runQuery') ?? false}
+        onExpand={() => toggleExpanded('runQuery')}
       >
         <TutorialStepAction label="Add a query block" onClick={() => {}} />
       </TutorialStep>
@@ -56,6 +79,8 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
           'Add a visualization block to your page, select the data frame from your query, and choose the visualization type. Then pick what goes on the x and y axis to see a graph.'
         }
         status={stepStates['createVisualization']}
+        isExpanded={expandedStep.get('createVisualization') ?? false}
+        onExpand={() => toggleExpanded('createVisualization')}
       >
         <TutorialStepAction
           label="Add a visualization block"
@@ -69,6 +94,8 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
           "Switch to the dashboard view using the button at the top right corner. Then, drag and drop your notebook's blocks to create a dashboard. When you're done, click the 'publish' button to save your dashboard."
         }
         status={stepStates['publishDashboard']}
+        isExpanded={expandedStep.get('publishDashboard') ?? false}
+        onExpand={() => toggleExpanded('publishDashboard')}
       >
         <TutorialStepAction
           label="Switch to dashboard view"
@@ -83,6 +110,8 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
           "Open the users page at the bottom left corner of the sidebar. Then, click the 'add user' button and enter the email of the person you want to invite. They'll receive an email with an invitation link."
         }
         status={stepStates['inviteTeamMembers']}
+        isExpanded={expandedStep.get('inviteTeamMembers') ?? false}
+        onExpand={() => toggleExpanded('inviteTeamMembers')}
       >
         <TutorialStepAction label="Open the users page" onClick={() => {}} />
         <TutorialStepAction label="Add a user" onClick={() => {}} />
@@ -97,6 +126,8 @@ type TutorialProps = {
     | React.ReactElement<TutorialStepProps>
     | React.ReactElement<TutorialStepProps>[]
   onAdvanceTutorial: () => void
+  totalSteps: number
+  completedSteps: number
 }
 
 export const Tutorial = (props: TutorialProps) => {
@@ -109,7 +140,7 @@ export const Tutorial = (props: TutorialProps) => {
             className="text-gray-400 text-xs font-medium inline-block"
             onClick={props.onAdvanceTutorial}
           >
-            (0/5)
+            ({props.completedSteps}/{props.totalSteps})
           </button>
         </div>
         <ChevronDownIcon className="text-gray-400 h-3.5 w-3.5" />
@@ -192,6 +223,8 @@ type TutorialStepProps = {
   name: string
   description: string
   status: TutorialStepStatus
+  isExpanded: boolean
+  onExpand: () => void
   isLast?: boolean
   children?:
     | React.ReactElement<TutorialStepActionProps>
@@ -221,28 +254,37 @@ const TutorialStep = (props: TutorialStepProps) => {
       />
 
       <div className="flex flex-col py-0.5 text-sm w-full flex gap-y-1">
-        <div
+        <button
+          disabled={props.status === 'current'}
+          onClick={props.onExpand}
           className={clsx(
-            'font-medium',
+            'block text-left font-medium',
             props.status === 'current'
-              ? 'text-gray-800'
+              ? 'text-gray-800 hover:text-gray-900'
               : props.status === 'completed'
-              ? 'text-green-700'
-              : 'text-gray-400'
+              ? 'text-green-700 hover:text-green-800'
+              : 'text-gray-400 hover:text-gray-500'
           )}
         >
           {props.name}
-        </div>
+        </button>
         <div
           className={clsx(
             'flex flex-col gap-y-3 transition-max-height duration-500 overflow-hidden',
-            props.status !== 'current' ? 'max-h-0' : 'max-h-72',
-            props.status === 'current' ? 'delay-600' : 'delay-0'
+            props.status !== 'current' && !props.isExpanded
+              ? 'max-h-0'
+              : 'max-h-72',
+            props.status === 'current' ? 'delay-[700ms]' : 'delay-0'
           )}
         >
           <div className="text-xs text-gray-500">{props.description}</div>
 
-          <div className="text-blue-600 text-xs w-full flex flex-col gap-y-1">
+          <div
+            className={clsx(
+              'text-blue-600 text-xs w-full flex flex-col gap-y-1',
+              props.status === 'current' ? 'block' : 'hidden'
+            )}
+          >
             {props.children}
           </div>
         </div>
