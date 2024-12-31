@@ -1188,9 +1188,15 @@ export function exhaustiveCheck(_param: never) {}
 export const OnboardingTutorialStep = z.enum([
   'connectDataSource',
   'runQuery',
+  'runPython',
   'createVisualization',
   'publishDashboard',
   'inviteTeamMembers',
 ])
 
 export type OnboardingTutorialStep = z.infer<typeof OnboardingTutorialStep>
+
+export const TutorialStepStatus = z.enum(['current', 'completed', 'upcoming'])
+export type TutorialStepStatus = z.infer<typeof TutorialStepStatus>
+
+export type StepStates = Record<OnboardingTutorialStep, TutorialStepStatus>

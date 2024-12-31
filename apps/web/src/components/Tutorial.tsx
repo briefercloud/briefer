@@ -1,27 +1,35 @@
-import useTutorial, { TutorialStepStatus } from '@/hooks/useTutorial'
-import { OnboardingTutorialStep } from '@briefer/types'
+import useTutorial from '@/hooks/useTutorial'
+import {
+  OnboardingTutorialStep,
+  StepStates,
+  TutorialStepStatus,
+} from '@briefer/types'
 import {
   ArrowRightIcon,
   CheckCircleIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
+import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import React from 'react'
 
-const onboardingStepIds: OnboardingTutorialStep[] = [
-  'connectDataSource',
-  'runQuery',
-  'createVisualization',
-  'publishDashboard',
-  'inviteTeamMembers',
-]
+const defaultStepStates: StepStates = {
+  connectDataSource: 'current',
+  runQuery: 'upcoming',
+  runPython: 'upcoming',
+  createVisualization: 'upcoming',
+  publishDashboard: 'upcoming',
+  inviteTeamMembers: 'upcoming',
+}
 
 export const OnboardingTutorial = (props: { workspaceId: string }) => {
+  const router = useRouter()
+
   const [{ stepStates }, { advanceTutorial }] = useTutorial(
     props.workspaceId,
     'onboarding',
-    onboardingStepIds
+    defaultStepStates
   )
 
   const [expandedStep, setExpandedStep] = React.useState<
@@ -36,6 +44,10 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
     })
   }, [])
 
+  const isWithinDocumentPage = useMemo(() => {
+    return router.pathname.endsWith('/notebook/edit')
+  }, [router.pathname])
+
   return (
     <Tutorial
       name={'Welcome to Briefer'}
@@ -48,35 +60,93 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       <TutorialStep
         name={'Connect a data source'}
         description={
-          "Click on 'data sources' at the bottom left corner. Then, click the add data source button, pick your database type, and enter the connection details."
+          <>
+            <p>
+              {
+                "You can connect a database in the 'data sources' page at the bottom left corner."
+              }
+            </p>
+            <p>
+              {
+                'When adding a data source, pick your database type, and enter the connection details.'
+              }
+            </p>
+          </>
         }
         status={stepStates['connectDataSource']}
         isExpanded={expandedStep.get('connectDataSource') ?? false}
         onExpand={() => toggleExpanded('connectDataSource')}
       >
-        <TutorialStepAction label="Add a data source" onClick={() => {}} />
+        <TutorialStepAction
+          label="Add a data source"
+          onClick={() => {
+            router.push(`/workspaces/${props.workspaceId}/data-sources/new`)
+          }}
+        />
+        {/* TODO: Deactivated on open-source
         <TutorialStepAction
           label="I'll use the demo data source"
           onClick={() => {}}
         />
+        */}
       </TutorialStep>
 
       <TutorialStep
         name={'Run a query'}
         description={
-          "Add a query block to your page, select the data source you've just connected (top right corner), and write your query. Then, press the run button to see the results."
+          <>
+            <p>
+              Add a query block to your page, select the data source you've just
+              connected, and write your query.
+            </p>
+            <p>Then, press the run button to see the results.</p>
+          </>
         }
         status={stepStates['runQuery']}
         isExpanded={expandedStep.get('runQuery') ?? false}
         onExpand={() => toggleExpanded('runQuery')}
       >
-        <TutorialStepAction label="Add a query block" onClick={() => {}} />
+        <TutorialStepAction
+          label="Add a query block"
+          onClick={() => {}}
+          hidden={!isWithinDocumentPage}
+        />
+      </TutorialStep>
+
+      <TutorialStep
+        name={'Run some Python code'}
+        description={
+          <>
+            <p>
+              Add a Python block, write some code, and press the run button.
+            </p>
+            <p>
+              Tip: you can manipulate query results with Python. Briefer puts
+              every query's result into variable containing a Pandas Data Frame.
+            </p>
+          </>
+        }
+        status={stepStates['runPython']}
+        isExpanded={expandedStep.get('runPython') ?? false}
+        onExpand={() => toggleExpanded('runPython')}
+      >
+        <TutorialStepAction
+          label="Add a Python block"
+          onClick={() => {}}
+          hidden={!isWithinDocumentPage}
+        />
       </TutorialStep>
 
       <TutorialStep
         name={'Create a visualization'}
         description={
-          'Add a visualization block to your page, select the data frame from your query, and choose the visualization type. Then pick what goes on the x and y axis to see a graph.'
+          <>
+            <p>
+              Add a visualization block to your page, select the data frame from
+              your query, and choose the visualization type.
+            </p>
+            <p>Then pick what goes on the x and y axis to see a graph.</p>
+          </>
         }
         status={stepStates['createVisualization']}
         isExpanded={expandedStep.get('createVisualization') ?? false}
@@ -91,7 +161,23 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       <TutorialStep
         name={'Publish a dashboard'}
         description={
-          "Switch to the dashboard view using the button at the top right corner. Then, drag and drop your notebook's blocks to create a dashboard. When you're done, click the 'publish' button to save your dashboard."
+          <>
+            <p>
+              {
+                'Switch to the dashboard view using the button at the top right corner.'
+              }
+            </p>
+            <p>
+              {
+                "Then, drag and drop your notebook's blocks to create a dashboard."
+              }
+            </p>
+            <p>
+              {
+                " When you're done, click the 'publish' button to save your dashboard."
+              }
+            </p>
+          </>
         }
         status={stepStates['publishDashboard']}
         isExpanded={expandedStep.get('publishDashboard') ?? false}
@@ -107,14 +193,29 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       <TutorialStep
         name={'Invite team members'}
         description={
-          "Open the users page at the bottom left corner of the sidebar. Then, click the 'add user' button and enter the email of the person you want to invite. They'll receive an email with an invitation link."
+          <>
+            <p>
+              {
+                "Add users by accessing the users page and clicking the 'add user' button on the top right corner."
+              }
+            </p>
+            <p>
+              {
+                "Every time you add a user, we'll generate a random password for them. Once they log in, they can change it."
+              }
+            </p>
+          </>
         }
         status={stepStates['inviteTeamMembers']}
         isExpanded={expandedStep.get('inviteTeamMembers') ?? false}
         onExpand={() => toggleExpanded('inviteTeamMembers')}
       >
-        <TutorialStepAction label="Open the users page" onClick={() => {}} />
-        <TutorialStepAction label="Add a user" onClick={() => {}} />
+        <TutorialStepAction
+          label="Add a new user"
+          onClick={() => {
+            router.push(`/workspaces/${props.workspaceId}/users/new`)
+          }}
+        />
       </TutorialStep>
     </Tutorial>
   )
@@ -132,7 +233,7 @@ type TutorialProps = {
 
 export const Tutorial = (props: TutorialProps) => {
   return (
-    <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-10 border border-gray-200 font-sans overflow-hidden">
+    <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden">
       <div className="bg-gray-50 rounded-t-lg h-12 w-full border-b border-gray-200 p-4 flex items-center justify-between">
         <div className="text-sm flex gap-x-2 items-center">
           <span className="text-gray-600 font-medium ">Welcome to Briefer</span>
@@ -204,13 +305,18 @@ const TutorialStepStatusIndicator = (props: {
 
 type TutorialStepActionProps = {
   label: string
+  hidden?: boolean
   onClick: () => void
 }
 
 const TutorialStepAction = (props: TutorialStepActionProps) => {
+  if (props.hidden) {
+    return null
+  }
+
   return (
     <button
-      className="text-blue-600 text-xs w-full flex gap-x-1 items-center font-medium"
+      className="text-blue-600 text-xs w-full flex gap-x-1 items-center font-medium hover:text-blue-800"
       onClick={props.onClick}
     >
       <ArrowRightIcon className="h-3 w-3" />
@@ -221,7 +327,7 @@ const TutorialStepAction = (props: TutorialStepActionProps) => {
 
 type TutorialStepProps = {
   name: string
-  description: string
+  description: string | React.ReactNode
   status: TutorialStepStatus
   isExpanded: boolean
   onExpand: () => void
@@ -238,11 +344,19 @@ const TutorialStep = (props: TutorialStepProps) => {
   useEffect(() => {
     if (props.status === 'current') {
       const stepElement = stepRef.current
-      stepElement?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center',
-      })
+      const clock = setTimeout(
+        () =>
+          stepElement?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+            inline: 'center',
+          }),
+        1200
+      )
+
+      return () => {
+        clearTimeout(clock)
+      }
     }
   }, [props.status])
 
@@ -274,19 +388,23 @@ const TutorialStep = (props: TutorialStepProps) => {
             props.status !== 'current' && !props.isExpanded
               ? 'max-h-0'
               : 'max-h-72',
-            props.status === 'current' ? 'delay-[700ms]' : 'delay-0'
+            props.status === 'current' ? 'delay-[1000ms]' : 'delay-[200ms]'
           )}
         >
-          <div className="text-xs text-gray-500">{props.description}</div>
-
-          <div
-            className={clsx(
-              'text-blue-600 text-xs w-full flex flex-col gap-y-1',
-              props.status === 'current' ? 'block' : 'hidden'
-            )}
-          >
-            {props.children}
+          <div className="text-xs text-gray-500 flex flex-col gap-y-1.5">
+            {props.description}
           </div>
+
+          {props.children && (
+            <div
+              className={clsx(
+                'text-blue-600 text-xs w-full flex flex-col gap-y-1',
+                props.status === 'current' ? 'block' : 'hidden'
+              )}
+            >
+              {props.children}
+            </div>
+          )}
         </div>
       </div>
     </li>

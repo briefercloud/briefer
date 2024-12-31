@@ -5,6 +5,7 @@ import {
   UserWorkspaceRole,
   ApiWorkspace,
   createWorkspace as prismaCreateWorkspace,
+  createDocument,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import { WorkspaceCreateInput } from '@briefer/types'

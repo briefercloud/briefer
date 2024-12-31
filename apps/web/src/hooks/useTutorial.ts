@@ -1,13 +1,9 @@
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
-import { OnboardingTutorial } from '@briefer/database'
-import { OnboardingTutorialStep } from '@briefer/types'
-import { useCallback, useEffect, useState } from 'react'
+import { StepStates } from '@briefer/types'
+import { useCallback, useEffect } from 'react'
 import useSWR from 'swr'
-
-export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
-
-type StepStates = Record<OnboardingTutorialStep, TutorialStepStatus>
+import useWebsocket from './useWebsocket'
 
 type UseTutorialState = {
   stepStates: StepStates
@@ -21,72 +17,50 @@ type UseTutorialAPI = {
 const useTutorial = (
   workspaceId: string,
   tutorialType: string,
-  stepIds: OnboardingTutorialStep[]
+  defaultStepStates: StepStates
 ): [UseTutorialState, UseTutorialAPI] => {
-  const { data, isLoading, error, mutate } = useSWR<OnboardingTutorial>(
+  const socket = useWebsocket()
+  const { data, isLoading, error, mutate } = useSWR<StepStates>(
     `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
     fetcher
   )
 
-  const [stepStates, setStepStates] = useState<StepStates>(
-    stepIds.reduce((acc, stepId) => {
-      acc[stepId] = 'upcoming'
-      return acc
-    }, {} as StepStates)
-  )
-
   useEffect(() => {
-    if (!data) return
+    if (!socket) {
+      return
+    }
 
-    const currentStepIndex = stepIds.indexOf(data.currentStep)
+    const onTutorialUpdate = (msg: { stepStates: StepStates }) => {
+      console.log(msg)
+      mutate(msg.stepStates)
+    }
 
-    setStepStates(() =>
-      stepIds.reduce((acc, stepId, index) => {
-        if (index < currentStepIndex) {
-          acc[stepId] = 'completed'
-        } else if (index === currentStepIndex) {
-          acc[stepId] = 'current'
-        } else {
-          acc[stepId] = 'upcoming'
-        }
+    socket.on('workspace-tutorial-update', onTutorialUpdate)
 
-        return acc
-      }, {} as StepStates)
-    )
-  }, [data, stepIds])
+    return () => {
+      socket.off('workspace-tutorial-update', onTutorialUpdate)
+    }
+  }, [socket, mutate])
 
+  // TODO: this is temporary - used for testing only
   const advanceTutorial = useCallback(async () => {
-    if (!data) return
-
-    const currentIndex = stepIds.indexOf(data.currentStep)
-    const nextStep = stepIds[currentIndex + 1]
-
-    mutate(
-      async () => {
-        const tutorialRes = await fetch(
-          `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
-          {
-            credentials: 'include',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ currentStep: nextStep }),
-          }
-        )
-
-        return tutorialRes.json()
-      },
+    const tutorialRes = await fetch(
+      `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
       {
-        optimisticData: { ...data, currentStep: nextStep },
-        rollbackOnError: true,
+        credentials: 'include',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }
     )
-  }, [data, mutate, stepIds])
+
+    return tutorialRes.json()
+  }, [workspaceId, tutorialType])
 
   return [
     {
-      stepStates,
+      stepStates: data ?? defaultStepStates,
       isLoading: isLoading || (!data && !error),
     },
     { advanceTutorial },

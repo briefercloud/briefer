@@ -9,6 +9,8 @@ import { DocumentPersistor } from '../../../../../yjs/v2/persistors.js'
 import { getYDocWithoutHistory } from '../../../../../yjs/v2/documents.js'
 import { getDocId, getYDocForUpdate } from '../../../../../yjs/v2/index.js'
 import { broadcastDocument } from '../../../../../websocket/workspace/documents.js'
+import { advanceTutorial } from '../../../../../tutorials.js'
+import { broadcastTutorialStepStates } from '../../../../../websocket/workspace/tutorial.js'
 
 export default function publishRouter(socketServer: IOServer) {
   const publishRouter = Router({ mergeParams: true })
@@ -22,6 +24,7 @@ export default function publishRouter(socketServer: IOServer) {
       return
     }
 
+    let hasDashboard = false
     try {
       await prisma().$transaction(
         async (tx) => {
@@ -41,13 +44,14 @@ export default function publishRouter(socketServer: IOServer) {
             doc.id,
             doc.workspaceId,
             async (yDoc) => {
+              hasDashboard = yDoc.dashboard.size > 0
               await tx.yjsAppDocument.create({
                 data: {
                   documentId,
                   state: Buffer.from(
                     Y.encodeStateAsUpdate(getYDocWithoutHistory(yDoc))
                   ),
-                  hasDashboard: yDoc.dashboard.size > 0,
+                  hasDashboard,
                 },
               })
               setPristine(yDoc.ydoc)
@@ -65,6 +69,9 @@ export default function publishRouter(socketServer: IOServer) {
       await broadcastDocument(socketServer, workspaceId, documentId)
 
       res.sendStatus(204)
+
+      await advanceTutorial(workspaceId, 'onboarding', 'publishDashboard')
+      broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
     } catch (err) {
       req.log.error(
         {

@@ -50,6 +50,7 @@ import {
 import { FeaturesDialog } from './SubscriptionBadge'
 import { SessionUser, useSignout } from '@/hooks/useAuth'
 import { OnboardingTutorial } from './Tutorial'
+import TourHighlight from './TourHighlight'
 
 const syne = Syne({ subsets: ['latin'] })
 
@@ -389,6 +390,7 @@ export default function Layout({
 
                   {user.roles[workspaceId] !== 'viewer' && (
                     <button
+                      id="create-workspace-doc"
                       onClick={onCreateDocumentHandler}
                       className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
                     >

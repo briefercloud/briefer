@@ -87,7 +87,7 @@ export default function workspaceRouter(socketServer: IOServer) {
   router.use('/tutorials', tutorialsRouter(socketServer))
   router.use('/data-sources', dataSourcesRouter(socketServer))
   router.use('/documents', documentsRouter(socketServer))
-  router.use('/users', usersRouter)
+  router.use('/users', usersRouter(socketServer))
   router.use('/favorites', favoritesRouter)
   router.use(
     '/environment-variables',
