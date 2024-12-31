@@ -389,6 +389,7 @@ export default function Layout({
 
                   {user.roles[workspaceId] !== 'viewer' && (
                     <button
+                      id="create-workspace-doc"
                       onClick={onCreateDocumentHandler}
                       className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
                     >

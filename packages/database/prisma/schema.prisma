@@ -649,6 +649,7 @@ model socket_io_attachments {
 enum OnboardingTutorialStep {
   connectDataSource
   runQuery
+  runPython
   createVisualization
   publishDashboard
   inviteTeamMembers
@@ -657,7 +658,7 @@ enum OnboardingTutorialStep {
 model OnboardingTutorial {
   id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   workspaceId String                 @db.Uuid
-  currentStep OnboardingTutorialStep
+  currentStep OnboardingTutorialStep @default(connectDataSource)
   isComplete  Boolean                @default(false)
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @default(now()) @updatedAt

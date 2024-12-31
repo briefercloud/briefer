@@ -1,14 +1,8 @@
 import { Router } from 'express'
 import { IOServer } from '../../../websocket'
 import { getParam } from '../../../utils/express.js'
-import prisma from '@briefer/database'
-import { OnboardingTutorialStep } from '@briefer/types'
-import { z } from 'zod'
-
-const TutorialUpdatePayload = z.object({
-  currentStep: OnboardingTutorialStep,
-  isComplete: z.boolean().optional(),
-})
+import { advanceTutorial, getTutorialStepStates } from '../../../tutorials.js'
+import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 
 export default function tutorialsRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
@@ -22,20 +16,20 @@ export default function tutorialsRouter(socketServer: IOServer) {
       return
     }
 
-    const tutorial = await prisma().onboardingTutorial.findUnique({
-      where: {
-        workspaceId,
-      },
-    })
+    const tutorialStepStates = await getTutorialStepStates(
+      workspaceId,
+      tutorialType
+    )
 
-    if (!tutorial) {
+    if (!tutorialStepStates) {
       res.status(404).end()
       return
     }
 
-    res.json(tutorial)
+    res.json(tutorialStepStates)
   })
 
+  // TODO this is temporary, for testing only
   router.post('/:tutorialType', async (req, res) => {
     const workspaceId = getParam(req, 'workspaceId')
     const tutorialType = getParam(req, 'tutorialType')
@@ -45,23 +39,19 @@ export default function tutorialsRouter(socketServer: IOServer) {
       return
     }
 
-    const payload = TutorialUpdatePayload.safeParse(req.body)
-    if (!payload.success) {
-      res.sendStatus(400)
+    const tutorialStepStates = await advanceTutorial(
+      workspaceId,
+      tutorialType,
+      null
+    )
+
+    if (!tutorialStepStates) {
+      res.status(404).end()
       return
     }
 
-    const tutorial = await prisma().onboardingTutorial.update({
-      where: {
-        workspaceId,
-      },
-      data: {
-        currentStep: payload.data.currentStep,
-        isComplete: payload.data.isComplete,
-      },
-    })
-
-    res.json(tutorial)
+    res.json(tutorialStepStates)
+    broadcastTutorialStepStates(socketServer, workspaceId, tutorialType)
   })
 
   return router
