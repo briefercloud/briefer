@@ -1,7 +1,7 @@
 import { CSSProperties, useEffect } from 'react'
 import { useDragLayer, XYCoord } from 'react-dnd'
 import IconSelector from './IconSelector'
-import { ElementType } from './v2Editor'
+import { ElementType } from '@briefer/types'
 
 function getItemStyles(
   initialCursorOffset: XYCoord | null,

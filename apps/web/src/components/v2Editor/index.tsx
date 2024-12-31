@@ -61,7 +61,7 @@ import SQLBlock from './customBlocks/sql'
 import { ApiDocument, UserWorkspaceRole } from '@briefer/database'
 import PythonBlock from './customBlocks/python'
 import VisualizationBlock from './customBlocks/visualization'
-import { DataFrame } from '@briefer/types'
+import { DataFrame, ElementType } from '@briefer/types'
 import {
   Bars3CenterLeftIcon,
   ChartBarIcon,
@@ -99,11 +99,6 @@ import useEditorAwareness, {
   EditorAwarenessProvider,
 } from '@/hooks/useEditorAwareness'
 import { SQLExtensionProvider } from './CodeEditor/sql'
-
-export enum ElementType {
-  Block = 'BLOCK',
-  BlockGroup = 'BLOCK_GROUP',
-}
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
