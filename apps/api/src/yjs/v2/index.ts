@@ -49,6 +49,7 @@ import { Executor } from './executor/index.js'
 import { AIExecutor } from './executor/ai/index.js'
 import { PubSubProvider } from './pubsub/index.js'
 import { PGPubSub } from './pubsub/pg.js'
+import pAll from 'p-all'
 
 type Role = UserWorkspaceRole
 
@@ -242,9 +243,23 @@ export function setupYJSSocketServerV2(
               '[shutdown] Some YJS docs did not close in time, force closing'
             )
 
-            for (const doc of docs.values()) {
-              await doc.destroy()
-            }
+            await pAll(
+              Array.from(docs.values()).map(
+                (doc) => () =>
+                  doc.destroy().catch((err) => {
+                    logger().error(
+                      {
+                        err,
+                        id: doc.id,
+                        workspaceId: doc.workspaceId,
+                        documentId: doc.documentId,
+                      },
+                      '[shutdown] Failed to force close YJS doc, skipping'
+                    )
+                  })
+              ),
+              { concurrency: 5 }
+            )
 
             logger().info(
               {
