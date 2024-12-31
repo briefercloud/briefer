@@ -563,7 +563,9 @@ function NodeComponent(props: NodeComponentProps) {
           )}
         </div>
       </div>
-      {props.isLast && props.level === 0 && <div className="h-10" />}
+      {props.isLast && props.level === 0 && !props.flat && (
+        <div className="h-10" />
+      )}
     </li>
   )
 }
