@@ -367,7 +367,7 @@ export default function Layout({
             <div
               className={clsx(
                 'overflow-hidden',
-                favoriteDocuments.size === 0 ? 'pt-8' : 'pt-6'
+                favoriteDocuments.size === 0 ? 'pt-8' : ''
               )}
             >
               <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1 justify-between">
