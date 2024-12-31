@@ -1018,20 +1018,36 @@ function send(doc: WSSharedDocV2, conn: WebSocket, m: Uint8Array) {
 
   try {
     conn.send(m, (err) => {
-      if (err) {
+      if (!err) {
+        return
+      }
+
+      closeConn(doc, conn)
+
+      const isEPIPE = z
+        .object({ code: z.literal('EPIPE') })
+        .safeParse(err).success
+      if (!isEPIPE) {
+        // Only log if err is not EPIPE
         logger().error(
           { err, docId: doc.documentId },
           'Failed to send yjs message to client'
         )
-        closeConn(doc, conn)
       }
     })
   } catch (err) {
     closeConn(doc, conn)
-    logger().error(
-      { err, docId: doc.documentId },
-      'Failed to send yjs message to client'
-    )
+
+    const isEPIPE = z
+      .object({ code: z.literal('EPIPE') })
+      .safeParse(err).success
+    if (!isEPIPE) {
+      // Only log if err is not EPIPE
+      logger().error(
+        { err, docId: doc.documentId },
+        'Failed to send yjs message to client'
+      )
+    }
   }
 }
 
