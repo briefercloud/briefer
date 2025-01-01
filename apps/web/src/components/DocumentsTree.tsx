@@ -1,5 +1,5 @@
 import { ascend, sortWith } from 'ramda'
-import { useDrag, useDrop, useDragLayer, XYCoord } from 'react-dnd'
+import { useDrag, useDrop } from 'react-dnd'
 import {
   EllipsisHorizontalIcon,
   TrashIcon,
@@ -14,7 +14,6 @@ import IconSelector from './IconSelector'
 import { Menu, Transition } from '@headlessui/react'
 import ReactDOM from 'react-dom'
 import {
-  CSSProperties,
   MouseEventHandler,
   useCallback,
   useEffect,
@@ -30,79 +29,6 @@ import {
 } from '@heroicons/react/20/solid'
 import { List, Stack } from 'immutable'
 import { getEmptyImage } from 'react-dnd-html5-backend'
-
-function getItemStyles(
-  initialCursorOffset: XYCoord | null,
-  initialOffset: XYCoord | null,
-  currentOffset: XYCoord | null
-) {
-  if (!initialOffset || !currentOffset || !initialCursorOffset) {
-    return {
-      display: 'none',
-    }
-  }
-
-  const x = initialCursorOffset?.x + (currentOffset.x - initialOffset.x)
-  const y = initialCursorOffset?.y + (currentOffset.y - initialOffset.y)
-  const transform = `translate(${x}px, ${y}px)`
-
-  return {
-    transform,
-    WebkitTransform: transform,
-  }
-}
-
-const layerStyles: CSSProperties = {
-  position: 'fixed',
-  pointerEvents: 'none',
-  zIndex: 100,
-  left: 0,
-  top: 0,
-  width: '100%',
-  height: '100%',
-}
-
-const DocDragLayer = () => {
-  const {
-    item,
-    isDragging,
-    initialCursorOffset,
-    initialFileOffset,
-    currentFileOffset,
-  } = useDragLayer((monitor) => ({
-    item: monitor.getItem(),
-    itemType: monitor.getItemType(),
-    initialCursorOffset: monitor.getInitialClientOffset(),
-    initialFileOffset: monitor.getInitialSourceClientOffset(),
-    currentFileOffset: monitor.getSourceClientOffset(),
-    isDragging: monitor.isDragging(),
-  }))
-
-  if (!isDragging) {
-    return null
-  }
-
-  return (
-    <div style={layerStyles}>
-      <div
-        style={getItemStyles(
-          initialCursorOffset,
-          initialFileOffset,
-          currentFileOffset
-        )}
-      >
-        <div className="p-1 bg-ceramic-200 rounded-md max-w-48 text-sm opacity-25 truncate flex gap-x-1 items-center py-2 -translate-x-1/2 -translate-y-1/2 scale-[.85] -rotate-6">
-          <IconSelector
-            workspaceId={item.workspaceId}
-            documentId={item.id}
-            disabled={true}
-          />
-          {item.title || 'Untitled'}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function useIsDocExpanded(doc: ApiDocument, startsOpen: boolean) {
   const [isExpanded, _setIsExpanded] = useState(
@@ -212,7 +138,6 @@ function DocumentTree(props: Props) {
 
   return (
     <>
-      <DocDragLayer />
       <ul role="list" className="space-y-1">
         {trees.map((node, i) => {
           const isLast = i === trees.size - 1
