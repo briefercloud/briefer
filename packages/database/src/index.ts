@@ -1,6 +1,7 @@
 // https://www.prisma.io/docs/guides/other/troubleshooting-orm/help-articles/nextjs-prisma-client-dev-practices#solution
 import { Prisma, PrismaClient } from '@prisma/client'
 import { ITXClientDenyList } from '@prisma/client/runtime/library.js'
+import PQueue from 'p-queue'
 import pg from 'pg'
 
 export type {
@@ -72,7 +73,6 @@ export async function recoverFromNotFound<A>(
 }
 
 let pgInstance: { pubSubClient: pg.Client; pool: pg.Pool } | null = null
-let subscribers: Record<string, Set<(message?: string) => void>> = {}
 export async function getPGInstance(): Promise<{
   pubSubClient: pg.Client
   pool: pg.Pool
@@ -91,11 +91,11 @@ export async function getPGInstance(): Promise<{
     dbOptions.ssl === 'prefer'
       ? undefined
       : dbOptions.ssl
-      ? {
-          rejectUnauthorized: dbOptions.ssl.rejectUnauthorized ?? undefined,
-          ca: dbOptions.ssl.ca ?? undefined,
-        }
-      : false
+        ? {
+            rejectUnauthorized: dbOptions.ssl.rejectUnauthorized ?? undefined,
+            ca: dbOptions.ssl.ca ?? undefined,
+          }
+        : false
 
   let pgPool = new pg.Pool({
     connectionString,
@@ -144,19 +144,27 @@ export async function getPGInstance(): Promise<{
   return pgInstance
 }
 
+const subscribers: Record<string, Set<(message?: string) => void>> = {}
+const subscribeQueues: Record<string, PQueue> = {}
+
+function getSubscribeQueueForChannel(channel: string): PQueue {
+  if (!subscribeQueues[channel]) {
+    subscribeQueues[channel] = new PQueue({ concurrency: 1 })
+  }
+
+  return subscribeQueues[channel]
+}
+
 export async function subscribe(
   channel: string,
   onNotification: (message?: string) => void
 ): Promise<() => Promise<void>> {
   const { pubSubClient } = await getPGInstance()
 
-  const channelLockId = hashChannel(channel)
+  const queue = getSubscribeQueueForChannel(channel)
 
-  // Acquire the advisory lock for the channel to prevent race conditions
   // This ensures only one `LISTEN` setup happens at a time for this channel
-  await pubSubClient.query('SELECT pg_advisory_lock($1)', [channelLockId])
-
-  try {
+  await queue.add(async () => {
     const subs = subscribers[channel]
     if (subs) {
       subs.add(onNotification)
@@ -170,17 +178,11 @@ export async function subscribe(
         throw e
       }
     }
-  } finally {
-    // Release the advisory lock so other operations (e.g., another subscribe or unsubscribe) can proceed
-    await pubSubClient.query('SELECT pg_advisory_unlock($1)', [channelLockId])
-  }
+  })
 
   return async () => {
-    // Acquire the advisory lock before making changes during unsubscribe
     // This prevents race conditions when multiple unsubscribe operations or a subscribe and unsubscribe overlap
-    await pubSubClient.query('SELECT pg_advisory_lock($1)', [channelLockId])
-
-    try {
+    await queue.add(async () => {
       const subs = subscribers[channel]
       if (!subs) {
         return
@@ -192,21 +194,10 @@ export async function subscribe(
         // If this was the last subscriber, clean up by removing the channel and issuing UNLISTEN
         await pubSubClient.query(`UNLISTEN ${JSON.stringify(channel)}`)
         delete subscribers[channel]
+        delete subscribeQueues[channel]
       }
-    } finally {
-      // Release the advisory lock so other operations can proceed
-      await pubSubClient.query('SELECT pg_advisory_unlock($1)', [channelLockId])
-    }
+    })
   }
-}
-
-// PostgreSQL advisory locks require integers as lock identifiers
-function hashChannel(channel: string): number {
-  let hash = 0
-  for (let i = 0; i < channel.length; i++) {
-    hash = (hash * 31 + channel.charCodeAt(i)) | 0
-  }
-  return Math.abs(hash)
 }
 
 export async function getPGPool(): Promise<pg.Pool> {
