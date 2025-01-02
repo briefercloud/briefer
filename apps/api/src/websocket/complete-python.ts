@@ -132,7 +132,7 @@ const completPython =
         {
           documentId,
           blockId,
-          error: err,
+          err,
         },
         'Failed to get python completion'
       )
