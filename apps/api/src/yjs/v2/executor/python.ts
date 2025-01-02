@@ -13,10 +13,17 @@ import { updateDataframes } from './index.js'
 import { DataFrame } from '@briefer/types'
 import { PythonEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
+import { advanceTutorial } from '../../../tutorials.js'
+import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 
 export type PythonEffects = {
   executePython: typeof executePython
   listDataFrames: typeof listDataFrames
+  advanceTutorial: typeof advanceTutorial
+  broadcastTutorialStepStates: (
+    workspaceId: string,
+    tutorialType: 'onboarding'
+  ) => Promise<void>
 }
 
 export interface IPythonExecutor {
@@ -112,6 +119,13 @@ export class PythonExecutor implements IPythonExecutor {
         'python block executed'
       )
       executionItem.setCompleted(errored ? 'error' : 'success')
+
+      await this.effects.advanceTutorial(
+        this.workspaceId,
+        'onboarding',
+        'runPython'
+      )
+      this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
     } catch (err) {
       logger().error(
         {
@@ -148,6 +162,17 @@ export class PythonExecutor implements IPythonExecutor {
       {
         executePython,
         listDataFrames,
+        advanceTutorial,
+        broadcastTutorialStepStates: (
+          workspaceId: string,
+          tutorialType: 'onboarding'
+        ) => {
+          return broadcastTutorialStepStates(
+            doc.socketServer,
+            workspaceId,
+            tutorialType
+          )
+        },
       }
     )
   }

@@ -86,6 +86,7 @@ export default function UsersPage() {
               active={false}
             >
               <button
+                id="add-user-button"
                 onClick={() => {
                   router.push(`/workspaces/${workspaceId}/users/new`)
                 }}

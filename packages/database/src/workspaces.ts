@@ -1,10 +1,6 @@
 import prisma, { PrismaTransaction } from './index.js'
 import { Workspace } from '@prisma/client'
-import {
-  OnboardingStep,
-  WorkspaceCreateInput,
-  WorkspaceEditFormValues,
-} from '@briefer/types'
+import { WorkspaceCreateInput, WorkspaceEditFormValues } from '@briefer/types'
 
 type WorkspaceWithSecrets = Workspace & {
   secrets: {
@@ -119,19 +115,6 @@ export async function updateWorkspace(
     },
     { maxWait: 31000, timeout: 30000 }
   )
-
-  return transformSecrets(w)
-}
-
-export async function updateOnboardingStep(
-  workspaceId: string,
-  onboardingStep: OnboardingStep
-) {
-  const w = await prisma().workspace.update({
-    where: { id: workspaceId },
-    data: { onboardingStep },
-    include: { secrets: true },
-  })
 
   return transformSecrets(w)
 }

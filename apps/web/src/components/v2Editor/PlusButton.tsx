@@ -38,11 +38,13 @@ const useClickOutside = (
 }
 
 interface Props {
-  alwaysVisible: boolean
+  alwaysOpen: boolean
   onAddBlock: (type: BlockType) => void
   isEditable: boolean
   writebackEnabled: boolean
+  isLast: boolean
 }
+
 function PlusButton(props: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [showOptions, setShowOptions] = useState(false)
@@ -63,13 +65,21 @@ function PlusButton(props: Props) {
     [props.onAddBlock]
   )
 
+  const btnDivProps = props.isLast ? { id: 'last-plus-button' } : {}
+
   return (
-    <div className="w-full group relative py-2" ref={wrapperRef}>
+    <div
+      {...btnDivProps}
+      className="w-full group relative py-2"
+      ref={wrapperRef}
+    >
       <button
         className={clsx(
           'flex items-center justify-center gap-x-2 group-hover:opacity-100 transition-opacity duration-200 w-full h-6',
           !props.isEditable && 'invisible',
-          props.alwaysVisible || showOptions ? 'opacity-100' : 'opacity-0'
+          props.alwaysOpen || showOptions || props.isLast
+            ? 'opacity-100'
+            : 'opacity-0'
         )}
         onClick={toggleOptions}
       >
@@ -81,7 +91,7 @@ function PlusButton(props: Props) {
         <div className="w-full h-[1px] bg-gray-200" />
       </button>
 
-      {props.isEditable && (showOptions || props.alwaysVisible) && (
+      {props.isEditable && (showOptions || props.alwaysOpen) && (
         <BlockList
           onAddBlock={addBlockHandler}
           writebackEnabled={props.writebackEnabled}
@@ -137,32 +147,38 @@ function BlockList(props: BlockListProps) {
       </div>
       <div className="w-full bg-white py-1 rounded-md border border-gray-200 flex items-center justify-center divide-x divide-gray-200 shadow-lg">
         <BlockSuggestion
+          id="add-block-text"
           icon={<Bars3CenterLeftIcon className="w-4 h-4" />}
           onAdd={onAddText}
           text="Text"
         />
         <BlockSuggestion
+          id="add-block-query"
           icon={<CircleStackIcon className="w-4 h-4" />}
           onAdd={onAddSQL}
           text="Query"
         />
         <BlockSuggestion
+          id="add-block-python"
           icon={<CodeBracketIcon className="w-4 h-4" />}
           onAdd={onAddPython}
           text="Python"
         />
         <BlockSuggestion
+          id="add-block-visualization"
           icon={<ChartBarIcon className="w-4 h-4" />}
           onAdd={onAddVisualization}
           text="Visualization"
         />
         <BlockSuggestion
+          id="add-block-pivot"
           icon={<Table2Icon className="w-4 h-4" />}
           onAdd={onAddPivotTable}
           text="Pivot"
         />
         {props.writebackEnabled && (
           <BlockSuggestion
+            id="add-block-writeback"
             icon={<ArrowUpTrayIcon className="w-4 h-4" />}
             onAdd={onAddWriteback}
             text="Writeback"
@@ -196,6 +212,7 @@ function BlockList(props: BlockListProps) {
 }
 
 type BlockSuggestionProps = {
+  id: string
   icon: JSX.Element
   text: string
   onAdd: () => void
@@ -207,7 +224,7 @@ function BlockSuggestion(props: BlockSuggestionProps) {
   }, [props.onAdd])
 
   return (
-    <div className="w-full text-sm px-1 relative z-30">
+    <div id={props.id} className="w-full text-sm px-1 relative z-30">
       <button
         className="w-full transition-colors transition-100 flex items-center justify-center gap-x-2 p-2 rounded-md text-gray-400 bg-white hover:bg-gray-100 hover:text-gray-700"
         onClick={onClick}

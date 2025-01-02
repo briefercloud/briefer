@@ -9,7 +9,6 @@ import { IOServer } from '../../../websocket/index.js'
 import { getParam } from '../../../utils/express.js'
 import { broadcastDocuments } from '../../../websocket/workspace/documents.js'
 import { UserWorkspaceRole, updateWorkspace } from '@briefer/database'
-import onboardingRouter from './onboarding.js'
 import filesRouter from './files.js'
 import componentsRouter from './components.js'
 import { canUpdateWorkspace, hasWorkspaceRoles } from '../../../auth/token.js'
@@ -17,6 +16,7 @@ import { WorkspaceEditFormValues } from '@briefer/types'
 import { encrypt } from '@briefer/database'
 import { config } from '../../../config/index.js'
 import { isWorkspaceNameValid } from '../../../utils/validation.js'
+import tutorialsRouter from './tutorials.js'
 
 const isAdmin = hasWorkspaceRoles([UserWorkspaceRole.admin])
 
@@ -84,10 +84,10 @@ export default function workspaceRouter(socketServer: IOServer) {
     res.status(200).json(updatedWorkspace)
   })
 
-  router.use('/onboarding', onboardingRouter)
+  router.use('/tutorials', tutorialsRouter(socketServer))
   router.use('/data-sources', dataSourcesRouter(socketServer))
   router.use('/documents', documentsRouter(socketServer))
-  router.use('/users', usersRouter)
+  router.use('/users', usersRouter(socketServer))
   router.use('/favorites', favoritesRouter)
   router.use(
     '/environment-variables',

@@ -15,9 +15,16 @@ import { createVisualization } from '../../../python/visualizations.js'
 import { z } from 'zod'
 import { VisEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
+import { advanceTutorial } from '../../../tutorials.js'
+import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 
 export type VisualizationEffects = {
   createVisualization: typeof createVisualization
+  advanceTutorial: typeof advanceTutorial
+  broadcastTutorialStepStates: (
+    workspaceId: string,
+    tutorialType: 'onboarding'
+  ) => Promise<void>
 }
 
 export interface IVisualizationExecutor {
@@ -186,6 +193,13 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         },
         'visualization block run completed'
       )
+
+      await this.effects.advanceTutorial(
+        this.workspaceId,
+        'onboarding',
+        'createVisualization'
+      )
+      this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
     } catch (err) {
       logger().error(
         {
@@ -210,7 +224,20 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       doc.workspaceId,
       doc.documentId,
       doc.dataframes,
-      { createVisualization }
+      {
+        createVisualization,
+        advanceTutorial,
+        broadcastTutorialStepStates: (
+          workspaceId: string,
+          tutorialType: 'onboarding'
+        ) => {
+          return broadcastTutorialStepStates(
+            doc.socketServer,
+            workspaceId,
+            tutorialType
+          )
+        },
+      }
     )
   }
 }

@@ -14,10 +14,17 @@ import {
   renameDataFrame,
 } from '../../../python/query/index.js'
 import { logger } from '../../../logger.js'
-import { DataFrame, RunQueryResult } from '@briefer/types'
+import {
+  DataFrame,
+  OnboardingTutorialStep,
+  RunQueryResult,
+} from '@briefer/types'
 import { SQLEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
 import { updateDataframes } from './index.js'
+import { advanceTutorial } from '../../../tutorials.js'
+import { IOServer } from '../../../websocket/index.js'
+import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 
 export type SQLEffects = {
   makeSQLQuery: typeof makeSQLQuery
@@ -25,6 +32,11 @@ export type SQLEffects = {
   renameDataFrame: typeof renameDataFrame
   listDataFrames: typeof listDataFrames
   documentHasRunSQLSelectionEnabled: (id: string) => Promise<boolean>
+  advanceTutorial: typeof advanceTutorial
+  broadcastTutorialStepStates: (
+    workspaceId: string,
+    tutorialType: 'onboarding'
+  ) => Promise<void>
 }
 
 export interface ISQLExecutor {
@@ -239,6 +251,13 @@ export class SQLExecutor implements ISQLExecutor {
         },
         'sql block executed'
       )
+
+      await this.effects.advanceTutorial(
+        this.workspaceId,
+        'onboarding',
+        'runQuery'
+      )
+      this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
     } catch (err) {
       logger().error(
         {
@@ -347,6 +366,17 @@ export class SQLExecutor implements ISQLExecutor {
         listDataSources,
         renameDataFrame,
         listDataFrames,
+        advanceTutorial,
+        broadcastTutorialStepStates: (
+          workspaceId: string,
+          tutorialType: 'onboarding'
+        ) => {
+          return broadcastTutorialStepStates(
+            doc.socketServer,
+            workspaceId,
+            tutorialType
+          )
+        },
         documentHasRunSQLSelectionEnabled: (id: string) =>
           prisma()
             .document.findFirst({
