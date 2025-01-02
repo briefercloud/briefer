@@ -59,7 +59,6 @@ export const OnboardingTutorial = () => {
     return isDocumentPath(router.pathname)
   }, [router.pathname])
 
-  console.log('tutorialState', tutorialState)
   if (!workspaceId || tutorialState.isDismissed) {
     return null
   }
