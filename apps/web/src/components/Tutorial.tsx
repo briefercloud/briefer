@@ -8,6 +8,7 @@ import {
   ArrowRightIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
@@ -232,9 +233,18 @@ type TutorialProps = {
 }
 
 export const Tutorial = (props: TutorialProps) => {
+  const [isCollapsed, setIsCollapsed] = React.useState(true)
+
+  const ChevronIcon = isCollapsed ? ChevronUpIcon : ChevronDownIcon
+
   return (
-    <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden">
-      <div className="bg-gray-50 rounded-t-lg h-12 w-full border-b border-gray-200 p-4 flex items-center justify-between">
+    <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden shadow-sm">
+      <div
+        className={clsx(
+          'bg-gray-50 rounded-t-lg h-12 w-full border-gray-200 p-4 flex items-center justify-between',
+          isCollapsed ? '' : 'border-b'
+        )}
+      >
         <div className="text-sm flex gap-x-2 items-center">
           <span className="text-gray-600 font-medium ">Welcome to Briefer</span>
           <button
@@ -244,14 +254,26 @@ export const Tutorial = (props: TutorialProps) => {
             ({props.completedSteps}/{props.totalSteps})
           </button>
         </div>
-        <ChevronDownIcon className="text-gray-400 h-3.5 w-3.5" />
+        <button
+          className="text-gray-400 hover:text-gray-800"
+          onClick={() => setIsCollapsed((prev) => !prev)}
+        >
+          <ChevronIcon className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <div className="p-4 flex flex-col gap-y-4 h-80 overflow-auto">
-        {React.Children.map(props.children, (child, index) => {
-          return React.cloneElement(child, {
-            isLast: index === React.Children.count(props.children) - 1,
-          })
-        })}
+      <div
+        className={clsx(
+          'flex flex-col gap-y-4 overflow-auto transition-max-height duration-300',
+          isCollapsed ? 'max-h-0' : 'max-h-80'
+        )}
+      >
+        <div className="p-4">
+          {React.Children.map(props.children, (child, index) => {
+            return React.cloneElement(child, {
+              isLast: index === React.Children.count(props.children) - 1,
+            })
+          })}
+        </div>
       </div>
     </div>
   )
