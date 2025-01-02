@@ -499,7 +499,12 @@ del _briefer_list_dataframes`
         for (const output of outputs) {
           if (output.type === 'stdio' && output.name === 'stdout') {
             const lines = output.text.trim().split('\n')
-            for (const line of lines) {
+            for (const l of lines) {
+              const line = l.trim()
+              if (line === '') {
+                continue
+              }
+
               const parsed = jsonString
                 .pipe(
                   z.array(
