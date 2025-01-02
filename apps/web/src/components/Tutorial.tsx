@@ -12,8 +12,9 @@ import {
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import React from 'react'
+import { useTourHighlight } from './TourHighlightProvider'
 
 const defaultStepStates: StepStates = {
   connectDataSource: 'current',
@@ -26,6 +27,7 @@ const defaultStepStates: StepStates = {
 
 export const OnboardingTutorial = (props: { workspaceId: string }) => {
   const router = useRouter()
+  const [, { setSelector, setTourActive }] = useTourHighlight()
 
   const [{ stepStates }, { advanceTutorial }] = useTutorial(
     props.workspaceId,
@@ -97,7 +99,7 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
         description={
           <>
             <p>
-              Add a query block to your page, select the data source you've just
+              Add a query block to a page, select the data source you've just
               connected, and write your query.
             </p>
             <p>Then, press the run button to see the results.</p>
@@ -109,7 +111,15 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       >
         <TutorialStepAction
           label="Add a query block"
-          onClick={() => {}}
+          onClick={() => {
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+              setSelector('#last-plus-button')
+            }, 0)
+          }}
           hidden={!isWithinDocumentPage}
         />
       </TutorialStep>
@@ -133,7 +143,15 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       >
         <TutorialStepAction
           label="Add a Python block"
-          onClick={() => {}}
+          onClick={() => {
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+              setSelector('#last-plus-button')
+            }, 0)
+          }}
           hidden={!isWithinDocumentPage}
         />
       </TutorialStep>
@@ -155,7 +173,15 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       >
         <TutorialStepAction
           label="Add a visualization block"
-          onClick={() => {}}
+          onClick={() => {
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+              setSelector('#last-plus-button')
+            }, 0)
+          }}
         />
       </TutorialStep>
 
@@ -186,9 +212,29 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       >
         <TutorialStepAction
           label="Switch to dashboard view"
-          onClick={() => {}}
+          onClick={() => {
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+              setSelector('#dashboard-view-button')
+            }, 0)
+          }}
         />
-        <TutorialStepAction label="Publish the dashboard" onClick={() => {}} />
+        <TutorialStepAction
+          hidden={!router.pathname.endsWith('/dashboard/edit')}
+          label="Publish the dashboard"
+          onClick={() => {
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+              setSelector('#dashboard-publish-button')
+            }, 0)
+          }}
+        />
       </TutorialStep>
 
       <TutorialStep
@@ -213,10 +259,23 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
       >
         <TutorialStepAction
           label="Add a new user"
+          hidden={router.pathname.endsWith('/users/new')}
           onClick={() => {
-            router.push(`/workspaces/${props.workspaceId}/users/new`)
+            // TODO we need a setTimeout here because otherwise the listener
+            // within the tour highlight provider will trigger before the
+            // element is rendered and will dismiss the tour
+            setTimeout(() => {
+              setTourActive(true)
+
+              if (router.pathname.endsWith('/users')) {
+                setSelector('#add-user-button')
+              } else {
+                setSelector('#users-sidebar-item')
+              }
+            }, 0)
           }}
         />
+        {/* TODO on cloud we must also have an action item for "allowAllFromDomain" */}
       </TutorialStep>
     </Tutorial>
   )
@@ -233,7 +292,7 @@ type TutorialProps = {
 }
 
 export const Tutorial = (props: TutorialProps) => {
-  const [isCollapsed, setIsCollapsed] = React.useState(true)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const ChevronIcon = isCollapsed ? ChevronUpIcon : ChevronDownIcon
 
@@ -263,11 +322,11 @@ export const Tutorial = (props: TutorialProps) => {
       </div>
       <div
         className={clsx(
-          'flex flex-col gap-y-4 overflow-auto transition-max-height duration-300',
+          'h-80 overflow-auto transition-max-height duration-300',
           isCollapsed ? 'max-h-0' : 'max-h-80'
         )}
       >
-        <div className="p-4">
+        <div className="flex flex-col gap-y-4 p-4">
           {React.Children.map(props.children, (child, index) => {
             return React.cloneElement(child, {
               isLast: index === React.Children.count(props.children) - 1,
@@ -392,7 +451,7 @@ const TutorialStep = (props: TutorialStepProps) => {
       <div className="flex flex-col py-0.5 text-sm w-full flex gap-y-1">
         <button
           disabled={props.status === 'current'}
-          onClick={props.onExpand}
+          onClick={stepRef.current ? props.onExpand : () => {}}
           className={clsx(
             'block text-left font-medium',
             props.status === 'current'

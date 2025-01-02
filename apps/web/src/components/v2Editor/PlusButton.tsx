@@ -38,11 +38,13 @@ const useClickOutside = (
 }
 
 interface Props {
-  alwaysVisible: boolean
+  alwaysOpen: boolean
   onAddBlock: (type: BlockType) => void
   isEditable: boolean
   writebackEnabled: boolean
+  isLast: boolean
 }
+
 function PlusButton(props: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [showOptions, setShowOptions] = useState(false)
@@ -63,13 +65,21 @@ function PlusButton(props: Props) {
     [props.onAddBlock]
   )
 
+  const btnDivProps = props.isLast ? { id: 'last-plus-button' } : {}
+
   return (
-    <div className="w-full group relative py-2" ref={wrapperRef}>
+    <div
+      {...btnDivProps}
+      className="w-full group relative py-2"
+      ref={wrapperRef}
+    >
       <button
         className={clsx(
           'flex items-center justify-center gap-x-2 group-hover:opacity-100 transition-opacity duration-200 w-full h-6',
           !props.isEditable && 'invisible',
-          props.alwaysVisible || showOptions ? 'opacity-100' : 'opacity-0'
+          props.alwaysOpen || showOptions || props.isLast
+            ? 'opacity-100'
+            : 'opacity-0'
         )}
         onClick={toggleOptions}
       >
@@ -81,7 +91,7 @@ function PlusButton(props: Props) {
         <div className="w-full h-[1px] bg-gray-200" />
       </button>
 
-      {props.isEditable && (showOptions || props.alwaysVisible) && (
+      {props.isEditable && (showOptions || props.alwaysOpen) && (
         <BlockList
           onAddBlock={addBlockHandler}
           writebackEnabled={props.writebackEnabled}

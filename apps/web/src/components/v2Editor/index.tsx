@@ -114,6 +114,7 @@ const dataframesGetter = (yDoc: Y.Doc) => yDoc.getMap<DataFrame>('dataframes')
 
 const Dropzone = ({
   index,
+  isLast,
   isEditable,
   onDropItem,
   onCheckCanDrop,
@@ -121,6 +122,7 @@ const Dropzone = ({
   writebackEnabled,
 }: {
   index: number
+  isLast: boolean
   isEditable: boolean
   onDropItem: (
     blockGroupId: string,
@@ -168,7 +170,8 @@ const Dropzone = ({
       className={clsx('w-full', isOver && canDrop ? 'bg-ceramic-300' : '')}
     >
       <PlusButton
-        alwaysVisible={false}
+        isLast={isLast}
+        alwaysOpen={false}
         onAddBlock={addBlockHandler}
         isEditable={isEditable}
         writebackEnabled={writebackEnabled}
@@ -906,6 +909,7 @@ file`
 
 const V2EditorRow = (props: {
   index: number
+  totalBlocks: number
   document: ApiDocument
   yDoc: Y.Doc
   blockId: string
@@ -951,11 +955,13 @@ const V2EditorRow = (props: {
   executionQueue: ExecutionQueue
   aiTasks: AITasks
 }) => {
+  const isLast = props.index === props.totalBlocks - 1
   return (
     <div>
       {props.index === 0 && (
         <Dropzone
           index={props.index}
+          isLast={false}
           isEditable={props.isEditable && !props.isApp}
           onAddBlock={props.onAddBlock}
           onDropItem={props.onDropItem}
@@ -986,14 +992,17 @@ const V2EditorRow = (props: {
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
       />
-      <Dropzone
-        index={props.index + 1}
-        isEditable={props.isEditable && !props.isApp}
-        onAddBlock={props.onAddBlock}
-        onDropItem={props.onDropItem}
-        onCheckCanDrop={props.onCheckCanDrop}
-        writebackEnabled={props.writebackEnabled}
-      />
+      <div className={clsx(isLast ? 'pt-2' : '')}>
+        <Dropzone
+          index={props.index + 1}
+          isLast={isLast}
+          isEditable={props.isEditable && !props.isApp}
+          onAddBlock={props.onAddBlock}
+          onDropItem={props.onDropItem}
+          onCheckCanDrop={props.onCheckCanDrop}
+          writebackEnabled={props.writebackEnabled}
+        />
+      </div>
     </div>
   )
 }
@@ -1397,6 +1406,7 @@ const Editor = (props: Props) => {
           key={i}
           blockId={blockId}
           index={i}
+          totalBlocks={layout.value.length}
           isEditable={props.isEditable}
           isApp={props.isApp}
           onAddBlock={onAddBlock}
@@ -1512,7 +1522,7 @@ const Editor = (props: Props) => {
                 {domBlocks.length === 0 && (
                   <div className="w-full">
                     <PlusButton
-                      alwaysVisible
+                      alwaysOpen
                       onAddBlock={addBlockToBottom}
                       isEditable={props.isEditable}
                       writebackEnabled={hasWriteback}

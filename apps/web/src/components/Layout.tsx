@@ -65,7 +65,7 @@ type ConfigItem = {
 
 const configs = (workspaceId: string): ConfigItem[] => [
   {
-    id: 'environments',
+    id: 'environments-sidebar-item',
     name: 'Environments',
     href: `/workspaces/${workspaceId}/environments`,
     hidden: true,
@@ -73,35 +73,35 @@ const configs = (workspaceId: string): ConfigItem[] => [
     allowedRoles: new Set<UserWorkspaceRole>(['admin']),
   },
   {
-    id: 'data-sources',
+    id: 'data-sources-sidebar-item',
     name: 'Data sources',
     href: `/workspaces/${workspaceId}/data-sources`,
     icon: CircleStackIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor']),
   },
   {
-    id: 'users',
+    id: 'users-sidebar-item',
     name: 'Users',
     href: `/workspaces/${workspaceId}/users`,
     icon: UsersIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor', 'viewer']),
   },
   {
-    id: 'integrations',
+    id: 'integrations-sidebar-item',
     name: 'Integrations',
     href: `/workspaces/${workspaceId}/integrations`,
     icon: PuzzlePieceIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor']),
   },
   {
-    id: 'settings',
+    id: 'settings-sidebar-item',
     name: 'Settings',
     href: `/workspaces/${workspaceId}/settings`,
     icon: AdjustmentsHorizontalIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin']),
   },
   {
-    id: 'thrash',
+    id: 'thrash-sidebar-item',
     name: 'Trash',
     href: `/workspaces/${workspaceId}/trash`,
     icon: TrashIcon,
@@ -432,12 +432,15 @@ export default function Layout({
               {configs(workspaceId)
                 .filter(showConfigItem)
                 .map((item) => (
-                  <li key={item.name}>
+                  <li id={item.id} key={item.name}>
                     <ConfigurationsMenuLink
                       href={item.href}
                       text={item.name}
                       icon={item.icon}
-                      blink={item.id === 'data-sources' && !hasUserDataSource}
+                      blink={
+                        item.id === 'data-sources-sidebar-item' &&
+                        !hasUserDataSource
+                      }
                     />
                   </li>
                 ))}
