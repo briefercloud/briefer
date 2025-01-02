@@ -144,8 +144,9 @@ export const OnboardingTutorial = () => {
         description={
           <>
             <p>
-              Add a query block to a page, select the data source you've just
-              connected, and write your query.
+              {
+                "Add a query block to a page, select the data source you've just connected, and write your query."
+              }
             </p>
             <p>Then, press the run button to see the results.</p>
           </>
@@ -176,10 +177,9 @@ export const OnboardingTutorial = () => {
             <p>
               Add a Python block, write some code, and press the run button.
             </p>
-            <p>
-              Tip: you can manipulate query results with Python. Briefer puts
-              every query's result into variable containing a Pandas Data Frame.
-            </p>
+            {
+              "Tip: you can manipulate query results with Python. Briefer puts every query's result into variable containing a Pandas Data Frame."
+            }
           </>
         }
         status={tutorialState.stepStates['runPython']}
