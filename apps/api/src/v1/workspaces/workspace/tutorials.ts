@@ -8,6 +8,7 @@ import {
 } from '../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 import { logger } from '../../../logger.js'
+import prisma from '@briefer/database'
 
 export default function tutorialsRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
@@ -78,6 +79,20 @@ export default function tutorialsRouter(socketServer: IOServer) {
     if (tutorialType !== 'onboarding') {
       res.sendStatus(400)
       return
+    }
+
+    const tutorial = await prisma().onboardingTutorial.findUnique({
+      where: {
+        workspaceId,
+      },
+    })
+
+    if (!tutorial) {
+      return res.sendStatus(404)
+    }
+
+    if (!tutorial.isComplete) {
+      return res.sendStatus(400)
     }
 
     try {
