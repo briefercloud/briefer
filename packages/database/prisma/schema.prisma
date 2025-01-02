@@ -662,6 +662,7 @@ model OnboardingTutorial {
   isComplete  Boolean                @default(false)
   createdAt   DateTime               @default(now())
   updatedAt   DateTime               @default(now()) @updatedAt
+  isDismissed Boolean                @default(false)
 
   @@unique([workspaceId])
 }

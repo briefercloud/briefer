@@ -15,7 +15,7 @@ import {
   Comment,
   DataSourceTable,
   PythonSuggestionsResult,
-  StepStates,
+  TutorialState,
 } from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
@@ -100,7 +100,7 @@ interface EmitEvents {
   'workspace-tutorial-update': (msg: {
     workspaceId: string
     tutorialType: 'onboarding'
-    tutorialStepStates: StepStates
+    tutorialState: TutorialState
   }) => void
 }
 

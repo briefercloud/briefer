@@ -9,6 +9,7 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ForwardIcon,
 } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import { useRouter } from 'next/router'
@@ -26,6 +27,7 @@ const defaultStepStates: StepStates = {
   inviteTeamMembers: 'upcoming',
 }
 
+// TODO https://regexlicensing.org/ - can we do something else?
 const isDocumentPath = (path: string) => {
   return /\/documents\/[^\/]+\/(notebook|dashboard)(\/[^\/]*)?$/.test(path)
 }
@@ -35,7 +37,7 @@ export const OnboardingTutorial = () => {
   const workspaceId = useStringQuery('workspaceId')
   const [, { setSelector, setTourActive }] = useTourHighlight()
 
-  const [{ stepStates }, { advanceTutorial }] = useTutorial(
+  const [{ tutorialState }, { advanceTutorial, dismissTutorial }] = useTutorial(
     workspaceId,
     'onboarding',
     defaultStepStates
@@ -57,17 +59,50 @@ export const OnboardingTutorial = () => {
     return isDocumentPath(router.pathname)
   }, [router.pathname])
 
-  if (!workspaceId) {
+  console.log('tutorialState', tutorialState)
+  if (!workspaceId || tutorialState.isDismissed) {
     return null
   }
+
+  const completeButton = (
+    <button
+      disabled={!tutorialState.isCompleted}
+      onClick={() => dismissTutorial()}
+      className={
+        'text-sm w-full flex gap-x-1.5 items-center justify-center font-medium py-1.5 px-2 rounded-sm disabled:opacity-50 bg-primary-200 hover:bg-primary-300 text-primary-800 border border-primary-400 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-800 disabled:border-gray-400'
+      }
+    >
+      <CheckCircleIcon className="h-4 w-4" />
+      <span>Finish</span>
+    </button>
+  )
+
+  const dismissButton = (
+    <button
+      className="text-sm w-full flex gap-x-1.5 items-center justify-center font-medium px-2 py-1.5 rounded-sm bg-white hover:bg-gray-50 text-gray-600 border border-gray-200"
+      onClick={() => {
+        advanceTutorial()
+      }}
+    >
+      <ForwardIcon className="h-4 w-4" />
+      <span>Skip step</span>
+    </button>
+  )
 
   return (
     <Tutorial
       name={'Welcome to Briefer'}
       onAdvanceTutorial={advanceTutorial}
-      totalSteps={Object.values(stepStates).length}
+      totalSteps={Object.values(tutorialState.stepStates).length}
       completedSteps={
-        Object.values(stepStates).filter((s) => s === 'completed').length
+        Object.values(tutorialState.stepStates).filter((s) => s === 'completed')
+          .length
+      }
+      actionButtons={
+        <>
+          {dismissButton}
+          {completeButton}
+        </>
       }
     >
       <TutorialStep
@@ -86,7 +121,7 @@ export const OnboardingTutorial = () => {
             </p>
           </>
         }
-        status={stepStates['connectDataSource']}
+        status={tutorialState.stepStates['connectDataSource']}
         isExpanded={expandedStep.get('connectDataSource') ?? false}
         onExpand={() => toggleExpanded('connectDataSource')}
       >
@@ -115,7 +150,7 @@ export const OnboardingTutorial = () => {
             <p>Then, press the run button to see the results.</p>
           </>
         }
-        status={stepStates['runQuery']}
+        status={tutorialState.stepStates['runQuery']}
         isExpanded={expandedStep.get('runQuery') ?? false}
         onExpand={() => toggleExpanded('runQuery')}
       >
@@ -147,7 +182,7 @@ export const OnboardingTutorial = () => {
             </p>
           </>
         }
-        status={stepStates['runPython']}
+        status={tutorialState.stepStates['runPython']}
         isExpanded={expandedStep.get('runPython') ?? false}
         onExpand={() => toggleExpanded('runPython')}
       >
@@ -177,7 +212,7 @@ export const OnboardingTutorial = () => {
             <p>Then pick what goes on the x and y axis to see a graph.</p>
           </>
         }
-        status={stepStates['createVisualization']}
+        status={tutorialState.stepStates['createVisualization']}
         isExpanded={expandedStep.get('createVisualization') ?? false}
         onExpand={() => toggleExpanded('createVisualization')}
       >
@@ -216,7 +251,7 @@ export const OnboardingTutorial = () => {
             </p>
           </>
         }
-        status={stepStates['publishDashboard']}
+        status={tutorialState.stepStates['publishDashboard']}
         isExpanded={expandedStep.get('publishDashboard') ?? false}
         onExpand={() => toggleExpanded('publishDashboard')}
       >
@@ -263,7 +298,7 @@ export const OnboardingTutorial = () => {
             </p>
           </>
         }
-        status={stepStates['inviteTeamMembers']}
+        status={tutorialState.stepStates['inviteTeamMembers']}
         isExpanded={expandedStep.get('inviteTeamMembers') ?? false}
         onExpand={() => toggleExpanded('inviteTeamMembers')}
       >
@@ -299,6 +334,7 @@ type TutorialProps = {
   onAdvanceTutorial: () => void
   totalSteps: number
   completedSteps: number
+  actionButtons?: React.ReactNode
 }
 
 export const Tutorial = (props: TutorialProps) => {
@@ -342,16 +378,21 @@ export const Tutorial = (props: TutorialProps) => {
       </div>
       <div
         className={clsx(
-          'h-80 overflow-auto transition-max-height duration-300',
-          isCollapsed ? 'max-h-0' : 'max-h-80'
+          'transition-max-height duration-300',
+          isCollapsed ? 'max-h-0' : 'max-h-96'
         )}
       >
-        <div className="flex flex-col gap-y-4 p-4">
-          {React.Children.map(props.children, (child, index) => {
-            return React.cloneElement(child, {
-              isLast: index === React.Children.count(props.children) - 1,
-            })
-          })}
+        <div className={clsx('h-72 overflow-auto')}>
+          <div className="flex flex-col gap-y-4 p-4">
+            {React.Children.map(props.children, (child, index) => {
+              return React.cloneElement(child, {
+                isLast: index === React.Children.count(props.children) - 1,
+              })
+            })}
+          </div>
+        </div>
+        <div className="w-full bg-gray-50 p-2 flex items-center justify-center gap-x-2 border-t border-gray-200">
+          {props.actionButtons}
         </div>
       </div>
     </div>

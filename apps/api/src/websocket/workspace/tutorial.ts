@@ -1,4 +1,4 @@
-import { getTutorialStepStates } from '../../tutorials.js'
+import { getTutorialState } from '../../tutorials.js'
 import { IOServer } from '../index.js'
 
 export async function broadcastTutorialStepStates(
@@ -6,18 +6,15 @@ export async function broadcastTutorialStepStates(
   workspaceId: string,
   tutorialType: 'onboarding'
 ) {
-  const tutorialStepStates = await getTutorialStepStates(
-    workspaceId,
-    tutorialType
-  )
+  const tutorialState = await getTutorialState(workspaceId, tutorialType)
 
-  if (!tutorialStepStates) {
+  if (!tutorialState) {
     return
   }
 
   socket.to(workspaceId).emit('workspace-tutorial-update', {
     workspaceId,
     tutorialType,
-    tutorialStepStates,
+    tutorialState,
   })
 }
