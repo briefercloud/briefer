@@ -265,12 +265,12 @@ export async function subscribe(
   channel: string,
   onNotification: (message?: string) => void
 ): Promise<() => Promise<void>> {
-  const { pubSubClient } = await getPGInstance()
-
   const queue = getSubscribeQueueForChannel(channel)
 
   // This ensures only one `LISTEN` setup happens at a time for this channel
   await queue.add(async () => {
+    const { pubSubClient } = await getPGInstance()
+
     const subs = subscribers[channel]
     if (subs) {
       subs.add(onNotification)
@@ -289,6 +289,7 @@ export async function subscribe(
   return async () => {
     // This prevents race conditions when multiple unsubscribe operations or a subscribe and unsubscribe overlap
     await queue.add(async () => {
+      const { pubSubClient } = await getPGInstance()
       const subs = subscribers[channel]
       if (!subs) {
         return
