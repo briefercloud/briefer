@@ -17,6 +17,7 @@ import prisma, {
   Document,
   ApiUser,
   getDocument,
+  recoverFromNotFound,
 } from '@briefer/database'
 import { decoding, encoding } from 'lib0'
 import { logger } from '../../logger.js'
@@ -750,14 +751,16 @@ export class WSSharedDocV2 {
 
       try {
         logger().trace({ docId: this.documentId }, 'Updating document title')
-        await prisma().document.update({
-          where: {
-            id: this.documentId,
-          },
-          data: {
-            title: nextTitle,
-          },
-        })
+        await recoverFromNotFound(
+          prisma().document.update({
+            where: {
+              id: this.documentId,
+            },
+            data: {
+              title: nextTitle,
+            },
+          })
+        )
 
         return true
       } catch (err) {
@@ -1096,7 +1099,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? doc.userAppClock[user.id] ?? doc.appClock
+          ? (doc.userAppClock[user.id] ?? doc.appClock)
           : doc.clock
 
         if (dbClock !== clock) {
