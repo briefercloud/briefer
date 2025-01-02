@@ -72,17 +72,82 @@ export async function recoverFromNotFound<A>(
   }
 }
 
-let pgInstance: { pubSubClient: pg.Client; pool: pg.Pool } | null = null
-export async function getPGInstance(): Promise<{
-  pubSubClient: pg.Client
-  pool: pg.Pool
-}> {
-  if (!dbOptions) {
-    throw new Error(`Access db before calling init()`)
+let pubSubClient: pg.Client | null = null
+const getPubSubClientQueue = new PQueue({ concurrency: 1 })
+async function getPubSubClient(dbOptions: InitOptions): Promise<pg.Client> {
+  if (pubSubClient) {
+    return pubSubClient
   }
 
-  if (pgInstance) {
-    return pgInstance
+  const result = await getPubSubClientQueue.add(async () => {
+    if (pubSubClient) {
+      return pubSubClient
+    }
+
+    let connectionString = dbOptions.connectionString
+
+    const ssl =
+      dbOptions.ssl === 'prefer'
+        ? undefined
+        : dbOptions.ssl
+          ? {
+              rejectUnauthorized: dbOptions.ssl.rejectUnauthorized ?? undefined,
+              ca: dbOptions.ssl.ca ?? undefined,
+            }
+          : false
+
+    pubSubClient = new pg.Client({
+      connectionString,
+      ssl,
+    })
+
+    try {
+      await pubSubClient.connect()
+    } catch (err) {
+      if (
+        dbOptions.ssl === 'prefer' &&
+        err instanceof Error &&
+        err.message === 'The server does not support SSL connections'
+      ) {
+        pubSubClient = new pg.Client({
+          connectionString: dbOptions.connectionString,
+          ssl: false,
+        })
+        await pubSubClient.connect()
+      } else {
+        throw err
+      }
+    }
+
+    pubSubClient.on('notification', (notification) => {
+      const subs = subscribers[notification.channel]
+      if (!subs) {
+        return
+      }
+
+      subs.forEach((sub) => {
+        sub(notification.payload)
+      })
+    })
+
+    pubSubClient.on('error', (err) => {
+      console.error('Got an error from the PG pubSubClient', err)
+      reconnectPubSub()
+    })
+
+    return pubSubClient
+  })
+  if (!result) {
+    throw new Error('Getting pubSubClient returned void')
+  }
+
+  return result
+}
+
+let pgPool: pg.Pool | null = null
+export async function getPGPool(dbOptions: InitOptions): Promise<pg.Pool> {
+  if (pgPool) {
+    return pgPool
   }
 
   let connectionString = dbOptions.connectionString
@@ -97,17 +162,13 @@ export async function getPGInstance(): Promise<{
           }
         : false
 
-  let pgPool = new pg.Pool({
-    connectionString,
-    ssl,
-  })
-  let pubSubClient = new pg.Client({
+  pgPool = new pg.Pool({
     connectionString,
     ssl,
   })
 
   try {
-    await pubSubClient.connect()
+    await pgPool.connect()
   } catch (err) {
     if (
       dbOptions.ssl === 'prefer' &&
@@ -118,30 +179,75 @@ export async function getPGInstance(): Promise<{
         connectionString: dbOptions.connectionString,
         ssl: false,
       })
-      pubSubClient = new pg.Client({
-        connectionString: dbOptions.connectionString,
-        ssl: false,
-      })
-      await pubSubClient.connect()
+      await pgPool.connect()
     } else {
       throw err
     }
   }
 
-  pubSubClient.on('notification', (notification) => {
-    const subs = subscribers[notification.channel]
-    if (!subs) {
-      return
+  return pgPool
+}
+
+export async function getPGInstance(): Promise<{
+  pubSubClient: pg.Client
+  pool: pg.Pool
+}> {
+  if (!dbOptions) {
+    throw new Error(`Access db before calling init()`)
+  }
+
+  if (pubSubClient && pgPool) {
+    return { pubSubClient, pool: pgPool }
+  }
+
+  const [newPubSubClient, newPgPool] = await Promise.all([
+    getPubSubClient(dbOptions),
+    getPGPool(dbOptions),
+  ])
+
+  return { pubSubClient: newPubSubClient, pool: newPgPool }
+}
+
+let reconnectingToPubSub = false
+async function reconnectPubSub() {
+  if (!dbOptions) {
+    throw new Error(
+      'Unable to reconnect to PG PubSub because dbOptions is not set'
+    )
+  }
+
+  if (reconnectingToPubSub) {
+    console.log('[reconnecting] Already reconnecting to PG PubSub')
+    return
+  }
+
+  reconnectingToPubSub = true
+  console.log('[reconnecting] Reconnecting to PG PubSub')
+
+  // we must keep retrying while there are still subscribers
+  while (Object.keys(subscribers).length > 0) {
+    try {
+      if (pubSubClient) {
+        console.log('[reconnecting] Closing pubSubClient before reconnecting')
+        await pubSubClient.end()
+      }
+
+      pubSubClient = null
+      pubSubClient = await getPubSubClient(dbOptions)
+      // re-subscribe to all channels
+      for (const channel of Object.keys(subscribers)) {
+        await pubSubClient.query(`LISTEN ${JSON.stringify(channel)}`)
+      }
+      console.log('[reconnecting] Reconnected to PG PubSub successfully')
+      break
+    } catch (err) {
+      console.error('[reconnecting] Error reconnecting to PG:', err)
+      console.error('[reconnecting] Retrying in 1 second')
+      await new Promise((resolve) => setTimeout(resolve, 1000))
     }
+  }
 
-    subs.forEach((sub) => {
-      sub(notification.payload)
-    })
-  })
-
-  pgInstance = { pubSubClient, pool: pgPool }
-
-  return pgInstance
+  reconnectingToPubSub = false
 }
 
 const subscribers: Record<string, Set<(message?: string) => void>> = {}
@@ -198,10 +304,6 @@ export async function subscribe(
       }
     })
   }
-}
-
-export async function getPGPool(): Promise<pg.Pool> {
-  return (await getPGInstance()).pool
 }
 
 export async function publish(channel: string, message: string): Promise<void> {
