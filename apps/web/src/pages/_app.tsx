@@ -21,6 +21,7 @@ import Telemetry from '@/components/Telemetry'
 import { DataSourcesProvider } from '@/hooks/useDatasources'
 import { ReusableComponentsProvider } from '@/hooks/useReusableComponents'
 import { CommentsProvider } from '@/hooks/useComments'
+import { OnboardingTutorial } from '@/components/Tutorial'
 import { TourHighlightProvider } from '@/components/TourHighlightProvider'
 
 type Page<P = {}> = NextPage<P> & {
@@ -50,6 +51,7 @@ function App({ Component, pageProps: { session, ...pageProps } }: Props) {
                   <ReusableComponentsProvider>
                     <SideBarProvider>
                       <TourHighlightProvider>
+                        <OnboardingTutorial />
                         <Layout>
                           <Component {...pageProps} />
                         </Layout>

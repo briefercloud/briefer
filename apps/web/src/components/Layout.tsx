@@ -49,7 +49,6 @@ import {
 } from './ConfigurationsMenuItem'
 import { FeaturesDialog } from './SubscriptionBadge'
 import { SessionUser, useSignout } from '@/hooks/useAuth'
-import { OnboardingTutorial } from './Tutorial'
 import TourHighlight from './TourHighlight'
 
 const syne = Syne({ subsets: ['latin'] })
@@ -304,8 +303,6 @@ export default function Layout({
   return (
     <div className={`flex w-full h-full ${syne.className}`}>
       <MobileWarning />
-
-      <OnboardingTutorial workspaceId={workspaceId} />
 
       <CommandPalette
         workspaceId={workspaceId}
