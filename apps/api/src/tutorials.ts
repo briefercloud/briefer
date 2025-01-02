@@ -1,5 +1,9 @@
 import prisma from '@briefer/database'
-import { OnboardingTutorialStep, StepStates } from '@briefer/types'
+import {
+  OnboardingTutorialStep,
+  StepStates,
+  TutorialState,
+} from '@briefer/types'
 import { logger } from './logger.js'
 
 const ONBOARDING_STEP_ORDER: OnboardingTutorialStep[] = [
@@ -33,10 +37,10 @@ export const stepStatesFromStep = (
   }, {} as StepStates)
 }
 
-export const getTutorialStepStates = async (
+export const getTutorialState = async (
   workspaceId: string,
   _tutorialType: 'onboarding'
-): Promise<StepStates | null> => {
+): Promise<TutorialState | null> => {
   const tutorial = await prisma().onboardingTutorial.findUnique({
     where: {
       workspaceId,
@@ -47,11 +51,18 @@ export const getTutorialStepStates = async (
     return null
   }
 
-  return stepStatesFromStep(
+  const stepStates = stepStatesFromStep(
     ONBOARDING_STEP_ORDER,
     tutorial.currentStep,
     tutorial.isComplete
   )
+
+  return {
+    id: tutorial.id,
+    isCompleted: tutorial.isComplete,
+    isDismissed: tutorial.isDismissed,
+    stepStates,
+  }
 }
 
 export const advanceTutorial = async (
@@ -59,7 +70,7 @@ export const advanceTutorial = async (
   tutorialType: 'onboarding',
   // TODO don't allow null here - this is just for testing
   ifCurrentStep: OnboardingTutorialStep | null
-): Promise<StepStates | null> => {
+): Promise<TutorialState | null> => {
   const tutorial = await prisma().onboardingTutorial.findUnique({
     where: {
       workspaceId,
@@ -78,11 +89,16 @@ export const advanceTutorial = async (
     ifCurrentStep &&
     (tutorial.isComplete || tutorial.currentStep !== ifCurrentStep)
   ) {
-    return stepStatesFromStep(
-      ONBOARDING_STEP_ORDER,
-      tutorial.currentStep,
-      tutorial.isComplete
-    )
+    return {
+      id: tutorial.id,
+      isCompleted: tutorial.isComplete,
+      isDismissed: tutorial.isDismissed,
+      stepStates: stepStatesFromStep(
+        ONBOARDING_STEP_ORDER,
+        tutorial.currentStep,
+        tutorial.isComplete
+      ),
+    }
   }
 
   const currentIndex = ONBOARDING_STEP_ORDER.indexOf(tutorial.currentStep)
@@ -99,7 +115,16 @@ export const advanceTutorial = async (
       },
     })
 
-    return stepStatesFromStep(ONBOARDING_STEP_ORDER, tutorial.currentStep, true)
+    return {
+      id: tutorial.id,
+      isCompleted: true,
+      isDismissed: tutorial.isDismissed,
+      stepStates: stepStatesFromStep(
+        ONBOARDING_STEP_ORDER,
+        tutorial.currentStep,
+        true
+      ),
+    }
   }
 
   if (!nextStep) {
@@ -119,9 +144,39 @@ export const advanceTutorial = async (
     },
   })
 
-  return stepStatesFromStep(
-    ONBOARDING_STEP_ORDER,
-    nextStep,
-    tutorial.isComplete
-  )
+  return {
+    id: tutorial.id,
+    isCompleted: tutorial.isComplete,
+    isDismissed: tutorial.isDismissed,
+    stepStates: stepStatesFromStep(
+      ONBOARDING_STEP_ORDER,
+      nextStep,
+      tutorial.isComplete
+    ),
+  }
+}
+
+export const dismissTutorial = async (
+  workspaceId: string,
+  _tutorialType: 'onboarding'
+): Promise<TutorialState | null> => {
+  const tutorial = await prisma().onboardingTutorial.update({
+    where: {
+      workspaceId,
+    },
+    data: {
+      isDismissed: true,
+    },
+  })
+
+  return {
+    id: tutorial.id,
+    isCompleted: true,
+    isDismissed: tutorial.isDismissed,
+    stepStates: stepStatesFromStep(
+      ONBOARDING_STEP_ORDER,
+      tutorial.currentStep,
+      tutorial.isComplete
+    ),
+  }
 }

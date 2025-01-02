@@ -1,17 +1,18 @@
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
 import fetcher from '@/utils/fetcher'
-import { StepStates } from '@briefer/types'
-import { useCallback, useEffect } from 'react'
+import { StepStates, TutorialState } from '@briefer/types'
+import { useCallback, useEffect, useMemo } from 'react'
 import useSWR from 'swr'
 import useWebsocket from './useWebsocket'
 
 type UseTutorialState = {
-  stepStates: StepStates
+  tutorialState: TutorialState
   isLoading: boolean
 }
 
 type UseTutorialAPI = {
   advanceTutorial: () => void
+  dismissTutorial: () => void
 }
 
 const useTutorial = (
@@ -20,9 +21,19 @@ const useTutorial = (
   defaultStepStates: StepStates
 ): [UseTutorialState, UseTutorialAPI] => {
   const socket = useWebsocket()
-  const { data, isLoading, error, mutate } = useSWR<StepStates>(
+  const { data, isLoading, error, mutate } = useSWR<TutorialState>(
     `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
     fetcher
+  )
+
+  const defaultData = useMemo(
+    () => ({
+      id: '',
+      isCompleted: false,
+      isDismissed: false,
+      stepStates: defaultStepStates,
+    }),
+    [defaultStepStates]
   )
 
   useEffect(() => {
@@ -30,9 +41,8 @@ const useTutorial = (
       return
     }
 
-    const onTutorialUpdate = (msg: { stepStates: StepStates }) => {
-      console.log(msg)
-      mutate(msg.stepStates)
+    const onTutorialUpdate = (msg: { tutorialState: TutorialState }) => {
+      mutate(msg.tutorialState)
     }
 
     socket.on('workspace-tutorial-update', onTutorialUpdate)
@@ -42,28 +52,57 @@ const useTutorial = (
     }
   }, [socket, mutate])
 
-  // TODO: this is temporary - used for testing only
   const advanceTutorial = useCallback(async () => {
-    const tutorialRes = await fetch(
-      `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
-      {
-        credentials: 'include',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    )
+    try {
+      const tutorialRes = await fetch(
+        `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}`,
+        {
+          credentials: 'include',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      )
 
-    return tutorialRes.json()
+      return tutorialRes.json()
+    } catch (err) {
+      alert('Something went wrong')
+      return null
+    }
   }, [workspaceId, tutorialType])
+
+  const dismissTutorial = useCallback(async () => {
+    mutate(
+      async () => {
+        try {
+          const tutorialRes = await fetch(
+            `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${workspaceId}/tutorials/${tutorialType}/dismiss`,
+            {
+              credentials: 'include',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
+          )
+
+          return tutorialRes.json()
+        } catch (err) {
+          alert('Something went wrong')
+          return null
+        }
+      },
+      { optimisticData: { ...defaultData, isDismissed: true } }
+    )
+  }, [workspaceId, tutorialType, defaultData, mutate])
 
   return [
     {
-      stepStates: data ?? defaultStepStates,
+      tutorialState: data ?? defaultData,
       isLoading: isLoading || (!data && !error),
     },
-    { advanceTutorial },
+    { advanceTutorial, dismissTutorial },
   ]
 }
 

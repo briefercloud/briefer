@@ -1206,3 +1206,10 @@ export const TutorialStepStatus = z.enum(['current', 'completed', 'upcoming'])
 export type TutorialStepStatus = z.infer<typeof TutorialStepStatus>
 
 export type StepStates = Record<OnboardingTutorialStep, TutorialStepStatus>
+
+export type TutorialState = {
+  id: string
+  isCompleted: boolean
+  isDismissed: boolean
+  stepStates: StepStates
+}
