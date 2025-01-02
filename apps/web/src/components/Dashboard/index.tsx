@@ -187,6 +187,7 @@ export default function Dashboard(props: Props) {
               tooltipClassname="w-40"
             >
               <button
+                id="dashboard-publish-button"
                 className="flex items-center rounded-sm px-3 py-1 text-sm bg-primary-200 hover:bg-primary-300 disabled:cursor-not-allowed disabled:opacity-50 gap-x-1.5 group"
                 onClick={onPublish}
                 disabled={props.publishing}
