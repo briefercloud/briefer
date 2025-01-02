@@ -183,7 +183,6 @@ export async function createDocument(
     parentId?: string | null
     version?: number
     orderIndex: number
-    isTutorialDoc?: boolean
   },
   tx?: PrismaTransaction
 ): Promise<Document> {
@@ -206,7 +205,6 @@ export async function createDocument(
       orderIndex: data.orderIndex,
       version: data.version,
       icon: data.icon,
-      isTutorialDoc: data.isTutorialDoc,
     },
   })
 }
