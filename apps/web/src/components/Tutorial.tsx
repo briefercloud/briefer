@@ -15,6 +15,7 @@ import { useRouter } from 'next/router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import React from 'react'
 import { useTourHighlight } from './TourHighlightProvider'
+import { useStringQuery } from '@/hooks/useQueryArgs'
 
 const defaultStepStates: StepStates = {
   connectDataSource: 'current',
@@ -25,12 +26,17 @@ const defaultStepStates: StepStates = {
   inviteTeamMembers: 'upcoming',
 }
 
-export const OnboardingTutorial = (props: { workspaceId: string }) => {
+const isDocumentPath = (path: string) => {
+  return /\/documents\/[^\/]+\/(notebook|dashboard)(\/[^\/]*)?$/.test(path)
+}
+
+export const OnboardingTutorial = () => {
   const router = useRouter()
+  const workspaceId = useStringQuery('workspaceId')
   const [, { setSelector, setTourActive }] = useTourHighlight()
 
   const [{ stepStates }, { advanceTutorial }] = useTutorial(
-    props.workspaceId,
+    workspaceId,
     'onboarding',
     defaultStepStates
   )
@@ -48,8 +54,12 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
   }, [])
 
   const isWithinDocumentPage = useMemo(() => {
-    return router.pathname.endsWith('/notebook/edit')
+    return isDocumentPath(router.pathname)
   }, [router.pathname])
+
+  if (!workspaceId) {
+    return null
+  }
 
   return (
     <Tutorial
@@ -83,7 +93,7 @@ export const OnboardingTutorial = (props: { workspaceId: string }) => {
         <TutorialStepAction
           label="Add a data source"
           onClick={() => {
-            router.push(`/workspaces/${props.workspaceId}/data-sources/new`)
+            router.push(`/workspaces/${workspaceId}/data-sources/new`)
           }}
         />
         {/* TODO: Deactivated on open-source
@@ -292,12 +302,22 @@ type TutorialProps = {
 }
 
 export const Tutorial = (props: TutorialProps) => {
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const ChevronIcon = isCollapsed ? ChevronUpIcon : ChevronDownIcon
 
+  const isWithinDocumentPage = useMemo(() => {
+    return isDocumentPath(router.pathname)
+  }, [router.pathname])
+
   return (
-    <div className="absolute bottom-16 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden shadow-sm">
+    <div
+      className={clsx(
+        'absolute bottom-0 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden shadow-sm transition-transform duration-300',
+        isWithinDocumentPage ? '-translate-y-14' : '-translate-y-4'
+      )}
+    >
       <div
         className={clsx(
           'bg-gray-50 rounded-t-lg h-12 w-full border-gray-200 p-4 flex items-center justify-between',
