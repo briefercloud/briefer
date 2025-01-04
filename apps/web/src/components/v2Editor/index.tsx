@@ -1517,6 +1517,7 @@ const Editor = (props: Props) => {
                 {domBlocks.length === 0 && (
                   <div className="w-full">
                     <PlusButton
+                      isLast
                       alwaysOpen
                       onAddBlock={addBlockToBottom}
                       isEditable={props.isEditable}

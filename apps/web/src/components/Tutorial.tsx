@@ -349,7 +349,7 @@ export const Tutorial = (props: TutorialProps) => {
   return (
     <div
       className={clsx(
-        'absolute bottom-0 right-4 bg-white rounded-lg w-80 z-20 border border-gray-200 font-sans overflow-hidden shadow-sm transition-transform duration-300',
+        'absolute bottom-0 right-4 bg-white rounded-lg w-80 z-30 border border-gray-200 font-sans overflow-hidden shadow-sm transition-transform duration-300',
         isWithinDocumentPage ? '-translate-y-14' : '-translate-y-4'
       )}
     >
