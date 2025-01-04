@@ -117,7 +117,15 @@ function InputBlock(props: Props) {
         )
       }
     },
-    [props.block, props.userId, environmentStartedAt]
+    [
+      attrs.variable.newValue,
+      attrs.variable.value,
+      props.block,
+      props.blocks,
+      props.executionQueue,
+      props.userId,
+      environmentStartedAt,
+    ]
   )
 
   const onSaveValue = useCallback(() => {
@@ -129,7 +137,7 @@ function InputBlock(props: Props) {
         _tag: 'text-input-save-value',
       }
     )
-  }, [props.block, props.userId, environmentStartedAt])
+  }, [props.executionQueue, props.block, props.userId, environmentStartedAt])
 
   const onRunValue = useCallback(() => {
     updateInputVariable(props.block, props.blocks, {
@@ -144,7 +152,13 @@ function InputBlock(props: Props) {
         _tag: 'text-input-rename-variable',
       }
     )
-  }, [props.block, props.userId, environmentStartedAt])
+  }, [
+    props.block,
+    props.blocks,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const variableExecutions = useBlockExecutions(
     props.executionQueue,

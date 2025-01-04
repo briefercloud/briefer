@@ -147,7 +147,14 @@ function DropdownInputBlock(props: Props) {
         )
       }
     },
-    [props.block, props.userId, props.executionQueue]
+    [
+      attrs.variable.newValue,
+      attrs.variable.value,
+      props.block,
+      props.blocks,
+      props.executionQueue,
+      environmentStartedAt,
+    ]
   )
 
   const onRetryVariable = useCallback(() => {
@@ -162,7 +169,13 @@ function DropdownInputBlock(props: Props) {
         _tag: 'dropdown-input-rename-variable',
       }
     )
-  }, [props.block, props.userId, props.executionQueue, environmentStartedAt])
+  }, [
+    props.block,
+    props.blocks,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const selectRef = useRef<HTMLUListElement>(null)
 
@@ -216,7 +229,7 @@ function DropdownInputBlock(props: Props) {
         }
       )
     },
-    [props.block, props.userId, props.executionQueue, environmentStartedAt]
+    [props.block, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onRun = useCallback(() => {

@@ -26,9 +26,12 @@ type Props = {
 export default function DropdownSettings(props: Props) {
   const attrs = getDropdownInputAttributes(props.block, props.blocks)
 
-  const onChangeDropdownType = useCallback((type: 'static' | 'dynamic') => {
-    setDropdownType(props.block, type)
-  }, [])
+  const onChangeDropdownType = useCallback(
+    (type: 'static' | 'dynamic') => {
+      setDropdownType(props.block, type)
+    },
+    [props.block]
+  )
 
   return (
     <div className="bg-gray-50 px-3 py-3 border border-gray-200 flex flex-col gap-y-2 rounded-md shadow-sm">
@@ -273,7 +276,7 @@ const DynamicInput = (props: DynamicInputProps) => {
       (col) => col.name === attrs.columnName
     )
     const categories =
-      currCol && 'categories' in currCol ? currCol.categories ?? [] : []
+      currCol && 'categories' in currCol ? (currCol.categories ?? []) : []
     appendDropdownInputOptions(
       props.block,
       props.blocks,

@@ -100,7 +100,13 @@ function DateInput(props: Props) {
       props.userId,
       environmentStartedAt
     )
-  }, [props.block, props.blocks, props.executionQueue, props.userId])
+  }, [
+    props.block,
+    props.blocks,
+    props.executionQueue,
+    props.userId,
+    environmentStartedAt,
+  ])
 
   const onChangeVariable: React.ChangeEventHandler<HTMLInputElement> =
     useCallback(
@@ -120,7 +126,7 @@ function DateInput(props: Props) {
       updateDateInputBlockDateType(props.block, props.blocks, type)
       onRun()
     },
-    [props.block, onRun]
+    [props.block, props.blocks, onRun]
   )
 
   const onChangeTimeZone = useCallback(
