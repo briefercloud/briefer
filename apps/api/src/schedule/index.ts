@@ -199,9 +199,11 @@ export async function runSchedule(socketServer: IOServer) {
   }
 
   let stop = false
+  let lockAcquired = false
   const loop = new Promise<void>(async (resolve) => {
     logger().trace('Acquiring lock to be the schedule executor')
     await acquireLock('schedule-executor', async () => {
+      lockAcquired = true
       if (stop) {
         logger().trace(
           'Schedule executor lock acquired but server is shutting down'
@@ -239,7 +241,11 @@ export async function runSchedule(socketServer: IOServer) {
     logger().info('[shutdown] Stopping schedule')
 
     stop = true
-    await loop
+    if (lockAcquired) {
+      // it only makes sense to wait for the loop if we acquired the lock
+      // otherwise we might get stuck here waiting forever
+      await loop
+    }
 
     for (const job of jobs.values()) {
       job.job.stop()
