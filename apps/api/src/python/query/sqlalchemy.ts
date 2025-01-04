@@ -107,8 +107,9 @@ def briefer_make_sqlalchemy_query():
                       break
 
               if is_memoryview or is_bytes:
-                  # convert to hex
-                  df[column] = df[column].apply(lambda x: x.hex() if x is not None else None)
+                  # convert to string
+                  df[column] = df[column].apply(lambda x: str(x.tobytes() if is_memoryview else x) if x is not None else None)
+
                   continue
 
               if are_all_non_null_values_strings:
