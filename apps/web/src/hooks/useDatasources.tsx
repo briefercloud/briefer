@@ -90,7 +90,7 @@ type UseDataSources = [
     schemas: Schemas
     isLoading: boolean
   },
-  API
+  API,
 ]
 export const useDataSources = (workspaceId: string): UseDataSources => {
   const [state, api] = useContext(Context)
@@ -186,6 +186,38 @@ export function DataSourcesProvider(props: Props) {
       onDataSourceSchemaTableUpdate
     )
 
+    const onDataSourceSchemaTables = ({
+      workspaceId,
+      tables,
+    }: {
+      workspaceId: string
+      tables: (DataSourceTable & {
+        dataSourceId: string
+        schemaName: string
+        tableName: string
+        table: DataSourceTable
+      })[]
+    }) => {
+      setState((state) => {
+        tables.forEach(({ dataSourceId, schemaName, tableName, table }) => {
+          const datasources = state.get(workspaceId)?.datasources ?? List()
+          const allSchemas = state.get(workspaceId)?.schemas ?? Map()
+          const dataSourceSchemas = allSchemas.get(dataSourceId) ?? Map()
+          const schema = dataSourceSchemas.get(schemaName)
+          const tables = {
+            ...(schema?.tables ?? {}),
+            [tableName]: table,
+          }
+          state = state.set(workspaceId, {
+            datasources,
+            schemas: allSchemas.setIn([dataSourceId, schemaName], { tables }),
+          })
+        })
+        return state
+      })
+    }
+    socket.on('workspace-datasource-schema-tables', onDataSourceSchemaTables)
+
     const onDataSourceSchemaTableRemoved = ({
       workspaceId,
       dataSourceId,
@@ -220,6 +252,7 @@ export function DataSourcesProvider(props: Props) {
         'workspace-datasource-schema-table-update',
         onDataSourceSchemaTableUpdate
       )
+      socket.off('workspace-datasource-schema-tables', onDataSourceSchemaTables)
       socket.off(
         'workspace-datasource-schema-table-removed',
         onDataSourceSchemaTableRemoved

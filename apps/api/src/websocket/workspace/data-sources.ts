@@ -10,6 +10,7 @@ import { Session } from '../../types.js'
 import {
   fetchDataSourceStructure,
   listSchemaTables,
+  SchemaTableItem,
 } from '../../datasources/structure.js'
 import { DataSourceTable, uuidSchema } from '@briefer/types'
 
@@ -99,10 +100,22 @@ async function emitSchemas(
   workspaceId: string,
   dataSources: APIDataSource[]
 ) {
+  let batch: SchemaTableItem[] = []
   for await (const schemaTable of listSchemaTables(dataSources)) {
-    socket.emit('workspace-datasource-schema-table-update', {
+    batch.push(schemaTable)
+    if (batch.length >= 100) {
+      socket.emit('workspace-datasource-schema-tables', {
+        workspaceId,
+        tables: batch,
+      })
+      batch = []
+    }
+  }
+
+  if (batch.length > 0) {
+    socket.emit('workspace-datasource-schema-tables', {
       workspaceId,
-      ...schemaTable,
+      tables: batch,
     })
   }
 }

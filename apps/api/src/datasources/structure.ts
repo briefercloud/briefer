@@ -831,7 +831,15 @@ export const OnTableProgress = z.object({
 })
 export type OnTableProgress = z.infer<typeof OnTableProgress>
 
-export async function* listSchemaTables(dataSources: APIDataSource[]) {
+export type SchemaTableItem = {
+  schemaName: string
+  tableName: string
+  dataSourceId: string
+  table: DataSourceTable
+}
+export async function* listSchemaTables(
+  dataSources: APIDataSource[]
+): AsyncGenerator<SchemaTableItem> {
   const schemaToDataSourceId = new Map(
     dataSources.map((d) => [d.structure.id, d.config.data.id])
   )
