@@ -60,6 +60,15 @@ interface EmitEvents {
     workspaceId: string
     dataSource: APIDataSource
   }) => void
+  'workspace-datasource-schema-tables': (msg: {
+    workspaceId: string
+    tables: {
+      dataSourceId: string
+      schemaName: string
+      tableName: string
+      table: DataSourceTable
+    }[]
+  }) => void
   'workspace-datasource-schema-table-update': (msg: {
     workspaceId: string
     dataSourceId: string
