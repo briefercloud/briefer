@@ -61,6 +61,12 @@ export default function PageSettingsPanel(props: Props) {
               enabled={document?.runSQLSelection ?? false}
               onToggle={api.toggleRunSQLSelection}
             />
+            <PageSettingToggle
+              name="Share links without sidebar"
+              description="Whether the 'copy link' button should include a query parameter to hide the sidebar (open dashboards with the sidebar collapsed)."
+              enabled={document?.shareLinksWithoutSidebar ?? false}
+              onToggle={api.toggleShareLinksWithoutSidebar}
+            />
           </div>
         </div>
       </Transition>

@@ -29,16 +29,17 @@ model Document {
   parent      Document?  @relation("DocumentParent", fields: [parentId], references: [id], onDelete: Cascade)
   children    Document[] @relation("DocumentParent")
 
-  yjsDocument        YjsDocument?
-  yjsAppDocuments    YjsAppDocument[]
-  comments           Comment[]
-  Favorite           Favorite[]
-  executionSchedules ExecutionSchedule[]
-  reusableComponents ReusableComponent[]
+  yjsDocument                YjsDocument?
+  yjsAppDocuments            YjsAppDocument[]
+  comments                   Comment[]
+  Favorite                   Favorite[]
+  executionSchedules         ExecutionSchedule[]
+  reusableComponents         ReusableComponent[]
   reusableComponentInstances ReusableComponentInstance[]
 
-  runUnexecutedBlocks Boolean @default(false)
-  runSQLSelection     Boolean @default(false)
+  runUnexecutedBlocks      Boolean @default(false)
+  runSQLSelection          Boolean @default(false)
+  shareLinksWithoutSidebar Boolean @default(false)
 }
 
 model YjsDocument {

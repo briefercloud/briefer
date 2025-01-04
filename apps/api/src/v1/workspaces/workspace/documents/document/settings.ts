@@ -8,6 +8,7 @@ import { broadcastDocument } from '../../../../../websocket/workspace/documents.
 const DocumentSettings = z.object({
   runUnexecutedBlocks: z.boolean().optional(),
   runSQLSelection: z.boolean().optional(),
+  shareLinksWithoutSidebar: z.boolean().optional(),
 })
 
 export default function settingsRouter(socketServer: IOServer) {
@@ -22,13 +23,18 @@ export default function settingsRouter(socketServer: IOServer) {
       return
     }
 
-    const { runUnexecutedBlocks, runSQLSelection } = body.data
+    const { runUnexecutedBlocks, runSQLSelection, shareLinksWithoutSidebar } =
+      body.data
 
     try {
       const doc = await recoverFromNotFound(
         prisma().document.update({
           where: { id: documentId },
-          data: { runUnexecutedBlocks, runSQLSelection },
+          data: {
+            runUnexecutedBlocks,
+            runSQLSelection,
+            shareLinksWithoutSidebar,
+          },
         })
       )
       if (!doc) {

@@ -7,6 +7,7 @@ type API = {
   publish: () => Promise<void>
   toggleRunUnexecutedBlocks: () => Promise<void>
   toggleRunSQLSelection: () => Promise<void>
+  toggleShareLinksWithoutSidebar: () => Promise<void>
 }
 
 type UseDocument = [
@@ -76,10 +77,32 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
     api.updateDocumentSettings,
   ])
 
+  const toggleShareLinksWithoutSidebar = useCallback(async () => {
+    const newShareLinksWithoutSidebar = !document?.shareLinksWithoutSidebar
+    try {
+      await api.updateDocumentSettings(documentId, {
+        shareLinksWithoutSidebar: newShareLinksWithoutSidebar,
+      })
+    } catch (err) {
+      alert('Failed to update document settings')
+    }
+  }, [
+    workspaceId,
+    documentId,
+    document?.shareLinksWithoutSidebar,
+    api.updateDocumentSettings,
+  ])
+
   return useMemo(
     () => [
       { document, loading, publishing },
-      { setIcon, publish, toggleRunUnexecutedBlocks, toggleRunSQLSelection },
+      {
+        setIcon,
+        publish,
+        toggleRunUnexecutedBlocks,
+        toggleRunSQLSelection,
+        toggleShareLinksWithoutSidebar,
+      },
     ],
     [
       loading,
@@ -87,6 +110,7 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
       publish,
       toggleRunUnexecutedBlocks,
       toggleRunSQLSelection,
+      toggleShareLinksWithoutSidebar,
     ]
   )
 }

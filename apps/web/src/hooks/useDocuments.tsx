@@ -75,6 +75,7 @@ function upsertDocumentInMemory(
       userAppClock: {},
       runUnexecutedBlocks: false,
       runSQLSelection: false,
+      shareLinksWithoutSidebar: true,
       hasDashboard: false,
     })
   }
@@ -207,7 +208,11 @@ type API = {
   ) => Promise<void>
   updateDocumentSettings: (
     id: string,
-    settings: { runUnexecutedBlocks?: boolean; runSQLSelection?: boolean }
+    settings: {
+      runUnexecutedBlocks?: boolean
+      runSQLSelection?: boolean
+      shareLinksWithoutSidebar?: boolean
+    }
   ) => Promise<void>
   publish: (id: string) => Promise<void>
 }
