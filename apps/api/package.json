@@ -50,6 +50,7 @@
     "lru-cache": "^10.2.2",
     "mssql": "^11.0.1",
     "node-fetch": "^3.3.2",
+    "openai": "^4.77.3",
     "p-all": "^5.0.0",
     "p-queue": "^8.0.1",
     "parse-duration": "^1.1.0",

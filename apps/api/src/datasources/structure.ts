@@ -3,6 +3,8 @@ import prisma, {
   DataSource,
   DataSourceSchema as DBDataSourceSchema,
   decrypt,
+  getWorkspaceById,
+  getWorkspaceWithSecrets,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import {
@@ -37,6 +39,7 @@ import { PythonExecutionError } from '../python/index.js'
 import { getSqlServerSchema } from './sqlserver.js'
 import { z } from 'zod'
 import { splitEvery } from 'ramda'
+import { createEmbedding } from '../embedding.js'
 
 function decryptDBData(
   dataSourceId: string,
@@ -519,6 +522,15 @@ async function _refreshDataSourceStructure(
   socketServer: IOServer,
   dataSource: APIDataSource
 ) {
+  const workspace = await getWorkspaceWithSecrets(
+    dataSource.config.data.workspaceId
+  )
+  if (!workspace) {
+    throw new Error(
+      `Failed to find Workspace(${dataSource.config.data.workspaceId}) for DataSource(${dataSource.config.data.id})`
+    )
+  }
+
   const updateQueue = new PQueue({ concurrency: 1 })
   const tables: { schema: string; table: string }[] = []
   let defaultSchema = ''
@@ -526,12 +538,38 @@ async function _refreshDataSourceStructure(
     defaultSchema = defaultSchema || schema
     tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
+      const openAiApiKey = workspace.secrets?.openAiApiKey
+      let embedding: number[] | null = null
+      if (openAiApiKey) {
+        let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
+        for (const c of table.columns) {
+          ddl += `  ${c.name} ${c.type}\n`
+        }
+        try {
+          embedding = await createEmbedding(
+            ddl,
+            decrypt(openAiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
+          )
+        } catch (err) {
+          logger().error(
+            {
+              err,
+              dataSourceId: dataSource.config.data.id,
+              dataSourceType: dataSource.config.type,
+              schemaName: schema,
+              tableName,
+            },
+            'Failed to create embedding'
+          )
+        }
+      }
+
       await prisma().dataSourceSchema.update({
         where: { id: dataSource.structure.id },
         data: { defaultSchema },
       })
 
-      await prisma().dataSourceSchemaTable.upsert({
+      const dbSchemaTable = await prisma().dataSourceSchemaTable.upsert({
         where: {
           dataSourceSchemaId_schema_name: {
             dataSourceSchemaId: dataSource.structure.id,
@@ -549,6 +587,11 @@ async function _refreshDataSourceStructure(
           columns: table.columns,
         },
       })
+
+      if (embedding) {
+        await prisma()
+          .$queryRaw`UPDATE "DataSourceSchemaTable" SET embedding = ${embedding} WHERE id = ${dbSchemaTable.id}::uuid`
+      }
 
       broadcastDataSource(socketServer, dataSource)
       broadcastDataSourceSchemaTableUpdate(

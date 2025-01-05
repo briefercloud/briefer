@@ -366,6 +366,7 @@ model DataSourceSchemaTable {
   schema             String
   columns            Json
   dataSourceSchemaId String @db.Uuid
+  embedding          Unsupported("vector")?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -654,4 +655,16 @@ model socket_io_attachments {
   id         BigInt    @default(autoincrement()) @unique
   createdAt  DateTime  @default(now()) @map("created_at")
   payload    Bytes
+}
+
+model EmbeddingCache {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inputChecksum String
+  model         String
+  embedding     Unsupported("vector")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([inputChecksum, model], map: "unique_inputChecksum_model")
 }
