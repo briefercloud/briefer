@@ -507,6 +507,7 @@ model Workspace {
   databricksSQLDataSources DatabricksSQLDataSource[]
   environmentVariables     EnvironmentVariable[]
   lastVisitors             User[]                    @relation("lastVisitedWorkspace")
+  onboardingTutorial       OnboardingTutorial?
 }
 
 enum UserWorkspaceRole {
@@ -656,8 +657,11 @@ enum OnboardingTutorialStep {
 }
 
 model OnboardingTutorial {
-  id          String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId String                 @db.Uuid
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId String    @db.Uuid
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
   currentStep OnboardingTutorialStep @default(connectDataSource)
   isComplete  Boolean                @default(false)
   createdAt   DateTime               @default(now())
