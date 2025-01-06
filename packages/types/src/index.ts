@@ -1194,3 +1194,8 @@ export type SQLQueryConfiguration = {
 }
 
 export function exhaustiveCheck(_param: never) {}
+
+export enum ElementType {
+  Block = 'BLOCK',
+  BlockGroup = 'BLOCK_GROUP',
+}

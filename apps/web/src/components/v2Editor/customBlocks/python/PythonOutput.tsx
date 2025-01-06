@@ -1,6 +1,6 @@
 import Ansi from '@cocalc/ansi-to-react'
 import clsx from 'clsx'
-import Plot from 'react-plotly.js'
+import dynamic from 'next/dynamic'
 import {
   Output,
   PythonErrorOutput,
@@ -15,6 +15,8 @@ import useResettableState from '@/hooks/useResettableState'
 import { downloadFile } from '@/utils/file'
 import debounce from 'lodash.debounce'
 import { PythonBlock } from '@briefer/editor'
+
+const Plot = dynamic(() => import('react-plotly.js'), { ssr: false })
 
 interface Props {
   className?: string
