@@ -78,7 +78,8 @@ export const OnboardingTutorial = () => {
 
   const dismissButton = (
     <button
-      className="text-sm w-full flex gap-x-1.5 items-center justify-center font-medium px-2 py-1.5 rounded-sm bg-white hover:bg-gray-50 text-gray-600 border border-gray-200"
+      className="text-sm w-full flex gap-x-1.5 items-center justify-center font-medium px-2 py-1.5 rounded-sm bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200"
+      disabled={tutorialState.isCompleted}
       onClick={() => {
         advanceTutorial()
       }}
