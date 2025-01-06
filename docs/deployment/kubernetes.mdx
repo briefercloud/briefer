@@ -105,6 +105,10 @@ api:
     postgresPassword: password
 ```
 
+<Warning>
+  If you're using an external Postgres instance, make sure to that it includes [the `pgvector` extension](https://github.com/pgvector/pgvector). Briefer uses `pgvector` to store and query embeddings when you use the AI service to generate queries and code.
+</Warning>
+
 ### Using more than one replica for Briefers' services
 
 If you want to use more than one replica for Briefer's services, you must set the `replicas` for each service in your `values.yaml` file.
