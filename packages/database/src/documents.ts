@@ -179,6 +179,7 @@ export async function createDocument(
   data: {
     id?: string
     title?: string
+    icon?: string
     parentId?: string | null
     version?: number
     orderIndex: number
@@ -203,6 +204,7 @@ export async function createDocument(
       title: data.title ?? '',
       orderIndex: data.orderIndex,
       version: data.version,
+      icon: data.icon,
     },
   })
 }

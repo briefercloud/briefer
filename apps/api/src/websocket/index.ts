@@ -15,6 +15,7 @@ import {
   Comment,
   DataSourceTable,
   PythonSuggestionsResult,
+  TutorialState,
 } from '@briefer/types'
 import { v4 as uuidv4 } from 'uuid'
 import { logger } from '../logger.js'
@@ -95,6 +96,11 @@ interface EmitEvents {
   'document-comment-deleted': (msg: {
     documentId: string
     commentId: string
+  }) => void
+  'workspace-tutorial-update': (msg: {
+    workspaceId: string
+    tutorialType: 'onboarding'
+    tutorialState: TutorialState
   }) => void
 }
 

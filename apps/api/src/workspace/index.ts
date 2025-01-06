@@ -5,6 +5,7 @@ import {
   UserWorkspaceRole,
   ApiWorkspace,
   createWorkspace as prismaCreateWorkspace,
+  createDocument,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import { WorkspaceCreateInput } from '@briefer/types'
@@ -69,6 +70,14 @@ export class WorkspaceCreator implements IWorkspaceCreator {
       await tx.userWorkspace.createMany({
         data: userWorkspaceAssociations,
         skipDuplicates: true,
+      })
+
+      await tx.onboardingTutorial.create({
+        data: {
+          workspaceId: workspace.id,
+          currentStep: 'connectDataSource',
+          isComplete: false,
+        },
       })
 
       return { workspace, invitedUsers: guestUsers }

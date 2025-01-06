@@ -44,6 +44,7 @@ function DashboardNotebookGroupButton(props: Props) {
         active={isDashboardButtonDisabled}
       >
         <button
+          id="dashboard-view-button"
           className={clsx(
             'flex gap-x-1.5 items-center rounded-r-sm px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-50 ring-1 ring-inset ring-gray-300 hover:bg-ceramic-50',
             props.current === 'dashboard'

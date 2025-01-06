@@ -408,7 +408,8 @@ export class WSSharedDocV2 {
   public updating: number = 0
   public clock: number = 0
 
-  private socketServer: IOServer
+  public socketServer: IOServer
+
   private title: string = ''
   private executor: Executor
   private aiExecutor: AIExecutor

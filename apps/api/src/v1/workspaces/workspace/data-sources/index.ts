@@ -24,6 +24,8 @@ import { fetchDataSourceStructure } from '../../../../datasources/structure.js'
 import { canUpdateWorkspace } from '../../../../auth/token.js'
 import { captureDatasourceCreated } from '../../../../events/posthog.js'
 import { IOServer } from '../../../../websocket/index.js'
+import { advanceTutorial } from '../../../../tutorials.js'
+import { broadcastTutorialStepStates } from '../../../../websocket/workspace/tutorial.js'
 
 const dataSourcePayload = z.union([
   z.object({
@@ -393,6 +395,9 @@ const dataSourcesRouter = (socketServer: IOServer) => {
       })
 
       res.status(201).json(datasource)
+
+      await advanceTutorial(workspaceId, 'onboarding', 'connectDataSource')
+      broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
     } catch (err) {
       req.log.error(
         {

@@ -760,16 +760,6 @@ export function isInvalidVisualizationFilter(
   )
 }
 
-export const OnboardingStep = z.union([
-  z.literal('intro'),
-  z.literal('connectDataSource'),
-  z.literal('activateTrial'),
-  z.literal('joinSlack'),
-  z.literal('done'),
-])
-
-export type OnboardingStep = z.infer<typeof OnboardingStep>
-
 export const DataSourceColumn = z.object({
   name: z.string(),
   type: z.string(),
@@ -1198,4 +1188,28 @@ export function exhaustiveCheck(_param: never) {}
 export enum ElementType {
   Block = 'BLOCK',
   BlockGroup = 'BLOCK_GROUP',
+}
+
+export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
+export const OnboardingTutorialStep = z.enum([
+  'connectDataSource',
+  'runQuery',
+  'runPython',
+  'createVisualization',
+  'publishDashboard',
+  'inviteTeamMembers',
+])
+
+export type OnboardingTutorialStep = z.infer<typeof OnboardingTutorialStep>
+
+export const TutorialStepStatus = z.enum(['current', 'completed', 'upcoming'])
+export type TutorialStepStatus = z.infer<typeof TutorialStepStatus>
+
+export type StepStates = Record<OnboardingTutorialStep, TutorialStepStatus>
+
+export type TutorialState = {
+  id: string
+  isCompleted: boolean
+  isDismissed: boolean
+  stepStates: StepStates
 }
