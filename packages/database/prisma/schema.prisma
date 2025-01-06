@@ -39,7 +39,7 @@ model Document {
 
   runUnexecutedBlocks      Boolean @default(false)
   runSQLSelection          Boolean @default(false)
-  shareLinksWithoutSidebar Boolean @default(false)
+  shareLinksWithoutSidebar Boolean @default(true)
 }
 
 model YjsDocument {
