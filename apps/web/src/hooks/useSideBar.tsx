@@ -5,7 +5,6 @@ import {
   useContext,
   useState,
 } from 'react'
-import { useStringQuery } from './useQueryArgs'
 
 type Context = [boolean, Dispatch<SetStateAction<boolean>>]
 const Context = createContext<Context>([true, () => {}] as unknown as Context)
@@ -15,8 +14,10 @@ export default function useSideBar(): Context {
 }
 
 export function SideBarProvider({ children }: { children: React.ReactNode }) {
-  const noSidebarQs = useStringQuery('sidebarCollapsed')
-  const value = useState(noSidebarQs === 'true')
+  const value = useState(
+    () =>
+      new URLSearchParams(location.search).get('sidebarCollapsed') !== 'true'
+  )
 
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
