@@ -36,10 +36,12 @@ export default function DashboardPage() {
     if (document.publishedAt === null) {
       if (!role || role === 'viewer') {
         // viewers can't see dashboard in edit mode
-        router.replace(`/workspaces/${workspaceId}/documents/${documentId}`)
+        router.replace(
+          `/workspaces/${workspaceId}/documents/${documentId}${location.search}`
+        )
       } else {
         router.replace(
-          `/workspaces/${workspaceId}/documents/${documentId}/dashboard/edit`
+          `/workspaces/${workspaceId}/documents/${documentId}/dashboard/edit${location.search}`
         )
       }
     }

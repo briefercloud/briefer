@@ -86,12 +86,13 @@ export default function Dashboard(props: Props) {
     )
   }, [props.publish, props.publishing])
 
+  const shareLinkWithoutSidebar = props.document.shareLinksWithoutSidebar
   const copyLink = useMemo(
     () =>
       `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${
         props.document.workspaceId
-      }/documents/${props.document.id}`,
-    [router]
+      }/documents/${props.document.id}/dashboard${shareLinkWithoutSidebar ? '?sidebarCollapsed=true' : ''}`,
+    [props.document.workspaceId, props.document.id, shareLinkWithoutSidebar]
   )
 
   const documentTitle = useMemo(

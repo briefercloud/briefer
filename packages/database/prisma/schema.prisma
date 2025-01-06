@@ -37,8 +37,9 @@ model Document {
   reusableComponents         ReusableComponent[]
   reusableComponentInstances ReusableComponentInstance[]
 
-  runUnexecutedBlocks Boolean @default(false)
-  runSQLSelection     Boolean @default(false)
+  runUnexecutedBlocks      Boolean @default(false)
+  runSQLSelection          Boolean @default(false)
+  shareLinksWithoutSidebar Boolean @default(false)
 }
 
 model YjsDocument {

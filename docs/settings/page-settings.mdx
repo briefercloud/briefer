@@ -25,3 +25,13 @@ When you run a SQL block, Briefer will run its entire content by default.
 If you only want to run a specific part of the SQL block, you need to enable the "Run selected SQL only" switch.
 
 After enabling this setting, Briefer will only run the SQL code you've selected. If you haven't selected any code, Briefer will run the entire block.
+
+## Share links without sidebar
+
+By default, clicking the "copy link" element within the "Share" menu will copy a link that opens the page with the sidebar _collapsed_.
+
+If you want to share a link that opens the page with the sidebar _expanded_, you can disable the "Share links without sidebar" switch.
+
+<Note>
+  The query parameter which controls the sidebar state is `sidebarCollapsed`. You can also manually set it to `true` or `false` to control the sidebar state.
+</Note>

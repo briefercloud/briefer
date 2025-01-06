@@ -165,12 +165,13 @@ function PrivateDocumentPageInner(
   }, [setSelectedSidebar])
 
   const router = useRouter()
+  const shareLinkWithoutSidebar = props.document.shareLinksWithoutSidebar
   const copyLink = useMemo(
     () =>
       `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${props.workspaceId}/documents/${
         props.documentId
-      }`,
-    [router]
+      }/notebook${shareLinkWithoutSidebar ? `?sidebarCollapsed=true` : ''}`,
+    [props.workspaceId, props.documentId, shareLinkWithoutSidebar]
   )
 
   const isViewer = props.user.roles[props.workspaceId] === 'viewer'

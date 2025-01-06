@@ -58,17 +58,17 @@ function PrivateDocumentPage(props: PrivateDocumentPageProps) {
 
     if (document.publishedAt === null) {
       router.replace(
-        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook/edit`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook/edit${location.search}`
       )
     }
 
     if (document.hasDashboard) {
       router.replace(
-        `/workspaces/${props.workspaceId}/documents/${props.documentId}/dashboard`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/dashboard${location.search}`
       )
     } else {
       router.replace(
-        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook${location.search}`
       )
     }
   }, [document, loading, props.workspaceId, props.documentId, props.user])
