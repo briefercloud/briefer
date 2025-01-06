@@ -105,230 +105,248 @@ export const OnboardingTutorial = () => {
         </>
       }
     >
-      <TutorialStep
-        name={'Connect a data source'}
-        description={
-          <>
-            <p>
-              {
-                "You can connect a database in the 'data sources' page at the bottom left corner."
-              }
-            </p>
-            <p>
-              {
-                'When adding a data source, pick your database type, and enter the connection details.'
-              }
-            </p>
-          </>
-        }
-        status={tutorialState.stepStates['connectDataSource']}
-        isExpanded={expandedStep.get('connectDataSource') ?? false}
-        onExpand={() => toggleExpanded('connectDataSource')}
-      >
-        <TutorialStepAction
-          label="Add a data source"
-          onClick={() => {
-            router.push(`/workspaces/${workspaceId}/data-sources/new`)
-          }}
-        />
-        {/* TODO: Deactivated on open-source
+      {({ isTutorialExpanded }) => (
+        <>
+          <TutorialStep
+            name={'Connect a data source'}
+            description={
+              <>
+                <p>
+                  {
+                    "You can connect a database in the 'data sources' page at the bottom left corner."
+                  }
+                </p>
+                <p>
+                  {
+                    'When adding a data source, pick your database type, and enter the connection details.'
+                  }
+                </p>
+              </>
+            }
+            status={tutorialState.stepStates['connectDataSource']}
+            isExpanded={expandedStep.get('connectDataSource') ?? false}
+            onExpand={() => toggleExpanded('connectDataSource')}
+            isTutorialExpanded={isTutorialExpanded}
+            isLast={false}
+          >
+            <TutorialStepAction
+              label="Add a data source"
+              onClick={() => {
+                router.push(`/workspaces/${workspaceId}/data-sources/new`)
+              }}
+            />
+            {/* TODO: Deactivated on open-source
         <TutorialStepAction
           label="I'll use the demo data source"
           onClick={() => {}}
         />
         */}
-      </TutorialStep>
+          </TutorialStep>
 
-      <TutorialStep
-        name={'Run a query'}
-        description={
-          <>
-            <p>
-              {
-                "Add a query block to a page, select the data source you've just connected, and write your query."
-              }
-            </p>
-            <p>Then, press the run button to see the results.</p>
-          </>
-        }
-        status={tutorialState.stepStates['runQuery']}
-        isExpanded={expandedStep.get('runQuery') ?? false}
-        onExpand={() => toggleExpanded('runQuery')}
-      >
-        <TutorialStepAction
-          label="Add a query block"
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
-              setSelector('#last-plus-button')
-            }, 0)
-          }}
-          hidden={!isWithinDocumentPage}
-        />
-      </TutorialStep>
-
-      <TutorialStep
-        name={'Run some Python code'}
-        description={
-          <>
-            <p>
-              Add a Python block, write some code, and press the run button.
-            </p>
-            {
-              "Tip: you can manipulate query results with Python. Briefer puts every query's result into variable containing a Pandas Data Frame."
+          <TutorialStep
+            name={'Run a query'}
+            description={
+              <>
+                <p>
+                  {
+                    "Add a query block to a page, select the data source you've just connected, and write your query."
+                  }
+                </p>
+                <p>Then, press the run button to see the results.</p>
+              </>
             }
-          </>
-        }
-        status={tutorialState.stepStates['runPython']}
-        isExpanded={expandedStep.get('runPython') ?? false}
-        onExpand={() => toggleExpanded('runPython')}
-      >
-        <TutorialStepAction
-          label="Add a Python block"
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
-              setSelector('#last-plus-button')
-            }, 0)
-          }}
-          hidden={!isWithinDocumentPage}
-        />
-      </TutorialStep>
+            status={tutorialState.stepStates['runQuery']}
+            isExpanded={expandedStep.get('runQuery') ?? false}
+            onExpand={() => toggleExpanded('runQuery')}
+            isLast={false}
+            isTutorialExpanded={isTutorialExpanded}
+          >
+            <TutorialStepAction
+              label="Add a query block"
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+                  setSelector('#last-plus-button')
+                }, 0)
+              }}
+              hidden={!isWithinDocumentPage}
+            />
+          </TutorialStep>
 
-      <TutorialStep
-        name={'Create a visualization'}
-        description={
-          <>
-            <p>
-              Add a visualization block to your page, select the data frame from
-              your query, and choose the visualization type.
-            </p>
-            <p>Then pick what goes on the x and y axis to see a graph.</p>
-          </>
-        }
-        status={tutorialState.stepStates['createVisualization']}
-        isExpanded={expandedStep.get('createVisualization') ?? false}
-        onExpand={() => toggleExpanded('createVisualization')}
-      >
-        <TutorialStepAction
-          label="Add a visualization block"
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
-              setSelector('#last-plus-button')
-            }, 0)
-          }}
-        />
-      </TutorialStep>
+          <TutorialStep
+            name={'Run some Python code'}
+            description={
+              <>
+                <p>
+                  Add a Python block, write some code, and press the run button.
+                </p>
+                {
+                  "Tip: you can manipulate query results with Python. Briefer puts every query's result into variable containing a Pandas Data Frame."
+                }
+              </>
+            }
+            status={tutorialState.stepStates['runPython']}
+            isExpanded={expandedStep.get('runPython') ?? false}
+            onExpand={() => toggleExpanded('runPython')}
+            isLast={false}
+            isTutorialExpanded={isTutorialExpanded}
+          >
+            <TutorialStepAction
+              label="Add a Python block"
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+                  setSelector('#last-plus-button')
+                }, 0)
+              }}
+              hidden={!isWithinDocumentPage}
+            />
+          </TutorialStep>
 
-      <TutorialStep
-        name={'Publish a dashboard'}
-        description={
-          <>
-            <p>
-              {
-                'Switch to the dashboard view using the button at the top right corner.'
-              }
-            </p>
-            <p>
-              {
-                "Then, drag and drop your notebook's blocks to create a dashboard."
-              }
-            </p>
-            <p>
-              {
-                " When you're done, click the 'publish' button to save your dashboard."
-              }
-            </p>
-          </>
-        }
-        status={tutorialState.stepStates['publishDashboard']}
-        isExpanded={expandedStep.get('publishDashboard') ?? false}
-        onExpand={() => toggleExpanded('publishDashboard')}
-      >
-        <TutorialStepAction
-          label="Switch to dashboard view"
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
-              setSelector('#dashboard-view-button')
-            }, 0)
-          }}
-        />
-        <TutorialStepAction
-          hidden={!router.pathname.endsWith('/dashboard/edit')}
-          label="Publish the dashboard"
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
-              setSelector('#dashboard-publish-button')
-            }, 0)
-          }}
-        />
-      </TutorialStep>
+          <TutorialStep
+            name={'Create a visualization'}
+            description={
+              <>
+                <p>
+                  Add a visualization block to your page, select the data frame
+                  from your query, and choose the visualization type.
+                </p>
+                <p>Then pick what goes on the x and y axis to see a graph.</p>
+              </>
+            }
+            status={tutorialState.stepStates['createVisualization']}
+            isExpanded={expandedStep.get('createVisualization') ?? false}
+            onExpand={() => toggleExpanded('createVisualization')}
+            isLast={false}
+            isTutorialExpanded={isTutorialExpanded}
+          >
+            <TutorialStepAction
+              label="Add a visualization block"
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+                  setSelector('#last-plus-button')
+                }, 0)
+              }}
+            />
+          </TutorialStep>
 
-      <TutorialStep
-        name={'Invite team members'}
-        description={
-          <>
-            <p>
-              {
-                "Add users by accessing the users page and clicking the 'add user' button on the top right corner."
-              }
-            </p>
-            <p>
-              {
-                "Every time you add a user, we'll generate a random password for them. Once they log in, they can change it."
-              }
-            </p>
-          </>
-        }
-        status={tutorialState.stepStates['inviteTeamMembers']}
-        isExpanded={expandedStep.get('inviteTeamMembers') ?? false}
-        onExpand={() => toggleExpanded('inviteTeamMembers')}
-      >
-        <TutorialStepAction
-          label="Add a new user"
-          hidden={router.pathname.endsWith('/users/new')}
-          onClick={() => {
-            // TODO we need a setTimeout here because otherwise the listener
-            // within the tour highlight provider will trigger before the
-            // element is rendered and will dismiss the tour
-            setTimeout(() => {
-              setTourActive(true)
+          <TutorialStep
+            name={'Publish a dashboard'}
+            description={
+              <>
+                <p>
+                  {
+                    'Switch to the dashboard view using the button at the top right corner.'
+                  }
+                </p>
+                <p>
+                  {
+                    "Then, drag and drop your notebook's blocks to create a dashboard."
+                  }
+                </p>
+                <p>
+                  {
+                    " When you're done, click the 'publish' button to save your dashboard."
+                  }
+                </p>
+              </>
+            }
+            status={tutorialState.stepStates['publishDashboard']}
+            isExpanded={expandedStep.get('publishDashboard') ?? false}
+            onExpand={() => toggleExpanded('publishDashboard')}
+            isLast={false}
+            isTutorialExpanded={isTutorialExpanded}
+          >
+            <TutorialStepAction
+              label="Switch to dashboard view"
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+                  setSelector('#dashboard-view-button')
+                }, 0)
+              }}
+            />
+            <TutorialStepAction
+              hidden={!router.pathname.endsWith('/dashboard/edit')}
+              label="Publish the dashboard"
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+                  setSelector('#dashboard-publish-button')
+                }, 0)
+              }}
+            />
+          </TutorialStep>
 
-              if (router.pathname.endsWith('/users')) {
-                setSelector('#add-user-button')
-              } else {
-                setSelector('#users-sidebar-item')
-              }
-            }, 0)
-          }}
-        />
-        {/* TODO on cloud we must also have an action item for "allowAllFromDomain" */}
-      </TutorialStep>
+          <TutorialStep
+            name={'Invite team members'}
+            description={
+              <>
+                <p>
+                  {
+                    "Add users by accessing the users page and clicking the 'add user' button on the top right corner."
+                  }
+                </p>
+                <p>
+                  {
+                    "Every time you add a user, we'll generate a random password for them. Once they log in, they can change it."
+                  }
+                </p>
+              </>
+            }
+            status={tutorialState.stepStates['inviteTeamMembers']}
+            isExpanded={expandedStep.get('inviteTeamMembers') ?? false}
+            onExpand={() => toggleExpanded('inviteTeamMembers')}
+            isLast={false}
+            isTutorialExpanded={isTutorialExpanded}
+          >
+            <TutorialStepAction
+              label="Add a new user"
+              hidden={router.pathname.endsWith('/users/new')}
+              onClick={() => {
+                // TODO we need a setTimeout here because otherwise the listener
+                // within the tour highlight provider will trigger before the
+                // element is rendered and will dismiss the tour
+                setTimeout(() => {
+                  setTourActive(true)
+
+                  if (router.pathname.endsWith('/users')) {
+                    setSelector('#add-user-button')
+                  } else {
+                    setSelector('#users-sidebar-item')
+                  }
+                }, 0)
+              }}
+            />
+            {/* TODO on cloud we must also have an action item for "allowAllFromDomain" */}
+          </TutorialStep>
+        </>
+      )}
     </Tutorial>
   )
 }
 
 type TutorialProps = {
   name: string
-  children:
+  children: (props: {
+    isTutorialExpanded: boolean
+  }) =>
     | React.ReactElement<TutorialStepProps>
     | React.ReactElement<TutorialStepProps>[]
   onAdvanceTutorial: () => void
@@ -384,11 +402,7 @@ export const Tutorial = (props: TutorialProps) => {
       >
         <div className={clsx('h-72 overflow-auto')}>
           <div className="flex flex-col gap-y-4 p-4">
-            {React.Children.map(props.children, (child, index) => {
-              return React.cloneElement(child, {
-                isLast: index === React.Children.count(props.children) - 1,
-              })
-            })}
+            {props.children({ isTutorialExpanded: !isCollapsed })}
           </div>
         </div>
         <div className="w-full bg-gray-50 p-2 flex items-center justify-center gap-x-2 border-t border-gray-200">
@@ -473,7 +487,8 @@ type TutorialStepProps = {
   status: TutorialStepStatus
   isExpanded: boolean
   onExpand: () => void
-  isLast?: boolean
+  isLast: boolean
+  isTutorialExpanded: boolean
   children?:
     | React.ReactElement<TutorialStepActionProps>
     | React.ReactElement<TutorialStepActionProps>[]
@@ -484,7 +499,7 @@ const TutorialStep = (props: TutorialStepProps) => {
 
   // focus on the current step when it changes
   useEffect(() => {
-    if (props.status === 'current') {
+    if (props.status === 'current' && props.isTutorialExpanded) {
       const stepElement = stepRef.current
       const clock = setTimeout(
         () =>
@@ -500,7 +515,7 @@ const TutorialStep = (props: TutorialStepProps) => {
         clearTimeout(clock)
       }
     }
-  }, [props.status])
+  }, [props.status, props.isTutorialExpanded])
 
   return (
     <li className="relative flex gap-x-2" ref={stepRef}>
