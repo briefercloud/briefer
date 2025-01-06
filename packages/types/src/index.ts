@@ -1190,7 +1190,6 @@ export enum ElementType {
   BlockGroup = 'BLOCK_GROUP',
 }
 
-export type TutorialStepStatus = 'current' | 'completed' | 'upcoming'
 export const OnboardingTutorialStep = z.enum([
   'connectDataSource',
   'runQuery',
@@ -1199,7 +1198,6 @@ export const OnboardingTutorialStep = z.enum([
   'publishDashboard',
   'inviteTeamMembers',
 ])
-
 export type OnboardingTutorialStep = z.infer<typeof OnboardingTutorialStep>
 
 export const TutorialStepStatus = z.enum(['current', 'completed', 'upcoming'])
