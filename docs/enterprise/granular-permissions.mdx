@@ -1,0 +1,51 @@
+---
+title: Granular permissions
+description: Manage permissions on a per-page basis.
+icon: users-viewfinder
+---
+
+Briefer's enterprise plan allows you to manage permissions on a per-page basis. This way, you can control who can view, edit, and own each page in your workspace.
+
+Let's say you have a page called "Financial Report" that you only want your finance team to view, for example. In that case, you can create a group called "Finance Team" and assign the finance team members to that group.
+
+Then, within the page share settings, you can add the "Finance Team" group and give them the "View" permission. This way, only the finance team members will be able to view the "Financial Report" page.
+
+Later, if you want a particular data scientist to edit the page, you can add just that user to the page share settings and give them the "Edit" permission.
+
+<Note>
+  Granular permissions are only available on Briefer's enterprise plan.
+</Note>
+
+## Managing a page's permissions
+
+You can manage a page's permissions by clicking on the "Share" button at the top right of the page. This will open a dialog where you can add users and groups and set whether they can view, edit, or own the page.
+
+## Permission levels
+
+Briefer has three permission levels:
+
+- **View**: Users with this permission can view the page but cannot edit it.
+- **Edit**: Users with this permission can view and edit the page.
+- **Own**: Owners can view, edit, and manage the page's permissions.
+
+**If you add both a user and a group to which the user belongs to the page, the most specific permission will be applied (the individual user's permission).**
+
+For example, if user John Doe is part of the "Finance Team" group and you give the "Finance Team" group the "View" permission, but you give John Doe the "Edit" permission, John Doe will have the "Edit" permission.
+
+## Inheriting permissions
+
+By default, pages inherit permissions from their parent page. This means that if you set permissions on a parent page, all child pages will inherit those permissions unless you explicitly set different permissions on the child page.
+
+This is useful for when you want to create directories of pages with the same permissions.
+
+For example, if you set the "Finance Team" group to have the "View" permission on the "Financial Reports" page, all child pages of "Financial Reports" will also have the "View" permission for the "Finance Team" group.
+
+If you later change the permissions on a particular child so that the "Finance Team" group has the "Edit" permission, the Finance Team will have the "Edit" permission only on that child page.
+
+## Creating and managing groups
+
+You can create groups by accessing the "Users" page in the bottom left corner of Briefer's interface. Then, click on the "Groups" button on the top right and click the "Create group" button.
+
+When creating a group, you can choose its name, icon, and add users to it.
+
+As you add users to the group, you can configure whether that user is an owner of the group or just a member. That's important because owners can manage the group's name, icon, and who belongs to their group.

@@ -93,7 +93,7 @@
     },
     {
       "group": "Enterprise",
-      "pages": ["enterprise/sso-self-hosted"]
+      "pages": ["enterprise/sso-self-hosted", "enterprise/granular-permissions"]
     }
   ],
   "footerSocials": {
