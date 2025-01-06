@@ -30,7 +30,8 @@ const useTutorial = (
     () => ({
       id: '',
       isCompleted: false,
-      isDismissed: false,
+      // This is true so that workspaces without tutorial don't show the tutorial
+      isDismissed: true,
       stepStates: defaultStepStates,
     }),
     [defaultStepStates]
