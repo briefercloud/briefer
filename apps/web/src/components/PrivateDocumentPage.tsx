@@ -170,16 +170,8 @@ function PrivateDocumentPageInner(
     () =>
       `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${props.workspaceId}/documents/${
         props.documentId
-      }/notebook${props.isApp ? '' : '/edit'}${
-        shareLinkWithoutSidebar ? `?sidebarCollapsed=true` : ''
-      }`,
-    [
-      router,
-      props.workspaceId,
-      props.documentId,
-      props.isApp,
-      shareLinkWithoutSidebar,
-    ]
+      }/notebook${shareLinkWithoutSidebar ? `?sidebarCollapsed=true` : ''}`,
+    [props.workspaceId, props.documentId, shareLinkWithoutSidebar]
   )
 
   const isViewer = props.user.roles[props.workspaceId] === 'viewer'

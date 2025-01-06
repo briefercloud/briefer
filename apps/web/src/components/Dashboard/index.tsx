@@ -91,15 +91,8 @@ export default function Dashboard(props: Props) {
     () =>
       `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${
         props.document.workspaceId
-      }/documents/${props.document.id}/dashboard${
-        props.isEditing ? '/edit' : ''
-      }${shareLinkWithoutSidebar ? '?sidebarCollapsed=true' : ''}`,
-    [
-      props.document.workspaceId,
-      props.document.id,
-      props.isEditing,
-      shareLinkWithoutSidebar,
-    ]
+      }/documents/${props.document.id}/dashboard${shareLinkWithoutSidebar ? '?sidebarCollapsed=true' : ''}`,
+    [props.document.workspaceId, props.document.id, shareLinkWithoutSidebar]
   )
 
   const documentTitle = useMemo(

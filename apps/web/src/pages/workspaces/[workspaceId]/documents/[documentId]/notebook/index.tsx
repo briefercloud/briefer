@@ -48,7 +48,7 @@ function Notebook(props: Props) {
 
     if (document.publishedAt === null) {
       router.replace(
-        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook/edit`
+        `/workspaces/${props.workspaceId}/documents/${props.documentId}/notebook/edit${location.search}`
       )
     }
   }, [document, loading, props.user])
