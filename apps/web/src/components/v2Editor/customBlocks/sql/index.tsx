@@ -629,50 +629,71 @@ function SQLBlock(props: Props) {
             >
               <div className="flex justify-between text-xs">
                 <div className="flex items-center">{queryStatusText}</div>
-                {!props.isPublicMode &&
-                  aiSuggestions === null &&
-                  props.isEditable &&
-                  !isAIFixing && (
-                    <button
-                      disabled={!props.isEditable}
-                      onClick={onToggleEditWithAIPromptOpen}
-                      className={clsx(
-                        !props.isEditable || !hasOaiKey
-                          ? 'cursor-not-allowed bg-gray-200'
-                          : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                        'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
-                      )}
-                    >
-                      <SparklesIcon className="w-3 h-3" />
-
-                      <span>Edit with AI</span>
-                      <div
+                <div className="flex items-center gap-x-2">
+                  {!props.isPublicMode &&
+                    aiSuggestions === null &&
+                    props.isEditable &&
+                    !isAIFixing &&
+                    headerSelectValue !== 'duckdb' && (
+                      <button
+                        onClick={onSchemaExplorer}
                         className={clsx(
-                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
-                          hasOaiKey ? 'w-28' : 'w-40'
+                          !props.isEditable
+                            ? 'cursor-not-allowed bg-gray-200'
+                            : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                          'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
                         )}
                       >
-                        <span>
-                          {hasOaiKey
-                            ? 'Open AI edit form'
-                            : 'Missing OpenAI API key'}
-                        </span>
-                        <span className="inline-flex gap-x-1 items-center text-gray-400">
-                          {hasOaiKey ? (
-                            <>
-                              <span>⌘</span>
-                              <span>+</span>
-                              <span>e</span>
-                            </>
-                          ) : (
-                            <span>
-                              Admins can add an OpenAI key in settings.
-                            </span>
+                        <BookOpenIcon className="w-3 h-3" />
+                        <span>Schema</span>
+                      </button>
+                    )}
+
+                  {!props.isPublicMode &&
+                    aiSuggestions === null &&
+                    props.isEditable &&
+                    !isAIFixing && (
+                      <button
+                        disabled={!props.isEditable}
+                        onClick={onToggleEditWithAIPromptOpen}
+                        className={clsx(
+                          !props.isEditable || !hasOaiKey
+                            ? 'cursor-not-allowed bg-gray-200'
+                            : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                          'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
+                        )}
+                      >
+                        <SparklesIcon className="w-3 h-3" />
+
+                        <span>Edit with AI</span>
+                        <div
+                          className={clsx(
+                            'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
+                            hasOaiKey ? 'w-28' : 'w-40'
                           )}
-                        </span>
-                      </div>
-                    </button>
-                  )}
+                        >
+                          <span>
+                            {hasOaiKey
+                              ? 'Open AI edit form'
+                              : 'Missing OpenAI API key'}
+                          </span>
+                          <span className="inline-flex gap-x-1 items-center text-gray-400">
+                            {hasOaiKey ? (
+                              <>
+                                <span>⌘</span>
+                                <span>+</span>
+                                <span>e</span>
+                              </>
+                            ) : (
+                              <span>
+                                Admins can add an OpenAI key in settings.
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </button>
+                    )}
+                </div>
               </div>
             </div>
           )}
@@ -750,20 +771,6 @@ function SQLBlock(props: Props) {
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
         />
-
-        {((result && !isResultHidden) || !isCodeHidden) && (
-          <button
-            className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
-            onClick={onSchemaExplorer}
-          >
-            <BookOpenIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-            <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
-              <span className="inline-flex items-center text-gray-400">
-                Explore schema of selected data source.
-              </span>
-            </div>
-          </button>
-        )}
 
         {((result && !isResultHidden) || !isCodeHidden) && (
           <SaveReusableComponentButton
