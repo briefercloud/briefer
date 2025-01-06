@@ -304,11 +304,8 @@ export default function Layout({
     <div className={`flex w-full h-full ${syne.className}`}>
       <MobileWarning />
 
-<<<<<<< HEAD
       <DragLayer />
 
-=======
->>>>>>> f419df71 (reposition tutorial depending on user's page)
       <CommandPalette
         workspaceId={workspaceId}
         isOpen={isSearchOpen}
