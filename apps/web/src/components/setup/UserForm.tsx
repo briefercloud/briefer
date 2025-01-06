@@ -214,7 +214,9 @@ function UserSetupForm(props: Props) {
                 placeholder="Twitter, LinkedIn, HackerNews, content creator, etc..."
                 {...props.register('source', {
                   required: {
-                    value: true,
+                    value: !(
+                      properties.data?.disabledAnonymousTelemetry ?? false
+                    ),
                     message: "We'd love to know how you found us",
                   },
                 })}
