@@ -135,12 +135,6 @@ export const OnboardingTutorial = () => {
                 router.push(`/workspaces/${workspaceId}/data-sources/new`)
               }}
             />
-            {/* TODO: Deactivated on open-source
-        <TutorialStepAction
-          label="I'll use the demo data source"
-          onClick={() => {}}
-        />
-        */}
           </TutorialStep>
 
           <TutorialStep
@@ -256,7 +250,7 @@ export const OnboardingTutorial = () => {
                 </p>
                 <p>
                   {
-                    " When you're done, click the 'publish' button to save your dashboard."
+                    "When you're done, click the 'publish' button to save your dashboard."
                   }
                 </p>
               </>
@@ -334,7 +328,6 @@ export const OnboardingTutorial = () => {
                 }, 0)
               }}
             />
-            {/* TODO on cloud we must also have an action item for "allowAllFromDomain" */}
           </TutorialStep>
         </>
       )}
