@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: 'briefer'
       POSTGRES_USER: ${POSTGRES_USERNAME:?error}

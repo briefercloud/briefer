@@ -107,8 +107,10 @@ def generate_jupyter_config():
     }
     with open(fpath, "w") as f:
         json.dump(cfg, f, indent=4)
-    os.chown(fpath, pwd.getpwnam("jupyteruser").pw_uid, grp.getgrnam("jupyteruser").gr_gid)
-    os.chmod(fpath, 0o700)
+
+    # recursively chown jupyteruser home directory
+    os.system(f"chown -R jupyteruser:jupyteruser /home/jupyteruser")
+    os.system(f"chmod -R 700 /home/jupyteruser")
 
 def setup_jupyter():
     generate_jupyter_config()

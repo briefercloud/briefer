@@ -13,3 +13,5 @@ if [ ! -f /var/lib/postgresql/data/.init ]; then
   psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE briefer TO briefer;"
   touch /var/lib/postgresql/data/.init
 fi
+
+psql -U postgres -d briefer -c "CREATE EXTENSION IF NOT EXISTS vector;"

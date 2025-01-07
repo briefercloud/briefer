@@ -10,10 +10,11 @@ import {
   updateSQLAISuggestions,
 } from '@briefer/editor'
 import * as Y from 'yjs'
-import {
+import prisma, {
   listDataSources,
   getWorkspaceWithSecrets,
   DataSource,
+  decrypt,
 } from '@briefer/database'
 import { logger } from '../../../../logger.js'
 import { sqlEditStreamed } from '../../../../ai-api.js'
@@ -24,7 +25,10 @@ import {
   fetchDataSourceStructureFromCache,
   listSchemaTables,
 } from '../../../../datasources/structure.js'
-import { DataSourceStructureStateV3 } from '@briefer/types'
+import { DataSourceStructureStateV3, uuidSchema } from '@briefer/types'
+import { createEmbedding } from '../../../../embedding.js'
+import { config } from '../../../../config/index.js'
+import { z } from 'zod'
 
 async function editWithAI(
   workspaceId: string,
@@ -70,7 +74,12 @@ async function editWithAI(
     dataSource.data.id,
     dataSource.type
   )
-  const tableInfo = await tableInfoFromStructure(dataSource, structure)
+  const tableInfo = await retrieveTableInfoForQuestion(
+    dataSource,
+    structure,
+    instructions,
+    workspace?.secrets?.openAiApiKey ?? null
+  )
 
   event(assistantModelId)
 
@@ -110,6 +119,47 @@ async function editWithAI(
   )
 }
 
+async function retrieveTableInfoForQuestion(
+  datasource: DataSource,
+  structure: DataSourceStructureStateV3 | null,
+  question: string,
+  openAiApiKey: string | null
+): Promise<string | null> {
+  if (!structure || !openAiApiKey) {
+    return tableInfoFromStructure(datasource, structure)
+  }
+
+  const questionEmbedding = await createEmbedding(
+    question,
+    decrypt(openAiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
+  )
+
+  const raw = await prisma()
+    .$queryRaw`SELECT t.id, t.embedding <=> ${questionEmbedding}::vector AS distance FROM "DataSourceSchemaTable" t INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId" WHERE s.id = ${structure.id}::uuid ORDER BY distance LIMIT 30`
+
+  const result = z.array(z.object({ id: uuidSchema })).parse(raw)
+
+  const tables = await prisma().dataSourceSchemaTable.findMany({
+    where: {
+      id: { in: result.map((r) => r.id) },
+    },
+  })
+
+  let tableInfo = ''
+  for (const table of tables) {
+    tableInfo += `${table.schema}.${table.name}\n`
+    const columns = z
+      .array(z.object({ name: z.string(), type: z.string() }))
+      .parse(table.columns)
+    for (const column of columns) {
+      tableInfo += `${column.name} ${column.type}\n`
+    }
+    tableInfo += '\n'
+  }
+
+  return tableInfo.trim()
+}
+
 async function tableInfoFromStructure(
   config: DataSource,
   structure: DataSourceStructureStateV3 | null
@@ -121,8 +171,8 @@ async function tableInfoFromStructure(
   let result = ''
   for await (const schemaTable of listSchemaTables([{ config, structure }])) {
     result += `${schemaTable.schemaName}.${schemaTable.tableName}\n`
-    for (const columns of schemaTable.table.columns) {
-      result += `${columns.name} ${columns.type}\n`
+    for (const column of schemaTable.table.columns) {
+      result += `${column.name} ${column.type}\n`
     }
     result += '\n'
   }

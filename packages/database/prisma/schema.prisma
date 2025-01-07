@@ -367,6 +367,7 @@ model DataSourceSchemaTable {
   schema             String
   columns            Json
   dataSourceSchemaId String @db.Uuid
+  embedding          Unsupported("vector")?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -670,4 +671,16 @@ model OnboardingTutorial {
   isDismissed Boolean                @default(false)
 
   @@unique([workspaceId])
+}
+
+model EmbeddingCache {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  inputChecksum String
+  model         String
+  embedding     Unsupported("vector")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([inputChecksum, model], map: "unique_inputChecksum_model")
 }
