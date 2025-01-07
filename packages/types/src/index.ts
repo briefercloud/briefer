@@ -209,7 +209,7 @@ export type DataFrameNumberColumn = z.infer<typeof DataFrameNumberColumn>
 export const DataFrameStringColumn = z.object({
   name: z.union([z.string(), z.number()]),
   type: NumpyStringTypes.or(NumpyJsonTypes),
-  categories: z.array(z.string().or(z.number())).optional(),
+  categories: z.array(z.string().or(z.number()).or(z.boolean())).optional(),
 })
 export type DataFrameStringColumn = z.infer<typeof DataFrameStringColumn>
 
