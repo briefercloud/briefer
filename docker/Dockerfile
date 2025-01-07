@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     python3-dev \
     postgresql \
+    postgresql-common \
     postgresql-contrib \
     nginx \
     sudo \
@@ -26,6 +27,14 @@ RUN apt-get update && apt-get install -y \
     libaio1 \
     gcc \
     alien && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Set environment variable to skip the user prompt
+ENV DEBIAN_FRONTEND=noninteractive
+# Enable the PostgreSQL APT repository
+RUN /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+# Install the pgvector extension for PostgreSQL
+RUN apt-get update && apt-get install -y postgresql-15-pgvector && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 #### ORACLE INSTANT CLIENT ####
