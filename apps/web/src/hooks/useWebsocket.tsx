@@ -25,8 +25,20 @@ export function WebsocketProvider({ children }: Props) {
       })
       setSocket(socket)
 
+      const onDisconnect = (reason: Socket.DisconnectReason) => {
+        if (reason === 'io server disconnect') {
+          // the disconnection was initiated by the server,
+          // we need to reconnect manually in this case
+          setTimeout(() => {
+            socket.connect()
+          }, 1000)
+        }
+      }
+      socket.on('disconnect', onDisconnect)
+
       return () => {
         console.log('disconnect!')
+        socket.off('disconnect', onDisconnect)
         socket.disconnect()
       }
     }
