@@ -1,8 +1,11 @@
 import {
   ExecutionQueueItem,
   ExecutionQueueItemVisualizationMetadata,
+  ExecutionQueueItemVisualizationV2Metadata,
   VisualizationBlock,
   getVisualizationAttributes,
+  getVisualizationV2Attributes,
+  VisualizationV2Block,
 } from '@briefer/editor'
 import * as Y from 'yjs'
 import { logger } from '../../../logger.js'
@@ -12,14 +15,18 @@ import {
   parseOrElse,
 } from '@briefer/types'
 import { createVisualization } from '../../../python/visualizations.js'
+import { createVisualizationV2 } from '../../../python/visualizations-v2.js'
 import { z } from 'zod'
 import { VisEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
 import { advanceTutorial } from '../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
+import { getJupyterManager } from '../../../jupyter/index.js'
+import { executeCode } from '../../../python/index.js'
 
 export type VisualizationEffects = {
   createVisualization: typeof createVisualization
+  createVisualizationV2: typeof createVisualizationV2
   advanceTutorial: typeof advanceTutorial
   broadcastTutorialStepStates: (
     workspaceId: string,
@@ -32,6 +39,12 @@ export interface IVisualizationExecutor {
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<VisualizationBlock>,
     metadata: ExecutionQueueItemVisualizationMetadata,
+    events: VisEvents
+  ): Promise<void>
+  runV2(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<VisualizationV2Block>,
+    metadata: ExecutionQueueItemVisualizationV2Metadata,
     events: VisEvents
   ): Promise<void>
 }
@@ -219,6 +232,72 @@ export class VisualizationExecutor implements IVisualizationExecutor {
     }
   }
 
+  public async runV2(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<VisualizationV2Block>,
+    _metadata: ExecutionQueueItemVisualizationV2Metadata,
+    events: VisEvents
+  ) {
+    try {
+      logger().trace(
+        {
+          sessionId: this.sessionId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId: block.getAttribute('id'),
+        },
+        'running visualization v2 block'
+      )
+
+      const attrs = getVisualizationV2Attributes(block)
+      if (!attrs.input.dataframeName) {
+        block.setAttribute('error', 'dataframe-not-set')
+        executionItem.setCompleted('error')
+        return
+      }
+
+      const dataframe = this.dataframes.get(attrs.input.dataframeName)
+      if (!dataframe) {
+        block.setAttribute('error', 'dataframe-not-found')
+        executionItem.setCompleted('error')
+        return
+      }
+
+      const { promise, abort } = await this.effects.createVisualizationV2(
+        this.workspaceId,
+        this.sessionId,
+        dataframe,
+        attrs.input,
+        getJupyterManager(),
+        executeCode
+      )
+
+      const result = await promise
+      events.visUpdate(attrs.input.chartType)
+
+      if (result.success) {
+        console.log(result.output)
+        block.setAttribute('output', result.output)
+      } else {
+      }
+      executionItem.setCompleted('success')
+    } catch (err) {
+      logger().error(
+        {
+          sessionId: this.sessionId,
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId: block.getAttribute('id'),
+          err,
+        },
+        'Failed to run visualization v2 block'
+      )
+
+      block.setAttribute('error', 'unknown')
+      executionItem.setCompleted('error')
+    }
+  }
+
   public static fromWSSharedDocV2(doc: WSSharedDocV2) {
     return new VisualizationExecutor(
       doc.id,
@@ -227,6 +306,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       doc.dataframes,
       {
         createVisualization,
+        createVisualizationV2,
         advanceTutorial,
         broadcastTutorialStepStates: (
           workspaceId: string,

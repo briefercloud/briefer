@@ -30,6 +30,7 @@ import { equals, omit } from 'ramda'
 import { uuidv4 } from 'lib0/random.js'
 import { WritebackBlock } from '@briefer/editor/types/blocks/writeback.js'
 import { acquireLock } from '../../lock.js'
+import { VisualizationV2Block } from '@briefer/editor/types/blocks/visualization-v2.js'
 
 export type LoadStateResult = {
   ydoc: Y.Doc
@@ -564,6 +565,7 @@ export class AppPersistor implements Persistor {
           },
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -579,6 +581,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: (nextBlock) => this.isSQLBlockAcceptable(prevBlock, nextBlock),
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -595,6 +598,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -610,6 +614,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: (nextBlock) =>
@@ -627,6 +632,24 @@ export class AppPersistor implements Persistor {
           onSQL: () => false,
           onVisualization: (nextBlock) =>
             this.isVisualizationBlockAcceptable(prevBlock, nextBlock),
+          onVisualizationV2: () => false,
+          onFileUpload: () => false,
+          onDashboardHeader: () => false,
+          onWriteback: () => false,
+          onPivotTable: () => false,
+        })
+      },
+      onVisualizationV2: (prevBlock) => {
+        return switchBlockType(nextBlock, {
+          onInput: () => false,
+          onDropdownInput: () => false,
+          onDateInput: () => false,
+          onPython: () => false,
+          onRichText: () => false,
+          onSQL: () => false,
+          onVisualization: () => false,
+          onVisualizationV2: (nextBlock) =>
+            this.isVisualizationV2BlockAcceptable(prevBlock, nextBlock),
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -643,6 +666,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -659,6 +683,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -680,6 +705,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -695,6 +721,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: (nextBlock) =>
             this.isFileUploadBlockAcceptable(prevBlock, nextBlock),
           onDashboardHeader: () => false,
@@ -711,6 +738,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: (nextBlock) =>
             this.isDashboardHeaderBlockAcceptable(prevBlock, nextBlock),
@@ -727,6 +755,7 @@ export class AppPersistor implements Persistor {
           onRichText: () => false,
           onSQL: () => false,
           onVisualization: () => false,
+          onVisualizationV2: () => false,
           onFileUpload: () => false,
           onDashboardHeader: () => false,
           onWriteback: () => false,
@@ -792,6 +821,16 @@ export class AppPersistor implements Persistor {
   private isVisualizationBlockAcceptable(
     prevBlock: Y.XmlElement<VisualizationBlock>,
     nextBlock: Y.XmlElement<VisualizationBlock>
+  ): boolean {
+    const prevAttributes = prevBlock.getAttributes()
+    const nextAttributes = nextBlock.getAttributes()
+
+    return equals(prevAttributes, nextAttributes)
+  }
+
+  private isVisualizationV2BlockAcceptable(
+    prevBlock: Y.XmlElement<VisualizationV2Block>,
+    nextBlock: Y.XmlElement<VisualizationV2Block>
   ): boolean {
     const prevAttributes = prevBlock.getAttributes()
     const nextAttributes = nextBlock.getAttributes()

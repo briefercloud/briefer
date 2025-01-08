@@ -34,6 +34,9 @@ import {
   ExecutionQueueItemWritebackMetadata,
   isWritebackBlock,
   isTextInputBlock,
+  ExecutionQueueItemVisualizationV2Metadata,
+  isVisualizationV2Block,
+  VisualizationV2Block,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -343,6 +346,9 @@ export class Executor {
       case 'visualization':
         await this.visExecutor.run(item, data.block, data.metadata, events)
         break
+      case 'visualization-v2':
+        await this.visExecutor.runV2(item, data.block, data.metadata, events)
+        break
       case 'text-input-save-value':
         await this.textInputExecutor.saveValue(item, data.block, data.metadata)
         break
@@ -469,6 +475,24 @@ export class Executor {
         }
 
         return { _tag: 'visualization', metadata, block }
+      }
+      case 'visualization-v2': {
+        if (!isVisualizationV2Block(block)) {
+          logger().error(
+            {
+              port: process.env['PORT'],
+              id: this.id,
+              docId: this.docId,
+              workspaceId: this.workspaceId,
+              documentId: this.documentId,
+              blockId: item.getBlockId(),
+            },
+            'Got wrong block type for visualization execution'
+          )
+          return null
+        }
+
+        return { _tag: 'visualization-v2', metadata, block }
       }
       case 'text-input-save-value':
       case 'text-input-rename-variable': {
@@ -617,6 +641,11 @@ type ExecutionItemData =
       _tag: 'visualization'
       metadata: ExecutionQueueItemVisualizationMetadata
       block: Y.XmlElement<VisualizationBlock>
+    }
+  | {
+      _tag: 'visualization-v2'
+      metadata: ExecutionQueueItemVisualizationV2Metadata
+      block: Y.XmlElement<VisualizationV2Block>
     }
   | {
       _tag: 'text-input-save-value'

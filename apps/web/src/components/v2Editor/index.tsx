@@ -99,6 +99,7 @@ import useEditorAwareness, {
   EditorAwarenessProvider,
 } from '@/hooks/useEditorAwareness'
 import { SQLExtensionProvider } from './CodeEditor/sql'
+import VisualizationV2Block from './customBlocks/visualizationV2'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -186,6 +187,7 @@ export function getTabIcon(
     case BlockType.Python:
       return CommandLineSmallIcon
     case BlockType.Visualization:
+    case BlockType.VisualizationV2:
       return ChartBarIcon
     case BlockType.Input:
       return PencilSquareIcon
@@ -1100,6 +1102,7 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.Visualization:
+          case BlockType.VisualizationV2:
             newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
@@ -1279,6 +1282,7 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.Visualization:
+          case BlockType.VisualizationV2:
             addGroupedBlock(
               layout.value,
               blocks.value,
@@ -1665,6 +1669,28 @@ function TabRef(props: TabRefProps) {
     ),
     onVisualization: (block) => (
       <VisualizationBlock
+        isPublicMode={props.isPublicViewer}
+        isEditable={props.isEditable}
+        document={props.document}
+        onAddGroupedBlock={props.addGroupedBlock}
+        block={block}
+        blocks={props.blocks}
+        dataframes={props.dataframes}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        isDashboard={false}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+      />
+    ),
+    onVisualizationV2: (block) => (
+      <VisualizationV2Block
         isPublicMode={props.isPublicViewer}
         isEditable={props.isEditable}
         document={props.document}

@@ -65,12 +65,20 @@ import {
   getPivotTableBlockExecutedAt,
   getPivotTableBlockResultStatus,
 } from './pivotTable.js'
+import {
+  duplicateVisualizationV2Block,
+  getVisualizationV2BlockErrorMessage,
+  getVisualizationV2BlockExecutedAt,
+  getVisualizationV2BlockResultStatus,
+  VisualizationV2Block,
+} from './visualization-v2.js'
 
 export enum BlockType {
   RichText = 'RICH_TEXT',
   SQL = 'SQL',
   Python = 'PYTHON',
   Visualization = 'VISUALIZATION',
+  VisualizationV2 = 'VISUALIZATION_V2',
   Input = 'INPUT',
   DropdownInput = 'DROPDOWN_INPUT',
   DateInput = 'DATE_INPUT',
@@ -101,6 +109,7 @@ export type Block =
   | DashboardHeaderBlock
   | WritebackBlock
   | PivotTableBlock
+  | VisualizationV2Block
 
 export type YBlock = Y.XmlElement<Block>
 
@@ -129,6 +138,7 @@ export const getResultStatus = (
     onPython: getPythonBlockResultStatus,
     onSQL: getSQLBlockResultStatus,
     onVisualization: getVisualizationBlockResultStatus,
+    onVisualizationV2: getVisualizationV2BlockResultStatus,
     onInput: (block) => getInputBlockResultStatus(block, blocks),
     onDropdownInput: (block) =>
       getDropdownInputBlockResultStatus(block, blocks),
@@ -149,6 +159,7 @@ export const getPrettyTitle = (type: BlockType): string => {
     case BlockType.Python:
       return 'Python'
     case BlockType.Visualization:
+    case BlockType.VisualizationV2:
       return 'Visualization'
     case BlockType.Input:
       return 'Input'
@@ -231,6 +242,7 @@ export function isExecutableBlock(block: YBlock): boolean {
     onPython: () => true,
     onSQL: () => true,
     onVisualization: () => true,
+    onVisualizationV2: () => true,
     onInput: () => true,
     onDropdownInput: () => true,
     onWriteback: () => true,
@@ -247,6 +259,7 @@ export function isInputBlock(block: YBlock): boolean {
     onPython: () => false,
     onSQL: () => false,
     onVisualization: () => false,
+    onVisualizationV2: () => false,
     onInput: () => true,
     onDropdownInput: () => true,
     onWriteback: () => false,
@@ -284,6 +297,8 @@ export function duplicateBlock(
     onSQL: (block) => duplicateSQLBlock(newBlockId, block, blocks, options),
     onPython: (block) => duplicatePythonBlock(newBlockId, block, options),
     onVisualization: (block) => duplicateVisualizationBlock(newBlockId, block),
+    onVisualizationV2: (block) =>
+      duplicateVisualizationV2Block(newBlockId, block),
     onInput: (block) => duplicateInputBlock(newBlockId, block, blocks),
     onDropdownInput: (block) =>
       duplicateDropdownInputBlock(newBlockId, block, blocks),
@@ -303,6 +318,7 @@ function getExecutedAt(block: YBlock, blocks: Y.Map<YBlock>): Date | null {
     onPython: (block) => getPythonBlockExecutedAt(block),
     onSQL: (block) => getSQLBlockExecutedAt(block, blocks),
     onVisualization: (block) => getVisualizationBlockExecutedAt(block),
+    onVisualizationV2: (block) => getVisualizationV2BlockExecutedAt(block),
     onInput: (block) => getInputBlockExecutedAt(block, blocks),
     onDropdownInput: (block) => getDropdownInputBlockExecutedAt(block, blocks),
     onWriteback: (block) => getWritebackBlockExecutedAt(block),
@@ -387,6 +403,7 @@ export function getErrorMessage(block: YBlock): string | null {
     onPython: getPythonBlockErrorMessage,
     onSQL: getSQLBlockErrorMessage,
     onVisualization: getVisualizationBlockErrorMessage,
+    onVisualizationV2: getVisualizationV2BlockErrorMessage,
     onWriteback: getWritebackBlockErrorMessage,
     onInput: () => null,
     onDropdownInput: () => null,
@@ -403,6 +420,7 @@ export const isRunnableBlock = <B extends YBlock>(block: B): boolean => {
     onPython: () => true,
     onSQL: () => true,
     onVisualization: () => true,
+    onVisualizationV2: () => true,
     onWriteback: () => true,
     onInput: () => true,
     onDropdownInput: () => true,
@@ -419,6 +437,7 @@ export * from './richText.js'
 export * from './sql.js'
 export * from './python.js'
 export * from './visualization.js'
+export * from './visualization-v2.js'
 export * from './input.js'
 export * from './dropdownInput.js'
 export * from './dateInput.js'

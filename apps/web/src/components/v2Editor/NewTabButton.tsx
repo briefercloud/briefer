@@ -40,7 +40,7 @@ const items: Item[] = [
   },
   {
     name: 'Visualization',
-    type: BlockType.Visualization,
+    type: BlockType.VisualizationV2,
     description: 'Add a graph to your page',
     icon: <ChartBarIcon width={18} height={18} />,
   },
@@ -111,14 +111,14 @@ function NewTabButton(props: Props) {
             props.lastBlockId,
             {
               type: item.type,
-              dataSourceId:
-                props.dataSources.get(0)?.config.data.id ?? null,
+              dataSourceId: props.dataSources.get(0)?.config.data.id ?? null,
               isFileDataSource: false,
             },
             'after'
           )
           break
         case BlockType.Visualization:
+        case BlockType.VisualizationV2:
           addGroupedBlock(
             props.layout,
             props.blocks,

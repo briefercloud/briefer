@@ -122,7 +122,7 @@ function BlockList(props: BlockListProps) {
     props.onAddBlock(BlockType.Python)
   }, [props.onAddBlock])
   const onAddVisualization = useCallback(() => {
-    props.onAddBlock(BlockType.Visualization)
+    props.onAddBlock(BlockType.VisualizationV2)
   }, [props.onAddBlock])
   const onAddPivotTable = useCallback(() => {
     props.onAddBlock(BlockType.PivotTable)

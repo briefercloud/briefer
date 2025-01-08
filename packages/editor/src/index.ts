@@ -24,6 +24,10 @@ import { YDashboardItem } from './dashboard.js'
 import { WritebackBlock } from './blocks/writeback.js'
 import { DateInputBlock, getDateInputAttributes } from './blocks/dateInput.js'
 import { PivotTableBlock } from './blocks/pivotTable.js'
+import {
+  getVisualizationV2Attributes,
+  VisualizationV2Block,
+} from './blocks/visualization-v2.js'
 
 export * from './operations/index.js'
 export * from './blocks/index.js'
@@ -165,6 +169,7 @@ ${attrs.variable} = pytz.timezone('${attrs.value.timezone}').localize(datetime.d
         },
         onRichText: () => {},
         onVisualization: () => {},
+        onVisualizationV2: () => {},
         onFileUpload: () => {},
         onDashboardHeader: () => {},
         onWriteback: () => {},
@@ -218,6 +223,12 @@ export function getLastUpdatedAt(doc: Y.Doc): string | null {
           lastUpdatedAt = updatedAt
         }
       },
+      onVisualizationV2: (block) => {
+        const output = getVisualizationV2Attributes(block).output
+        if (output && (!lastUpdatedAt || output.executedAt > lastUpdatedAt)) {
+          lastUpdatedAt = output.executedAt
+        }
+      },
       onRichText: () => {},
       onFileUpload: () => {},
       onDashboardHeader: () => {},
@@ -246,6 +257,7 @@ export function switchBlockType<T>(
     onSQL: (block: Y.XmlElement<SQLBlock>) => T
     onPython: (block: Y.XmlElement<PythonBlock>) => T
     onVisualization: (block: Y.XmlElement<VisualizationBlock>) => T
+    onVisualizationV2: (block: Y.XmlElement<VisualizationV2Block>) => T
     onInput: (block: Y.XmlElement<InputBlock>) => T
     onDropdownInput: (block: Y.XmlElement<DropdownInputBlock>) => T
     onDateInput: (block: Y.XmlElement<DateInputBlock>) => T
@@ -265,6 +277,10 @@ export function switchBlockType<T>(
       return handles.onPython(block as Y.XmlElement<PythonBlock>)
     case BlockType.Visualization:
       return handles.onVisualization(block as Y.XmlElement<VisualizationBlock>)
+    case BlockType.VisualizationV2:
+      return handles.onVisualizationV2(
+        block as Y.XmlElement<VisualizationV2Block>
+      )
     case BlockType.Input:
       return handles.onInput(block as Y.XmlElement<InputBlock>)
     case BlockType.DropdownInput:

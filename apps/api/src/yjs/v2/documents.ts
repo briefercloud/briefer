@@ -173,6 +173,7 @@ export async function duplicateDocument(
               onPython: (block) => block.getAttribute('componentId'),
               onRichText: () => null,
               onVisualization: () => null,
+              onVisualizationV2: () => null,
               onInput: () => null,
               onDropdownInput: () => null,
               onDateInput: () => null,
