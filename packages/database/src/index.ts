@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client'
 import { ITXClientDenyList } from '@prisma/client/runtime/library.js'
 import PQueue from 'p-queue'
 import pg from 'pg'
+import { z } from 'zod'
 
 export type {
   Document,
@@ -133,7 +134,7 @@ async function getPubSubClient(dbOptions: InitOptions): Promise<pg.Client> {
 
     pubSubClient.on('error', (err) => {
       console.error('Got an error from the PG pubSubClient', err)
-      reconnectPubSub()
+      reconnectPubSub({ retryForever: true })
     })
 
     return pubSubClient
@@ -210,7 +211,7 @@ export async function getPGInstance(): Promise<{
 }
 
 let reconnectingToPubSub = false
-async function reconnectPubSub() {
+async function reconnectPubSub({ retryForever }: { retryForever: boolean }) {
   if (!dbOptions) {
     throw new Error(
       'Unable to reconnect to PG PubSub because dbOptions is not set'
@@ -243,7 +244,15 @@ async function reconnectPubSub() {
       break
     } catch (err) {
       console.error('[reconnecting] Error reconnecting to PG:', err)
+      if (!retryForever) {
+        console.error(
+          '[reconnecting] Not retrying because retryForever is false'
+        )
+        break
+      }
+
       console.error('[reconnecting] Retrying in 1 second')
+
       await new Promise((resolve) => setTimeout(resolve, 1000))
     }
   }
@@ -270,19 +279,34 @@ export async function subscribe(
 
   // This ensures only one `LISTEN` setup happens at a time for this channel
   await queue.add(async () => {
-    const { pubSubClient } = await getPGInstance()
+    let retryOnNotConnected = true
+    while (true) {
+      const { pubSubClient } = await getPGInstance()
 
-    const subs = subscribers[channel]
-    if (subs) {
-      subs.add(onNotification)
-    } else {
+      const subs = subscribers[channel]
+      if (subs) {
+        subs.add(onNotification)
+        return
+      }
+
       subscribers[channel] = new Set([onNotification])
 
       try {
         await pubSubClient.query(`LISTEN ${JSON.stringify(channel)}`)
-      } catch (e) {
-        subscribers[channel].delete(onNotification)
-        throw e
+        break
+      } catch (err) {
+        if (
+          retryOnNotConnected &&
+          z.object({ message: z.literal('Not connected') }).safeParse(err)
+            .success
+        ) {
+          // try reconnecting and then retry once
+          await reconnectPubSub({ retryForever: false })
+          retryOnNotConnected = false
+        } else {
+          subscribers[channel].delete(onNotification)
+          throw err
+        }
       }
     }
   })
@@ -309,8 +333,26 @@ export async function subscribe(
 }
 
 export async function publish(channel: string, message: string): Promise<void> {
-  const { pubSubClient } = await getPGInstance()
-  await pubSubClient.query('SELECT pg_notify($1, $2)', [channel, message])
+  let retryOnNotConnected = true
+
+  while (true) {
+    const { pubSubClient } = await getPGInstance()
+    try {
+      await pubSubClient.query('SELECT pg_notify($1, $2)', [channel, message])
+      break
+    } catch (err) {
+      if (
+        retryOnNotConnected &&
+        z.object({ message: z.literal('Not connected') }).safeParse(err).success
+      ) {
+        // try reconnecting and then retry once
+        await reconnectPubSub({ retryForever: false })
+        retryOnNotConnected = false
+      } else {
+        throw err
+      }
+    }
+  }
 }
 
 export default prisma
