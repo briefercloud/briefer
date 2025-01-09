@@ -1,5 +1,15 @@
+import crypto from 'crypto'
 import * as services from '@jupyterlab/services'
-import { DataFrame, DataFrameColumn, Output } from '@briefer/types'
+import {
+  AggregateFunction,
+  ChartType,
+  DataFrame,
+  DataFrameColumn,
+  Output,
+  SeriesV2,
+  TimeUnit,
+  YAxisV2,
+} from '@briefer/types'
 import { createVisualizationV2 } from './visualizations-v2'
 import { JupyterManager } from '../jupyter/manager'
 import { getVar } from '../config'
@@ -8,15 +18,10 @@ import {
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
 } from '@briefer/editor'
-
-const manager = new JupyterManager(
-  'http',
-  'localhost',
-  8888,
-  getVar('JUPYTER_TOKEN')
-)
+import { IJupyterManager } from '../jupyter'
 
 async function getPythonRunner(
+  manager: IJupyterManager,
   workspaceId: string,
   sessionId: string
 ): Promise<{ dispose: () => Promise<void>; runPython: typeof executeCode }> {
@@ -100,10 +105,24 @@ async function getPythonRunner(
 }
 
 describe('.createVisualizationV2', () => {
+  let manager: IJupyterManager
   let pythonRunner: Awaited<ReturnType<typeof getPythonRunner>>
 
+  beforeAll(async () => {
+    manager = new JupyterManager(
+      'http',
+      'localhost',
+      8888,
+      getVar('JUPYTER_TOKEN')
+    )
+  })
+
+  afterAll(async () => {
+    await manager.stop()
+  })
+
   beforeEach(async () => {
-    pythonRunner = await getPythonRunner('workspaceId', 'sessionId')
+    pythonRunner = await getPythonRunner(manager, 'workspaceId', 'sessionId')
   })
 
   afterEach(async () => {
@@ -124,6 +143,7 @@ describe('.createVisualizationV2', () => {
           xAxisSort: 'ascending',
           xAxisGroupFunction: null,
           yAxes: [],
+          filters: [],
         },
         manager,
         pythonRunner.runPython
@@ -138,418 +158,182 @@ describe('.createVisualizationV2', () => {
 
   const code = `import pandas as pd
 df = pd.DataFrame({
-  'integers': [11, 12, 13, 21, 22, 33],
-  'datetimes': pd.to_datetime(['2021-01-01', '2021-01-02', '2021-01-03', '2021-02-01', '2021-03-02', '2021-03-03']),
+  'amount': [11, 12, 13, 21, 22, 33],
+  'price': [1.1, 1.2, 1.3, 2.1, 2.2, 3.3],
+  'datetime': pd.to_datetime(['2021-01-01', '2021-01-02', '2021-01-03', '2021-02-01', '2021-02-02', '2021-03-03']),
+  'fruit': ['apple', 'banana', 'pineapple', 'banana', 'apple', 'apple']
 })`
 
-  const integersDFColumn: DataFrameColumn = {
-    type: 'int',
-    name: 'integers',
+  const fruitDFColumn: DataFrameColumn = {
+    type: 'str',
+    name: 'fruit',
   }
 
-  const datetimesDFColumn: DataFrameColumn = {
+  const amountDFColumn: DataFrameColumn = {
+    type: 'int',
+    name: 'amount',
+  }
+
+  const priceDFColumn: DataFrameColumn = {
+    type: 'float',
+    name: 'price',
+  }
+
+  const datetimeDFColumn: DataFrameColumn = {
     type: 'datetime64',
-    name: 'datetimes',
+    name: 'datetime',
   }
 
   const df: DataFrame = {
     name: 'df',
-    columns: [integersDFColumn, datetimesDFColumn],
+    columns: [fruitDFColumn, amountDFColumn, priceDFColumn, datetimeDFColumn],
   }
 
-  const cases: {
-    name: string
-    input: VisualizationV2BlockInput
-    result: VisualizationV2BlockOutputResult
-  }[] = [
+  const chartTypeOptions: ChartType[] = [
+    'groupedColumn',
+    'stackedColumn',
+    'hundredPercentStackedColumn',
+    'line',
+    'area',
+    'hundredPercentStackedArea',
+    'scatterPlot',
+    // 'pie',
+    // 'histogram',
+    // 'trend',
+    // 'number',
+  ]
+  const xAxisOptions = [datetimeDFColumn, amountDFColumn]
+  const xAxisSortOptions = ['ascending' as const, 'descending' as const]
+  const xAxisGroupByOptions: (TimeUnit | null)[] = [
+    null,
+    'year',
+    'quarter',
+    'month',
+    'week',
+    'date',
+    'hours',
+    'minutes',
+    'seconds',
+  ]
+  const yAxisOptions = [
     {
-      name: 'datetime by integer groupedColumn',
-      input: {
-        dataframeName: 'df',
-        chartType: 'groupedColumn',
-        xAxis: datetimesDFColumn,
-        xAxisName: null,
-        xAxisSort: 'ascending',
-        xAxisGroupFunction: null,
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-              { datetimes: '2021-01-02T00:00:00', integers: 12 },
-              { datetimes: '2021-01-03T00:00:00', integers: 13 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-03-02T00:00:00', integers: 22 },
-              { datetimes: '2021-03-03T00:00:00', integers: 33 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'bar',
-            datasetIndex: 0,
-          },
-        ],
-      },
+      left: [amountDFColumn],
+      right: [],
     },
     {
-      name: 'integer by integer groupedColumn',
-      input: {
-        dataframeName: 'df',
-        chartType: 'groupedColumn',
-        xAxis: integersDFColumn,
-        xAxisName: null,
-        xAxisSort: 'ascending',
-        xAxisGroupFunction: null,
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['integers', 'integers'],
-            source: [
-              { integers: 11 },
-              { integers: 12 },
-              { integers: 13 },
-              { integers: 21 },
-              { integers: 22 },
-              { integers: 33 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'bar',
-            datasetIndex: 0,
-          },
-        ],
-      },
+      left: [amountDFColumn, priceDFColumn],
+      right: [],
     },
     {
-      name: 'datetime by integer group by month',
-      input: {
-        dataframeName: 'df',
-        chartType: 'groupedColumn',
-        xAxis: datetimesDFColumn,
-        xAxisName: null,
-        xAxisSort: 'ascending',
-        xAxisGroupFunction: 'month',
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-              { datetimes: '2021-01-01T00:00:00', integers: 12 },
-              { datetimes: '2021-01-01T00:00:00', integers: 13 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-03-01T00:00:00', integers: 22 },
-              { datetimes: '2021-03-01T00:00:00', integers: 33 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'bar',
-            datasetIndex: 0,
-          },
-        ],
-      },
-    },
-    {
-      name: 'datetime desc by integer groupedColumn',
-      input: {
-        dataframeName: 'df',
-        chartType: 'groupedColumn',
-        xAxis: datetimesDFColumn,
-        xAxisName: null,
-        xAxisSort: 'descending',
-        xAxisGroupFunction: null,
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-03-03T00:00:00', integers: 33 },
-              { datetimes: '2021-03-02T00:00:00', integers: 22 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-01-03T00:00:00', integers: 13 },
-              { datetimes: '2021-01-02T00:00:00', integers: 12 },
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'bar',
-            datasetIndex: 0,
-          },
-        ],
-      },
-    },
-    {
-      name: 'datetime by integer area',
-      input: {
-        dataframeName: 'df',
-        chartType: 'area',
-        xAxis: datetimesDFColumn,
-        xAxisName: null,
-        xAxisSort: 'descending',
-        xAxisGroupFunction: null,
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-03-03T00:00:00', integers: 33 },
-              { datetimes: '2021-03-02T00:00:00', integers: 22 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-01-03T00:00:00', integers: 13 },
-              { datetimes: '2021-01-02T00:00:00', integers: 12 },
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'line',
-            areaStyle: {},
-            datasetIndex: 0,
-          },
-        ],
-      },
-    },
-    {
-      name: 'datetime by integer multi series',
-      input: {
-        dataframeName: 'df',
-        chartType: 'groupedColumn',
-        xAxis: datetimesDFColumn,
-        xAxisName: null,
-        xAxisSort: 'ascending',
-        xAxisGroupFunction: null,
-        yAxes: [
-          {
-            series: [
-              {
-                axisName: null,
-                chartType: null,
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-              {
-                axisName: null,
-                chartType: 'line',
-                column: integersDFColumn,
-                aggregateFunction: null,
-                colorBy: null,
-              },
-            ],
-          },
-        ],
-      },
-      result: {
-        dataset: [
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-              { datetimes: '2021-01-02T00:00:00', integers: 12 },
-              { datetimes: '2021-01-03T00:00:00', integers: 13 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-03-02T00:00:00', integers: 22 },
-              { datetimes: '2021-03-03T00:00:00', integers: 33 },
-            ],
-          },
-          {
-            dimensions: ['datetimes', 'integers'],
-            source: [
-              { datetimes: '2021-01-01T00:00:00', integers: 11 },
-              { datetimes: '2021-01-02T00:00:00', integers: 12 },
-              { datetimes: '2021-01-03T00:00:00', integers: 13 },
-              { datetimes: '2021-02-01T00:00:00', integers: 21 },
-              { datetimes: '2021-03-02T00:00:00', integers: 22 },
-              { datetimes: '2021-03-03T00:00:00', integers: 33 },
-            ],
-          },
-        ],
-        xAxis: [
-          {
-            type: 'category',
-          },
-        ],
-        yAxis: [
-          {
-            type: 'value',
-          },
-        ],
-        series: [
-          {
-            type: 'bar',
-            datasetIndex: 0,
-          },
-          {
-            type: 'line',
-            datasetIndex: 1,
-          },
-        ],
-      },
+      left: [amountDFColumn],
+      right: [priceDFColumn],
     },
   ]
+  const yAxisAggregateFunctionOptions: (AggregateFunction | null)[] = [
+    null,
+    'sum',
+    'mean',
+    'median',
+    'count',
+    'min',
+    'max',
+  ]
+  const yAxisGroupByOptions = [null, fruitDFColumn]
 
-  for (const test of cases) {
-    it(test.name, async () => {
-      await (
-        await pythonRunner.runPython(
-          'workspaceId',
-          'sessionId',
-          code,
-          () => {},
-          {
-            storeHistory: true,
+  let i = 0
+  for (const chartType of chartTypeOptions) {
+    for (const xAxis of xAxisOptions) {
+      for (const xAxisSort of xAxisSortOptions) {
+        for (const xAxisGroupBy of xAxisGroupByOptions) {
+          for (const yAxisAggregateFunction of yAxisAggregateFunctionOptions) {
+            for (const yAxisGroupBy of yAxisGroupByOptions) {
+              for (const yAxis of yAxisOptions) {
+                const yAxes: YAxisV2[] = []
+                const leftAxisSeries: SeriesV2[] = []
+                for (const left of yAxis.left) {
+                  leftAxisSeries.push({
+                    axisName: null,
+                    chartType: null,
+                    column: left,
+                    aggregateFunction: yAxisAggregateFunction,
+                    groupBy: yAxisGroupBy,
+                  })
+                }
+                if (leftAxisSeries.length > 0) {
+                  yAxes.push({ series: leftAxisSeries })
+                }
+
+                const rightAxisSeries: SeriesV2[] = []
+                for (const right of yAxis.right) {
+                  rightAxisSeries.push({
+                    axisName: null,
+                    chartType: null,
+                    column: right,
+                    aggregateFunction: yAxisAggregateFunction,
+                    groupBy: yAxisGroupBy,
+                  })
+                }
+                if (rightAxisSeries.length > 0) {
+                  yAxes.push({ series: rightAxisSeries })
+                }
+
+                const input: VisualizationV2BlockInput = {
+                  dataframeName: 'df',
+                  chartType,
+                  xAxis,
+                  xAxisName: null,
+                  xAxisSort,
+                  xAxisGroupFunction: xAxisGroupBy,
+                  yAxes,
+                  filters: [],
+                }
+
+                // only datetime can be grouped by in x-axis
+                if (xAxis.name !== 'datetime' && xAxisGroupBy) {
+                  continue
+                }
+
+                const checksum = crypto
+                  .createHash('sha256')
+                  .update(JSON.stringify(input))
+                  .digest('hex')
+                it(`${checksum}`, async () => {
+                  await (
+                    await pythonRunner.runPython(
+                      checksum,
+                      checksum,
+                      code,
+                      () => {},
+                      {
+                        storeHistory: true,
+                      }
+                    )
+                  ).promise
+
+                  const result = await (
+                    await createVisualizationV2(
+                      'workspaceId',
+                      checksum,
+                      df,
+                      input,
+                      manager,
+                      pythonRunner.runPython
+                    )
+                  ).promise
+
+                  expect(result.success).toBe(true)
+
+                  // this makes jest write input to snapshot which is usefull
+                  // for debugging when the test fails
+                  expect(input).toMatchSnapshot()
+
+                  expect(result).toMatchSnapshot()
+                })
+              }
+            }
           }
-        )
-      ).promise
-
-      const result = await (
-        await createVisualizationV2(
-          'workspaceId',
-          'sessionId',
-          df,
-          test.input,
-          manager,
-          pythonRunner.runPython
-        )
-      ).promise
-
-      expect(result.success).toBe(true)
-      if (result.success) {
-        expect(result.data).toEqual(test.result)
+        }
       }
-    })
+    }
   }
-
-  afterAll(async () => {
-    await manager.stop()
-  })
 })

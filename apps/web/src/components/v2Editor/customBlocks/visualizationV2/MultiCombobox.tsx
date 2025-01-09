@@ -25,7 +25,7 @@ interface Props<T> {
   disabled?: boolean
 }
 
-export default function MultiCombobox<T>(props: Props<T>) {
+export default function MultiComboboxV2<T>(props: Props<T>) {
   const [query, setQuery] = useState<null | string>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 

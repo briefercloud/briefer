@@ -5,17 +5,20 @@ import * as Y from 'yjs'
 import {
   type VisualizationV2Block,
   BlockType,
+  isVisualizationBlock,
   ExecutionQueue,
   isExecutionStatusLoading,
   YBlock,
+  getDataframeFromVisualizationV2,
   getVisualizationV2Attributes,
   isVisualizationV2Block,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
+import FilterSelector from './FilterSelector'
 import {
   ChartType,
   DataFrame,
@@ -24,20 +27,50 @@ import {
   HistogramFormat,
   TimeUnit,
   VisualizationFilter,
+  isInvalidVisualizationFilter,
   NumpyDateTypes,
-  YAxis,
   exhaustiveCheck,
+  YAxisV2,
 } from '@briefer/types'
-import VisualizationControls from './VisualizationControls'
-import VisualizationView from './VisualizationView'
+import VisualizationControlsV2 from './VisualizationControls'
+import VisualizationViewV2 from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
-import { head } from 'ramda'
+import { equals, head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
+
+function didChangeFilters(
+  oldFilters: VisualizationFilter[],
+  newFilters: VisualizationFilter[]
+) {
+  const toCompare = new Set(newFilters.map((f) => f.id))
+
+  if (oldFilters.length !== newFilters.length) {
+    return true
+  }
+
+  const didChange = oldFilters.some((of) => {
+    const nf = newFilters.find((f) => f.id === of.id)
+    if (!nf) {
+      return true
+    }
+
+    toCompare.delete(of.id)
+
+    return (
+      !equals(of.value, nf.value) ||
+      of.operator !== nf.operator ||
+      of.column?.name !== nf.column?.name
+    )
+  })
+
+  return didChange || toCompare.size > 0
+}
 
 interface Props {
   document: ApiDocument
@@ -53,6 +86,7 @@ interface Props {
     position: 'before' | 'after'
   ) => void
   isDashboard: boolean
+  renderer?: 'canvas' | 'svg'
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
@@ -61,15 +95,13 @@ interface Props {
   executionQueue: ExecutionQueue
   userId: string | null
 }
-function VisualizationV2Block(props: Props) {
+function VisualizationBlockV2(props: Props) {
   const attrs = getVisualizationV2Attributes(props.block)
-  const dataframe = useMemo(() => {
-    if (attrs.input.dataframeName) {
-      return props.dataframes.get(attrs.input.dataframeName) ?? null
-    }
 
-    return null
-  }, [props.dataframes, attrs.input.dataframeName])
+  const dataframe = getDataframeFromVisualizationV2(
+    props.block,
+    props.dataframes
+  )
 
   const onChangeDataframe = useCallback(
     (dataframeName: string) => {
@@ -81,7 +113,7 @@ function VisualizationV2Block(props: Props) {
         })
       }
     },
-    [props.block, props.dataframes, attrs.input]
+    [props.dataframes, props.block, attrs.input]
   )
 
   const dataframeOptions = Array.from(props.dataframes.values()).map((df) => ({
@@ -89,29 +121,23 @@ function VisualizationV2Block(props: Props) {
     label: df.name,
   }))
 
-  const blockId = attrs.id
-
   const onNewSQL = useCallback(() => {
-    if (blockId) {
-      props.onAddGroupedBlock(blockId, BlockType.SQL, 'before')
-    }
-  }, [blockId, props.onAddGroupedBlock])
+    props.onAddGroupedBlock(attrs.id, BlockType.SQL, 'before')
+  }, [props.onAddGroupedBlock])
 
   const onChangeXAxis = useCallback(
     (xAxis: DataFrameColumn | null) => {
-      const newInput = {
-        ...attrs.input,
-        xAxis,
-      }
+      const nextAttrs = { ...attrs.input, xAxis }
       if (xAxis) {
         const isDateTime = NumpyDateTypes.safeParse(xAxis.type).success
         if (isDateTime && !attrs.input.xAxisGroupFunction) {
-          attrs.input.xAxisGroupFunction = 'date'
+          nextAttrs.xAxisGroupFunction = 'date'
         }
       }
-      props.block.setAttribute('input', newInput)
+
+      props.block.setAttribute('input', nextAttrs)
     },
-    [props.block, attrs.input]
+    [attrs.input, props.block]
   )
 
   const onChangeXAxisName = useCallback(
@@ -121,13 +147,13 @@ function VisualizationV2Block(props: Props) {
         xAxisName: name,
       })
     },
-    [props.block, attrs.input]
+    [attrs.input, props.block]
   )
 
   const executions = useBlockExecutions(
     props.executionQueue,
     props.block,
-    'visualization'
+    'visualization-v2'
   )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus()._tag ?? 'idle'
@@ -141,7 +167,7 @@ function VisualizationV2Block(props: Props) {
   const onRun = useCallback(() => {
     executions.forEach((e) => e.item.setAborting())
     props.executionQueue.enqueueBlock(
-      blockId,
+      attrs.id,
       props.userId,
       environmentStartedAt,
       {
@@ -150,10 +176,10 @@ function VisualizationV2Block(props: Props) {
     )
   }, [
     executions,
-    blockId,
     props.executionQueue,
-    environmentStartedAt,
+    attrs.id,
     props.userId,
+    environmentStartedAt,
   ])
 
   const onRunAbort = useCallback(() => {
@@ -182,27 +208,33 @@ function VisualizationV2Block(props: Props) {
       operator: null,
       value: null,
     }
-    // props.block.setAttribute('filters', [...filters, newFilter])
-  }, [, /*filters*/ props.block])
+    props.block.setAttribute('input', {
+      ...attrs.input,
+      filters: [...attrs.input.filters, newFilter],
+    })
+  }, [attrs.input.filters, props.block])
 
   const onChangeFilter = useCallback(
     (filter: VisualizationFilter) => {
-      // props.block.setAttribute(
-      //   'filters',
-      //   filters.map((f) => (f.id === filter.id ? filter : f))
-      // )
+      const filters = attrs.input.filters.map((f) =>
+        f.id === filter.id ? filter : f
+      )
+      props.block.setAttribute('input', {
+        ...attrs.input,
+        filters,
+      })
     },
-    [, /*filters*/ props.block]
+    [attrs.input, props.block]
   )
 
   const onRemoveFilter = useCallback(
     (filter: VisualizationFilter) => {
-      // props.block.setAttribute(
-      //   'filters',
-      //   filters.filter((f) => f.id !== filter.id)
-      // )
+      props.block.setAttribute('input', {
+        ...attrs.input,
+        filters: attrs.input.filters.filter((f) => f.id !== filter.id),
+      })
     },
-    [, /*filters*/ props.block]
+    [props.block, attrs.input]
   )
 
   const onToggleHidden = useCallback(() => {
@@ -210,27 +242,31 @@ function VisualizationV2Block(props: Props) {
   }, [attrs.controlsHidden, props.block])
 
   const onExportToPNG = async () => {
-    // // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
-    // if (
-    //   props.renderer === 'svg' ||
-    //   chartType === 'number' ||
-    //   chartType === 'trend'
-    // )
-    //   return
-    // // if the controls are visible the canvas shrinks, making the export smaller
-    // if (!controlsHidden) {
-    //   onToggleHidden()
-    //   // tick to ensure the canvas size gets updated
-    //   await new Promise((r) => setTimeout(r, 0))
-    // }
-    // const canvas = document.querySelector(
-    //   `div[data-block-id='${blockId}'] canvas`
-    // ) as HTMLCanvasElement
-    // // TODO: identify when this is true
-    // if (!canvas) return
-    // const imageUrl = canvas.toDataURL('image/png')
-    // const fileName = title || 'Visualization'
-    // downloadFile(imageUrl, fileName)
+    // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
+    if (
+      props.renderer === 'svg' ||
+      attrs.input.chartType === 'number' ||
+      attrs.input.chartType === 'trend'
+    )
+      return
+
+    // if the controls are visible the canvas shrinks, making the export smaller
+    if (!attrs.controlsHidden) {
+      onToggleHidden()
+      // tick to ensure the canvas size gets updated
+      await new Promise((r) => setTimeout(r, 0))
+    }
+
+    const canvas = document.querySelector(
+      `div[data-block-id='${attrs.id}'] canvas`
+    ) as HTMLCanvasElement
+
+    // TODO: identify when this is true
+    if (!canvas) return
+
+    const imageUrl = canvas.toDataURL('image/png')
+    const fileName = attrs.title || 'Visualization'
+    downloadFile(imageUrl, fileName)
   }
 
   const onChangeChartType = useCallback(
@@ -240,7 +276,7 @@ function VisualizationV2Block(props: Props) {
         chartType,
       })
     },
-    [attrs.input, props.block]
+    [props.block, attrs.input]
   )
 
   const onChangeXAxisGroupFunction = useCallback(
@@ -284,7 +320,9 @@ function VisualizationV2Block(props: Props) {
     [props.block]
   )
 
+  // TODO
   const tooManyDataPointsHidden = true // props.block.getAttribute('tooManyDataPointsHidden') ?? true
+
   const onHideTooManyDataPointsWarning = useCallback(() => {
     // props.block.setAttribute('tooManyDataPointsHidden', true)
   }, [props.block])
@@ -313,15 +351,21 @@ function VisualizationV2Block(props: Props) {
         return
       }
 
-      if (!dataframe) {
+      const input = block.getAttribute('input')
+      if (!dataframe || !input) {
         return
       }
 
       const shouldIgnore =
         event.changes.keys.size === 0 ||
-        Array.from(event.changes.keys.entries()).every(
-          ([key]) => key !== 'input'
-        )
+        Array.from(event.changes.keys.entries()).every(([key, val]) => {
+          if (key === 'input') {
+            const isEqual = equals(val.oldValue, input)
+            return isEqual
+          }
+
+          return true
+        })
 
       if (!shouldIgnore) {
         if (timeout) {
@@ -354,7 +398,7 @@ function VisualizationV2Block(props: Props) {
   const [isFullscreen] = useFullScreenDocument(props.document.id)
 
   const onChangeYAxes = useCallback(
-    (yAxes: YAxis[]) => {
+    (yAxes: YAxisV2[]) => {
       props.block.setAttribute('input', {
         ...attrs.input,
         yAxes,
@@ -374,31 +418,54 @@ function VisualizationV2Block(props: Props) {
     [props.block]
   )
 
+  // TODO
+  // useEffect(() => {
+  //   if (status === 'running' || status === 'run-requested') {
+  //     // 30 seconds timeout
+  //     const timeout = setTimeout(() => {
+  //       const status = props.block.getAttribute('status')
+  //       if (status === 'running') {
+  //         props.block.setAttribute('status', 'run-requested')
+  //       } else if (status === 'run-requested') {
+  //         props.block.setAttribute('status', 'idle')
+  //         requestAnimationFrame(() => {
+  //           props.block.setAttribute('status', 'run-requested')
+  //         })
+  //       }
+  //     }, 1000 * 30)
+
+  //     return () => {
+  //       clearTimeout(timeout)
+  //     }
+  //   }
+  // }, [props.block, status])
+
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
-    props.onToggleIsBlockHiddenInPublished(blockId)
-  }, [props.onToggleIsBlockHiddenInPublished, blockId])
+    props.onToggleIsBlockHiddenInPublished(attrs.id)
+  }, [props.onToggleIsBlockHiddenInPublished, attrs.id])
 
   const [, editorAPI] = useEditorAwareness()
   const onClickWithin = useCallback(() => {
-    editorAPI.insert(blockId, { scrollIntoView: false })
-  }, [blockId, editorAPI.insert])
+    editorAPI.insert(attrs.id, { scrollIntoView: false })
+  }, [attrs.id, editorAPI.insert])
 
   const viewLoading = isExecutionStatusLoading(status)
 
   if (props.isDashboard) {
     return (
-      <VisualizationView
+      <VisualizationViewV2
         title={attrs.title}
         chartType={attrs.input.chartType}
-        output={attrs.output}
         tooManyDataPointsHidden={tooManyDataPointsHidden}
         onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
         loading={viewLoading}
         error={attrs.error}
         dataframe={dataframe}
         onNewSQL={onNewSQL}
+        result={attrs.output?.result ?? null}
         controlsHidden={attrs.controlsHidden}
         isFullscreen={isFullscreen}
+        renderer={props.renderer}
         isHidden={attrs.controlsHidden}
         onToggleHidden={onToggleHidden}
         onExportToPNG={onExportToPNG}
@@ -417,7 +484,7 @@ function VisualizationV2Block(props: Props) {
         props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
         props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
       )}
-      data-block-id={blockId}
+      data-block-id={attrs.id}
     >
       <div className="h-full">
         <div className="py-3">
@@ -467,31 +534,31 @@ function VisualizationV2Block(props: Props) {
           className={clsx(
             'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-t border-gray-200',
             {
-              hidden: true, // filters.length === 0,
+              hidden: attrs.input.filters.length === 0,
             }
           )}
         >
-          {/* {filters.map((filter) => ( */}
-          {/*   <FilterSelector */}
-          {/*     key={filter.id} */}
-          {/*     filter={filter} */}
-          {/*     dataframe={dataframe ?? { name: '', columns: [] }} */}
-          {/*     onChange={onChangeFilter} */}
-          {/*     onRemove={onRemoveFilter} */}
-          {/*     isInvalid={ */}
-          {/*       !dataframe || */}
-          {/*       (filter.column !== null && */}
-          {/*         (!dataframe.columns.some( */}
-          {/*           (c) => c.name === filter.column?.name */}
-          {/*         ) || */}
-          {/*           isInvalidVisualizationFilter(filter, dataframe))) */}
-          {/*     } */}
-          {/*     disabled={!props.isEditable} */}
-          {/*   /> */}
-          {/* ))} */}
+          {attrs.input.filters.map((filter) => (
+            <FilterSelector
+              key={filter.id}
+              filter={filter}
+              dataframe={dataframe ?? { name: '', columns: [] }}
+              onChange={onChangeFilter}
+              onRemove={onRemoveFilter}
+              isInvalid={
+                !dataframe ||
+                (filter.column !== null &&
+                  (!dataframe.columns.some(
+                    (c) => c.name === filter.column?.name
+                  ) ||
+                    isInvalidVisualizationFilter(filter, dataframe)))
+              }
+              disabled={!props.isEditable}
+            />
+          ))}
         </div>
         <div className="h-[496px] border-t border-gray-200 flex items-center">
-          <VisualizationControls
+          <VisualizationControlsV2
             isHidden={attrs.controlsHidden || !props.isEditable}
             dataframe={dataframe}
             chartType={attrs.input.chartType}
@@ -506,20 +573,35 @@ function VisualizationV2Block(props: Props) {
             onChangeXAxisGroupFunction={onChangeXAxisGroupFunction}
             yAxes={attrs.input.yAxes}
             onChangeYAxes={onChangeYAxes}
+            // TODO
+            histogramFormat={'count'}
+            // histogramFormat={histogramFormat}
+            onChangeHistogramFormat={onChangeHistogramFormat}
+            // TODO
+            histogramBin={{ type: 'auto' }}
+            // histogramBin={histogramBin}
+            onChangeHistogramBin={onChangeHistogramBin}
+            // TODO
+            numberValuesFormat={null}
+            onChangeNumberValuesFormat={onChangeNumberValuesFormat}
+            // TODO
+            showDataLabels={true}
+            onChangeShowDataLabels={onChangeShowDataLabels}
             isEditable={props.isEditable}
           />
-          <VisualizationView
+          <VisualizationViewV2
             title={attrs.title}
             chartType={attrs.input.chartType}
-            output={attrs.output}
             tooManyDataPointsHidden={tooManyDataPointsHidden}
             onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
             loading={viewLoading}
             error={attrs.error}
             dataframe={dataframe}
             onNewSQL={onNewSQL}
+            result={attrs.output?.result ?? null}
             controlsHidden={attrs.controlsHidden}
             isFullscreen={isFullscreen}
+            renderer={props.renderer}
             isHidden={attrs.controlsHidden}
             onToggleHidden={onToggleHidden}
             onExportToPNG={onExportToPNG}
@@ -552,6 +634,10 @@ function VisualizationV2Block(props: Props) {
           onClick={onRunAbort}
           disabled={
             !dataframe ||
+            (!attrs.input.xAxis &&
+              attrs.input.chartType !== 'number' &&
+              attrs.input.chartType !== 'trend') ||
+            (!hasAValidYAxis && attrs.input.chartType !== 'histogram') ||
             !props.isEditable ||
             (status !== 'idle' && status !== 'running')
           }
@@ -595,4 +681,4 @@ function RunVisualizationTooltip() {
   )
 }
 
-export default VisualizationV2Block
+export default VisualizationBlockV2

@@ -21,7 +21,7 @@ interface Props {
   tab: Tab
   onChange: (tab: Tab) => void
 }
-export default function VisualizationSettingsTabs(props: Props) {
+export default function VisualizationSettingsTabsV2(props: Props) {
   return (
     <div className="w-full border-b border-gray-200 pt-5 sticky top-0 bg-white z-10">
       <nav className="-mb-px flex" aria-label="Tabs">

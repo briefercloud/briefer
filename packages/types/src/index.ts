@@ -576,16 +576,24 @@ export const AggregateFunction = z.union([
 ])
 export type AggregateFunction = z.infer<typeof AggregateFunction>
 
-export type Series = {
+export type Series = Omit<SeriesV2, 'groupBy'> & {
+  colorBy: DataFrameColumn | null
+}
+
+export type SeriesV2 = {
   axisName: string | null
   chartType: ChartType | null
   column: DataFrameColumn | null
   aggregateFunction: AggregateFunction | null
-  colorBy: DataFrameColumn | null
+  groupBy: DataFrameColumn | null
 }
 
 export type YAxis = {
   series: Series[]
+}
+
+export type YAxisV2 = {
+  series: SeriesV2[]
 }
 
 export const HistogramFormat = z.union([

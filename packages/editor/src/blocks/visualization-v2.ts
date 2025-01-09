@@ -9,7 +9,14 @@ import {
   ResultStatus,
   YBlock,
 } from './index.js'
-import { ChartType, DataFrameColumn, TimeUnit, YAxis } from '@briefer/types'
+import {
+  ChartType,
+  DataFrame,
+  DataFrameColumn,
+  TimeUnit,
+  VisualizationFilter,
+  YAxisV2,
+} from '@briefer/types'
 import { clone } from 'ramda'
 
 export type VisualizationV2BlockInput = {
@@ -19,7 +26,8 @@ export type VisualizationV2BlockInput = {
   xAxisName: string | null
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
-  yAxes: YAxis[]
+  yAxes: YAxisV2[]
+  filters: VisualizationFilter[]
 }
 
 function emptyInput(): VisualizationV2BlockInput {
@@ -31,6 +39,7 @@ function emptyInput(): VisualizationV2BlockInput {
     xAxisSort: 'ascending',
     xAxisGroupFunction: null,
     yAxes: [],
+    filters: [],
   }
 }
 
@@ -76,16 +85,27 @@ const Serie = z.union([
   z.object({
     type: z.union([z.literal('bar'), z.literal('scatter')]),
     datasetIndex: z.number(),
+    name: z.string().optional(),
   }),
   z.object({
     type: z.literal('line'),
     areaStyle: z.object({}).optional(),
     datasetIndex: z.number(),
+    name: z.string().optional(),
   }),
 ])
+const XAxis = CartesianAxisOption.and(
+  z.object({
+    axisPointer: z.object({
+      type: z.literal('shadow'),
+    }),
+  })
+)
+
 export const VisualizationV2BlockOutputResult = z.object({
+  tooltip: z.object({ trigger: z.literal('axis') }),
   dataset: z.array(DataSet),
-  xAxis: z.array(CartesianAxisOption),
+  xAxis: z.array(XAxis),
   yAxis: z.array(CartesianAxisOption),
   series: z.array(Serie),
 })
@@ -147,7 +167,7 @@ export function makeVisualizationV2Block(
   return yBlock
 }
 
-function getYAxes(input: VisualizationV2BlockInput): YAxis[] {
+function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
   if (input.yAxes.length === 0) {
     return [
       {
@@ -156,7 +176,7 @@ function getYAxes(input: VisualizationV2BlockInput): YAxis[] {
             axisName: null,
             column: null,
             aggregateFunction: null,
-            colorBy: null,
+            groupBy: null,
             chartType: null,
           },
         ],
@@ -209,10 +229,9 @@ export function duplicateVisualizationV2Block(
 export function getVisualizationV2BlockResultStatus(
   block: Y.XmlElement<VisualizationV2Block>
 ): ResultStatus {
-  const error = block.getAttribute('error')
-  const output = block.getAttribute('output')
+  const attrs = getVisualizationV2Attributes(block)
 
-  switch (error) {
+  switch (attrs.error) {
     case 'dataframe-not-found':
     case 'dataframe-not-set':
     case 'unknown':
@@ -220,7 +239,7 @@ export function getVisualizationV2BlockResultStatus(
       return 'error'
     case null:
     case undefined:
-      return output === null ? 'idle' : 'success'
+      return attrs.output === null ? 'idle' : 'success'
   }
 }
 
@@ -259,4 +278,22 @@ export function getVisualizationV2BlockErrorMessage(
     case undefined:
       return null
   }
+}
+
+export function getDataframeFromVisualizationV2(
+  block: Y.XmlElement<VisualizationV2Block>,
+  dataframes: Y.Map<DataFrame>
+) {
+  const attrs = getVisualizationV2Attributes(block)
+  const dfName = attrs.input.dataframeName
+  if (!dfName) {
+    return null
+  }
+
+  const df = dataframes.get(dfName)
+  if (!df) {
+    return null
+  }
+
+  return df
 }

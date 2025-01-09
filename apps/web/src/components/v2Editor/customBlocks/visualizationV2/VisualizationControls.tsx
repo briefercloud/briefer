@@ -15,15 +15,16 @@ import {
   DataFrameDateColumn,
   DataFrameStringColumn,
   DataFrameNumberColumn,
+  YAxisV2,
 } from '@briefer/types'
 import ChartTypeSelector from '@/components/ChartTypeSelector'
 import AxisSelector from '@/components/AxisSelector'
 import AxisModifierSelector from '@/components/AxisModifierSelector'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import useResettableState from '@/hooks/useResettableState'
-import VisualizationSettingsTabs, { Tab } from './VisualizationSettingTabs'
-import YAxisPicker from './YAxisPicker'
-import VisualizationToggle from './VisualizationToggle'
+import VisualizationSettingsTabsV2, { Tab } from './VisualizationSettingTabs'
+import YAxisPickerV2 from './YAxisPicker'
+import VisualizationToggleV2 from './VisualizationToggle'
 import { PortalTooltip } from '@/components/Tooltips'
 import { sortWith, ascend, GT } from 'ramda'
 import ScrollBar from '@/components/ScrollBar'
@@ -41,8 +42,16 @@ interface Props {
   onChangeXAxisSort: (sort: 'ascending' | 'descending') => void
   xAxisGroupFunction: TimeUnit | null
   onChangeXAxisGroupFunction: (groupFunction: TimeUnit | null) => void
-  yAxes: YAxis[]
-  onChangeYAxes: (yAxes: YAxis[]) => void
+  yAxes: YAxisV2[]
+  onChangeYAxes: (yAxes: YAxisV2[]) => void
+  histogramFormat: HistogramFormat
+  onChangeHistogramFormat: (format: HistogramFormat) => void
+  histogramBin: HistogramBin
+  onChangeHistogramBin: (bin: HistogramBin) => void
+  numberValuesFormat: string | null
+  onChangeNumberValuesFormat: (format: string | null) => void
+  showDataLabels: boolean
+  onChangeShowDataLabels: (showDataLabels: boolean) => void
   isEditable: boolean
 }
 
@@ -55,7 +64,7 @@ function isValidD3Format(format: string): boolean {
   }
 }
 
-function VisualizationControls(props: Props) {
+function VisualizationControlsV2(props: Props) {
   const onChangeXAxisGroupFunction = useCallback(
     (groupFunction: string | null) => {
       if (groupFunction === null) {
@@ -83,101 +92,101 @@ function VisualizationControls(props: Props) {
     [props.onChangeXAxisSort]
   )
 
-  // const onChangeHistogramFormat = useCallback(
-  //   (format: string | null) => {
-  //     const parsed = HistogramFormat.safeParse(format)
-  //     if (parsed.success) {
-  //       props.onChangeHistogramFormat(parsed.data)
-  //     }
-  //   },
-  //   [props.onChangeHistogramFormat]
-  // )
+  const onChangeHistogramFormat = useCallback(
+    (format: string | null) => {
+      const parsed = HistogramFormat.safeParse(format)
+      if (parsed.success) {
+        props.onChangeHistogramFormat(parsed.data)
+      }
+    },
+    [props.onChangeHistogramFormat]
+  )
 
-  // const onChangeHistogramBin = useCallback(
-  //   (bin: string | null) => {
-  //     if (bin === 'auto') {
-  //       props.onChangeHistogramBin({ type: 'auto' })
-  //       return
-  //     }
+  const onChangeHistogramBin = useCallback(
+    (bin: string | null) => {
+      if (bin === 'auto') {
+        props.onChangeHistogramBin({ type: 'auto' })
+        return
+      }
 
-  //     if (bin === 'stepSize') {
-  //       props.onChangeHistogramBin({ type: 'stepSize', value: 1 })
-  //       return
-  //     }
+      if (bin === 'stepSize') {
+        props.onChangeHistogramBin({ type: 'stepSize', value: 1 })
+        return
+      }
 
-  //     if (bin === 'maxBins') {
-  //       props.onChangeHistogramBin({ type: 'maxBins', value: 10 })
-  //       return
-  //     }
-  //   },
-  //   [props.onChangeHistogramBin]
-  // )
+      if (bin === 'maxBins') {
+        props.onChangeHistogramBin({ type: 'maxBins', value: 10 })
+        return
+      }
+    },
+    [props.onChangeHistogramBin]
+  )
 
-  // const [binText, setBinText] = useResettableState<string>(
-  //   () => (props.histogramBin.type === 'maxBins' ? '10' : '1'),
-  //   [props.histogramBin.type]
-  // )
-  // const onChangeBinText: React.ChangeEventHandler<HTMLInputElement> =
-  //   useCallback(
-  //     (e) => {
-  //       setBinText(e.target.value)
-  //     },
-  //     [setBinText]
-  //   )
+  const [binText, setBinText] = useResettableState<string>(
+    () => (props.histogramBin.type === 'maxBins' ? '10' : '1'),
+    [props.histogramBin.type]
+  )
+  const onChangeBinText: React.ChangeEventHandler<HTMLInputElement> =
+    useCallback(
+      (e) => {
+        setBinText(e.target.value)
+      },
+      [setBinText]
+    )
 
-  // useEffect(() => {
-  //   if (props.histogramBin.type === 'auto') {
-  //     return
-  //   }
+  useEffect(() => {
+    if (props.histogramBin.type === 'auto') {
+      return
+    }
 
-  //   if (props.histogramBin.type === 'stepSize') {
-  //     const value = parseFloat(binText)
-  //     if (Number.isNaN(value) || value <= 0) {
-  //       return
-  //     }
+    if (props.histogramBin.type === 'stepSize') {
+      const value = parseFloat(binText)
+      if (Number.isNaN(value) || value <= 0) {
+        return
+      }
 
-  //     props.onChangeHistogramBin({ type: 'stepSize', value })
-  //     return
-  //   }
+      props.onChangeHistogramBin({ type: 'stepSize', value })
+      return
+    }
 
-  //   if (props.histogramBin.type === 'maxBins') {
-  //     const value = Number(binText)
-  //     if (Number.isNaN(value) || !Number.isInteger(value) || value < 2) {
-  //       return
-  //     }
+    if (props.histogramBin.type === 'maxBins') {
+      const value = Number(binText)
+      if (Number.isNaN(value) || !Number.isInteger(value) || value < 2) {
+        return
+      }
 
-  //     props.onChangeHistogramBin({ type: 'maxBins', value })
-  //     return
-  //   }
-  // }, [props.histogramBin.type, binText, props.onChangeHistogramBin])
+      props.onChangeHistogramBin({ type: 'maxBins', value })
+      return
+    }
+  }, [props.histogramBin.type, binText, props.onChangeHistogramBin])
 
-  // const binError = useMemo(() => {
-  //   if (props.histogramBin.type === 'auto') {
-  //     return null
-  //   }
+  const binError = useMemo(() => {
+    if (props.histogramBin.type === 'auto') {
+      return null
+    }
 
-  //   if (props.histogramBin.type === 'stepSize') {
-  //     const value = parseFloat(binText)
-  //     if (isNaN(value) || value <= 0) {
-  //       return 'Must be a positive number.'
-  //     }
+    if (props.histogramBin.type === 'stepSize') {
+      const value = parseFloat(binText)
+      if (isNaN(value) || value <= 0) {
+        return 'Must be a positive number.'
+      }
 
-  //     return null
-  //   }
+      return null
+    }
 
-  //   if (props.histogramBin.type === 'maxBins') {
-  //     const value = Number(binText)
-  //     if (Number.isNaN(value) || !Number.isInteger(value)) {
-  //       return 'Must be an integer.'
-  //     }
+    if (props.histogramBin.type === 'maxBins') {
+      const value = Number(binText)
+      if (Number.isNaN(value) || !Number.isInteger(value)) {
+        return 'Must be an integer.'
+      }
 
-  //     if (value < 2) {
-  //       return 'Must be at least 2.'
-  //     }
+      if (value < 2) {
+        return 'Must be at least 2.'
+      }
 
-  //     return null
-  //   }
-  // }, [props.histogramBin.type, binText])
+      return null
+    }
+  }, [props.histogramBin.type, binText])
 
   const onChangeXAxisName = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -212,21 +221,21 @@ function VisualizationControls(props: Props) {
     [props.yAxes, props.onChangeYAxes]
   )
 
-  // const onChangeNumberValuesFormat = useCallback(
-  //   (e: React.ChangeEvent<HTMLInputElement>) => {
-  //     if (e.target.value === '') {
-  //       props.onChangeNumberValuesFormat(null)
-  //       return
-  //     }
-  //     props.onChangeNumberValuesFormat(e.target.value)
-  //   },
-  //   [props.onChangeNumberValuesFormat]
-  // )
+  const onChangeNumberValuesFormat = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.value === '') {
+        props.onChangeNumberValuesFormat(null)
+        return
+      }
+      props.onChangeNumberValuesFormat(e.target.value)
+    },
+    [props.onChangeNumberValuesFormat]
+  )
 
   const [tab, setTab] = useState<Tab>('general')
 
   const onChangeYAxis = useCallback(
-    (yAxis: YAxis, index: number) => {
+    (yAxis: YAxisV2, index: number) => {
       props.onChangeYAxes(props.yAxes.map((y, i) => (i === index ? yAxis : y)))
     },
     [props.yAxes, props.onChangeYAxes]
@@ -250,7 +259,7 @@ function VisualizationControls(props: Props) {
             axisName: null,
             column: null,
             aggregateFunction: null,
-            colorBy: null,
+            groupBy: null,
             chartType: null,
           },
         ],
@@ -348,7 +357,7 @@ function VisualizationControls(props: Props) {
         props.isHidden ? 'w-0' : 'w-1/3 border-r border-gray-200'
       )}
     >
-      <VisualizationSettingsTabs tab={tab} onChange={setTab} />
+      <VisualizationSettingsTabsV2 tab={tab} onChange={setTab} />
       <div
         className={clsx(
           'flex flex-col items-center',
@@ -448,80 +457,82 @@ function VisualizationControls(props: Props) {
                         disabled={!props.dataframe || !props.isEditable}
                       />
                     )}
-                  {/* {props.chartType === 'histogram' ? ( */}
-                  {/*   <> */}
-                  {/*     <AxisModifierSelector */}
-                  {/*       label="Format" */}
-                  {/*       value={props.histogramFormat} */}
-                  {/*       options={[ */}
-                  {/*         { name: 'Count', value: 'count' }, */}
-                  {/*         { name: 'Percentage', value: 'percentage' }, */}
-                  {/*       ]} */}
-                  {/*       onChange={onChangeHistogramFormat} */}
-                  {/*       disabled={!props.dataframe || !props.isEditable} */}
-                  {/*     /> */}
-                  {/*     <AxisModifierSelector */}
-                  {/*       label="Bin by" */}
-                  {/*       value={props.histogramBin.type} */}
-                  {/*       options={[ */}
-                  {/*         { name: 'Auto', value: 'auto' }, */}
-                  {/*         { name: 'Step size', value: 'stepSize' }, */}
-                  {/*         { name: 'Max bins', value: 'maxBins' }, */}
-                  {/*       ]} */}
-                  {/*       onChange={onChangeHistogramBin} */}
-                  {/*       disabled={!props.dataframe || !props.isEditable} */}
-                  {/*     /> */}
-                  {/*     {props.histogramBin.type !== 'auto' && ( */}
-                  {/*       <div> */}
-                  {/*         <div className="flex items-center gap-x-1"> */}
-                  {/*           <label */}
-                  {/*             htmlFor="histogramBin" */}
-                  {/*             className="text-xs text-gray-500 flex-1" */}
-                  {/*           > */}
-                  {/*             {props.histogramBin.type === 'stepSize' */}
-                  {/*               ? 'Step size' */}
-                  {/*               : 'Max bins'} */}
-                  {/*           </label> */}
-                  {/*           <input */}
-                  {/*             type="number" */}
-                  {/*             name="histogramBin" */}
-                  {/*             value={binText} */}
-                  {/*             onChange={onChangeBinText} */}
-                  {/*             className={clsx( */}
-                  {/*               'truncate border-0 text-xs px-2 bg-transparent font-mono placeholder:text-gray-400 text-right hover:ring-1 hover:ring-inset hover:ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 rounded-md h-6 w-20', */}
-                  {/*               binError && 'ring-red-500 focus:ring-red-500' */}
-                  {/*             )} */}
-                  {/*             disabled={!props.dataframe || !props.isEditable} */}
-                  {/*           /> */}
-                  {/*         </div> */}
-                  {/*         <div className="flex justify-end text-red-600 text-xs pt-1"> */}
-                  {/*           <span>{binError}</span> */}
-                  {/*         </div> */}
-                  {/*       </div> */}
-                  {/*     )} */}
-                  {/*   </> */}
-                  {/* ) : ( */}
-                  <AxisModifierSelector
-                    label={
-                      props.chartType === 'number' ? 'Choosen value' : 'Sort'
-                    }
-                    value={props.xAxisSort}
-                    options={[
-                      {
-                        name:
-                          props.chartType === 'number' ? 'Last' : 'Ascending',
-                        value: 'ascending',
-                      },
-                      {
-                        name:
-                          props.chartType === 'number' ? 'First' : 'Descending',
-                        value: 'descending',
-                      },
-                    ]}
-                    onChange={onChangeXAxisSort}
-                    disabled={!props.dataframe || !props.isEditable}
-                  />
-                  {/* )} */}
+                  {props.chartType === 'histogram' ? (
+                    <>
+                      <AxisModifierSelector
+                        label="Format"
+                        value={props.histogramFormat}
+                        options={[
+                          { name: 'Count', value: 'count' },
+                          { name: 'Percentage', value: 'percentage' },
+                        ]}
+                        onChange={onChangeHistogramFormat}
+                        disabled={!props.dataframe || !props.isEditable}
+                      />
+                      <AxisModifierSelector
+                        label="Bin by"
+                        value={props.histogramBin.type}
+                        options={[
+                          { name: 'Auto', value: 'auto' },
+                          { name: 'Step size', value: 'stepSize' },
+                          { name: 'Max bins', value: 'maxBins' },
+                        ]}
+                        onChange={onChangeHistogramBin}
+                        disabled={!props.dataframe || !props.isEditable}
+                      />
+                      {props.histogramBin.type !== 'auto' && (
+                        <div>
+                          <div className="flex items-center gap-x-1">
+                            <label
+                              htmlFor="histogramBin"
+                              className="text-xs text-gray-500 flex-1"
+                            >
+                              {props.histogramBin.type === 'stepSize'
+                                ? 'Step size'
+                                : 'Max bins'}
+                            </label>
+                            <input
+                              type="number"
+                              name="histogramBin"
+                              value={binText}
+                              onChange={onChangeBinText}
+                              className={clsx(
+                                'truncate border-0 text-xs px-2 bg-transparent font-mono placeholder:text-gray-400 text-right hover:ring-1 hover:ring-inset hover:ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 rounded-md h-6 w-20',
+                                binError && 'ring-red-500 focus:ring-red-500'
+                              )}
+                              disabled={!props.dataframe || !props.isEditable}
+                            />
+                          </div>
+                          <div className="flex justify-end text-red-600 text-xs pt-1">
+                            <span>{binError}</span>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <AxisModifierSelector
+                      label={
+                        props.chartType === 'number' ? 'Choosen value' : 'Sort'
+                      }
+                      value={props.xAxisSort}
+                      options={[
+                        {
+                          name:
+                            props.chartType === 'number' ? 'Last' : 'Ascending',
+                          value: 'ascending',
+                        },
+                        {
+                          name:
+                            props.chartType === 'number'
+                              ? 'First'
+                              : 'Descending',
+                          value: 'descending',
+                        },
+                      ]}
+                      onChange={onChangeXAxisSort}
+                      disabled={!props.dataframe || !props.isEditable}
+                    />
+                  )}
                 </div>
               </div>
               {props.chartType !== 'histogram' && (
@@ -535,7 +546,7 @@ function VisualizationControls(props: Props) {
                         : undefined
                     )
                     .map((yAxis, i) => (
-                      <YAxisPicker
+                      <YAxisPickerV2
                         yAxis={yAxis}
                         index={i}
                         key={i}
@@ -587,12 +598,10 @@ function VisualizationControls(props: Props) {
           {tab === 'labels' && (
             <div className="text-xs text-gray-500 flex flex-col space-y-8">
               <div>
-                <VisualizationToggle
+                <VisualizationToggleV2
                   label="Show labels"
-                  // enabled={props.showDataLabels}
-                  enabled={true}
-                  // onToggle={props.onChangeShowDataLabels}
-                  onToggle={() => {}}
+                  enabled={props.showDataLabels}
+                  onToggle={props.onChangeShowDataLabels}
                 />
               </div>
               <div>
@@ -635,21 +644,21 @@ function VisualizationControls(props: Props) {
                     </PortalTooltip>
                   </div>
                 </div>
-                {/* <input */}
-                {/*   name="numberValuesFormat" */}
-                {/*   type="text" */}
-                {/*   className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400" */}
-                {/*   value={props.numberValuesFormat ?? ''} */}
-                {/*   onChange={onChangeNumberValuesFormat} */}
-                {/*   placeholder="$.2f" */}
-                {/*   disabled={!props.dataframe || !props.isEditable} */}
-                {/* /> */}
-                {/* {props.numberValuesFormat && */}
-                {/*   !isValidD3Format(props.numberValuesFormat ?? '') && ( */}
-                {/*     <div className="text-red-600 text-xs pt-1"> */}
-                {/*       <span>Invalid format string</span> */}
-                {/*     </div> */}
-                {/*   )} */}
+                <input
+                  name="numberValuesFormat"
+                  type="text"
+                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                  value={props.numberValuesFormat ?? ''}
+                  onChange={onChangeNumberValuesFormat}
+                  placeholder="$.2f"
+                  disabled={!props.dataframe || !props.isEditable}
+                />
+                {props.numberValuesFormat &&
+                  !isValidD3Format(props.numberValuesFormat ?? '') && (
+                    <div className="text-red-600 text-xs pt-1">
+                      <span>Invalid format string</span>
+                    </div>
+                  )}
               </div>
             </div>
           )}
@@ -659,4 +668,4 @@ function VisualizationControls(props: Props) {
   )
 }
 
-export default VisualizationControls
+export default VisualizationControlsV2

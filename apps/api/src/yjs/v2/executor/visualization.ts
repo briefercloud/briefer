@@ -284,6 +284,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       } else {
       }
       executionItem.setCompleted('success')
+      block.setAttribute('error', null)
     } catch (err) {
       logger().error(
         {

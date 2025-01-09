@@ -36,7 +36,7 @@ import { InformationCircleIcon, XMarkIcon } from '@heroicons/react/20/solid'
 import AxisSelector from '../../../AxisSelector'
 import Combobox from './Combobox'
 import clsx from 'clsx'
-import MultiCombobox from './MultiCombobox'
+import MultiComboboxV2 from './MultiCombobox'
 import { preventPropagation } from '@/utils/events'
 import { equals, identity } from 'ramda'
 import ReactDOM from 'react-dom'
@@ -290,7 +290,7 @@ interface Props {
   isInvalid: boolean
   disabled?: boolean
 }
-function FilterSelector(props: Props) {
+function FilterSelectorV2(props: Props) {
   const onRemove = useCallback(() => {
     props.onRemove(props.filter)
   }, [props.onRemove, props.filter])
@@ -735,7 +735,7 @@ function FilterSelector(props: Props) {
                       {VisualizationStringFilterMultiValuesOperator.safeParse(
                         operator
                       ).success ? (
-                        <MultiCombobox
+                        <MultiComboboxV2
                           label={<FilterValueLabel />}
                           value={Array.from(value)}
                           options={
@@ -801,4 +801,4 @@ function FilterValueLabel() {
   )
 }
 
-export default FilterSelector
+export default FilterSelectorV2

@@ -824,7 +824,7 @@ const ToChartButton = (props: ToChartButtonProps) => {
       blockGroupId,
       blockId,
       {
-        type: BlockType.Visualization,
+        type: BlockType.VisualizationV2,
         dataframeName: props.block.getAttribute('dataframeName')?.value ?? null,
       },
       'after'

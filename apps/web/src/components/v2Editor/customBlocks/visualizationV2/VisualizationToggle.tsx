@@ -8,7 +8,7 @@ interface Props {
   disabled?: boolean
 }
 
-function VisualizationToggle({ label, enabled, onToggle, disabled }: Props) {
+function VisualizationToggleV2({ label, enabled, onToggle, disabled }: Props) {
   return (
     <Switch.Group
       as="div"
@@ -44,4 +44,4 @@ function VisualizationToggle({ label, enabled, onToggle, disabled }: Props) {
   )
 }
 
-export default VisualizationToggle
+export default VisualizationToggleV2

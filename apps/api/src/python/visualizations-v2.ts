@@ -18,6 +18,7 @@ import { logger } from '../logger.js'
 function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
   const strInput = JSON.stringify(input)
   let code = `import json
+import pandas as pd
 from datetime import datetime
 
 def _briefer_create_visualization(df, options):
@@ -54,24 +55,55 @@ def _briefer_create_visualization(df, options):
 
         return value
 
-    def group_dataframe(df, options):
-        if options["xAxisGroupFunction"]:
-            freq = {
-                'year': 'Y',
-                'quarter': 'Q',
-                'month': 'M',
-                'week': 'W',
-                'date': 'D',
-                'hours': 'h',
-                'minutes': 'min',
-                'seconds': 's'
-            }.get(options["xAxisGroupFunction"], None)
+    def group_dataframe(df, options, y_axis, series):
+        freqs = {
+            "year": "Y",
+            "quarter": "Q",
+            "month": "M",
+            "week": "W",
+            "date": "D",
+            "hours": "h",
+            "minutes": "min",
+            "seconds": "s"
+        }
 
-            if freq:
-                df[options["xAxis"]["name"]] = pd.to_datetime(df[options["xAxis"]["name"]])
-                # Group by the specified frequency but keep all rows
+        y_group_by = series["groupBy"]["name"] if series["groupBy"] else None
+        grouping_columns = ["_grouped"] + ([y_group_by] if y_group_by else [])
+
+        if pd.api.types.is_datetime64_any_dtype(df[options["xAxis"]["name"]]):
+            if options["xAxisGroupFunction"] and series["aggregateFunction"]:
+                freq = freqs.get(options["xAxisGroupFunction"], "s")
+
+                y_axis_agg_func = series["aggregateFunction"]
+                datetime_agg_funcs = set(['count', 'mean', 'median'])
+                if pd.api.types.is_datetime64_any_dtype(df[series["column"]["name"]]):
+                    if y_axis_agg_func not in datetime_agg_funcs:
+                        y_axis_agg_func = 'count'
+
+                # Group by the specified frequency and aggregate the values
                 df["_grouped"] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
-                return df
+                df = df.groupby(grouping_columns).agg({
+                  series["column"]["name"]: y_axis_agg_func
+                }).reset_index()
+            elif options["xAxisGroupFunction"]:
+                freq = freqs.get(options["xAxisGroupFunction"], "s")
+
+                df[options["xAxis"]["name"]] = pd.to_datetime(df[options["xAxis"]["name"]])
+
+                # Group by the specified frequency
+                df[options["xAxis"]["name"]] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
+        elif series["aggregateFunction"]:
+                y_axis_agg_func = series["aggregateFunction"]
+                datetime_agg_funcs = set(['count', 'mean', 'median'])
+                if pd.api.types.is_datetime64_any_dtype(df[series["column"]["name"]]):
+                    if y_axis_agg_func not in datetime_agg_funcs:
+                        y_axis_agg_func = 'count'
+
+                df["_grouped"] = df[options["xAxis"]["name"]]
+                df = df.groupby(grouping_columns).agg({
+                  series["column"]["name"]: y_axis_agg_func
+                }).reset_index()
+
 
         return df
 
@@ -86,7 +118,7 @@ def _briefer_create_visualization(df, options):
 
     def get_series_df(df, options, y_axis, series):
         # Prepare data by grouping
-        result = group_dataframe(df.copy(), options)
+        result = group_dataframe(df.copy(), options, y_axis, series)
         if "_grouped" in result:
             result[options["xAxis"]["name"]] = result["_grouped"]
             result = result.drop(columns=["_grouped"])
@@ -97,47 +129,68 @@ def _briefer_create_visualization(df, options):
 
 
     data = {
+        "tooltip": {
+            "trigger": "axis",
+        },
         "dataset": [],
         "xAxis": [{
-          "type": "category",
+            "type": "category",
+            "axisPointer": {
+                "type": "shadow",
+            },
         }],
         "yAxis": [],
         "series": [],
     }
 
-    defaultType, _ = extract_chart_type(options["chartType"])
     for y_axis in options["yAxes"]:
-        data["yAxis"].append({
-            "type": "value",
-        })
+        data["yAxis"].append({ "type": "value" })
 
         for series in y_axis["series"]:
             series_dataframe = get_series_df(df, options, y_axis, series)
 
             chart_type, is_area = extract_chart_type(series["chartType"] or options["chartType"])
-            dataset_index = len(data["dataset"])
-            dataset = {
-                "dimensions": [options["xAxis"]["name"], series["column"]["name"]],
-                "source": [],
-            }
-            for _, row in series_dataframe.iterrows():
-                x_name = options["xAxis"]["name"]
-                x_value = convert_value(series_dataframe[x_name], row[x_name])
+            if series["groupBy"]:
+                groups = series_dataframe[series["groupBy"]["name"]].unique()
+                groups.sort()
+            else:
+                groups = [None]
 
-                y_name = series["column"]["name"]
-                y_value = convert_value(series_dataframe[y_name], row[y_name])
-                dataset["source"].append({x_name: x_value, y_name: y_value})
+            for group in groups:
+                dataset_index = len(data["dataset"])
+                dataset = {
+                    "dimensions": [options["xAxis"]["name"], series["column"]["name"]],
+                    "source": [],
+                }
 
-            data["dataset"].append(dataset)
+                for _, row in series_dataframe.iterrows():
+                    if group and row[series["groupBy"]["name"]] != group:
+                        continue
 
-            serie = {
-              "type": chart_type,
-              "datasetIndex": dataset_index
-            }
-            if is_area:
-                serie["areaStyle"] = {}
+                    x_name = options["xAxis"]["name"]
+                    x_value = convert_value(series_dataframe[x_name], row[x_name])
 
-            data["series"].append(serie)
+                    y_name = series["column"]["name"]
+                    y_value = convert_value(series_dataframe[y_name], row[y_name])
+
+                    row_data = {x_name: x_value, y_name: y_value}
+
+                    dataset["source"].append(row_data)
+
+                data["dataset"].append(dataset)
+
+                serie = {
+                  "type": chart_type,
+                  "datasetIndex": dataset_index,
+                }
+
+                if group:
+                    serie["name"] = group
+
+                if is_area:
+                    serie["areaStyle"] = {}
+
+                data["series"].append(serie)
 
     output = json.dumps({
         "type": "result",
@@ -163,8 +216,6 @@ else:
         }
     }, default=str)
     print(output)`
-
-  console.log(code)
 
   return code
 }

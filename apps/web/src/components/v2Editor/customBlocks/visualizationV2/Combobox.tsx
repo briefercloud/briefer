@@ -19,7 +19,7 @@ interface Props<T> {
   disabled?: boolean
 }
 
-export default function Combobox<T>(props: Props<T>) {
+export default function ComboboxV2<T>(props: Props<T>) {
   const [query, setQuery] = useState<null | string>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const inputContainerRef = useRef<HTMLDivElement>(null)

@@ -8,12 +8,12 @@ import {
   DataFrameColumn,
   NumpyNumberTypes,
   NumpyTimeDeltaTypes,
-  YAxis,
-  Series,
   DataFrameNumberColumn,
   DataFrameDateColumn,
   DataFrameStringColumn,
   DataFrameBooleanColumn,
+  YAxisV2,
+  SeriesV2,
 } from '@briefer/types'
 import { sortWith } from 'ramda'
 import { useCallback, useMemo } from 'react'
@@ -22,8 +22,8 @@ interface Props {
   index: number
   label?: string
   defaultChartType: ChartType
-  yAxis: YAxis
-  onChange: (yAxis: YAxis, i: number) => void
+  yAxis: YAxisV2
+  onChange: (yAxis: YAxisV2, i: number) => void
   isEditable: boolean
   dataframe: DataFrame | null
   onRemove?: (i: number) => void
@@ -35,7 +35,7 @@ const isNumberType = (column: DataFrameColumn | null) =>
 
 const getAggFunction = (
   defaultChartType: ChartType,
-  series: Series,
+  series: SeriesV2,
   column: DataFrameColumn | null
 ) => {
   const chartType = series.chartType ?? defaultChartType
@@ -58,7 +58,7 @@ const getAggFunction = (
   return null
 }
 
-function YAxisPicker(props: Props) {
+function YAxisPickerV2(props: Props) {
   const onChangeColumn = useCallback(
     (column: DataFrameColumn | null, index: number) => {
       props.onChange(
@@ -115,7 +115,7 @@ function YAxisPicker(props: Props) {
     [props.onChange, props.yAxis, props.index]
   )
 
-  const onChangeColorBy = useCallback(
+  const onChangeGroupBy = useCallback(
     (colorBy: string | null, index: number) => {
       const column =
         props.dataframe?.columns.find((c) => c.name.toString() === colorBy) ??
@@ -124,7 +124,7 @@ function YAxisPicker(props: Props) {
         {
           ...props.yAxis,
           series: props.yAxis.series.map((s, i) =>
-            i === index ? { ...s, colorBy: column } : s
+            i === index ? { ...s, groupBy: column } : s
           ),
         },
         props.index
@@ -160,7 +160,7 @@ function YAxisPicker(props: Props) {
             axisName: null,
             column: null,
             aggregateFunction: null,
-            colorBy: null,
+            groupBy: null,
             chartType: null,
           },
         ],
@@ -341,7 +341,7 @@ function YAxisPicker(props: Props) {
                     props.defaultChartType !== 'number' && (
                       <AxisModifierSelector
                         label="Group by"
-                        value={s.colorBy?.name.toString() ?? null}
+                        value={s.groupBy?.name.toString() ?? null}
                         options={[
                           { name: 'None', value: null },
                           ...(props.dataframe?.columns ?? []).map((c) => ({
@@ -349,7 +349,7 @@ function YAxisPicker(props: Props) {
                             value: c.name.toString(),
                           })),
                         ]}
-                        onChange={(c) => onChangeColorBy(c, i)}
+                        onChange={(c) => onChangeGroupBy(c, i)}
                         disabled={!props.dataframe || !props.isEditable}
                       />
                     )}
@@ -375,4 +375,4 @@ function YAxisPicker(props: Props) {
   )
 }
 
-export default YAxisPicker
+export default YAxisPickerV2

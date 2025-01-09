@@ -261,7 +261,8 @@ function GridElement(props: Props) {
   const showEdit = canEdit && !isEditingBlock
 
   const WrapperElement =
-    props.block?.getAttribute('type') === BlockType.Visualization
+    props.block?.getAttribute('type') === BlockType.Visualization ||
+    props.block?.getAttribute('type') === BlockType.VisualizationV2
       ? 'div'
       : ScrollBar
 
