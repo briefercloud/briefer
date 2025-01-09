@@ -1,8 +1,13 @@
 import { ApiUser, ApiWorkspace } from '@briefer/database'
 import { PostHog } from 'posthog-node'
 import { config } from '../config/index.js'
+import { OnboardingTutorialStep } from '@briefer/types'
 
 const isJest = process.env['JEST_WORKER_ID'] !== undefined
+
+function camelToSnakeCase(input: string): string {
+  return input.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
+}
 
 let posthogClient: PostHog | null
 export function getPostHogClient() {
@@ -135,6 +140,39 @@ export const captureUserCreated = async (
     event: 'user_created',
     properties: {
       userId: newUser.id,
+      workspaceId: workspaceId,
+    },
+  })
+}
+
+export const captureOnboardingStep = async (
+  userId: string,
+  workspaceId: string,
+  onboardingStep: OnboardingTutorialStep,
+  isSkipped: boolean
+) => {
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: userId,
+    event: `onboarding_${camelToSnakeCase(onboardingStep)}`,
+    properties: {
+      userId: userId,
+      workspaceId: workspaceId,
+      isSkipped,
+    },
+  })
+}
+
+export const captureOnboardingDismissed = async (
+  userId: string,
+  workspaceId: string
+) => {
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: userId,
+    event: `onboarding_dismissed`,
+    properties: {
+      userId: userId,
       workspaceId: workspaceId,
     },
   })

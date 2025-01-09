@@ -26,6 +26,7 @@ import { captureDatasourceCreated } from '../../../../events/posthog.js'
 import { IOServer } from '../../../../websocket/index.js'
 import { advanceTutorial } from '../../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../../websocket/workspace/tutorial.js'
+import * as posthog from '../../../../events/posthog.js'
 
 const dataSourcePayload = z.union([
   z.object({
@@ -396,8 +397,21 @@ const dataSourcesRouter = (socketServer: IOServer) => {
 
       res.status(201).json(datasource)
 
-      await advanceTutorial(workspaceId, 'onboarding', 'connectDataSource')
+      const tutorialState = await advanceTutorial(
+        workspaceId,
+        'onboarding',
+        'connectDataSource'
+      )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
+
+      if (tutorialState.prevStep) {
+        posthog.captureOnboardingStep(
+          req.session.user.id,
+          workspaceId,
+          tutorialState.prevStep,
+          false
+        )
+      }
     } catch (err) {
       req.log.error(
         {

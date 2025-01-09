@@ -11,6 +11,7 @@ import { getDocId, getYDocForUpdate } from '../../../../../yjs/v2/index.js'
 import { broadcastDocument } from '../../../../../websocket/workspace/documents.js'
 import { advanceTutorial } from '../../../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../../../websocket/workspace/tutorial.js'
+import * as posthog from '../../../../../events/posthog.js'
 
 export default function publishRouter(socketServer: IOServer) {
   const publishRouter = Router({ mergeParams: true })
@@ -70,8 +71,21 @@ export default function publishRouter(socketServer: IOServer) {
 
       res.sendStatus(204)
 
-      await advanceTutorial(workspaceId, 'onboarding', 'publishDashboard')
+      const tutorialState = await advanceTutorial(
+        workspaceId,
+        'onboarding',
+        'publishDashboard'
+      )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
+
+      if (tutorialState.prevStep) {
+        posthog.captureOnboardingStep(
+          req.session.user.id,
+          workspaceId,
+          'publishDashboard',
+          false
+        )
+      }
     } catch (err) {
       req.log.error(
         {

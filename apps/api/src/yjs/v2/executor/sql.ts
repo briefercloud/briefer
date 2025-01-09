@@ -258,6 +258,7 @@ export class SQLExecutor implements ISQLExecutor {
         'runQuery'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
+      events.advanceOnboarding('runQuery')
     } catch (err) {
       logger().error(
         {

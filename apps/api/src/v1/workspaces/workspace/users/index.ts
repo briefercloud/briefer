@@ -76,8 +76,21 @@ const usersRouter = (socketServer: IOServer) => {
         password,
       })
 
-      await advanceTutorial(workspaceId, 'onboarding', 'inviteTeamMembers')
+      const tutorialState = await advanceTutorial(
+        workspaceId,
+        'onboarding',
+        'inviteTeamMembers'
+      )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
+
+      if (tutorialState?.prevStep) {
+        posthog.captureOnboardingStep(
+          req.session.user.id,
+          workspaceId,
+          tutorialState.prevStep,
+          false
+        )
+      }
     } catch (err) {
       req.log.error({ err, workspaceId }, 'Error creating user')
       res.sendStatus(500)
