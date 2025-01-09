@@ -14,6 +14,9 @@ const config: Config = {
   },
   theme: {
     extend: {
+      screens: {
+        '3xl': '1920px',
+      },
       transitionProperty: {
         mw: 'max-width',
         m: 'margin',
