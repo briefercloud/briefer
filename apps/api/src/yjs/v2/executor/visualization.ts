@@ -276,8 +276,11 @@ export class VisualizationExecutor implements IVisualizationExecutor {
       events.visUpdate(attrs.input.chartType)
 
       if (result.success) {
-        console.log(result.output)
-        block.setAttribute('output', result.output)
+        const output = {
+          executedAt: new Date().toISOString(),
+          result: result.data,
+        }
+        block.setAttribute('output', output)
       } else {
       }
       executionItem.setCompleted('success')

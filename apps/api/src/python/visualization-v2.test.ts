@@ -64,7 +64,6 @@ async function getPythonRunner(
         switch (message.header.msg_type) {
           case 'stream':
             if ('name' in message.content) {
-              console.log(message.content.text)
               onOutputs([
                 {
                   type: 'stdio',
@@ -139,8 +138,8 @@ describe('.createVisualizationV2', () => {
 
   const code = `import pandas as pd
 df = pd.DataFrame({
-  'integers': [1, 2, 3],
-  'datetimes': pd.to_datetime(['2021-01-01', '2021-01-02', '2021-01-03']),
+  'integers': [11, 12, 13, 21, 22, 33],
+  'datetimes': pd.to_datetime(['2021-01-01', '2021-01-02', '2021-01-03', '2021-02-01', '2021-03-02', '2021-03-03']),
 })`
 
   const integersDFColumn: DataFrameColumn = {
@@ -187,9 +186,19 @@ df = pd.DataFrame({
         ],
       },
       result: {
+        dataset: {
+          dimensions: ['datetimes', 'integers'],
+          source: [
+            { datetimes: '2021-01-01T00:00:00', integers: 11 },
+            { datetimes: '2021-01-02T00:00:00', integers: 12 },
+            { datetimes: '2021-01-03T00:00:00', integers: 13 },
+            { datetimes: '2021-02-01T00:00:00', integers: 21 },
+            { datetimes: '2021-03-02T00:00:00', integers: 22 },
+            { datetimes: '2021-03-03T00:00:00', integers: 33 },
+          ],
+        },
         xAxis: [
           {
-            data: [1, 2, 3],
             type: 'category',
           },
         ],
@@ -200,7 +209,162 @@ df = pd.DataFrame({
         ],
         series: [
           {
-            data: [1, 2, 3],
+            type: 'bar',
+          },
+        ],
+      },
+    },
+    {
+      name: 'integer by integer groupedColumn',
+      input: {
+        dataframeName: 'df',
+        chartType: 'groupedColumn',
+        xAxis: integersDFColumn,
+        xAxisName: null,
+        xAxisSort: 'ascending',
+        xAxisGroupFunction: null,
+        yAxes: [
+          {
+            series: [
+              {
+                axisName: null,
+                chartType: null,
+                column: integersDFColumn,
+                aggregateFunction: null,
+                colorBy: null,
+              },
+            ],
+          },
+        ],
+      },
+      result: {
+        dataset: {
+          dimensions: ['integers', 'integers'],
+          source: [
+            { integers: 11 },
+            { integers: 12 },
+            { integers: 13 },
+            { integers: 21 },
+            { integers: 22 },
+            { integers: 33 },
+          ],
+        },
+        xAxis: [
+          {
+            type: 'category',
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            type: 'bar',
+          },
+        ],
+      },
+    },
+    {
+      name: 'datetime by integer group by month',
+      input: {
+        dataframeName: 'df',
+        chartType: 'groupedColumn',
+        xAxis: datetimesDFColumn,
+        xAxisName: null,
+        xAxisSort: 'ascending',
+        xAxisGroupFunction: 'month',
+        yAxes: [
+          {
+            series: [
+              {
+                axisName: null,
+                chartType: null,
+                column: integersDFColumn,
+                aggregateFunction: null,
+                colorBy: null,
+              },
+            ],
+          },
+        ],
+      },
+      result: {
+        dataset: {
+          dimensions: ['datetimes', 'integers'],
+          source: [
+            { datetimes: '2021-01-01T00:00:00', integers: 11 },
+            { datetimes: '2021-01-01T00:00:00', integers: 12 },
+            { datetimes: '2021-01-01T00:00:00', integers: 13 },
+            { datetimes: '2021-02-01T00:00:00', integers: 21 },
+            { datetimes: '2021-03-01T00:00:00', integers: 22 },
+            { datetimes: '2021-03-01T00:00:00', integers: 33 },
+          ],
+        },
+        xAxis: [
+          {
+            type: 'category',
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            type: 'bar',
+          },
+        ],
+      },
+    },
+    {
+      name: 'datetime desc by integer groupedColumn',
+      input: {
+        dataframeName: 'df',
+        chartType: 'groupedColumn',
+        xAxis: datetimesDFColumn,
+        xAxisName: null,
+        xAxisSort: 'descending',
+        xAxisGroupFunction: null,
+        yAxes: [
+          {
+            series: [
+              {
+                axisName: null,
+                chartType: null,
+                column: integersDFColumn,
+                aggregateFunction: null,
+                colorBy: null,
+              },
+            ],
+          },
+        ],
+      },
+      result: {
+        dataset: {
+          dimensions: ['datetimes', 'integers'],
+          source: [
+            { datetimes: '2021-03-03T00:00:00', integers: 33 },
+            { datetimes: '2021-03-02T00:00:00', integers: 22 },
+            { datetimes: '2021-02-01T00:00:00', integers: 21 },
+            { datetimes: '2021-01-03T00:00:00', integers: 13 },
+            { datetimes: '2021-01-02T00:00:00', integers: 12 },
+            { datetimes: '2021-01-01T00:00:00', integers: 11 },
+          ],
+        },
+        xAxis: [
+          {
+            type: 'category',
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
             type: 'bar',
           },
         ],
@@ -235,7 +399,7 @@ df = pd.DataFrame({
 
       expect(result.success).toBe(true)
       if (result.success) {
-        expect(result.output.result).toEqual(result)
+        expect(result.data).toEqual(test.result)
       }
     })
   }

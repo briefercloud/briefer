@@ -9,10 +9,11 @@ import { executeCode, PythonExecutionError } from './index.js'
 import { IJupyterManager } from '../jupyter/index.js'
 import {
   VisualizationV2BlockInput,
-  VisualizationV2BlockOutput,
+  VisualizationV2BlockOutputResult,
 } from '@briefer/editor'
 import AggregateError from 'aggregate-error'
 import { z } from 'zod'
+import { logger } from '../logger.js'
 
 function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
   const strInput = JSON.stringify(input)
@@ -20,34 +21,135 @@ function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
 from datetime import datetime
 
 def _briefer_create_visualization(df, options):
-  x_axis = [{
-    "type": "category",
-    "data": df[options["xAxis"]["name"]].tolist()
-  }]
-  y_axis = []
-  batata = []
+    def extract_chart_type(chartType):
+        if chartType == "groupedColumn":
+            return "bar"
+        elif chartType == "stackedColumn":
+            return "bar"
+        elif chartType == "hundredPercentStackedColumn":
+            return "bar"
+        elif chartType == "line":
+            return "line"
+        elif chartType == "area":
+            return "line"
+        elif chartType == "hundredPercentStackedArea":
+            return "line"
+        elif chartType == "scatterPlot":
+            return "scatter"
+        elif chartType == "pie":
+            raise ValueError("Pie chart is not implemented yet")
+        elif chartType == "histogram":
+            raise ValueError("Histogram chart is not supported")
+        elif chartType == "trend":
+            raise ValueError("Trend chart is not supported")
+        elif chartType == "number":
+            raise ValueError("Number chart is not supported")
 
-  for y_axis_options in options["yAxes"]:
-      y_axis.append({
-        "type": "value",
-      })
-      for series_options in y_axis_options["series"]:
-          batata.append({
-              "type": "bar",
-              "data": df[series_options["column"]["name"]].tolist()
-          })
-      
-  print(json.dumps({
-      "success": True,
-      "output": {
-          "executedAt": datetime.now().isoformat(),
-          "result":{
-              "xAxis": x_axis,
-              "yAxis": y_axis,
-              "series": batata
-          }
-      }
-  }))
+    def convert_value(column, value):
+        if pd.api.types.is_numeric_dtype(column):
+            return pd.to_numeric(value, errors='coerce')
+
+        if pd.api.types.is_datetime64_any_dtype(column):
+            return value.isoformat()
+
+        return value
+
+    def group_dataframe(df, options):
+        if options["xAxisGroupFunction"]:
+            freq = {
+                'year': 'Y',
+                'quarter': 'Q',
+                'month': 'M',
+                'week': 'W',
+                'date': 'D',
+                'hours': 'h',
+                'minutes': 'min',
+                'seconds': 's'
+            }.get(options["xAxisGroupFunction"], None)
+
+            if freq:
+                df[options["xAxis"]["name"]] = pd.to_datetime(df[options["xAxis"]["name"]])
+                # Group by the specified frequency but keep all rows
+                df["_grouped"] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
+                return df
+
+        return df
+
+    def sort_dataframe(df, options):
+        if options["xAxisSort"]:
+            return df.sort_values(
+                by=options["xAxis"]["name"],
+                ascending=options["xAxisSort"] == "ascending"
+            )
+
+        return df
+
+    def prepare_chart_df(df, options):
+        # Prepare data by grouping
+        result = group_dataframe(df.copy(), options)
+        if "_grouped" in result:
+            result[options["xAxis"]["name"]] = result["_grouped"]
+            result = result.drop(columns=["_grouped"])
+
+        result = sort_dataframe(result, options)
+
+        return result
+
+
+    chart_df = prepare_chart_df(df, options)
+
+
+    data = {
+        "dataset": {
+            "dimensions": [options["xAxis"]["name"]],
+            "source": [],
+        },
+        "xAxis": [{
+          "type": "category",
+        }],
+        "yAxis": [],
+        "series": [],
+    }
+
+
+    defaultType = extract_chart_type(options["chartType"])
+    for y_axis in options["yAxes"]:
+        for series in y_axis["series"]:
+            chart_type = extract_chart_type(series["chartType"] or options["chartType"])
+            data["dataset"]["dimensions"].append(series["column"]["name"])
+            data["yAxis"].append({
+                "type": "value",
+            })
+            data["series"].append({
+                "type": chart_type,
+            })
+
+    index = 0
+    for _, row in chart_df.iterrows():
+        x_name = options["xAxis"]["name"]
+        x_value = convert_value(chart_df[x_name], row[x_name])
+
+        data["dataset"]["source"].append({
+            x_name: x_value,
+        })
+        for y_axis in options["yAxes"]:
+            for series in y_axis["series"]:
+                y_name = series["column"]["name"]
+                y_value = convert_value(chart_df[y_name], row[y_name])
+
+                data["dataset"]["source"][index][y_name] = y_value
+        index += 1
+
+
+    output = json.dumps({
+        "type": "result",
+        "data": {
+            "success": True,
+            "data": data
+        }
+    }, default=str)
+
+    print(output)
 
 
 if "${dataframe.name}" in globals():
@@ -55,7 +157,16 @@ if "${dataframe.name}" in globals():
     options = json.loads(${JSON.stringify(strInput)})
     _briefer_create_visualization(df, options)
 else:
-    print(json.dumps({"success": False, "reason": "dataframe-not-found"}))`
+    output = json.dumps({
+        "type":"result",
+        "data": {
+            "success": False,
+            "reason": "dataframe-not-found"
+        }
+    }, default=str)
+    print(output)`
+
+  console.log(code)
 
   return code
 }
@@ -63,7 +174,7 @@ else:
 const CreateVisualizationResult = z.union([
   z.object({
     success: z.literal(true),
-    output: VisualizationV2BlockOutput,
+    data: VisualizationV2BlockOutputResult,
   }),
   z.object({
     success: z.literal(false),
@@ -118,21 +229,59 @@ export async function createVisualizationV2(
         case 'stdio':
           switch (output.name) {
             case 'stdout':
-              for (const line of output.text.split('\n')) {
-                if (!result?.success) {
-                  try {
-                    console.log(line)
-                    console.log(line)
-                    console.log(JSON.parse(line))
-                  } catch (e) {
-                    console.log(e)
-                  }
+              for (const l of output.text.split('\n')) {
+                const line = l.trim()
+                if (line === '') {
+                  continue
+                }
 
+                if (!result?.success) {
                   const parsed = jsonString
-                    .pipe(CreateVisualizationResult)
+                    .pipe(
+                      z.union([
+                        z.object({
+                          type: z.literal('log'),
+                          message: z.string(),
+                        }),
+                        z.object({
+                          type: z.literal('result'),
+                          data: CreateVisualizationResult,
+                        }),
+                      ])
+                    )
                     .safeParse(line.trim())
                   if (parsed.success) {
-                    result = parsed.data
+                    switch (parsed.data.type) {
+                      case 'log':
+                        console.log(
+                          JSON.stringify(
+                            {
+                              workspaceId,
+                              sessionId,
+                              message: parsed.data.message,
+                              input,
+                            },
+                            null,
+                            2
+                          ),
+                          'createVisualizationV2 log'
+                        )
+                        logger().info(
+                          {
+                            workspaceId,
+                            sessionId,
+                            message: parsed.data.message,
+                            input,
+                          },
+                          'createVisualizationV2 log'
+                        )
+                        break
+                      case 'result':
+                        result = parsed.data.data
+                        break
+                      default:
+                        exhaustiveCheck(parsed.data)
+                    }
                   } else {
                     outputParsingErrors.push(parsed.error)
                   }

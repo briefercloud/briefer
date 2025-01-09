@@ -49,7 +49,6 @@ const OrdinalRawValue = z.string().or(z.number())
 
 const CategoryAxisBaseOption = z.object({
   type: z.literal('category'),
-  data: z.array(OrdinalRawValue),
 })
 
 const TimeAxisBaseOption = z.object({
@@ -68,13 +67,23 @@ const CartesianAxisOption = z
   })
   .and(AxisBaseOption)
 
+const DataSet = z.object({
+  dimensions: z.array(z.string()),
+  source: z.array(z.record(OrdinalRawValue)),
+})
+
+const EchartsType = z.union([
+  z.literal('bar'),
+  z.literal('line'),
+  z.literal('scatter'),
+])
 export const VisualizationV2BlockOutputResult = z.object({
+  dataset: DataSet,
   xAxis: z.array(CartesianAxisOption),
   yAxis: z.array(CartesianAxisOption),
   series: z.array(
     z.object({
-      data: z.array(OrdinalRawValue),
-      type: z.literal('bar'),
+      type: EchartsType,
     })
   ),
 })

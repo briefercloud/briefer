@@ -255,9 +255,12 @@ function VisualizationV2Block(props: Props) {
 
   const onChangeXAxisSort = useCallback(
     (sort: 'ascending' | 'descending') => {
-      // props.block.setAttribute('xAxisSort', sort)
+      props.block.setAttribute('input', {
+        ...attrs.input,
+        xAxisSort: sort,
+      })
     },
-    [props.block]
+    [props.block, attrs.input]
   )
 
   const onChangeHistogramFormat = useCallback(
