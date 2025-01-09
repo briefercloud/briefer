@@ -11,6 +11,7 @@ type BaseConfigurationsMenuProps = {
 
 type ConfigurationsMenuLinkProps = BaseConfigurationsMenuProps & {
   href: string
+  openInNewTab: boolean
 }
 
 type ConfigurationsMenuButtonProps = BaseConfigurationsMenuProps & {
@@ -21,6 +22,7 @@ const ConfigurationsMenuLink = (props: ConfigurationsMenuLinkProps) => {
   return (
     <Link
       href={props.href}
+      target={props.openInNewTab ? '_blank' : undefined}
       className={clsx(
         router.pathname.startsWith(props.href)
           ? 'text-gray-800 bg-ceramic-100/50'
