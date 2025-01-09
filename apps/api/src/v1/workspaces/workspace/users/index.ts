@@ -69,7 +69,7 @@ const usersRouter = (socketServer: IOServer) => {
       }
 
       await addUserToWorkspace(invitee.id, workspaceId, result.data.role)
-      posthog.captureUserCreated(invitee, workspace.id)
+      posthog.captureUserCreated(invitee, workspace.id, workspace.name)
 
       res.json({
         ...invitee,
