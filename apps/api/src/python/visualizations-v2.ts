@@ -84,7 +84,7 @@ def _briefer_create_visualization(df, options):
 
         return df
 
-    def prepare_chart_df(df, options):
+    def get_series_df(df, options, y_axis, series):
         # Prepare data by grouping
         result = group_dataframe(df.copy(), options)
         if "_grouped" in result:
@@ -96,14 +96,8 @@ def _briefer_create_visualization(df, options):
         return result
 
 
-    chart_df = prepare_chart_df(df, options)
-
-
     data = {
-        "dataset": {
-            "dimensions": [options["xAxis"]["name"]],
-            "source": [],
-        },
+        "dataset": [],
         "xAxis": [{
           "type": "category",
         }],
@@ -111,39 +105,39 @@ def _briefer_create_visualization(df, options):
         "series": [],
     }
 
-
     defaultType, _ = extract_chart_type(options["chartType"])
     for y_axis in options["yAxes"]:
+        data["yAxis"].append({
+            "type": "value",
+        })
+
         for series in y_axis["series"]:
+            series_dataframe = get_series_df(df, options, y_axis, series)
+
             chart_type, is_area = extract_chart_type(series["chartType"] or options["chartType"])
-            data["dataset"]["dimensions"].append(series["column"]["name"])
-            data["yAxis"].append({
-                "type": "value",
-            })
+            dataset_index = len(data["dataset"])
+            dataset = {
+                "dimensions": [options["xAxis"]["name"], series["column"]["name"]],
+                "source": [],
+            }
+            for _, row in series_dataframe.iterrows():
+                x_name = options["xAxis"]["name"]
+                x_value = convert_value(series_dataframe[x_name], row[x_name])
+
+                y_name = series["column"]["name"]
+                y_value = convert_value(series_dataframe[y_name], row[y_name])
+                dataset["source"].append({x_name: x_value, y_name: y_value})
+
+            data["dataset"].append(dataset)
+
             serie = {
-              "type": chart_type
+              "type": chart_type,
+              "datasetIndex": dataset_index
             }
             if is_area:
                 serie["areaStyle"] = {}
 
             data["series"].append(serie)
-
-    index = 0
-    for _, row in chart_df.iterrows():
-        x_name = options["xAxis"]["name"]
-        x_value = convert_value(chart_df[x_name], row[x_name])
-
-        data["dataset"]["source"].append({
-            x_name: x_value,
-        })
-        for y_axis in options["yAxes"]:
-            for series in y_axis["series"]:
-                y_name = series["column"]["name"]
-                y_value = convert_value(chart_df[y_name], row[y_name])
-
-                data["dataset"]["source"][index][y_name] = y_value
-        index += 1
-
 
     output = json.dumps({
         "type": "result",

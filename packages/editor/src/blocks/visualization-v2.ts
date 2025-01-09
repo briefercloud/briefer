@@ -75,14 +75,16 @@ const DataSet = z.object({
 const Serie = z.union([
   z.object({
     type: z.union([z.literal('bar'), z.literal('scatter')]),
+    datasetIndex: z.number(),
   }),
   z.object({
     type: z.literal('line'),
     areaStyle: z.object({}).optional(),
+    datasetIndex: z.number(),
   }),
 ])
 export const VisualizationV2BlockOutputResult = z.object({
-  dataset: DataSet,
+  dataset: z.array(DataSet),
   xAxis: z.array(CartesianAxisOption),
   yAxis: z.array(CartesianAxisOption),
   series: z.array(Serie),
