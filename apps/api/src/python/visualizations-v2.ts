@@ -23,19 +23,19 @@ from datetime import datetime
 def _briefer_create_visualization(df, options):
     def extract_chart_type(chartType):
         if chartType == "groupedColumn":
-            return "bar"
+            return "bar", False
         elif chartType == "stackedColumn":
-            return "bar"
+            return "bar", False
         elif chartType == "hundredPercentStackedColumn":
-            return "bar"
+            return "bar", False
         elif chartType == "line":
-            return "line"
+            return "line", False
         elif chartType == "area":
-            return "line"
+            return "line", True
         elif chartType == "hundredPercentStackedArea":
-            return "line"
+            return "line", True
         elif chartType == "scatterPlot":
-            return "scatter"
+            return "scatter", False
         elif chartType == "pie":
             raise ValueError("Pie chart is not implemented yet")
         elif chartType == "histogram":
@@ -112,17 +112,21 @@ def _briefer_create_visualization(df, options):
     }
 
 
-    defaultType = extract_chart_type(options["chartType"])
+    defaultType, _ = extract_chart_type(options["chartType"])
     for y_axis in options["yAxes"]:
         for series in y_axis["series"]:
-            chart_type = extract_chart_type(series["chartType"] or options["chartType"])
+            chart_type, is_area = extract_chart_type(series["chartType"] or options["chartType"])
             data["dataset"]["dimensions"].append(series["column"]["name"])
             data["yAxis"].append({
                 "type": "value",
             })
-            data["series"].append({
-                "type": chart_type,
-            })
+            serie = {
+              "type": chart_type
+            }
+            if is_area:
+                serie["areaStyle"] = {}
+
+            data["series"].append(serie)
 
     index = 0
     for _, row in chart_df.iterrows():

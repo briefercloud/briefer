@@ -370,6 +370,59 @@ df = pd.DataFrame({
         ],
       },
     },
+    {
+      name: 'datetime by integer area',
+      input: {
+        dataframeName: 'df',
+        chartType: 'area',
+        xAxis: datetimesDFColumn,
+        xAxisName: null,
+        xAxisSort: 'descending',
+        xAxisGroupFunction: null,
+        yAxes: [
+          {
+            series: [
+              {
+                axisName: null,
+                chartType: null,
+                column: integersDFColumn,
+                aggregateFunction: null,
+                colorBy: null,
+              },
+            ],
+          },
+        ],
+      },
+      result: {
+        dataset: {
+          dimensions: ['datetimes', 'integers'],
+          source: [
+            { datetimes: '2021-03-03T00:00:00', integers: 33 },
+            { datetimes: '2021-03-02T00:00:00', integers: 22 },
+            { datetimes: '2021-02-01T00:00:00', integers: 21 },
+            { datetimes: '2021-01-03T00:00:00', integers: 13 },
+            { datetimes: '2021-01-02T00:00:00', integers: 12 },
+            { datetimes: '2021-01-01T00:00:00', integers: 11 },
+          ],
+        },
+        xAxis: [
+          {
+            type: 'category',
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            type: 'line',
+            areaStyle: {},
+          },
+        ],
+      },
+    },
   ]
 
   for (const test of cases) {

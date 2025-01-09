@@ -72,20 +72,20 @@ const DataSet = z.object({
   source: z.array(z.record(OrdinalRawValue)),
 })
 
-const EchartsType = z.union([
-  z.literal('bar'),
-  z.literal('line'),
-  z.literal('scatter'),
+const Serie = z.union([
+  z.object({
+    type: z.union([z.literal('bar'), z.literal('scatter')]),
+  }),
+  z.object({
+    type: z.literal('line'),
+    areaStyle: z.object({}).optional(),
+  }),
 ])
 export const VisualizationV2BlockOutputResult = z.object({
   dataset: DataSet,
   xAxis: z.array(CartesianAxisOption),
   yAxis: z.array(CartesianAxisOption),
-  series: z.array(
-    z.object({
-      type: EchartsType,
-    })
-  ),
+  series: z.array(Serie),
 })
 
 export type VisualizationV2BlockOutputResult = z.infer<
