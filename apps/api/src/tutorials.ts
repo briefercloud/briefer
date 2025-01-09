@@ -70,7 +70,10 @@ export const advanceTutorial = async (
   tutorialType: 'onboarding',
   // TODO don't allow null here - this is just for testing
   ifCurrentStep: OnboardingTutorialStep | null
-): Promise<TutorialState | null> => {
+): Promise<{
+  prevStep: OnboardingTutorialStep | null
+  currentState: TutorialState | null
+}> => {
   const tutorial = await prisma().onboardingTutorial.findUnique({
     where: {
       workspaceId,
@@ -82,7 +85,7 @@ export const advanceTutorial = async (
       { workspaceId, tutorialType },
       'Trying to advance tutorial that does not exist'
     )
-    return null
+    return { prevStep: null, currentState: null }
   }
 
   if (
@@ -90,14 +93,17 @@ export const advanceTutorial = async (
     (tutorial.isComplete || tutorial.currentStep !== ifCurrentStep)
   ) {
     return {
-      id: tutorial.id,
-      isCompleted: tutorial.isComplete,
-      isDismissed: tutorial.isDismissed,
-      stepStates: stepStatesFromStep(
-        ONBOARDING_STEP_ORDER,
-        tutorial.currentStep,
-        tutorial.isComplete
-      ),
+      prevStep: tutorial.currentStep,
+      currentState: {
+        id: tutorial.id,
+        isCompleted: tutorial.isComplete,
+        isDismissed: tutorial.isDismissed,
+        stepStates: stepStatesFromStep(
+          ONBOARDING_STEP_ORDER,
+          tutorial.currentStep,
+          tutorial.isComplete
+        ),
+      },
     }
   }
 
@@ -116,14 +122,17 @@ export const advanceTutorial = async (
     })
 
     return {
-      id: tutorial.id,
-      isCompleted: true,
-      isDismissed: tutorial.isDismissed,
-      stepStates: stepStatesFromStep(
-        ONBOARDING_STEP_ORDER,
-        tutorial.currentStep,
-        true
-      ),
+      prevStep: tutorial.currentStep,
+      currentState: {
+        id: tutorial.id,
+        isCompleted: true,
+        isDismissed: tutorial.isDismissed,
+        stepStates: stepStatesFromStep(
+          ONBOARDING_STEP_ORDER,
+          tutorial.currentStep,
+          true
+        ),
+      },
     }
   }
 
@@ -132,7 +141,7 @@ export const advanceTutorial = async (
       { workspaceId, tutorialType },
       'Trying to advance tutorial to a step that does not exist'
     )
-    return null
+    return { prevStep: null, currentState: null }
   }
 
   await prisma().onboardingTutorial.update({
@@ -145,14 +154,17 @@ export const advanceTutorial = async (
   })
 
   return {
-    id: tutorial.id,
-    isCompleted: tutorial.isComplete,
-    isDismissed: tutorial.isDismissed,
-    stepStates: stepStatesFromStep(
-      ONBOARDING_STEP_ORDER,
-      nextStep,
-      tutorial.isComplete
-    ),
+    prevStep: tutorial.currentStep,
+    currentState: {
+      id: tutorial.id,
+      isCompleted: tutorial.isComplete,
+      isDismissed: tutorial.isDismissed,
+      stepStates: stepStatesFromStep(
+        ONBOARDING_STEP_ORDER,
+        nextStep,
+        tutorial.isComplete
+      ),
+    },
   }
 }
 

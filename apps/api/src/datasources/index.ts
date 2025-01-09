@@ -1,4 +1,4 @@
-import { APIDataSource } from '@briefer/database'
+import { APIDataSource, ApiUser } from '@briefer/database'
 import * as bq from './bigquery.js'
 import * as redshift from './redshift.js'
 import * as psql from './psql.js'
@@ -12,8 +12,10 @@ import * as databrickssql from './databrickssql.js'
 import { DataSourceConnectionError } from '@briefer/types'
 import { IOServer } from '../websocket/index.js'
 import { broadcastDataSource } from '../websocket/workspace/data-sources.js'
+import * as posthog from '../events/posthog.js'
 
 export async function ping(
+  user: ApiUser,
   socket: IOServer,
   ds: APIDataSource
 ): Promise<APIDataSource> {
@@ -45,6 +47,14 @@ export async function ping(
     }
   })()
   broadcastDataSource(socket, ds)
+
+  posthog.captureDatasourceStatusUpdate(
+    user,
+    ds.config.data.workspaceId,
+    ds.config.data.id,
+    ds.config.type,
+    ds.config.data.connStatus === 'online'
+  )
 
   return ds
 }
@@ -93,7 +103,10 @@ export async function updateConnStatus<T extends Pick<APIDataSource, 'config'>>(
       ds.config.data = await snowflake.updateConnStatus(ds.config.data, status)
       return ds
     case 'databrickssql':
-      ds.config.data = await databrickssql.updateConnStatus(ds.config.data, status)
+      ds.config.data = await databrickssql.updateConnStatus(
+        ds.config.data,
+        status
+      )
       return ds
   }
 }

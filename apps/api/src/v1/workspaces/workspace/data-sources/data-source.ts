@@ -349,7 +349,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
       forceRefresh: true,
     })
 
-    const result = await ping(socketServer, { config: ds, structure })
+    const result = await ping(req.session.user, socketServer, {
+      config: ds,
+      structure,
+    })
     res.json(result)
   })
 
@@ -539,7 +542,10 @@ const dataSourceRouter = (socketServer: IOServer) => {
         forceRefresh: false,
       })
 
-      const ds = await ping(socketServer, { config: dsConfig, structure })
+      const ds = await ping(req.session.user, socketServer, {
+        config: dsConfig,
+        structure,
+      })
 
       broadcastDataSource(socketServer, ds)
 

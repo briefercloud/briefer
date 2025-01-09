@@ -9,6 +9,7 @@ import {
 import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 import { logger } from '../../../logger.js'
 import prisma from '@briefer/database'
+import * as posthog from '../../../events/posthog.js'
 
 export default function tutorialsRouter(socketServer: IOServer) {
   const router = Router({ mergeParams: true })
@@ -56,13 +57,19 @@ export default function tutorialsRouter(socketServer: IOServer) {
         null
       )
 
-      if (!tutorialState) {
+      if (!tutorialState.prevStep || !tutorialState.currentState) {
         res.status(404).end()
         return
       }
 
-      res.json(tutorialState)
+      res.json(tutorialState.currentState)
       broadcastTutorialStepStates(socketServer, workspaceId, tutorialType)
+      posthog.captureOnboardingStep(
+        req.session.user.id,
+        workspaceId,
+        tutorialState.prevStep,
+        true
+      )
     } catch (err) {
       logger().error(
         { err, workspaceId, tutorialType },
@@ -105,6 +112,7 @@ export default function tutorialsRouter(socketServer: IOServer) {
 
       res.json(tutorialState)
       broadcastTutorialStepStates(socketServer, workspaceId, tutorialType)
+      posthog.captureOnboardingDismissed(req.session.user.id, workspaceId)
     } catch (err) {
       logger().error(
         { err, workspaceId, tutorialType },

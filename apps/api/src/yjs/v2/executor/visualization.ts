@@ -200,6 +200,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         'createVisualization'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
+      events.advanceOnboarding('createVisualization')
     } catch (err) {
       logger().error(
         {

@@ -13,6 +13,7 @@ import {
   createSQLServerDataSource,
   createSnowflakeDataSource,
   createDatabricksSQLDataSource,
+  getWorkspaceById,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -26,6 +27,7 @@ import { captureDatasourceCreated } from '../../../../events/posthog.js'
 import { IOServer } from '../../../../websocket/index.js'
 import { advanceTutorial } from '../../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../../websocket/workspace/tutorial.js'
+import * as posthog from '../../../../events/posthog.js'
 
 const dataSourcePayload = z.union([
   z.object({
@@ -371,7 +373,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
       }
 
       const datasource = await createDataSource(data).then((ds) =>
-        ping(socketServer, {
+        ping(req.session.user, socketServer, {
           config: ds,
           structure: {
             // placeholder id 00000000-0000-0000-0000-000000000000
@@ -383,12 +385,6 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           },
         })
       )
-      captureDatasourceCreated(
-        req.session.user,
-        workspaceId,
-        datasource.config.data.id,
-        data.type
-      )
 
       await fetchDataSourceStructure(socketServer, datasource.config, {
         forceRefresh: true,
@@ -396,8 +392,32 @@ const dataSourcesRouter = (socketServer: IOServer) => {
 
       res.status(201).json(datasource)
 
-      await advanceTutorial(workspaceId, 'onboarding', 'connectDataSource')
+      const tutorialState = await advanceTutorial(
+        workspaceId,
+        'onboarding',
+        'connectDataSource'
+      )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
+
+      const workspace = await getWorkspaceById(workspaceId)
+      if (workspace) {
+        captureDatasourceCreated(
+          req.session.user,
+          workspaceId,
+          workspace.name,
+          datasource.config.data.id,
+          data.type
+        )
+      }
+
+      if (tutorialState.prevStep) {
+        posthog.captureOnboardingStep(
+          req.session.user.id,
+          workspaceId,
+          tutorialState.prevStep,
+          false
+        )
+      }
     } catch (err) {
       req.log.error(
         {

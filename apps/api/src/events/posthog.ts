@@ -1,8 +1,13 @@
-import { ApiUser, ApiWorkspace } from '@briefer/database'
+import { ApiUser, ApiWorkspace, getWorkspaceById } from '@briefer/database'
 import { PostHog } from 'posthog-node'
 import { config } from '../config/index.js'
+import { OnboardingTutorialStep } from '@briefer/types'
 
 const isJest = process.env['JEST_WORKER_ID'] !== undefined
+
+function camelToSnakeCase(input: string): string {
+  return input.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
+}
 
 let posthogClient: PostHog | null
 export function getPostHogClient() {
@@ -40,6 +45,7 @@ export const captureWorkspaceCreated = async (
 export const captureDatasourceCreated = async (
   sender: ApiUser,
   workspaceId: string,
+  workspaceName: string,
   datasourceId: string,
   datasourceType: string
 ) => {
@@ -49,12 +55,41 @@ export const captureDatasourceCreated = async (
     event: 'datasource_created',
     properties: {
       workspaceId,
+      workspaceName,
       datasourceId,
       datasourceType,
       creatorId: sender.id,
       userId: sender.id,
     },
   })
+}
+
+export const captureDatasourceStatusUpdate = async (
+  sender: ApiUser,
+  workspaceId: string,
+  datasourceId: string,
+  datasourceType: string,
+  isOnline: boolean
+) => {
+  const workspace = await getWorkspaceById(workspaceId)
+  if (!workspace) {
+    return
+  }
+
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: sender.id,
+    event: isOnline ? 'datasource_online' : 'datasource_offline',
+    properties: {
+      workspaceId,
+      workspaceName: workspace.name,
+      datasourceId,
+      datasourceType,
+      creatorId: sender.id,
+      userId: sender.id,
+    },
+  })
+  posthog?.flush()
 }
 
 export const capturePythonRun = async (
@@ -127,7 +162,8 @@ export const captureCreateSchedule = async (
 
 export const captureUserCreated = async (
   newUser: ApiUser,
-  workspaceId: string
+  workspaceId: string,
+  workspaceName: string
 ) => {
   const posthog = getPostHogClient()
   posthog?.capture({
@@ -135,6 +171,40 @@ export const captureUserCreated = async (
     event: 'user_created',
     properties: {
       userId: newUser.id,
+      workspaceId,
+      workspaceName,
+    },
+  })
+}
+
+export const captureOnboardingStep = async (
+  userId: string,
+  workspaceId: string,
+  onboardingStep: OnboardingTutorialStep,
+  isSkipped: boolean
+) => {
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: userId,
+    event: `onboarding_${camelToSnakeCase(onboardingStep)}`,
+    properties: {
+      userId: userId,
+      workspaceId: workspaceId,
+      isSkipped,
+    },
+  })
+}
+
+export const captureOnboardingDismissed = async (
+  userId: string,
+  workspaceId: string
+) => {
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: userId,
+    event: `onboarding_dismissed`,
+    properties: {
+      userId: userId,
       workspaceId: workspaceId,
     },
   })

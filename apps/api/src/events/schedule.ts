@@ -14,4 +14,6 @@ export class ScheduleNotebookEvents implements NotebookEvents {
   public writeback() {}
 
   public blockAdd() {}
+
+  public advanceOnboarding() {}
 }

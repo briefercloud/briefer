@@ -126,6 +126,7 @@ export class PythonExecutor implements IPythonExecutor {
         'runPython'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
+      events.advanceOnboarding('runPython')
     } catch (err) {
       logger().error(
         {

@@ -1,6 +1,11 @@
 import { ApiUser } from '@briefer/database'
 import { NotebookEvents } from './index.js'
-import { capturePythonRun, captureSQLRun } from './posthog.js'
+import {
+  capturePythonRun,
+  captureSQLRun,
+  captureOnboardingStep,
+} from './posthog.js'
+import { OnboardingTutorialStep } from '@briefer/types'
 
 export class UserNotebookEvents implements NotebookEvents {
   public constructor(
@@ -24,4 +29,8 @@ export class UserNotebookEvents implements NotebookEvents {
   public aiUsage() {}
 
   public blockAdd() {}
+
+  public advanceOnboarding(onboardingStep: OnboardingTutorialStep) {
+    captureOnboardingStep(this.user.id, this.workspaceId, onboardingStep, false)
+  }
 }
