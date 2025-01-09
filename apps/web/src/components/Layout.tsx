@@ -24,6 +24,7 @@ import {
   PuzzlePieceIcon,
   MagnifyingGlassIcon,
   RocketLaunchIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -60,6 +61,7 @@ type ConfigItem = {
   icon: React.ComponentType<React.ComponentProps<any>>
   hidden?: boolean
   allowedRoles: Set<UserWorkspaceRole>
+  openInNewTab: boolean
 }
 
 const configs = (workspaceId: string): ConfigItem[] => [
@@ -70,6 +72,7 @@ const configs = (workspaceId: string): ConfigItem[] => [
     hidden: true,
     icon: CpuChipIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin']),
+    openInNewTab: false,
   },
   {
     id: 'data-sources-sidebar-item',
@@ -77,6 +80,7 @@ const configs = (workspaceId: string): ConfigItem[] => [
     href: `/workspaces/${workspaceId}/data-sources`,
     icon: CircleStackIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor']),
+    openInNewTab: false,
   },
   {
     id: 'users-sidebar-item',
@@ -84,6 +88,7 @@ const configs = (workspaceId: string): ConfigItem[] => [
     href: `/workspaces/${workspaceId}/users`,
     icon: UsersIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor', 'viewer']),
+    openInNewTab: false,
   },
   {
     id: 'integrations-sidebar-item',
@@ -91,6 +96,15 @@ const configs = (workspaceId: string): ConfigItem[] => [
     href: `/workspaces/${workspaceId}/integrations`,
     icon: PuzzlePieceIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor']),
+    openInNewTab: false,
+  },
+  {
+    id: 'docs-sidebar-item',
+    name: 'Documentation',
+    href: `https://docs.briefer.cloud`,
+    icon: AcademicCapIcon,
+    allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor', 'viewer']),
+    openInNewTab: true,
   },
   {
     id: 'settings-sidebar-item',
@@ -98,6 +112,7 @@ const configs = (workspaceId: string): ConfigItem[] => [
     href: `/workspaces/${workspaceId}/settings`,
     icon: AdjustmentsHorizontalIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin']),
+    openInNewTab: false,
   },
   {
     id: 'thrash-sidebar-item',
@@ -105,6 +120,7 @@ const configs = (workspaceId: string): ConfigItem[] => [
     href: `/workspaces/${workspaceId}/trash`,
     icon: TrashIcon,
     allowedRoles: new Set<UserWorkspaceRole>(['admin', 'editor']),
+    openInNewTab: false,
   },
 ]
 
@@ -436,6 +452,7 @@ export default function Layout({
                       href={item.href}
                       text={item.name}
                       icon={item.icon}
+                      openInNewTab={item.openInNewTab}
                       blink={
                         item.id === 'data-sources-sidebar-item' &&
                         !hasUserDataSource
