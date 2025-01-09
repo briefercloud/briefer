@@ -373,7 +373,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
       }
 
       const datasource = await createDataSource(data).then((ds) =>
-        ping(socketServer, {
+        ping(req.session.user, socketServer, {
           config: ds,
           structure: {
             // placeholder id 00000000-0000-0000-0000-000000000000

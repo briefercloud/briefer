@@ -1,4 +1,4 @@
-import { ApiUser, ApiWorkspace } from '@briefer/database'
+import { ApiUser, ApiWorkspace, getWorkspaceById } from '@briefer/database'
 import { PostHog } from 'posthog-node'
 import { config } from '../config/index.js'
 import { OnboardingTutorialStep } from '@briefer/types'
@@ -62,6 +62,34 @@ export const captureDatasourceCreated = async (
       userId: sender.id,
     },
   })
+}
+
+export const captureDatasourceStatusUpdate = async (
+  sender: ApiUser,
+  workspaceId: string,
+  datasourceId: string,
+  datasourceType: string,
+  isOnline: boolean
+) => {
+  const workspace = await getWorkspaceById(workspaceId)
+  if (!workspace) {
+    return
+  }
+
+  const posthog = getPostHogClient()
+  posthog?.capture({
+    distinctId: sender.id,
+    event: isOnline ? 'datasource_online' : 'datasource_offline',
+    properties: {
+      workspaceId,
+      workspaceName: workspace.name,
+      datasourceId,
+      datasourceType,
+      creatorId: sender.id,
+      userId: sender.id,
+    },
+  })
+  posthog?.flush()
 }
 
 export const capturePythonRun = async (
