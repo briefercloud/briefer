@@ -45,6 +45,7 @@ export const captureWorkspaceCreated = async (
 export const captureDatasourceCreated = async (
   sender: ApiUser,
   workspaceId: string,
+  workspaceName: string,
   datasourceId: string,
   datasourceType: string
 ) => {
@@ -54,6 +55,7 @@ export const captureDatasourceCreated = async (
     event: 'datasource_created',
     properties: {
       workspaceId,
+      workspaceName,
       datasourceId,
       datasourceType,
       creatorId: sender.id,

@@ -13,6 +13,7 @@ import {
   createSQLServerDataSource,
   createSnowflakeDataSource,
   createDatabricksSQLDataSource,
+  getWorkspaceById,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -384,12 +385,6 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           },
         })
       )
-      captureDatasourceCreated(
-        req.session.user,
-        workspaceId,
-        datasource.config.data.id,
-        data.type
-      )
 
       await fetchDataSourceStructure(socketServer, datasource.config, {
         forceRefresh: true,
@@ -403,6 +398,17 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         'connectDataSource'
       )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
+
+      const workspace = await getWorkspaceById(workspaceId)
+      if (workspace) {
+        captureDatasourceCreated(
+          req.session.user,
+          workspaceId,
+          workspace.name,
+          datasource.config.data.id,
+          data.type
+        )
+      }
 
       if (tutorialState.prevStep) {
         posthog.captureOnboardingStep(
