@@ -298,8 +298,7 @@ export async function getDatabaseURL(
       let connectData = ''
       if (ds.data.serviceName) {
         connectData += `(service_name=${ds.data.serviceName})`
-      }
-      if (ds.data.sid) {
+      } else if (ds.data.sid) {
         connectData += `(sid=${ds.data.sid})`
       }
 
