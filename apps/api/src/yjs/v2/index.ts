@@ -628,7 +628,7 @@ export class WSSharedDocV2 {
     update: Uint8Array,
     _arg1: any,
     _arg2: any,
-    _tr: Y.Transaction
+    tr: Y.Transaction
   ) => {
     this.hasUpdatesToPersist = true
 
@@ -652,6 +652,13 @@ export class WSSharedDocV2 {
           'Failed to emit document to workspace after yjs title diff'
         )
       }
+    }
+
+    // do not persist while duplicating
+    if (
+      z.object({ isDuplicating: z.literal(true) }).safeParse(tr.origin).success
+    ) {
+      return
     }
 
     this.persistUpdatesQueue.add(async () => {
@@ -1100,7 +1107,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? (doc.userAppClock[user.id] ?? doc.appClock)
+          ? doc.userAppClock[user.id] ?? doc.appClock
           : doc.clock
 
         if (dbClock !== clock) {

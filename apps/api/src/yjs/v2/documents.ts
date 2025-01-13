@@ -28,102 +28,105 @@ function duplicateYDoc(
   getDuplicatedTitle: (title: string) => string,
   config: { keepIds: boolean; datasourceMap?: Map<string, string> }
 ) {
-  newYDoc.transact(() => {
-    // map of old id to new id
-    const idMap = new Map<string, string>()
+  newYDoc.transact(
+    () => {
+      // map of old id to new id
+      const idMap = new Map<string, string>()
 
-    // duplicate title
-    const newTitle = getDuplicatedTitle(prevYDoc.getTitleFromDoc())
+      // duplicate title
+      const newTitle = getDuplicatedTitle(prevYDoc.getTitleFromDoc())
 
-    const titleFrag = newYDoc.getXmlFragment('title')
-    titleFrag.delete(0, titleFrag.length)
-    const titleEl = new Y.XmlElement('title')
-    const titleText = new Y.XmlText(newTitle)
-    titleEl.insert(0, [titleText])
-    titleFrag.insert(0, [titleEl])
+      const titleFrag = newYDoc.getXmlFragment('title')
+      titleFrag.delete(0, titleFrag.length)
+      const titleEl = new Y.XmlElement('title')
+      const titleText = new Y.XmlText(newTitle)
+      titleEl.insert(0, [titleText])
+      titleFrag.insert(0, [titleEl])
 
-    // duplicate blocks
-    const oldBlocksMap = prevYDoc.blocks
-    const newBlocksMap = newYDoc.getMap<YBlock>('blocks')
-    newBlocksMap.clear()
+      // duplicate blocks
+      const oldBlocksMap = prevYDoc.blocks
+      const newBlocksMap = newYDoc.getMap<YBlock>('blocks')
+      newBlocksMap.clear()
 
-    for (const [blockId, block] of oldBlocksMap.entries()) {
-      const newBlockId = config.keepIds ? blockId : uuidv4()
-      idMap.set(blockId, newBlockId)
-      const blockType = block.getAttribute('type')
-      if (blockType) {
-        const clonedBlock = duplicateBlock(
-          newBlockId,
-          block,
-          prevYDoc.blocks,
-          true,
-          { datasourceMap: config.datasourceMap }
-        )
-        newBlocksMap.set(newBlockId, clonedBlock)
+      for (const [blockId, block] of oldBlocksMap.entries()) {
+        const newBlockId = config.keepIds ? blockId : uuidv4()
+        idMap.set(blockId, newBlockId)
+        const blockType = block.getAttribute('type')
+        if (blockType) {
+          const clonedBlock = duplicateBlock(
+            newBlockId,
+            block,
+            prevYDoc.blocks,
+            true,
+            { datasourceMap: config.datasourceMap }
+          )
+          newBlocksMap.set(newBlockId, clonedBlock)
+        }
       }
-    }
 
-    // duplicate layout
-    const prevLayout = prevYDoc.layout
-    const newLayout = getLayout(newYDoc)
-    newLayout.delete(0, newLayout.length)
-    const newLayoutArr: YBlockGroup[] = prevLayout.map(cloneBlockGroup)
-    newLayout.insert(0, newLayoutArr)
+      // duplicate layout
+      const prevLayout = prevYDoc.layout
+      const newLayout = getLayout(newYDoc)
+      newLayout.delete(0, newLayout.length)
+      const newLayoutArr: YBlockGroup[] = prevLayout.map(cloneBlockGroup)
+      newLayout.insert(0, newLayoutArr)
 
-    // translate layout ids
-    if (!config.keepIds) {
-      newLayout.forEach((newBlockGroup) => {
-        newBlockGroup.getAttribute('tabs')?.forEach((tab) => {
-          const oldId = tab.getAttribute('id')
-          if (oldId) {
+      // translate layout ids
+      if (!config.keepIds) {
+        newLayout.forEach((newBlockGroup) => {
+          newBlockGroup.getAttribute('tabs')?.forEach((tab) => {
+            const oldId = tab.getAttribute('id')
+            if (oldId) {
+              const translatedId = idMap.get(oldId)
+              tab.setAttribute('id', translatedId ?? uuidv4())
+            }
+          })
+          const currentRef = newBlockGroup.getAttribute('current')
+          if (currentRef) {
+            const oldId = currentRef.getAttribute('id')
+            if (!oldId) {
+              throw new Error('Tab id not found')
+            }
             const translatedId = idMap.get(oldId)
-            tab.setAttribute('id', translatedId ?? uuidv4())
+            currentRef.setAttribute('id', translatedId ?? uuidv4())
           }
+
+          newLayoutArr.push(newBlockGroup)
         })
-        const currentRef = newBlockGroup.getAttribute('current')
-        if (currentRef) {
-          const oldId = currentRef.getAttribute('id')
-          if (!oldId) {
-            throw new Error('Tab id not found')
-          }
-          const translatedId = idMap.get(oldId)
-          currentRef.setAttribute('id', translatedId ?? uuidv4())
+      }
+
+      const prevDashboard = prevYDoc.dashboard
+
+      const newDashboard = getDashboard(newYDoc)
+      newDashboard.clear()
+
+      for (const dashId of prevDashboard.keys()) {
+        const dashItem = getDashboardItem(prevDashboard, dashId)
+        if (!dashItem) {
+          continue
         }
 
-        newLayoutArr.push(newBlockGroup)
-      })
-    }
+        const oldId = dashItem.blockId
+        const newId = idMap.get(oldId)
+        if (!newId) {
+          continue
+        }
 
-    const prevDashboard = prevYDoc.dashboard
-
-    const newDashboard = getDashboard(newYDoc)
-    newDashboard.clear()
-
-    for (const dashId of prevDashboard.keys()) {
-      const dashItem = getDashboardItem(prevDashboard, dashId)
-      if (!dashItem) {
-        continue
+        dashItem.blockId = newId
+        addDashboardItemToYDashboard(newDashboard, dashItem)
       }
 
-      const oldId = dashItem.blockId
-      const newId = idMap.get(oldId)
-      if (!newId) {
-        continue
+      // duplicate dataframes
+      const prevDataframes = prevYDoc.dataframes
+      const newDataframes = getDataframes(newYDoc)
+      newDataframes.clear()
+
+      for (const [dataframeId, dataframe] of prevDataframes.entries()) {
+        newDataframes.set(dataframeId, clone(dataframe))
       }
-
-      dashItem.blockId = newId
-      addDashboardItemToYDashboard(newDashboard, dashItem)
-    }
-
-    // duplicate dataframes
-    const prevDataframes = prevYDoc.dataframes
-    const newDataframes = getDataframes(newYDoc)
-    newDataframes.clear()
-
-    for (const [dataframeId, dataframe] of prevDataframes.entries()) {
-      newDataframes.set(dataframeId, clone(dataframe))
-    }
-  })
+    },
+    { isDuplicating: true }
+  )
 }
 
 export function getYDocWithoutHistory(ydoc: WSSharedDocV2): Y.Doc {
