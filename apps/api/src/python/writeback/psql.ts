@@ -94,34 +94,42 @@ export async function writebackPSQL(
                   }
                   break
                 case 'stdout':
-                  const parsed = jsonString
-                    .pipe(WriteBackResult)
-                    .safeParse(output.text)
-                  if (parsed.success) {
-                    result =
-                      parsed.data._tag === 'success'
-                        ? { ...parsed.data, dataSourceId: datasource.data.id }
-                        : parsed.data
-                  } else {
-                    result = {
-                      _tag: 'error',
-                      executedAt,
-                      step: 'unknown',
+                  const lines = output.text.split('\n')
+                  for (const l of lines) {
+                    const line = l.trim()
+                    if (line === '') {
+                      continue
                     }
 
-                    logger().error(
-                      {
-                        workspaceId,
-                        sessionId,
-                        dataframeName,
-                        tableName,
-                        overwriteTable,
-                        onConflict,
-                        output: output.text,
-                        error: parsed.error,
-                      },
-                      `Failed to parse writeback result`
-                    )
+                    const parsed = jsonString
+                      .pipe(WriteBackResult)
+                      .safeParse(line)
+                    if (parsed.success) {
+                      result =
+                        parsed.data._tag === 'success'
+                          ? { ...parsed.data, dataSourceId: datasource.data.id }
+                          : parsed.data
+                    } else {
+                      result = {
+                        _tag: 'error',
+                        executedAt,
+                        step: 'unknown',
+                      }
+
+                      logger().error(
+                        {
+                          workspaceId,
+                          sessionId,
+                          dataframeName,
+                          tableName,
+                          overwriteTable,
+                          onConflict,
+                          output: output.text,
+                          error: parsed.error,
+                        },
+                        `Failed to parse writeback result`
+                      )
+                    }
                   }
                   break
               }
