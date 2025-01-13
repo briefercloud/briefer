@@ -80,41 +80,24 @@ export async function updateWorkspace(
   id: string,
   data: WorkspaceEditFormValues
 ) {
-  const w = await prisma().$transaction(
-    async (tx) => {
-      const ws = await tx.workspace.findUnique({
-        where: { id },
-        select: { secretsId: true },
-      })
-
-      let secretsId = ws?.secretsId
-      if (!secretsId) {
-        const secrets = await tx.workspaceSecrets.create({
-          data: {
+  const w = await prisma().workspace.update({
+    where: { id },
+    data: {
+      name: data.name,
+      assistantModel: data.assistantModel,
+      secrets: {
+        upsert: {
+          update: {
             openAiApiKey: data.openAiApiKey,
           },
-        })
-        secretsId = secrets.id
-      } else {
-        await tx.workspaceSecrets.upsert({
-          where: { id: secretsId },
-          update: { openAiApiKey: data.openAiApiKey },
-          create: { openAiApiKey: data.openAiApiKey },
-        })
-      }
-
-      return await tx.workspace.update({
-        where: { id },
-        include: { secrets: true },
-        data: {
-          name: data.name,
-          assistantModel: data.assistantModel,
-          secretsId: secretsId,
+          create: {
+            openAiApiKey: data.openAiApiKey,
+          },
         },
-      })
+      },
     },
-    { maxWait: 31000, timeout: 30000 }
-  )
+    include: { secrets: true },
+  })
 
   return transformSecrets(w)
 }
