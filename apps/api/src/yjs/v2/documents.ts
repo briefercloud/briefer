@@ -140,78 +140,68 @@ export async function duplicateDocument(
   tx: PrismaTransaction,
   datasourceMap?: Map<string, string>
 ) {
-  function transaction(cb: (tx: PrismaTransaction) => Promise<void>) {
-    if (tx) {
-      return cb(tx)
-    }
+  const prevId = getDocId(prevDoc.id, null)
+  await getYDocForUpdate(
+    prevId,
+    socketServer,
+    prevDoc.id,
+    prevDoc.workspaceId,
+    async (existingYDoc) => {
+      const newId = getDocId(newDoc.id, null)
+      await getYDocForUpdate(
+        newId,
+        socketServer,
+        newDoc.id,
+        newDoc.workspaceId,
+        async (newYDoc) => {
+          duplicateYDoc(existingYDoc, newYDoc.ydoc, getDuplicatedTitle, {
+            keepIds: false,
+            datasourceMap,
+          })
 
-    return prisma().$transaction(cb, { maxWait: 31000, timeout: 30000 })
-  }
-
-  await transaction(async (tx) => {
-    const prevId = getDocId(prevDoc.id, null)
-    await getYDocForUpdate(
-      prevId,
-      socketServer,
-      prevDoc.id,
-      prevDoc.workspaceId,
-      async (existingYDoc) => {
-        const newId = getDocId(newDoc.id, null)
-        await getYDocForUpdate(
-          newId,
-          socketServer,
-          newDoc.id,
-          newDoc.workspaceId,
-          async (newYDoc) => {
-            duplicateYDoc(existingYDoc, newYDoc.ydoc, getDuplicatedTitle, {
-              keepIds: false,
-              datasourceMap,
+          const blocks = newYDoc.blocks
+          const componentInstances: {
+            blockId: string
+            componentId: string
+          }[] = []
+          for (const [blockId, block] of blocks) {
+            const componentId = switchBlockType(block, {
+              onSQL: (block) => block.getAttribute('componentId'),
+              onPython: (block) => block.getAttribute('componentId'),
+              onRichText: () => null,
+              onVisualization: () => null,
+              onInput: () => null,
+              onDropdownInput: () => null,
+              onDateInput: () => null,
+              onFileUpload: () => null,
+              onDashboardHeader: () => null,
+              onWriteback: () => null,
+              onPivotTable: () => null,
             })
 
-            const blocks = newYDoc.blocks
-            const componentInstances: {
-              blockId: string
-              componentId: string
-            }[] = []
-            for (const [blockId, block] of blocks) {
-              const componentId = switchBlockType(block, {
-                onSQL: (block) => block.getAttribute('componentId'),
-                onPython: (block) => block.getAttribute('componentId'),
-                onRichText: () => null,
-                onVisualization: () => null,
-                onInput: () => null,
-                onDropdownInput: () => null,
-                onDateInput: () => null,
-                onFileUpload: () => null,
-                onDashboardHeader: () => null,
-                onWriteback: () => null,
-                onPivotTable: () => null,
-              })
-
-              if (componentId) {
-                componentInstances.push({ blockId, componentId })
-              }
+            if (componentId) {
+              componentInstances.push({ blockId, componentId })
             }
+          }
 
-            if (componentInstances.length > 0) {
-              await tx.reusableComponentInstance.createMany({
-                data: componentInstances.map((ci) => ({
-                  blockId: ci.blockId,
-                  reusableComponentId: ci.componentId,
-                  documentId: newDoc.id,
-                })),
-                skipDuplicates: true,
-              })
-            }
-          },
-          new DocumentPersistor(newDoc.id),
-          tx
-        )
-      },
-      new DocumentPersistor(prevDoc.id),
-      tx
-    )
-  })
+          if (componentInstances.length > 0) {
+            await tx.reusableComponentInstance.createMany({
+              data: componentInstances.map((ci) => ({
+                blockId: ci.blockId,
+                reusableComponentId: ci.componentId,
+                documentId: newDoc.id,
+              })),
+              skipDuplicates: true,
+            })
+          }
+        },
+        new DocumentPersistor(newDoc.id),
+        tx
+      )
+    },
+    new DocumentPersistor(prevDoc.id),
+    tx
+  )
 }
 
 export async function updateAppState(

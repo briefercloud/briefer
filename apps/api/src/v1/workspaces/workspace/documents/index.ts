@@ -42,33 +42,23 @@ export default function documentsRouter(socketServer: IOServer) {
 
       let status = 500
       try {
-        const document = await prisma().$transaction(
-          async (tx) => {
-            const result = await upsertDocument(
-              data.id ?? uuidv4(),
-              '',
-              workspaceId,
-              data.parentId,
-              -1,
-              data.version ?? 1,
-              tx
-            )
+        const document = await prisma().$transaction(async (tx) => {
+          const result = await upsertDocument(
+            data.id ?? uuidv4(),
+            '',
+            workspaceId,
+            data.parentId,
+            -1,
+            data.version ?? 1,
+            tx
+          )
 
-            if (!result) {
-              throw new Error('Failed to create document')
-            }
-
-            if (result.created) {
-              res.status(201)
-            }
-
-            return result.document
-          },
-          {
-            maxWait: 31000,
-            timeout: 30000,
+          if (result.created) {
+            res.status(201)
           }
-        )
+
+          return result.document
+        })
 
         await broadcastDocument(socketServer, workspaceId, document.id)
         res.json(await toApiDocument(document))

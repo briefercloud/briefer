@@ -47,50 +47,40 @@ export default function componentsRouter(socketServer: IOServer) {
         return
       }
 
-      await prisma().$transaction(
-        async (tx) => {
-          const component = await createReusableComponent(payload.data, tx)
-          await getYDocForUpdate(
-            getDocId(payload.data.documentId, null),
-            socketServer,
-            payload.data.documentId,
-            workspaceId,
-            async (ydoc) => {
-              const block = ydoc.blocks.get(payload.data.blockId)
-              if (!block) {
-                throw new Error(
-                  `Could not find block ${payload.data.blockId} in document ${payload.data.documentId}`
-                )
-              }
+      const component = await createReusableComponent(payload.data)
+      await getYDocForUpdate(
+        getDocId(payload.data.documentId, null),
+        socketServer,
+        payload.data.documentId,
+        workspaceId,
+        async (ydoc) => {
+          const block = ydoc.blocks.get(payload.data.blockId)
+          if (!block) {
+            throw new Error(
+              `Could not find block ${payload.data.blockId} in document ${payload.data.documentId}`
+            )
+          }
 
-              switchBlockType(block, {
-                onSQL: (block) =>
-                  block.setAttribute('componentId', component.id),
-                onPython: (block) =>
-                  block.setAttribute('componentId', component.id),
-                onRichText: () => {},
-                onVisualization: () => {},
-                onInput: () => {},
-                onDropdownInput: () => {},
-                onDateInput: () => {},
-                onFileUpload: () => {},
-                onDashboardHeader: () => {},
-                onWriteback: () => {},
-                onPivotTable: () => {},
-              })
-            },
-            new DocumentPersistor(payload.data.documentId),
-            tx
-          )
-          await broadcastComponent(socketServer, component)
-
-          res.json(component)
+          switchBlockType(block, {
+            onSQL: (block) => block.setAttribute('componentId', component.id),
+            onPython: (block) =>
+              block.setAttribute('componentId', component.id),
+            onRichText: () => {},
+            onVisualization: () => {},
+            onInput: () => {},
+            onDropdownInput: () => {},
+            onDateInput: () => {},
+            onFileUpload: () => {},
+            onDashboardHeader: () => {},
+            onWriteback: () => {},
+            onPivotTable: () => {},
+          })
         },
-        {
-          maxWait: 31000,
-          timeout: 30000,
-        }
+        new DocumentPersistor(payload.data.documentId)
       )
+      await broadcastComponent(socketServer, component)
+
+      res.json(component)
     } catch (err) {
       req.log.error({ workspaceId, err }, 'Error creating reusable component')
       res.sendStatus(500)

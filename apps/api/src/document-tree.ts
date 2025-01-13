@@ -1,6 +1,6 @@
 import * as yjsDocsV2 from './yjs/v2/documents.js'
 import * as dfns from 'date-fns'
-import { PrismaTransaction, Document } from '@briefer/database'
+import { prisma, PrismaTransaction, Document } from '@briefer/database'
 import PQueue from 'p-queue'
 import { IOServer } from './websocket/index.js'
 
@@ -264,6 +264,21 @@ export async function deleteDocument(
   id: string,
   workspaceId: string,
   softDelete: boolean,
+  tx?: PrismaTransaction
+): Promise<Document> {
+  if (tx) {
+    return deleteDocumentInTransaction(id, workspaceId, softDelete, tx)
+  }
+
+  return prisma().$transaction((tx) =>
+    deleteDocumentInTransaction(id, workspaceId, softDelete, tx)
+  )
+}
+
+async function deleteDocumentInTransaction(
+  id: string,
+  workspaceId: string,
+  softDelete: boolean,
   tx: PrismaTransaction
 ): Promise<Document> {
   return wrapInQueue(workspaceId, async () => {
@@ -323,6 +338,21 @@ function getDuplicatedTitle(prevTitle: string) {
 }
 
 export async function duplicateDocument(
+  id: string,
+  workspaceId: string,
+  socketServer: IOServer,
+  tx?: PrismaTransaction
+): Promise<Document> {
+  if (tx) {
+    return duplicateDocumentInTransaction(id, workspaceId, socketServer, tx)
+  }
+
+  return prisma().$transaction((tx) =>
+    duplicateDocumentInTransaction(id, workspaceId, socketServer, tx)
+  )
+}
+
+export async function duplicateDocumentInTransaction(
   id: string,
   workspaceId: string,
   socketServer: IOServer,

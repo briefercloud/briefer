@@ -5,7 +5,6 @@ import {
   UserWorkspaceRole,
   ApiWorkspace,
   createWorkspace as prismaCreateWorkspace,
-  createDocument,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
 import { WorkspaceCreateInput } from '@briefer/types'
@@ -27,12 +26,9 @@ export class WorkspaceCreator implements IWorkspaceCreator {
     tx?: PrismaTransaction
   ): Promise<{ workspace: ApiWorkspace; invitedUsers: ApiUser[] }> {
     const run = async (tx: PrismaTransaction) => {
-      const workspace = await prismaCreateWorkspace(input, owner.id, tx)
-
       let userWorkspaceAssociations = [
         {
           userId: owner.id,
-          workspaceId: workspace.id,
           role: 'admin' as UserWorkspaceRole,
         },
       ]
@@ -59,7 +55,6 @@ export class WorkspaceCreator implements IWorkspaceCreator {
 
             userWorkspaceAssociations.push({
               userId: user.id,
-              workspaceId: workspace.id,
               role: 'editor',
             })
 
@@ -67,25 +62,17 @@ export class WorkspaceCreator implements IWorkspaceCreator {
           })
       )
 
-      await tx.userWorkspace.createMany({
-        data: userWorkspaceAssociations,
-        skipDuplicates: true,
-      })
-
-      await tx.onboardingTutorial.create({
-        data: {
-          workspaceId: workspace.id,
-          currentStep: 'connectDataSource',
-          isComplete: false,
-        },
-      })
+      const workspace = await prismaCreateWorkspace(
+        input,
+        owner.id,
+        userWorkspaceAssociations,
+        tx
+      )
 
       return { workspace, invitedUsers: guestUsers }
     }
 
-    const workspace = tx
-      ? await run(tx)
-      : await prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
+    const workspace = tx ? await run(tx) : await prisma().$transaction(run)
 
     return workspace
   }

@@ -1,3 +1,4 @@
+import { splitEvery } from 'ramda'
 import { Document } from '@prisma/client'
 
 import prisma, { PrismaTransaction } from './index.js'
@@ -145,33 +146,66 @@ export async function restoreDocument(
   })
 }
 
+// TODO: we could use a recursive CTE to get all descendants.
+// Since prisma does not nativelly support it, we'll avoid it while we can, I
+// don't think people will have huge nesting levels anyways.
+export async function listAllDescendants(
+  documentId: string,
+  tx?: PrismaTransaction
+): Promise<string[]> {
+  const result: string[] = []
+
+  const queue: string[] = []
+  let current: string | undefined = documentId
+  let first = true
+  while (current || first) {
+    first = false
+    const children = (
+      await (tx ?? prisma()).document.findMany({
+        where: {
+          parentId: current,
+        },
+        select: {
+          id: true,
+        },
+      })
+    ).map((c) => c.id)
+    queue.push(...children)
+    current = queue.shift()
+  }
+
+  return result
+}
+
 export async function restoreDocumentAndChildren(
   documentId: string,
   workspaceId: string,
   tx?: PrismaTransaction
 ) {
-  async function run(tx: PrismaTransaction) {
-    const doc = await restoreDocument(documentId, workspaceId, tx)
-    if (!doc) {
-      return null
+  const allChildren = await listAllDescendants(documentId, tx)
+  const allDocs = [documentId, ...allChildren]
+
+  const recover = async (tx: PrismaTransaction) => {
+    for (const chunk of splitEvery(1000, allDocs)) {
+      await tx.document.updateMany({
+        where: {
+          id: {
+            in: chunk,
+          },
+          workspaceId,
+        },
+        data: {
+          deletedAt: null,
+        },
+      })
     }
-
-    const children = await prisma().document.findMany({
-      where: {
-        parentId: documentId,
-      },
-    })
-
-    for (const child of children) {
-      await restoreDocumentAndChildren(child.id, workspaceId, tx)
-    }
-
-    return doc
   }
 
-  return tx
-    ? run(tx)
-    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
+  if (tx) {
+    return recover(tx)
+  }
+
+  return prisma().$transaction(recover)
 }
 
 export async function createDocument(
@@ -207,76 +241,6 @@ export async function createDocument(
       icon: data.icon,
     },
   })
-}
-
-export async function deleteDocument(
-  id: string,
-  isPermanent: boolean,
-  tx?: PrismaTransaction
-): Promise<Document | null> {
-  async function softDelete(tx: PrismaTransaction) {
-    const document = await tx.document.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    })
-
-    await tx.favorite.deleteMany({
-      where: {
-        documentId: id,
-      },
-    })
-
-    return document
-  }
-
-  if (isPermanent) {
-    return (tx ?? prisma()).document.delete({
-      where: { id },
-    })
-  }
-
-  if (tx) {
-    return softDelete(tx)
-  }
-
-  return prisma().$transaction(softDelete)
-}
-
-// we can do better using a recursive CTE but then we cannot use
-// prisma query builder, this is good enough for now
-export async function deleteDocumentAndChildren(
-  documentId: string,
-  isPermanent: boolean,
-  tx?: PrismaTransaction
-) {
-  async function run(tx: PrismaTransaction) {
-    const doc = await deleteDocument(documentId, isPermanent, tx)
-    if (!doc) {
-      return null
-    }
-
-    // if we are deleting permanently, children get's deleted
-    // automatically by the database
-    if (isPermanent) {
-      return doc
-    }
-
-    const children = await tx.document.findMany({
-      where: {
-        parentId: documentId,
-      },
-    })
-
-    for (const child of children) {
-      await deleteDocumentAndChildren(child.id, isPermanent, tx)
-    }
-
-    return doc
-  }
-
-  return tx
-    ? run(tx)
-    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
 }
 
 export const createFavorite = async (userId: string, documentId: string) => {

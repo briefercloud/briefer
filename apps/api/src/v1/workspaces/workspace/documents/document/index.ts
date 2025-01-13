@@ -67,53 +67,26 @@ export default function documentRouter(socketServer: IOServer) {
       }
 
       const payload = bodyResult.data
-      let status = 500
       try {
-        const doc = await prisma().$transaction(
-          async (tx) => {
-            const previousDoc = await getDocument(documentId, tx)
-            if (!previousDoc) {
-              status = 404
-              throw new Error('Document not found')
-            }
-
-            if (payload.relations) {
-              await moveDocument(
-                previousDoc.id,
-                workspaceId,
-                payload.relations.parentId,
-                payload.relations.orderIndex,
-                tx
-              )
-            }
-
-            const updatedDoc = await updateDocument(
-              documentId,
-              {
-                title: bodyResult.data.title,
-              },
-              tx
-            )
-
-            return updatedDoc
-          },
-          {
-            maxWait: 31000,
-            timeout: 30000,
-          }
-        )
-
-        res.json(await toApiDocument(doc))
-      } catch (err) {
-        if (status !== 500) {
-          req.log.error(
-            { err, status, documentId },
-            'Failed to update document'
-          )
-          res.status(status).end()
+        const previousDoc = await getDocument(documentId)
+        if (!previousDoc) {
+          res.status(404).end()
           return
         }
 
+        if (payload.relations) {
+          const { parentId, orderIndex } = payload.relations
+          await prisma().$transaction(async (tx) =>
+            moveDocument(previousDoc.id, workspaceId, parentId, orderIndex, tx)
+          )
+        }
+
+        const doc = await updateDocument(documentId, {
+          title: bodyResult.data.title,
+        })
+
+        res.json(await toApiDocument(doc))
+      } catch (err) {
         req.log.error({ err, documentId }, 'Failed to update document')
         res.status(500).end()
       }
@@ -128,38 +101,21 @@ export default function documentRouter(socketServer: IOServer) {
       const documentId = getParam(req, 'documentId')
       const isPermanent = req.query['isPermanent'] === 'true'
 
-      let status: number = 500
       try {
-        const document = await prisma().$transaction(
-          async (tx) => {
-            const document = await getDocument(documentId, tx)
-            if (!document || document.workspaceId !== workspaceId) {
-              status = 404
-              throw new Error('Document not found')
-            }
-
-            const deletedDoc = await deleteDocument(
-              document.id,
-              workspaceId,
-              !isPermanent,
-              tx
-            )
-
-            return { ...document, deletedAt: deletedDoc.deletedAt }
-          },
-          {
-            maxWait: 31000,
-            timeout: 30000,
-          }
-        )
-
-        res.json(document)
-      } catch (err) {
-        if (status !== 500) {
-          res.status(status).end()
+        const document = await getDocument(documentId)
+        if (!document) {
+          res.status(404).end()
           return
         }
 
+        const deletedDoc = await deleteDocument(
+          documentId,
+          workspaceId,
+          !isPermanent
+        )
+
+        res.json({ ...document, deletedAt: deletedDoc.deletedAt })
+      } catch (err) {
         req.log.error(
           { err, documentId, isPermanent },
           'Failed to delete document'
@@ -176,34 +132,26 @@ export default function documentRouter(socketServer: IOServer) {
       const documentId = getParam(req, 'documentId')
       const workspaceId = getParam(req, 'workspaceId')
 
-      let status = 500
       try {
-        const restoredDocument = await prisma().$transaction(
-          async (tx) => {
-            let document = await tx.document.findUnique({
-              where: {
-                id: documentId,
-                workspaceId,
-                deletedAt: { not: null },
-              },
-            })
-            if (!document) {
-              status = 400
-              throw new Error('Document not found or not deleted')
-            }
-
-            return restoreDocument(document.id, workspaceId, tx)
+        let doc = await prisma().document.findUnique({
+          where: {
+            id: documentId,
+            workspaceId,
+            deletedAt: { not: null },
           },
-          { maxWait: 31000, timeout: 30000 }
+          select: { id: true },
+        })
+        if (!doc) {
+          res.status(400).end()
+          return
+        }
+
+        const restoredDocument = await prisma().$transaction(async (tx) =>
+          restoreDocument(doc.id, workspaceId, tx)
         )
 
         res.json(await toApiDocument(restoredDocument))
       } catch (err) {
-        if (status !== 500) {
-          res.status(status).end()
-          return
-        }
-
         req.log.error({ err, documentId }, 'Failed to restore document')
         res.status(500).end()
       }
@@ -218,33 +166,14 @@ export default function documentRouter(socketServer: IOServer) {
       const workspaceId = getParam(req, 'workspaceId')
 
       try {
-        const duplicatedDocument = await prisma().$transaction(
-          async (tx) => {
-            const prevDoc = await tx.document.findUnique({
-              where: {
-                id: originalDocumentId,
-                workspaceId,
-                deletedAt: null,
-              },
-            })
-            if (!prevDoc) {
-              return null
-            }
-
-            return await duplicateDocument(
-              prevDoc.id,
-              workspaceId,
-              socketServer,
-              tx
-            )
+        const prevDoc = await prisma().document.findUnique({
+          where: {
+            id: originalDocumentId,
+            workspaceId,
+            deletedAt: null,
           },
-          {
-            maxWait: 31000,
-            timeout: 30000,
-          }
-        )
-
-        if (!duplicatedDocument) {
+        })
+        if (!prevDoc) {
           req.log.error(
             { originalDocumentId, workspaceId },
             'Failed to duplicate document, document not found'
@@ -252,6 +181,12 @@ export default function documentRouter(socketServer: IOServer) {
           res.status(404).end()
           return
         }
+
+        const duplicatedDocument = await duplicateDocument(
+          prevDoc.id,
+          workspaceId,
+          socketServer
+        )
 
         res.status(201).json(await toApiDocument(duplicatedDocument))
       } catch (err) {

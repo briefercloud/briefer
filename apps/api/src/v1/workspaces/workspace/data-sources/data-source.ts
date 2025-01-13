@@ -588,70 +588,65 @@ const dataSourceRouter = (socketServer: IOServer) => {
           { type: dataSource.type, id: dataSource.data.id, isDefault: true },
         ])
 
-      await prisma().$transaction(
-        (tx) =>
-          Promise.all(
-            actions.map((ds) => {
-              switch (ds.type) {
-                case 'psql':
-                  return tx.postgreSQLDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'mysql':
-                  return tx.mySQLDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'trino':
-                  return tx.trinoDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'athena':
-                  return tx.athenaDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'oracle':
-                  return tx.oracleDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'bigquery':
-                  return tx.bigQueryDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'redshift':
-                  return tx.redshiftDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'sqlserver':
-                  return tx.sQLServerDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'snowflake':
-                  return tx.snowflakeDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                case 'databrickssql':
-                  return tx.databricksSQLDataSource.update({
-                    where: { id: ds.id },
-                    data: { isDefault: ds.isDefault },
-                  })
-                default:
-                  exhaustiveCheck(ds.type)
-              }
-            })
-          ),
-        {
-          maxWait: 31000,
-          timeout: 30000,
-        }
+      await prisma().$transaction((tx) =>
+        Promise.all(
+          actions.map((ds) => {
+            switch (ds.type) {
+              case 'psql':
+                return tx.postgreSQLDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'mysql':
+                return tx.mySQLDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'trino':
+                return tx.trinoDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'athena':
+                return tx.athenaDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'oracle':
+                return tx.oracleDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'bigquery':
+                return tx.bigQueryDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'redshift':
+                return tx.redshiftDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'sqlserver':
+                return tx.sQLServerDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'snowflake':
+                return tx.snowflakeDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              case 'databrickssql':
+                return tx.databricksSQLDataSource.update({
+                  where: { id: ds.id },
+                  data: { isDefault: ds.isDefault },
+                })
+              default:
+                exhaustiveCheck(ds.type)
+            }
+          })
+        )
       )
       await broadcastDataSources(socketServer, workspaceId)
       res.sendStatus(204)

@@ -121,32 +121,27 @@ export default function getRouter<H extends ApiUser>(
         return
       }
 
-      const { workspace, user } = await prisma().$transaction(
-        async (tx) => {
-          const user = await tx.user.create({
-            data: {
-              email,
-              name: payload.data.name,
-              passwordDigest: await hashPassword(password),
-            },
-          })
+      const passwordDigest = await hashPassword(password)
+      const { workspace, user } = await prisma().$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email,
+            name: payload.data.name,
+            passwordDigest,
+          },
+        })
 
-          const workspace = await createWorkspace(
-            user,
-            {
-              name: payload.data.workspaceName,
-            },
-            socketServer,
-            tx
-          )
+        const workspace = await createWorkspace(
+          user,
+          {
+            name: payload.data.workspaceName,
+          },
+          socketServer,
+          tx
+        )
 
-          return { workspace, user }
-        },
-        {
-          maxWait: 31000,
-          timeout: 30000,
-        }
-      )
+        return { workspace, user }
+      })
 
       captureWorkspaceCreated(user, workspace, shareEmail, source)
 

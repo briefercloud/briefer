@@ -27,44 +27,26 @@ export default function publishRouter(socketServer: IOServer) {
 
     let hasDashboard = false
     try {
-      await prisma().$transaction(
-        async (tx) => {
-          const doc = await tx.document.findUnique({
-            where: { id: documentId },
-          })
-
-          if (!doc) {
-            res.status(404).end()
-            return
-          }
-
-          const id = getDocId(documentId, null)
-          await getYDocForUpdate(
-            id,
-            socketServer,
-            doc.id,
-            doc.workspaceId,
-            async (yDoc) => {
-              hasDashboard = yDoc.dashboard.size > 0
-              await tx.yjsAppDocument.create({
-                data: {
-                  documentId,
-                  state: Buffer.from(
-                    Y.encodeStateAsUpdate(getYDocWithoutHistory(yDoc))
-                  ),
-                  hasDashboard,
-                },
-              })
-              setPristine(yDoc.ydoc)
+      const id = getDocId(documentId, null)
+      await getYDocForUpdate(
+        id,
+        socketServer,
+        documentId,
+        workspaceId,
+        async (yDoc) => {
+          hasDashboard = yDoc.dashboard.size > 0
+          await prisma().yjsAppDocument.create({
+            data: {
+              documentId,
+              state: Buffer.from(
+                Y.encodeStateAsUpdate(getYDocWithoutHistory(yDoc))
+              ),
+              hasDashboard,
             },
-            new DocumentPersistor(documentId),
-            tx
-          )
+          })
+          setPristine(yDoc.ydoc)
         },
-        {
-          maxWait: 31000,
-          timeout: 30000,
-        }
+        new DocumentPersistor(documentId)
       )
 
       await broadcastDocument(socketServer, workspaceId, documentId)
