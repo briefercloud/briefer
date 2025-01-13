@@ -1,3 +1,4 @@
+import { splitEvery } from 'ramda'
 import { Document } from '@prisma/client'
 
 import prisma, { PrismaTransaction } from './index.js'
@@ -150,28 +151,49 @@ export async function restoreDocumentAndChildren(
   workspaceId: string,
   tx?: PrismaTransaction
 ) {
-  async function run(tx: PrismaTransaction) {
-    const doc = await restoreDocument(documentId, workspaceId, tx)
-    if (!doc) {
-      return null
-    }
-
-    const children = await prisma().document.findMany({
-      where: {
-        parentId: documentId,
-      },
-    })
-
-    for (const child of children) {
-      await restoreDocumentAndChildren(child.id, workspaceId, tx)
-    }
-
-    return doc
+  const allChildren: string[] = []
+  const queue = allChildren.slice()
+  let current = queue.shift()
+  let first = true
+  while (current || first) {
+    first = false
+    const children = (
+      await prisma().document.findMany({
+        where: {
+          parentId: current,
+        },
+        select: {
+          id: true,
+        },
+      })
+    ).map((c) => c.id)
+    queue.push(...children)
+    current = queue.shift()
   }
 
-  return tx
-    ? run(tx)
-    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
+  const allDocs = [documentId, ...allChildren]
+
+  const recover = async (tx: PrismaTransaction) => {
+    for (const chunk of splitEvery(1000, allDocs)) {
+      await tx.document.updateMany({
+        where: {
+          id: {
+            in: chunk,
+          },
+          workspaceId,
+        },
+        data: {
+          deletedAt: null,
+        },
+      })
+    }
+  }
+
+  if (tx) {
+    return recover(tx)
+  }
+
+  return prisma().$transaction(recover)
 }
 
 export async function createDocument(
