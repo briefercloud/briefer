@@ -265,6 +265,7 @@ export class AppPersistor implements Persistor {
                 // be manipulating the published state
                 userId: this.userId ?? uuidv4(),
               },
+              take: 1,
             },
           },
         })
