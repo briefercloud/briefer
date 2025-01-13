@@ -55,7 +55,13 @@ export class PubSubProvider {
 
   public async connect() {
     if (this.subscription) {
-      throw new Error('Already connected')
+      this.logger.warn(
+        {
+          id: this.id,
+        },
+        'Called connect but already connected'
+      )
+      return
     }
 
     this.subscription = await this.pubsub.subscribe(this.onSubMessage)
@@ -73,7 +79,13 @@ export class PubSubProvider {
 
   public async disconnect() {
     if (!this.subscription) {
-      throw new Error('Not connected')
+      this.logger.warn(
+        {
+          id: this.id,
+        },
+        'Called disconnect but already disconnected'
+      )
+      return
     }
 
     if (this.resyncInterval) {
