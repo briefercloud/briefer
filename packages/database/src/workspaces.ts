@@ -1,5 +1,5 @@
 import prisma, { PrismaTransaction } from './index.js'
-import { Workspace } from '@prisma/client'
+import { UserWorkspace, Workspace } from '@prisma/client'
 import { WorkspaceCreateInput, WorkspaceEditFormValues } from '@briefer/types'
 
 type WorkspaceWithSecrets = Workspace & {
@@ -105,22 +105,36 @@ export async function updateWorkspace(
 export async function createWorkspace(
   wData: WorkspaceCreateInput,
   ownerId: string,
-  tx?: any
+  users: Pick<UserWorkspace, 'userId' | 'role'>[],
+  tx?: PrismaTransaction
 ) {
-  const run = async (tx: PrismaTransaction) => {
-    const s = await tx.workspaceSecrets.create({
-      data: { openAiApiKey: null },
-    })
+  const w = await (tx ?? prisma()).workspace.create({
+    data: {
+      ...wData,
+      owner: { connect: { id: ownerId } },
+      secrets: {
+        create: {
+          openAiApiKey: null,
+        },
+      },
+      users: {
+        createMany: {
+          data: users.map((u) => ({
+            role: u.role,
+            userId: u.userId,
+          })),
+          skipDuplicates: true,
+        },
+      },
+      onboardingTutorial: {
+        create: {
+          currentStep: 'connectDataSource',
+          isComplete: false,
+        },
+      },
+    },
+    include: { secrets: true },
+  })
 
-    const w = await tx.workspace.create({
-      data: { ...wData, ownerId, secretsId: s.id },
-      include: { secrets: true },
-    })
-
-    return transformSecrets(w)
-  }
-
-  return tx
-    ? run(tx)
-    : prisma().$transaction(run, { maxWait: 31000, timeout: 30000 })
+  return transformSecrets(w)
 }
