@@ -19,7 +19,7 @@ const db = new Dexie('YjsDatabase') as Dexie & {
   yDocs: EntityTable<{ id: string; data: Uint8Array; clock: number }, 'id'>
 }
 
-db.version(1).stores({
+db.version(2).stores({
   yDocs: 'id, data, clock',
 })
 
