@@ -38,7 +38,7 @@ function useRunAll(
   })
 
   useEffect(() => {
-    const cleanup = executionQueue.observe(() => {
+    const onObserve = () => {
       const batches = executionQueue.getRunAllBatches()
       const batch = head(batches)
       if (!batch) {
@@ -57,7 +57,9 @@ function useRunAll(
         total: batch.length,
         remaining: batch.remaining,
       }))
-    })
+    }
+    const cleanup = executionQueue.observe(onObserve)
+    onObserve()
 
     return cleanup
   }, [executionQueue])

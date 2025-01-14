@@ -43,25 +43,27 @@ model Document {
 }
 
 model YjsDocument {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clock      Int      @default(0)
-  state      Bytes
-  documentId String   @unique @db.Uuid
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clock          Int      @default(0)
+  clockUpdatedAt DateTime?
+  state          Bytes
+  documentId     String   @unique @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
   document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
   yjsUpdates YjsUpdate[]
 }
 
 model YjsAppDocument {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clock        Int      @default(0)
-  state        Bytes
-  hasDashboard Boolean
-  documentId   String   @db.Uuid
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now()) @updatedAt
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clock          Int      @default(0)
+  clockUpdatedAt DateTime?
+  state          Bytes
+  hasDashboard   Boolean
+  documentId     String   @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
 
   document            Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userYjsAppDocuments UserYjsAppDocument[]
@@ -70,6 +72,7 @@ model YjsAppDocument {
 
 model UserYjsAppDocument {
   clock            Int      @default(0)
+  clockUpdatedAt   DateTime?
   state            Bytes
   yjsAppDocumentId String   @db.Uuid
   userId           String   @db.Uuid

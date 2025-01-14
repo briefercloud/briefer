@@ -51,6 +51,8 @@ import { AIExecutor } from './executor/ai/index.js'
 import { PubSubProvider } from './pubsub/index.js'
 import { PGPubSub } from './pubsub/pg.js'
 import pAll from 'p-all'
+import { getYDocWithoutHistory } from './documents.js'
+import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -782,6 +784,15 @@ export class WSSharedDocV2 {
     return false
   }
 
+  private async removeHistory() {
+    const ydoc = getYDocWithoutHistory(this)
+    const result = await this.persistor.replaceState(
+      this.clock,
+      Buffer.from(Y.encodeStateAsUpdate(ydoc))
+    )
+    await this.reset(result.ydoc, result.clock, result.byteLength)
+  }
+
   public static async make(
     id: string,
     documentId: string,
@@ -800,6 +811,16 @@ export class WSSharedDocV2 {
       persistor
     )
     await doc.init()
+    if (
+      loadStateResult.applyUpdateLatency > 1000 &&
+      Date.now() - loadStateResult.clockUpdatedAt.getTime() >
+        1000 * 60 * 60 * 24
+    ) {
+      // if the latency is more than 1 second and the clock was updated more than 24 hours ago
+      // remove history to reduce the size of the document and improve load performance
+      await doc.removeHistory()
+    }
+
     return doc
   }
 }
@@ -855,16 +876,25 @@ async function getYDoc(
   }
 
   if (!yDoc) {
-    yDoc = await WSSharedDocV2.make(
-      id,
-      documentId,
-      workspaceId,
-      socketServer,
-      persistor,
-      tx
-    )
-    docs.set(id, yDoc)
-    docsCache.set(id, yDoc)
+    yDoc = await acquireLock(`getYDoc:${id}`, async () => {
+      // check cache again after acquiring lock
+      const fromCache = docs.get(id) ?? docsCache.get(id)
+      if (fromCache) {
+        return fromCache
+      }
+
+      yDoc = await WSSharedDocV2.make(
+        id,
+        documentId,
+        workspaceId,
+        socketServer,
+        persistor,
+        tx
+      )
+      docs.set(id, yDoc)
+      docsCache.set(id, yDoc)
+      return yDoc
+    })
   }
 
   logger().trace(

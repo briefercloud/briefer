@@ -35,6 +35,8 @@ export type LoadStateResult = {
   ydoc: Y.Doc
   clock: number
   byteLength: number
+  applyUpdateLatency: number
+  clockUpdatedAt: Date
 }
 
 export type ReplaceStateResult = LoadStateResult & { replaced: boolean }
@@ -54,7 +56,9 @@ export class DocumentPersistor implements Persistor {
   constructor(private readonly documentId: string) {}
 
   private applyUpdate(ydoc: Y.Doc, update: Buffer | Uint8Array) {
+    const start = Date.now()
     Y.applyUpdate(ydoc, update)
+    return Date.now() - start
   }
 
   public async load(tx?: PrismaTransaction) {
@@ -70,6 +74,8 @@ export class DocumentPersistor implements Persistor {
             ydoc,
             clock: 0,
             byteLength: Y.encodeStateAsUpdate(ydoc).length,
+            applyUpdateLatency: 0,
+            clockUpdatedAt: new Date(),
           }
         }
 
@@ -81,16 +87,19 @@ export class DocumentPersistor implements Persistor {
           select: { update: true },
           orderBy: { createdAt: 'asc' },
         })
-        this.applyUpdate(ydoc, dbDoc.state)
+        let applyUpdateLatency = this.applyUpdate(ydoc, dbDoc.state)
         if (updates.length > 0) {
           const update = Y.mergeUpdates(updates.map((u) => u.update))
-          this.applyUpdate(ydoc, update)
+          applyUpdateLatency += this.applyUpdate(ydoc, update)
         }
 
         return {
           ydoc,
           clock: dbDoc.clock,
           byteLength: dbDoc.state.length,
+          applyUpdateLatency,
+          clockUpdatedAt:
+            dbDoc.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
         }
       } catch (err) {
         logger().error(
@@ -201,8 +210,9 @@ export class DocumentPersistor implements Persistor {
           clock: {
             increment: 1,
           },
+          clockUpdatedAt: new Date(),
         },
-        select: { clock: true },
+        select: { clock: true, clockUpdatedAt: true },
       })
     )
 
@@ -222,13 +232,16 @@ export class DocumentPersistor implements Persistor {
     }
 
     const ydoc = new Y.Doc()
-    this.applyUpdate(ydoc, newState)
+    const applyUpdateLatency = this.applyUpdate(ydoc, newState)
 
     return {
       ydoc,
       clock: newClock.clock,
       byteLength: newState.length,
       replaced: true,
+      applyUpdateLatency,
+      clockUpdatedAt:
+        newClock.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
     }
   }
 }
@@ -241,7 +254,9 @@ export class AppPersistor implements Persistor {
   ) {}
 
   private applyUpdate(ydoc: Y.Doc, update: Buffer | Uint8Array) {
+    const start = Date.now()
     Y.applyUpdate(ydoc, update)
+    return Date.now() - start
   }
 
   public async load(tx?: PrismaTransaction) {
@@ -274,8 +289,13 @@ export class AppPersistor implements Persistor {
         const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
         let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
         let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
+        let applyUpdateLatency: number
+        let clockUpdatedAt =
+          userYjsAppDoc?.clockUpdatedAt ??
+          yjsAppDoc.clockUpdatedAt ??
+          new Date()
         if (!this.userId) {
-          this.applyUpdate(ydoc, yjsAppDoc.state)
+          applyUpdateLatency = this.applyUpdate(ydoc, yjsAppDoc.state)
         } else if (!userYjsAppDoc) {
           // user never opened the app before. duplicate the state for them
           const userYjsAppDoc = await (
@@ -295,15 +315,17 @@ export class AppPersistor implements Persistor {
             },
             update: {},
           })
-          this.applyUpdate(ydoc, userYjsAppDoc.state)
+          applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
         } else {
-          this.applyUpdate(ydoc, userYjsAppDoc.state)
+          applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
         }
 
         return {
           ydoc,
           clock,
           byteLength,
+          applyUpdateLatency,
+          clockUpdatedAt,
         }
       } catch (err) {
         logger().error(
@@ -357,7 +379,7 @@ export class AppPersistor implements Persistor {
   ): Promise<ReplaceStateResult> {
     const ydoc = new Y.Doc()
 
-    this.applyUpdate(ydoc, newState)
+    const applyUpdateLatency = this.applyUpdate(ydoc, newState)
 
     if (this.userId) {
       const newClock = await recoverFromNotFound(
@@ -374,8 +396,9 @@ export class AppPersistor implements Persistor {
             clock: {
               increment: 1,
             },
+            clockUpdatedAt: new Date(),
           },
-          select: { clock: true },
+          select: { clock: true, clockUpdatedAt: true },
         })
       )
 
@@ -400,6 +423,9 @@ export class AppPersistor implements Persistor {
         clock: newClock.clock,
         byteLength: newState.length,
         replaced: true,
+        applyUpdateLatency,
+        clockUpdatedAt:
+          newClock.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
       }
     }
 
@@ -411,8 +437,9 @@ export class AppPersistor implements Persistor {
           clock: {
             increment: 1,
           },
+          clockUpdatedAt: new Date(),
         },
-        select: { clock: true },
+        select: { clock: true, clockUpdatedAt: true },
       })
     )
 
@@ -436,6 +463,9 @@ export class AppPersistor implements Persistor {
       clock: newClock.clock,
       byteLength: newState.length,
       replaced: true,
+      applyUpdateLatency,
+      clockUpdatedAt:
+        newClock.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
     }
   }
 
