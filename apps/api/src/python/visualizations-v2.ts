@@ -24,19 +24,19 @@ from datetime import datetime
 def _briefer_create_visualization(df, options):
     def extract_chart_type(chartType):
         if chartType == "groupedColumn":
-            return "bar", False
+            return "bar", False, False
         elif chartType == "stackedColumn":
-            return "bar", False
+            return "bar", False, True
         elif chartType == "hundredPercentStackedColumn":
-            return "bar", False
+            return "bar", False, True,
         elif chartType == "line":
-            return "line", False
+            return "line", False, False
         elif chartType == "area":
-            return "line", True
+            return "line", True, True
         elif chartType == "hundredPercentStackedArea":
-            return "line", True
+            return "line", True, True
         elif chartType == "scatterPlot":
-            return "scatter", False
+            return "scatter", False, False
         elif chartType == "pie":
             raise ValueError("Pie chart is not implemented yet")
         elif chartType == "histogram":
@@ -146,10 +146,10 @@ def _briefer_create_visualization(df, options):
     for y_axis in options["yAxes"]:
         data["yAxis"].append({ "type": "value" })
 
-        for series in y_axis["series"]:
+        for i, series in enumerate(y_axis["series"]):
             series_dataframe = get_series_df(df, options, y_axis, series)
 
-            chart_type, is_area = extract_chart_type(series["chartType"] or options["chartType"])
+            chart_type, is_area, is_stack = extract_chart_type(series["chartType"] or options["chartType"])
             if series["groupBy"]:
                 groups = series_dataframe[series["groupBy"]["name"]].unique()
                 groups.sort()
@@ -182,6 +182,7 @@ def _briefer_create_visualization(df, options):
                 serie = {
                   "type": chart_type,
                   "datasetIndex": dataset_index,
+                  "z": i
                 }
 
                 if group:
@@ -189,6 +190,9 @@ def _briefer_create_visualization(df, options):
 
                 if is_area:
                     serie["areaStyle"] = {}
+
+                if is_stack:
+                    serie["stack"] = f"stack_{i}"
 
                 data["series"].append(serie)
 

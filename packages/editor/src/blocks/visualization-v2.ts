@@ -81,17 +81,24 @@ const DataSet = z.object({
   source: z.array(z.record(OrdinalRawValue)),
 })
 
+const SerieCommon = z.object({
+  datasetIndex: z.number(),
+  name: z.string().optional(),
+  z: z.number(),
+})
+
 const Serie = z.union([
-  z.object({
-    type: z.union([z.literal('bar'), z.literal('scatter')]),
-    datasetIndex: z.number(),
-    name: z.string().optional(),
+  SerieCommon.extend({
+    type: z.literal('bar'),
+    stack: z.string().optional(),
   }),
-  z.object({
+  SerieCommon.extend({
+    type: z.literal('scatter'),
+  }),
+  SerieCommon.extend({
     type: z.literal('line'),
     areaStyle: z.object({}).optional(),
-    datasetIndex: z.number(),
-    name: z.string().optional(),
+    stack: z.string().optional(),
   }),
 ])
 const XAxis = CartesianAxisOption.and(
