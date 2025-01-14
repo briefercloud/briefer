@@ -810,7 +810,17 @@ export class WSSharedDocV2 {
       loadStateResult,
       persistor
     )
-    await doc.init()
+    logger().trace(
+      {
+        id: doc.id,
+        documentId: doc.documentId,
+        workspaceId: doc.workspaceId,
+        applyUpdateLatency: loadStateResult.applyUpdateLatency,
+        clockUpdatedAt: loadStateResult.clockUpdatedAt,
+      },
+      'Loadded YDoc'
+    )
+
     if (
       loadStateResult.applyUpdateLatency > 1000 &&
       Date.now() - loadStateResult.clockUpdatedAt.getTime() >
@@ -818,8 +828,28 @@ export class WSSharedDocV2 {
     ) {
       // if the latency is more than 1 second and the clock was updated more than 24 hours ago
       // remove history to reduce the size of the document and improve load performance
+      logger().info(
+        {
+          id: doc.id,
+          documentId: doc.documentId,
+          workspaceId: doc.workspaceId,
+          applyUpdateLatency: loadStateResult.applyUpdateLatency,
+          clockUpdatedAt: loadStateResult.clockUpdatedAt,
+        },
+        'Removing history from YDoc to reduce size and improve load performance'
+      )
       await doc.removeHistory()
+      logger().info(
+        {
+          id: doc.id,
+          documentId: doc.documentId,
+          workspaceId: doc.workspaceId,
+        },
+        'Removed history from YDoc to reduce size and improve load performance'
+      )
     }
+
+    await doc.init()
 
     return doc
   }
