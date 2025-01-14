@@ -8,6 +8,7 @@ import {
   duplicateBaseAttributes,
 } from './index.js'
 import { ExecutionStatus } from '../execution/item.js'
+import { duplicateYXmlFragment } from '../index.js'
 
 export type RichTextBlock = BaseBlock<BlockType.RichText> & {
   content: Y.XmlFragment
@@ -70,50 +71,4 @@ export function getRichTextBlockExecStatus(
   _block: Y.XmlElement<RichTextBlock>
 ): ExecutionStatus {
   return 'completed'
-}
-
-function duplicateYXmlFragment(fragment: Y.XmlFragment): Y.XmlFragment {
-  const newFragment = new Y.XmlFragment()
-
-  function cloneElement(element: Y.XmlElement) {
-    const newElement = new Y.XmlElement(element.nodeName)
-    const attrs = element.getAttributes()
-    for (const key in attrs) {
-      const value = attrs[key]
-      if (value === undefined) {
-        continue
-      }
-
-      newElement.setAttribute(key, value)
-    }
-
-    const children: Array<Y.XmlElement | Y.XmlText | Y.XmlHook> = []
-    let child = element.firstChild
-    while (child) {
-      children.push(cloneNode(child))
-      child = child.nextSibling
-    }
-
-    // @ts-ignore
-    newElement.insert(0, children)
-
-    return newElement
-  }
-
-  function cloneNode(node: Y.XmlElement | Y.XmlText | Y.XmlHook) {
-    if (node instanceof Y.XmlElement) {
-      return cloneElement(node)
-    }
-
-    return node.clone()
-  }
-
-  // adapted from https://github.com/yjs/yjs/blob/e348255bb125e992eb661889e64a10efd7319172/src/types/YXmlFragment.js#L168-L173
-  newFragment.insert(
-    0,
-    // @ts-ignore
-    fragment.toArray().map(cloneNode)
-  )
-
-  return newFragment
 }

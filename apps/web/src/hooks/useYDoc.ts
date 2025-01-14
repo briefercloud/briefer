@@ -16,23 +16,26 @@ import Dexie, { EntityTable } from 'dexie'
 import { useReusableComponents } from './useReusableComponents'
 
 const db = new Dexie('YjsDatabase') as Dexie & {
-  yDocs: EntityTable<{ id: string; data: Uint8Array }, 'id'>
+  yDocs: EntityTable<{ id: string; data: Uint8Array; clock: number }, 'id'>
 }
 
 db.version(1).stores({
-  yDocs: 'id, data',
+  yDocs: 'id, data, clock',
 })
 
-function persistYDoc(id: string, yDoc: Y.Doc) {
+function persistYDoc(id: string, yDoc: Y.Doc, clock: number) {
   const data = Y.encodeStateAsUpdate(yDoc)
-  db.yDocs.put({ id, data })
+  db.yDocs.put({ id, data, clock })
 }
 
-function restoreYDoc(id: string): [Y.Doc, Promise<void>] {
+function restoreYDoc(
+  id: string,
+  clock: number
+): [{ clock: number; yDoc: Y.Doc }, Promise<void>] {
   const yDoc = new Y.Doc()
 
   const restore = db.yDocs
-    .get(id)
+    .get({ id, clock })
     .then((item) => {
       if (item) {
         Y.applyUpdate(yDoc, item.data)
@@ -48,13 +51,13 @@ function restoreYDoc(id: string): [Y.Doc, Promise<void>] {
       }
     })
 
-  return [yDoc, restore]
+  return [{ yDoc, clock }, restore]
 }
 
-const cache = new LRUCache<string, Y.Doc>({
+const cache = new LRUCache<string, { clock: number; yDoc: Y.Doc }>({
   max: 10,
 
-  dispose: (yDoc) => {
+  dispose: ({ yDoc }) => {
     yDoc.destroy()
   },
 })
@@ -63,6 +66,7 @@ type GetYDocResult = {
   id: string
   cached: boolean
   yDoc: Y.Doc
+  clock: number
   restore: Promise<void>
 }
 
@@ -73,18 +77,18 @@ function getYDoc(
   publishedAt: string | null
 ): GetYDocResult {
   const id = getDocId(documentId, isDataApp, clock, publishedAt)
-  let yDoc = cache.get(id)
-  const cached = Boolean(yDoc)
+  let fromCache = cache.get(id)
+  const cached = Boolean(fromCache)
   let restore = Promise.resolve()
 
-  if (!yDoc) {
-    const restoreResult = restoreYDoc(id)
-    yDoc = restoreResult[0]
+  if (!fromCache) {
+    const restoreResult = restoreYDoc(id, clock)
+    fromCache = restoreResult[0]
     restore = restoreResult[1]
-    cache.set(id, yDoc)
+    cache.set(id, fromCache)
   }
 
-  return { id, cached, yDoc, restore }
+  return { id, cached, yDoc: fromCache.yDoc, clock: fromCache.clock, restore }
 }
 
 export function useYDoc(
@@ -112,14 +116,14 @@ export function useYDoc(
     if (isFirst.current) {
       isFirst.current = false
       return () => {
-        persistYDoc(id, yDoc)
+        persistYDoc(id, yDoc, clock)
       }
     }
 
     const next = getYDoc(documentId, isDataApp, clock, publishedAt)
     setYDoc(next)
     return () => {
-      persistYDoc(next.id, next.yDoc)
+      persistYDoc(next.id, next.yDoc, next.clock)
     }
   }, [documentId, isDataApp, clock, publishedAt, userId])
 
