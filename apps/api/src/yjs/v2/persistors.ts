@@ -65,53 +65,51 @@ export class DocumentPersistor implements Persistor {
   }
 
   public async load(tx?: PrismaTransaction) {
-    return acquireLock(`document-persistor:${this.docId}`, async () => {
-      try {
-        const ydoc = new Y.Doc()
-        const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
-          where: { documentId: this.documentId },
-        })
+    try {
+      const ydoc = new Y.Doc()
+      const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
+        where: { documentId: this.documentId },
+      })
 
-        if (!dbDoc) {
-          return {
-            ydoc,
-            clock: 0,
-            byteLength: Y.encodeStateAsUpdate(ydoc).length,
-            applyUpdateLatency: 0,
-            clockUpdatedAt: new Date(),
-          }
-        }
-
-        const updates = await (tx ?? prisma()).yjsUpdate.findMany({
-          where: {
-            yjsDocumentId: dbDoc.id,
-            clock: dbDoc.clock,
-          },
-          select: { update: true },
-          orderBy: { createdAt: 'asc' },
-        })
-        let applyUpdateLatency = this.applyUpdate(ydoc, dbDoc.state)
-        if (updates.length > 0) {
-          const update = Y.mergeUpdates(updates.map((u) => u.update))
-          applyUpdateLatency += this.applyUpdate(ydoc, update)
-        }
-
+      if (!dbDoc) {
         return {
           ydoc,
-          clock: dbDoc.clock,
-          byteLength: dbDoc.state.length,
-          applyUpdateLatency,
-          clockUpdatedAt:
-            dbDoc.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
+          clock: 0,
+          byteLength: Y.encodeStateAsUpdate(ydoc).length,
+          applyUpdateLatency: 0,
+          clockUpdatedAt: new Date(),
         }
-      } catch (err) {
-        logger().error(
-          { documentId: this.documentId, err },
-          'Failed to load Yjs document state'
-        )
-        throw err
       }
-    })
+
+      const updates = await (tx ?? prisma()).yjsUpdate.findMany({
+        where: {
+          yjsDocumentId: dbDoc.id,
+          clock: dbDoc.clock,
+        },
+        select: { update: true },
+        orderBy: { createdAt: 'asc' },
+      })
+      let applyUpdateLatency = this.applyUpdate(ydoc, dbDoc.state)
+      if (updates.length > 0) {
+        const update = Y.mergeUpdates(updates.map((u) => u.update))
+        applyUpdateLatency += this.applyUpdate(ydoc, update)
+      }
+
+      return {
+        ydoc,
+        clock: dbDoc.clock,
+        byteLength: dbDoc.state.length,
+        applyUpdateLatency,
+        clockUpdatedAt:
+          dbDoc.clockUpdatedAt ?? new Date(Date.now() - 24 * 60 * 60 * 1000),
+      }
+    } catch (err) {
+      logger().error(
+        { documentId: this.documentId, err },
+        'Failed to load Yjs document state'
+      )
+      throw err
+    }
   }
 
   public async persist(
@@ -264,81 +262,73 @@ export class AppPersistor implements Persistor {
   }
 
   public async load(tx?: PrismaTransaction) {
-    return acquireLock(`app-persistor:${this.docId}`, async () => {
-      try {
-        const yjsAppDoc = await (
-          prisma() ?? tx
-        ).yjsAppDocument.findFirstOrThrow({
-          where: {
-            id: this.yjsAppDocumentId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            userYjsAppDocuments: {
-              where: {
-                // use a new uuid when there is no user
-                // since uuid is always unique, nothing
-                // will be returned, which means we will
-                // be manipulating the published state
-                userId: this.userId ?? uuidv4(),
-              },
-              take: 1,
-            },
-          },
-        })
-
-        const ydoc = new Y.Doc()
-        const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
-        let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
-        let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
-        let applyUpdateLatency: number
-        let clockUpdatedAt =
-          userYjsAppDoc?.clockUpdatedAt ??
-          yjsAppDoc.clockUpdatedAt ??
-          new Date()
-        if (!this.userId) {
-          applyUpdateLatency = this.applyUpdate(ydoc, yjsAppDoc.state)
-        } else if (!userYjsAppDoc) {
-          // user never opened the app before. duplicate the state for them
-          const userYjsAppDoc = await (
-            prisma() ?? tx
-          ).userYjsAppDocument.upsert({
+    try {
+      const yjsAppDoc = await (prisma() ?? tx).yjsAppDocument.findFirstOrThrow({
+        where: {
+          id: this.yjsAppDocumentId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        include: {
+          userYjsAppDocuments: {
             where: {
-              yjsAppDocumentId_userId: {
-                yjsAppDocumentId: this.yjsAppDocumentId,
-                userId: this.userId,
-              },
+              // use a new uuid when there is no user
+              // since uuid is always unique, nothing
+              // will be returned, which means we will
+              // be manipulating the published state
+              userId: this.userId ?? uuidv4(),
             },
-            create: {
+            take: 1,
+          },
+        },
+      })
+
+      const ydoc = new Y.Doc()
+      const userYjsAppDoc = yjsAppDoc.userYjsAppDocuments[0]
+      let byteLength = userYjsAppDoc?.state.length ?? yjsAppDoc.state.length
+      let clock = userYjsAppDoc?.clock ?? yjsAppDoc.clock
+      let applyUpdateLatency: number
+      let clockUpdatedAt =
+        userYjsAppDoc?.clockUpdatedAt ?? yjsAppDoc.clockUpdatedAt ?? new Date()
+      if (!this.userId) {
+        applyUpdateLatency = this.applyUpdate(ydoc, yjsAppDoc.state)
+      } else if (!userYjsAppDoc) {
+        // user never opened the app before. duplicate the state for them
+        const userYjsAppDoc = await (prisma() ?? tx).userYjsAppDocument.upsert({
+          where: {
+            yjsAppDocumentId_userId: {
               yjsAppDocumentId: this.yjsAppDocumentId,
               userId: this.userId,
-              state: yjsAppDoc.state,
-              clock: yjsAppDoc.clock,
             },
-            update: {},
-          })
-          applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
-        } else {
-          applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
-        }
-
-        return {
-          ydoc,
-          clock,
-          byteLength,
-          applyUpdateLatency,
-          clockUpdatedAt,
-        }
-      } catch (err) {
-        logger().error(
-          { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
-          'Failed to load Yjs app document state'
-        )
-        throw err
+          },
+          create: {
+            yjsAppDocumentId: this.yjsAppDocumentId,
+            userId: this.userId,
+            state: yjsAppDoc.state,
+            clock: yjsAppDoc.clock,
+          },
+          update: {},
+        })
+        applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
+      } else {
+        applyUpdateLatency = this.applyUpdate(ydoc, userYjsAppDoc.state)
       }
-    })
+
+      return {
+        ydoc,
+        clock,
+        byteLength,
+        applyUpdateLatency,
+        clockUpdatedAt,
+      }
+    } catch (err) {
+      logger().error(
+        { yjsAppDocumentId: this.yjsAppDocumentId, userId: this.userId, err },
+        'Failed to load Yjs app document state'
+      )
+      throw err
+    }
   }
 
   public async persist(

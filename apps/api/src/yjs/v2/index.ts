@@ -52,7 +52,6 @@ import { PubSubProvider } from './pubsub/index.js'
 import { PGPubSub } from './pubsub/pg.js'
 import pAll from 'p-all'
 import { getYDocWithoutHistory } from './documents.js'
-import { acquireLock } from '../../lock.js'
 
 type Role = UserWorkspaceRole
 
@@ -857,6 +856,7 @@ export class WSSharedDocV2 {
   }
 }
 
+const creationPromises = new Map<string, Promise<WSSharedDocV2>>()
 async function getYDoc(
   socketServer: IOServer,
   id: string,
@@ -908,25 +908,33 @@ async function getYDoc(
   }
 
   if (!yDoc) {
-    yDoc = await acquireLock(`getYDoc:${id}`, async () => {
-      // check cache again after acquiring lock
-      const fromCache = docs.get(id) ?? docsCache.get(id)
-      if (fromCache) {
-        return fromCache
-      }
+    let creationPromise = creationPromises.get(id)
 
-      yDoc = await WSSharedDocV2.make(
-        id,
-        documentId,
-        workspaceId,
-        socketServer,
-        persistor,
-        tx
-      )
-      docs.set(id, yDoc)
-      docsCache.set(id, yDoc)
-      return yDoc
-    })
+    if (!creationPromise) {
+      creationPromise = (async () => {
+        const newYDoc = await WSSharedDocV2.make(
+          id,
+          documentId,
+          workspaceId,
+          socketServer,
+          persistor,
+          tx
+        )
+        docs.set(id, newYDoc)
+        docsCache.set(id, newYDoc)
+        return newYDoc
+      })()
+
+      creationPromises.set(id, creationPromise)
+
+      try {
+        yDoc = await creationPromise
+      } finally {
+        creationPromises.delete(id)
+      }
+    } else {
+      yDoc = await creationPromise
+    }
   }
 
   logger().trace(
