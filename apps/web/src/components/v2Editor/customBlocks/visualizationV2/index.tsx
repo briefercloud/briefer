@@ -12,6 +12,7 @@ import {
   getDataframeFromVisualizationV2,
   getVisualizationV2Attributes,
   isVisualizationV2Block,
+  VisualizationV2BlockInput,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
@@ -271,10 +272,53 @@ function VisualizationBlockV2(props: Props) {
 
   const onChangeChartType = useCallback(
     (chartType: ChartType) => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
-        chartType,
-      })
+      let nextInput: VisualizationV2BlockInput
+      switch (chartType) {
+        case 'trend':
+        case 'number':
+          const series = attrs.input.yAxes[0]?.series[0] ?? null
+          nextInput = {
+            dataframeName: attrs.input.dataframeName,
+            chartType,
+            xAxis: attrs.input.xAxis,
+            xAxisName: attrs.input.xAxisName,
+            xAxisSort: attrs.input.xAxisSort,
+            xAxisGroupFunction: attrs.input.xAxisGroupFunction,
+            yAxes: series
+              ? [
+                  {
+                    series: [
+                      {
+                        axisName: series.axisName,
+                        chartType: null,
+                        column: series.column,
+                        aggregateFunction: series.aggregateFunction,
+                        groupBy: null,
+                      },
+                    ],
+                  },
+                ]
+              : [],
+            filters: attrs.input.filters,
+          }
+          break
+        case 'groupedColumn':
+        case 'line':
+        case 'area':
+        case 'scatterPlot':
+        case 'stackedColumn':
+        case 'hundredPercentStackedArea':
+        case 'hundredPercentStackedColumn':
+        case 'pie':
+        case 'histogram':
+          nextInput = {
+            ...attrs.input,
+            chartType,
+          }
+          break
+      }
+
+      props.block.setAttribute('input', nextInput)
     },
     [props.block, attrs.input]
   )
@@ -455,7 +499,7 @@ function VisualizationBlockV2(props: Props) {
     return (
       <VisualizationViewV2
         title={attrs.title}
-        chartType={attrs.input.chartType}
+        input={attrs.input}
         tooManyDataPointsHidden={tooManyDataPointsHidden}
         onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
         loading={viewLoading}
@@ -591,7 +635,7 @@ function VisualizationBlockV2(props: Props) {
           />
           <VisualizationViewV2
             title={attrs.title}
-            chartType={attrs.input.chartType}
+            input={attrs.input}
             tooManyDataPointsHidden={tooManyDataPointsHidden}
             onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
             loading={viewLoading}

@@ -21,13 +21,17 @@ import useResettableState from '@/hooks/useResettableState'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import debounce from 'lodash.debounce'
 import { findMaxFontSize, measureText } from '@/measureText'
-import { VisualizationV2BlockOutputResult } from '@briefer/editor'
+import {
+  VisualizationV2BlockInput,
+  VisualizationV2BlockOutputResult,
+} from '@briefer/editor'
+import { head, last } from 'ramda'
 
 const FONT_FAMILY = ['Inter', ...twFontFamiliy.sans].join(', ')
 
 interface Props {
   title: string
-  chartType: ChartType
+  input: VisualizationV2BlockInput
   result: VisualizationV2BlockOutputResult | null
   tooManyDataPointsHidden: boolean
   onHideTooManyDataPointsWarning: () => void
@@ -68,7 +72,7 @@ function VisualizationViewV2(props: Props) {
             title={props.title}
             result={props.result}
             renderer={props.renderer}
-            chartType={props.chartType}
+            input={props.input}
             isDashboard={props.isDashboard}
           />
           {props.loading && (
@@ -161,8 +165,8 @@ function VisualizationViewV2(props: Props) {
         </button>
       )}
       {!props.isDashboard &&
-        props.chartType !== 'number' &&
-        props.chartType !== 'trend' && (
+        props.input.chartType !== 'number' &&
+        props.input.chartType !== 'trend' && (
           <button
             className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
             onClick={props.onExportToPNG}
@@ -176,7 +180,7 @@ function VisualizationViewV2(props: Props) {
 
 function BrieferResult(props: {
   title: string
-  chartType: ChartType
+  input: VisualizationV2BlockInput
   isDashboard: boolean
   result: VisualizationV2BlockOutputResult
   renderer?: 'canvas' | 'svg'
@@ -233,17 +237,17 @@ function BrieferResult(props: {
     return <div className="w-full h-full" ref={measureDiv} />
   }
 
-  if (props.chartType === 'trend' || props.chartType === 'number') {
+  if (props.input.chartType === 'trend' || props.input.chartType === 'number') {
     return (
       <div ref={container} className="ph-no-capture h-full">
-        {/* TODO */}
-        {/* <BigNumberVisualization */}
-        {/*   chartType={props.chartType} */}
-        {/*   title={props.title} */}
-        {/*   spec={spec} */}
-        {/*   size={size} */}
-        {/*   isDashboard={props.isDashboard} */}
-        {/* /> */}
+        <BigNumberVisualization
+          title={props.title}
+          chartType={props.input.chartType}
+          input={props.input}
+          result={props.result}
+          size={size}
+          isDashboard={props.isDashboard}
+        />
       </div>
     )
   }
@@ -298,83 +302,98 @@ function extractXYFromSpec(spec: any) {
 
 function BigNumberVisualization(props: {
   title: string
-  chartType: 'trend' | 'number'
-  spec: any
+  input: VisualizationV2BlockInput
+  chartType: 'number' | 'trend'
+  result: VisualizationV2BlockOutputResult
   size: { width: number; height: number }
   isDashboard: boolean
 }) {
-  const { spec, size } = props
+  const { size } = props
 
   try {
-    // @ts-ignore
-    const dataset = spec.datasets[spec.data.name]
-    // @ts-ignore
-    const { x, y } = extractXYFromSpec(spec)
-    const latests = dataset.slice(-2)
-    const latest = latests.pop()
-    const prev = latests.pop()
+    const y = head(
+      head(props.input.yAxes)?.series ?? []
+    )?.column?.name.toString()
+    if (!y) {
+      throw new Error('Invalid input')
+    }
+
+    const x = props.input.xAxis?.name?.toString() ?? y
+
+    let latests = head(props.result.dataset)?.source.slice(-2)
+    if (!props.input.xAxis && props.input.xAxisSort === 'descending') {
+      latests = head(props.result.dataset)?.source.slice(0, 2)
+      latests?.reverse()
+    }
+    const latest = latests?.pop()
+    const prev = latests?.pop()
+
+    if (!latest) {
+      throw new Error('Invalid result')
+    }
 
     const lastValue = {
-      x: latest[x.field],
-      displayX: latest[x.field],
-      y: latest[y.field],
-      displayY: latest[y.field],
+      x: latest[x],
+      displayX: latest[x].toString(),
+      y: Number(latest[y]),
+      displayY: latest[y].toString(),
     }
     const prevValue = {
-      x: prev?.[x.field] ?? 0,
-      displayX: prev?.[x.field] ?? 0,
-      y: prev?.[y.field],
-      displayY: prev?.[y.field] ?? 0,
+      x: prev?.[x]?.toString(),
+      displayX: (prev?.[x] ?? 'N/A').toString(),
+      y: prev?.[y] ? Number(prev[y]) : Number.NaN,
+      displayY: (prev?.[y] ? Number(prev[y]) : 'N/A').toString(),
     }
-    const yFormat = y.axis.format
-    if (yFormat) {
-      lastValue.displayY = d3Format(yFormat)(lastValue.y)
-      prevValue.displayY = d3Format(yFormat)(prevValue.y)
-    }
+    // const yFormat = y.axis.format
+    // if (yFormat) {
+    //   lastValue.displayY = d3Format(yFormat)(lastValue.y)
+    //   prevValue.displayY = d3Format(yFormat)(prevValue.y)
+    // }
 
-    const xFormat = x.axis.format
-    if (xFormat) {
-      lastValue.displayX = d3Format(xFormat)(lastValue.x)
-      prevValue.displayX = d3Format(xFormat)(prevValue.x)
-    } else {
-      const xType = x.type
-      switch (xType) {
-        case 'temporal': {
-          const timeUnit = x.timeUnit
+    // TODO: formatting
+    // const xFormat = x.axis.format
+    // if (false) { // xFormat) {
+    //   lastValue.displayX = d3Format(xFormat)(lastValue.x)
+    //   prevValue.displayX = d3Format(xFormat)(prevValue.x)
+    // } else {
+    //   const xType = x.type
+    //   switch (xType) {
+    //     case 'temporal': {
+    //       const timeUnit = x.timeUnit
 
-          if (!timeUnit) {
-            lastValue.displayX = new Date(lastValue.x).toLocaleDateString()
-            prevValue.displayX = new Date(prevValue.x).toLocaleDateString()
-          } else {
-            const timeFormats: Record<string, string> = {
-              year: '%b %d, %Y %I:00 %p',
-              yearmonth: '%b %d, %Y %I:00 %p',
-              yearquarter: '%b %d, %Y %I:00 %p',
-              yearweek: '%b %d, %Y %I:00 %p',
-              yearmonthdate: '%b %d, %Y %I:00 %p',
-              yearmonthdatehours: '%b %d, %Y %I:00 %p',
-              yearmonthdatehoursminutes: '%b %d, %Y %I:%M %p',
-              yearmonthdatehoursminutesseconds: '%b %d, %Y %I:%M:%S %p',
-            }
-            const format = timeFormats[timeUnit]
-            if (format) {
-              const formatter = timeFormat(format)
-              lastValue.displayX = formatter(new Date(lastValue.x))
-              prevValue.displayX = formatter(new Date(prevValue.x))
-            }
-          }
-          break
-        }
-        case 'quantitative':
-          lastValue.displayX = d3Format('.2f')(lastValue.x)
-          prevValue.displayX = d3Format('.2f')(prevValue.x)
-          break
-        case 'ordinal':
-          lastValue.displayX = lastValue.x
-          prevValue.displayX = prevValue.x
-          break
-      }
-    }
+    //       if (!timeUnit) {
+    //         lastValue.displayX = new Date(lastValue.x).toLocaleDateString()
+    //         prevValue.displayX = new Date(prevValue.x).toLocaleDateString()
+    //       } else {
+    //         const timeFormats: Record<string, string> = {
+    //           year: '%b %d, %Y %I:00 %p',
+    //           yearmonth: '%b %d, %Y %I:00 %p',
+    //           yearquarter: '%b %d, %Y %I:00 %p',
+    //           yearweek: '%b %d, %Y %I:00 %p',
+    //           yearmonthdate: '%b %d, %Y %I:00 %p',
+    //           yearmonthdatehours: '%b %d, %Y %I:00 %p',
+    //           yearmonthdatehoursminutes: '%b %d, %Y %I:%M %p',
+    //           yearmonthdatehoursminutesseconds: '%b %d, %Y %I:%M:%S %p',
+    //         }
+    //         const format = timeFormats[timeUnit]
+    //         if (format) {
+    //           const formatter = timeFormat(format)
+    //           lastValue.displayX = formatter(new Date(lastValue.x))
+    //           prevValue.displayX = formatter(new Date(prevValue.x))
+    //         }
+    //       }
+    //       break
+    //     }
+    //     case 'quantitative':
+    //       lastValue.displayX = d3Format('.2f')(lastValue.x)
+    //       prevValue.displayX = d3Format('.2f')(prevValue.x)
+    //       break
+    //     case 'ordinal':
+    //       lastValue.displayX = lastValue.x
+    //       prevValue.displayX = prevValue.x
+    //       break
+    //   }
+    // }
 
     const minDimension = Math.min(size.width, size.height)
     const fontSize = Math.min(
@@ -382,7 +401,7 @@ function BigNumberVisualization(props: {
         8,
         Math.min(
           findMaxFontSize(
-            lastValue.displayY,
+            lastValue.displayY.toString(),
             minDimension / 3,
             size.width - 32,
             'bold',
@@ -408,6 +427,8 @@ function BigNumberVisualization(props: {
     let trendDisplay = d3Format('.2%')(Math.abs(trend))
     if (trend === 0) {
       trendDisplay = 'No change'
+    } else if (Number.isNaN(trend)) {
+      trendDisplay = 'N/A'
     } else if (trend === Infinity) {
       trendDisplay = '∞%'
     }
@@ -486,7 +507,7 @@ function BigNumberVisualization(props: {
                         : prevYValueFontSize,
                   }}
                 >
-                  {trend === 0 ? null : trend < 0 ? (
+                  {trend === 0 || Number.isNaN(trend) ? null : trend < 0 ? (
                     <ArrowLongDownIcon
                       style={{ height: arrowSize, width: arrowSize }}
                     />

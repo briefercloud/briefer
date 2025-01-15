@@ -287,43 +287,57 @@ function VisualizationControlsV2(props: Props) {
     [props.onChangeChartType, props.yAxes]
   )
 
-  const defaultXAxisColumn = useMemo(
-    () =>
-      sortWith(
-        [
-          (a, b) =>
-            DataFrameDateColumn.safeParse(a).success ===
-            DataFrameDateColumn.safeParse(b).success
-              ? 0
-              : DataFrameDateColumn.safeParse(a).success
-              ? -1
-              : 1,
-          (a, b) =>
-            DataFrameStringColumn.safeParse(a).success ===
-            DataFrameStringColumn.safeParse(b).success
-              ? 0
-              : DataFrameStringColumn.safeParse(a).success
-              ? -1
-              : 1,
-          (a, b) =>
-            DataFrameNumberColumn.safeParse(a).success ===
-            DataFrameNumberColumn.safeParse(b).success
-              ? 0
-              : DataFrameNumberColumn.safeParse(a).success
-              ? -1
-              : 1,
-          // Put columns with 'id' in the name at the end to avoid them being selected by default
-          (a, b) =>
-            a.name.toString().toLowerCase().includes('id')
-              ? 1
-              : b.name.toString().toLowerCase().includes('id')
-              ? -1
-              : 0,
-        ],
-        props.dataframe?.columns ?? []
-      )[0] ?? null,
-    [props.dataframe?.columns]
-  )
+  const defaultXAxisColumn: DataFrameColumn | null = useMemo(() => {
+    switch (props.chartType) {
+      case 'trend':
+      case 'number':
+        return null
+      case 'histogram':
+      case 'pie':
+      case 'line':
+      case 'area':
+      case 'scatterPlot':
+      case 'groupedColumn':
+      case 'stackedColumn':
+      case 'hundredPercentStackedArea':
+      case 'hundredPercentStackedColumn':
+        return (
+          sortWith(
+            [
+              (a, b) =>
+                DataFrameDateColumn.safeParse(a).success ===
+                DataFrameDateColumn.safeParse(b).success
+                  ? 0
+                  : DataFrameDateColumn.safeParse(a).success
+                  ? -1
+                  : 1,
+              (a, b) =>
+                DataFrameStringColumn.safeParse(a).success ===
+                DataFrameStringColumn.safeParse(b).success
+                  ? 0
+                  : DataFrameStringColumn.safeParse(a).success
+                  ? -1
+                  : 1,
+              (a, b) =>
+                DataFrameNumberColumn.safeParse(a).success ===
+                DataFrameNumberColumn.safeParse(b).success
+                  ? 0
+                  : DataFrameNumberColumn.safeParse(a).success
+                  ? -1
+                  : 1,
+              // Put columns with 'id' in the name at the end to avoid them being selected by default
+              (a, b) =>
+                a.name.toString().toLowerCase().includes('id')
+                  ? 1
+                  : b.name.toString().toLowerCase().includes('id')
+                  ? -1
+                  : 0,
+            ],
+            props.dataframe?.columns ?? []
+          )[0] ?? null
+        )
+    }
+  }, [props.chartType, props.dataframe?.columns])
 
   const axisNameComponents = props.yAxes.map((yAxis, yI) =>
     yAxis.series.map((_, sI) => {
