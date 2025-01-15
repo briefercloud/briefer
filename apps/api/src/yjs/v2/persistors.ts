@@ -53,7 +53,10 @@ export interface Persistor {
 }
 
 export class DocumentPersistor implements Persistor {
-  constructor(private readonly documentId: string) {}
+  constructor(
+    private readonly docId: string,
+    private readonly documentId: string
+  ) {}
 
   private applyUpdate(ydoc: Y.Doc, update: Buffer | Uint8Array) {
     const start = Date.now()
@@ -62,7 +65,7 @@ export class DocumentPersistor implements Persistor {
   }
 
   public async load(tx?: PrismaTransaction) {
-    return acquireLock(`document-persistor:${this.documentId}`, async () => {
+    return acquireLock(`document-persistor:${this.docId}`, async () => {
       try {
         const ydoc = new Y.Doc()
         const dbDoc = await (tx ?? prisma()).yjsDocument.findUnique({
@@ -115,7 +118,7 @@ export class DocumentPersistor implements Persistor {
     ydoc: WSSharedDocV2,
     tx?: PrismaTransaction
   ): Promise<void> {
-    return acquireLock(`document-persistor:${this.documentId}`, async () => {
+    return acquireLock(`document-persistor:${this.docId}`, async () => {
       const yjsDoc = await this.getYjsDoc(ydoc, tx)
 
       await (tx ?? prisma()).yjsDocument.update({
@@ -248,6 +251,7 @@ export class DocumentPersistor implements Persistor {
 
 export class AppPersistor implements Persistor {
   constructor(
+    private readonly docId: string,
     private readonly yjsAppDocumentId: string,
     // no user means we are manipulating the published state
     private readonly userId: string | null
@@ -260,7 +264,7 @@ export class AppPersistor implements Persistor {
   }
 
   public async load(tx?: PrismaTransaction) {
-    return acquireLock(`app-persistor:${this.yjsAppDocumentId}`, async () => {
+    return acquireLock(`app-persistor:${this.docId}`, async () => {
       try {
         const yjsAppDoc = await (
           prisma() ?? tx
@@ -341,7 +345,7 @@ export class AppPersistor implements Persistor {
     ydoc: WSSharedDocV2,
     tx?: PrismaTransaction
   ): Promise<void> {
-    await acquireLock(`app-persistor:${this.yjsAppDocumentId}`, async () => {
+    await acquireLock(`app-persistor:${this.docId}`, async () => {
       if (this.userId) {
         const userId = this.userId
         const state = Buffer.from(Y.encodeStateAsUpdate(ydoc.ydoc))

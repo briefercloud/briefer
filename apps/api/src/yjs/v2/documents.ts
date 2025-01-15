@@ -198,11 +198,11 @@ export async function duplicateDocument(
             })
           }
         },
-        new DocumentPersistor(newDoc.id),
+        new DocumentPersistor(newId, newDoc.id),
         tx
       )
     },
-    new DocumentPersistor(prevDoc.id),
+    new DocumentPersistor(prevId, prevDoc.id),
     tx
   )
 }
@@ -218,15 +218,19 @@ export async function updateAppState(
     select: { userId: true },
   })
   await Promise.all(
-    usersApps.map(async (userApp) =>
-      getYDocForUpdate(
-        getDocId(app.documentId, { id: app.id, userId: userApp.userId }),
+    usersApps.map(async (userApp) => {
+      const docId = getDocId(app.documentId, {
+        id: app.id,
+        userId: userApp.userId,
+      })
+      return getYDocForUpdate(
+        docId,
         socketServer,
         app.documentId,
         ydoc.workspaceId,
         (ydoc) => ydoc.replaceState(state),
-        new AppPersistor(app.id, userApp.userId)
+        new AppPersistor(docId, app.id, userApp.userId)
       )
-    )
+    })
   )
 }

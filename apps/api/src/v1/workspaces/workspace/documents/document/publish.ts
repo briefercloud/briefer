@@ -46,7 +46,7 @@ export default function publishRouter(socketServer: IOServer) {
           })
           setPristine(yDoc.ydoc)
         },
-        new DocumentPersistor(documentId)
+        new DocumentPersistor(id, documentId)
       )
 
       await broadcastDocument(socketServer, workspaceId, documentId)

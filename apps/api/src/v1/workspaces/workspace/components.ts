@@ -48,8 +48,9 @@ export default function componentsRouter(socketServer: IOServer) {
       }
 
       const component = await createReusableComponent(payload.data)
+      const docId = getDocId(payload.data.documentId, null)
       await getYDocForUpdate(
-        getDocId(payload.data.documentId, null),
+        docId,
         socketServer,
         payload.data.documentId,
         workspaceId,
@@ -76,7 +77,7 @@ export default function componentsRouter(socketServer: IOServer) {
             onPivotTable: () => {},
           })
         },
-        new DocumentPersistor(payload.data.documentId)
+        new DocumentPersistor(docId, payload.data.documentId)
       )
       await broadcastComponent(socketServer, component)
 
@@ -260,8 +261,9 @@ async function updateReusableComponentInstanceOld(
   const componentBlock = decodeComponentState(component.state)
   for (const doc of docs) {
     queue.add(async () => {
+      const docId = getDocId(doc.id, null)
       await getYDocForUpdate(
-        getDocId(doc.id, null),
+        docId,
         socketServer,
         doc.id,
         workspaceId,
@@ -319,7 +321,7 @@ async function updateReusableComponentInstanceOld(
             }
           }
         },
-        new DocumentPersistor(doc.id)
+        new DocumentPersistor(docId, doc.id)
       )
     })
   }
@@ -347,8 +349,10 @@ async function updateReusableComponentInstance(
 
   Array.from(byDocument.entries()).forEach(([documentId, instances]) => {
     queue.add(async () => {
+      const docId = getDocId(documentId, null)
+
       await getYDocForUpdate(
-        getDocId(documentId, null),
+        docId,
         socketServer,
         documentId,
         workspaceId,
@@ -387,7 +391,7 @@ async function updateReusableComponentInstance(
             }
           }
         },
-        new DocumentPersistor(documentId)
+        new DocumentPersistor(docId, documentId)
       )
     })
   })

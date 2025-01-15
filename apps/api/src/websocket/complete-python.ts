@@ -125,7 +125,7 @@ const completPython =
             suggestions,
           })
         },
-        new DocumentPersistor(documentId)
+        new DocumentPersistor(id, documentId)
       )
     } catch (err) {
       logger().error(

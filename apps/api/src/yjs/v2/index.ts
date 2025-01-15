@@ -182,23 +182,25 @@ export function setupYJSSocketServerV2(
           return
         }
 
+        const docId = getDocId(document.id, {
+          id: yjsAppDocument.id,
+          userId: userId === null ? null : authUser.id,
+        })
         ydoc = await getYDoc(
           socketServer,
-          getDocId(document.id, {
-            id: yjsAppDocument.id,
-            userId: userId === null ? null : authUser.id,
-          }),
+          docId,
           document.id,
           document.workspaceId,
-          new AppPersistor(yjsAppDocument.id, userId)
+          new AppPersistor(docId, yjsAppDocument.id, userId)
         )
       } else {
+        const docId = getDocId(document.id, null)
         ydoc = await getYDoc(
           socketServer,
-          getDocId(document.id, null),
+          docId,
           document.id,
           document.workspaceId,
-          new DocumentPersistor(document.id)
+          new DocumentPersistor(docId, document.id)
         )
       }
 
