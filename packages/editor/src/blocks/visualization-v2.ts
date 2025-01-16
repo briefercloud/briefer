@@ -94,6 +94,7 @@ const DataSet = z.object({
 
 const SerieCommon = z.object({
   datasetIndex: z.number(),
+  yAxisIndex: z.number(),
   name: z.string().optional(),
   z: z.number(),
   label: z
@@ -127,11 +128,17 @@ const XAxis = CartesianAxisOption.and(
   })
 )
 
+const YAxis = CartesianAxisOption.and(
+  z.object({
+    position: z.union([z.literal('left'), z.literal('right')]).optional(),
+  })
+)
+
 export const VisualizationV2BlockOutputResult = z.object({
   tooltip: z.object({ trigger: z.literal('axis') }),
   dataset: z.array(DataSet),
   xAxis: z.array(XAxis),
-  yAxis: z.array(CartesianAxisOption),
+  yAxis: z.array(YAxis),
   series: z.array(Serie),
 })
 

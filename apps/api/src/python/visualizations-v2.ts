@@ -303,6 +303,7 @@ def _briefer_create_visualization(df, options):
         series = {
             "type": "bar",
             "datasetIndex": 0,
+            "yAxisIndex": 0,
             "z": 0,
             "barWidth": "99.5%"
         }
@@ -315,8 +316,11 @@ def _briefer_create_visualization(df, options):
                 "value": val
             })
     else:
-        for y_axis in options["yAxes"]:
-            data["yAxis"].append({ "type": "value" })
+        for y_index, y_axis in enumerate(options["yAxes"]):
+            data["yAxis"].append({
+                "type": "value",
+                "position": "left" if y_index % 2 == 0 else "right",
+            })
 
             totals = {}
 
@@ -374,6 +378,7 @@ def _briefer_create_visualization(df, options):
                     serie = {
                       "type": chart_type,
                       "datasetIndex": dataset_index,
+                      "yAxisIndex": y_index,
                       "z": i,
                     }
 
