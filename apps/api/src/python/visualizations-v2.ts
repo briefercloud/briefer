@@ -4,6 +4,7 @@ import {
   exhaustiveCheck,
   PythonErrorOutput,
   jsonString,
+  VisualizationFilter,
 } from '@briefer/types'
 import { executeCode, PythonExecutionError } from './index.js'
 import { IJupyterManager } from '../jupyter/index.js'
@@ -22,6 +23,24 @@ import pandas as pd
 from datetime import datetime
 import numpy as np
 import math
+from jinja2 import Template
+
+def _briefer_render_filter_value(filter):
+    try:
+        if isinstance(filter["value"], list):
+            value = list(map(lambda x: Template(x).render(**globals()), filter["value"]))
+        else:
+            value = Template(filter["value"]).render(**globals())
+
+        return value
+    except Exception as e:
+        filter["renderError"] = {
+          "type": "error",
+          "ename": e.__class__.__name__,
+          "evalue": str(e),
+          "traceback": []
+        }
+        return None
 
 def _briefer_create_visualization(df, options):
     def extract_chart_type(chart_type):
@@ -156,6 +175,81 @@ def _briefer_create_visualization(df, options):
 
         return result, capped
 
+    def apply_filters(df, filters):
+        for filter in filters:
+            column_name = filter['column']['name']
+            operator = filter['operator']
+
+            value = _briefer_render_filter_value(filter)
+
+            # if the value is None, rendering failed, skip this filter
+            if value == None:
+                continue
+
+            if filter["value"] != value:
+                filter["renderedValue"] = value
+
+            if pd.api.types.is_numeric_dtype(df[column_name]):
+                value = pd.to_numeric(value, errors='coerce')
+                if operator == 'eq':
+                    df = df[df[column_name] == value]
+                elif operator == 'ne':
+                    df = df[df[column_name] != value]
+                elif operator == 'lt':
+                    df = df[df[column_name] < value]
+                elif operator == 'lte':
+                    df = df[df[column_name] <= value]
+                elif operator == 'gt':
+                    df = df[df[column_name] > value]
+                elif operator == 'gte':
+                    df = df[df[column_name] >= value]
+                elif operator == 'isNull':
+                    df = df[df[column_name].isnull()]
+                elif operator == 'isNotNull':
+                    df = df[df[column_name].notnull()]
+            elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]) or pd.api.types.is_object_dtype(df[column_name]):
+                if operator == 'eq':
+                    df = df[df[column_name] == value]
+                elif operator == 'ne':
+                    df = df[df[column_name] != value]
+                elif operator == 'contains':
+                    df = df[df[column_name].str.contains(value)]
+                elif operator == 'notContains':
+                    df = df[~df[column_name].str.contains(value)]
+                elif operator == 'startsWith':
+                    df = df[df[column_name].str.startswith(value)]
+                elif operator == 'endsWith':
+                    df = df[df[column_name].str.endswith(value)]
+                elif operator == 'in':
+                    df = df[df[column_name].isin(value)]
+                elif operator == 'notIn':
+                    df = df[~df[column_name].isin(value)]
+                elif operator == 'isNull':
+                    df = df[df[column_name].isnull()]
+                elif operator == 'isNotNull':
+                    df = df[df[column_name].notnull()]
+            elif pd.api.types.is_datetime64_any_dtype(df[column_name]):
+                # Convert both DataFrame column and value to UTC safely
+                df_column_utc, value_utc = _briefer_convert_to_utc_safe(df[column_name], pd.to_datetime(value))
+
+                # Perform comparisons using the safely converted UTC values
+                if operator == 'eq':
+                    df = df[df_column_utc == value_utc]
+                elif operator == 'ne':
+                    df = df[df_column_utc != value_utc]
+                elif operator == 'before':
+                    df = df[df_column_utc < value_utc]
+                elif operator == 'beforeOrEq':
+                    df = df[df_column_utc <= value_utc]
+                elif operator == 'after':
+                    df = df[df_column_utc > value_utc]
+                elif operator == 'afterOrEq':
+                    df = df[df_column_utc >= value_utc]
+                elif operator == 'isNull':
+                    df = df[df[column_name].isnull()]
+                elif operator == 'isNotNull':
+                    df = df[df[column_name].notnull()]
+        return df
 
     data = {
         "tooltip": {
@@ -174,6 +268,8 @@ def _briefer_create_visualization(df, options):
 
     too_many_data_points = False
 
+    df = apply_filters(df, options["filters"])
+
     if options["chartType"] == "histogram":
         column = df[options["xAxis"]["name"]]
         hist_range = (min(column.min(), 0), column.max())
@@ -183,14 +279,12 @@ def _briefer_create_visualization(df, options):
         elif options["histogramBin"]["type"] == "stepSize":
             bins_count = math.ceil((hist_range[1] - hist_range[0]) / options["histogramBin"]["value"])
             bins = [i*options["histogramBin"]["value"] for i in range(bins_count + 1)]
-            print(bins)
         elif options["histogramBin"]["type"] == "maxBins":
             _, bins = np.histogram(column, bins="auto", range=hist_range)
             if len(bins) > options["histogramBin"]["value"]:
                 bins = options["histogramBin"]["value"]
 
         hist, bins = np.histogram(column, bins=bins, range=hist_range)
-        print(hist, bins)
 
         if options["histogramFormat"] == "percentage":
             total = hist.sum()
@@ -210,7 +304,6 @@ def _briefer_create_visualization(df, options):
             "barWidth": "99.5%"
         })
         for bin, val in zip(bins, hist):
-            print(bin, val, type(val), int(val))
             data["dataset"][0]["source"].append({
                 "bin": bin,
                 "value": val
@@ -288,12 +381,14 @@ def _briefer_create_visualization(df, options):
                         serie["stack"] = f"stack_{i}"
 
                     data["series"].append(serie)
+
     output = json.dumps({
         "type": "result",
         "data": {
             "success": True,
             "data": data,
             "tooManyDataPoints": too_many_data_points,
+            "filters": options["filters"]
         }
     }, default=str)
 
@@ -322,6 +417,7 @@ const CreateVisualizationResult = z.union([
     success: z.literal(true),
     data: VisualizationV2BlockOutputResult,
     tooManyDataPoints: z.boolean(),
+    filters: z.array(VisualizationFilter),
   }),
   z.object({
     success: z.literal(false),
@@ -364,6 +460,7 @@ export async function createVisualizationV2(
 
   const promise = execute.then((): CreateVisualizationResult => {
     let result: CreateVisualizationResult | null = null
+    let filters = input.filters
     const pythonErrors: PythonErrorOutput[] = []
     const outputParsingErrors: Error[] = []
     for (const output of outputs) {

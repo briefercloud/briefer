@@ -230,6 +230,7 @@ df = pd.DataFrame({
     expect(result).toEqual({
       success: true,
       tooManyDataPoints: false,
+      filters: [],
       data: {
         tooltip: {
           trigger: 'axis',
@@ -349,6 +350,7 @@ df = pd.DataFrame({
     expect(result).toEqual({
       success: true,
       tooManyDataPoints: false,
+      filters: [],
       data: {
         tooltip: {
           trigger: 'axis',
@@ -440,6 +442,7 @@ df = pd.DataFrame({
     expect(result).toEqual({
       success: true,
       tooManyDataPoints: false,
+      filters: [],
       data: {
         tooltip: {
           trigger: 'axis',
@@ -535,6 +538,7 @@ df = pd.DataFrame({
     expect(result).toEqual({
       success: true,
       tooManyDataPoints: false,
+      filters: [],
       data: {
         tooltip: {
           trigger: 'axis',

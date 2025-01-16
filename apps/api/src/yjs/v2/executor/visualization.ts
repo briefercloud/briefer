@@ -6,6 +6,7 @@ import {
   getVisualizationAttributes,
   getVisualizationV2Attributes,
   VisualizationV2Block,
+  setVisualizationV2Input,
 } from '@briefer/editor'
 import * as Y from 'yjs'
 import { logger } from '../../../logger.js'
@@ -282,6 +283,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
           tooManyDataPoints: result.tooManyDataPoints,
         }
         block.setAttribute('output', output)
+        setVisualizationV2Input(block, { filters: result.filters })
       } else {
       }
       executionItem.setCompleted('success')

@@ -36,7 +36,7 @@ import {
 import VisualizationControlsV2 from './VisualizationControls'
 import VisualizationViewV2 from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
-import { equals, head } from 'ramda'
+import { equals, head, omit } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
 import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
@@ -410,8 +410,14 @@ function VisualizationBlockV2(props: Props) {
         event.changes.keys.size === 0 ||
         Array.from(event.changes.keys.entries()).every(([key, val]) => {
           if (key === 'input') {
-            const isEqual = equals(val.oldValue, input)
-            return isEqual
+            const isEqual = equals(
+              omit(['filters'], val.oldValue),
+              omit(['filters'], input)
+            )
+
+            return (
+              isEqual && !didChangeFilters(val.oldValue.filters, input.filters)
+            )
           }
 
           return true
