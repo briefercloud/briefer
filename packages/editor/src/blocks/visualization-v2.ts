@@ -13,6 +13,8 @@ import {
   ChartType,
   DataFrame,
   DataFrameColumn,
+  HistogramBin,
+  HistogramFormat,
   TimeUnit,
   VisualizationFilter,
   YAxisV2,
@@ -27,6 +29,8 @@ export type VisualizationV2BlockInput = {
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
   yAxes: YAxisV2[]
+  histogramFormat: HistogramFormat
+  histogramBin: HistogramBin
   filters: VisualizationFilter[]
 }
 
@@ -40,6 +44,8 @@ function emptyInput(): VisualizationV2BlockInput {
     xAxisGroupFunction: null,
     yAxes: [],
     filters: [],
+    histogramFormat: 'count',
+    histogramBin: { type: 'auto' },
   }
 }
 
@@ -91,6 +97,7 @@ const Serie = z.union([
   SerieCommon.extend({
     type: z.literal('bar'),
     stack: z.string().optional(),
+    barWidth: z.string().optional(),
   }),
   SerieCommon.extend({
     type: z.literal('scatter'),
@@ -304,4 +311,15 @@ export function getDataframeFromVisualizationV2(
   }
 
   return df
+}
+
+export function setVisualizationV2Input(
+  block: Y.XmlElement<VisualizationV2Block>,
+  next: Partial<VisualizationV2BlockInput>
+) {
+  const current = getVisualizationV2Attributes(block).input
+  block.setAttribute('input', {
+    ...current,
+    ...next,
+  })
 }

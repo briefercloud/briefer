@@ -130,6 +130,8 @@ describe('.createVisualizationV2', () => {
           xAxisSort: 'ascending',
           xAxisGroupFunction: null,
           yAxes: [],
+          histogramFormat: 'count',
+          histogramBin: { type: 'auto' },
           filters: [],
         },
         manager,
@@ -203,6 +205,8 @@ df = pd.DataFrame({
           ],
         },
       ],
+      histogramFormat: 'count',
+      histogramBin: { type: 'auto' },
       filters: [],
     }
 
@@ -305,6 +309,270 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             stack: 'stack_0',
+          },
+        ],
+      },
+    })
+  })
+
+  it('it should produce auto histograms', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
+
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'histogram',
+      xAxis: amountDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [],
+      histogramFormat: 'count',
+      histogramBin: { type: 'auto' },
+      filters: [],
+    }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    expect(result).toEqual({
+      success: true,
+      tooManyDataPoints: false,
+      data: {
+        tooltip: {
+          trigger: 'axis',
+        },
+        dataset: [
+          {
+            dimensions: ['bin', 'value'],
+            source: [
+              {
+                bin: 0,
+                value: 0,
+              },
+              {
+                bin: 5.5,
+                value: 0,
+              },
+              {
+                bin: 11,
+                value: 3,
+              },
+              {
+                bin: 16.5,
+                value: 1,
+              },
+              { bin: 22, value: 1 },
+              {
+                bin: 27.5,
+                value: 1,
+              },
+            ],
+          },
+        ],
+        xAxis: [
+          {
+            type: 'category',
+            axisPointer: {
+              type: 'shadow',
+            },
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            datasetIndex: 0,
+            z: 0,
+            type: 'bar',
+            barWidth: '99.5%',
+          },
+        ],
+      },
+    })
+  })
+
+  it('it should produce stepSize histograms', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
+
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'histogram',
+      xAxis: amountDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [],
+      histogramFormat: 'count',
+      histogramBin: { type: 'stepSize', value: 5 },
+      filters: [],
+    }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    expect(result).toEqual({
+      success: true,
+      tooManyDataPoints: false,
+      data: {
+        tooltip: {
+          trigger: 'axis',
+        },
+        dataset: [
+          {
+            dimensions: ['bin', 'value'],
+            source: [
+              {
+                bin: '0',
+                value: 0,
+              },
+              {
+                bin: '5',
+                value: 0,
+              },
+              {
+                bin: '10',
+                value: 3,
+              },
+              {
+                bin: '15',
+                value: 0,
+              },
+              { bin: '20', value: 2 },
+              {
+                bin: '25',
+                value: 0,
+              },
+              {
+                bin: '30',
+                value: 1,
+              },
+            ],
+          },
+        ],
+        xAxis: [
+          {
+            type: 'category',
+            axisPointer: {
+              type: 'shadow',
+            },
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            datasetIndex: 0,
+            z: 0,
+            type: 'bar',
+            barWidth: '99.5%',
+          },
+        ],
+      },
+    })
+  })
+
+  it('it should produce maxBins histograms', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
+
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'histogram',
+      xAxis: amountDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [],
+      histogramFormat: 'count',
+      histogramBin: { type: 'maxBins', value: 2 },
+      filters: [],
+    }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    expect(result).toEqual({
+      success: true,
+      tooManyDataPoints: false,
+      data: {
+        tooltip: {
+          trigger: 'axis',
+        },
+        dataset: [
+          {
+            dimensions: ['bin', 'value'],
+            source: [
+              {
+                bin: 0,
+                value: 3,
+              },
+              {
+                bin: 16.5,
+                value: 3,
+              },
+            ],
+          },
+        ],
+        xAxis: [
+          {
+            type: 'category',
+            axisPointer: {
+              type: 'shadow',
+            },
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            datasetIndex: 0,
+            z: 0,
+            type: 'bar',
+            barWidth: '99.5%',
           },
         ],
       },

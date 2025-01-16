@@ -20,6 +20,8 @@ function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
   let code = `import json
 import pandas as pd
 from datetime import datetime
+import numpy as np
+import math
 
 def _briefer_create_visualization(df, options):
     def extract_chart_type(chart_type):
@@ -171,79 +173,121 @@ def _briefer_create_visualization(df, options):
     }
 
     too_many_data_points = False
-    for y_axis in options["yAxes"]:
-        data["yAxis"].append({ "type": "value" })
 
-        totals = {}
+    if options["chartType"] == "histogram":
+        column = df[options["xAxis"]["name"]]
+        hist_range = (min(column.min(), 0), column.max())
+        bins = "auto"
+        if options["histogramBin"]["type"] == "auto":
+            bins = "auto"
+        elif options["histogramBin"]["type"] == "stepSize":
+            bins_count = math.ceil((hist_range[1] - hist_range[0]) / options["histogramBin"]["value"])
+            bins = [i*options["histogramBin"]["value"] for i in range(bins_count + 1)]
+            print(bins)
+        elif options["histogramBin"]["type"] == "maxBins":
+            _, bins = np.histogram(column, bins="auto", range=hist_range)
+            if len(bins) > options["histogramBin"]["value"]:
+                bins = options["histogramBin"]["value"]
 
-        for i, series in enumerate(y_axis["series"]):
-            series_dataframe, capped = get_series_df(df, options, y_axis, series)
-            if capped:
-                too_many_data_points = True
+        hist, bins = np.histogram(column, bins=bins, range=hist_range)
+        print(hist, bins)
 
-            chart_type, is_area, is_stack, should_normalize = extract_chart_type(series["chartType"] or options["chartType"])
-            if series["groupBy"]:
-                groups = series_dataframe[series["groupBy"]["name"]].unique()
-                groups.sort()
-            else:
-                groups = [None]
+        if options["histogramFormat"] == "percentage":
+            total = hist.sum()
+            hist = list(map(lambda x: x / total if total != 0 else 0, hist))
+        else:
+            hist = list(map(lambda x: int(x), hist))
+            
+        data["dataset"] = [{
+            "dimensions": ["bin", "value"],
+            "source": []
+        }]
+        data["yAxis"].append({"type": "value"})
+        data["series"].append({
+            "type": "bar",
+            "datasetIndex": 0,
+            "z": 0,
+            "barWidth": "99.5%"
+        })
+        for bin, val in zip(bins, hist):
+            print(bin, val, type(val), int(val))
+            data["dataset"][0]["source"].append({
+                "bin": bin,
+                "value": val
+            })
+    else:
+        for y_axis in options["yAxes"]:
+            data["yAxis"].append({ "type": "value" })
 
-            for group in groups:
-                dataset_index = len(data["dataset"])
+            totals = {}
 
-                dimensions = [series["column"]["name"]]
-                if options["xAxis"]:
-                    dimensions.insert(0, options["xAxis"]["name"])
+            for i, series in enumerate(y_axis["series"]):
+                series_dataframe, capped = get_series_df(df, options, y_axis, series)
+                if capped:
+                    too_many_data_points = True
 
-                dataset = {
-                    "dimensions": dimensions,
-                    "source": [],
-                }
+                chart_type, is_area, is_stack, should_normalize = extract_chart_type(series["chartType"] or options["chartType"])
+                if series["groupBy"]:
+                    groups = series_dataframe[series["groupBy"]["name"]].unique()
+                    groups.sort()
+                else:
+                    groups = [None]
 
-                for _, row in series_dataframe.iterrows():
-                    if group and row[series["groupBy"]["name"]] != group:
-                        continue
+                for group in groups:
+                    dataset_index = len(data["dataset"])
 
-                    y_name = series["column"]["name"]
-                    y_value = convert_value(series_dataframe[y_name], row[y_name])
-
-                    row_data = {}
-
+                    dimensions = [series["column"]["name"]]
                     if options["xAxis"]:
-                        x_name = options["xAxis"]["name"]
-                        x_value = convert_value(series_dataframe[x_name], row[x_name])
-                        row_data[x_name] = x_value
+                        dimensions.insert(0, options["xAxis"]["name"])
 
-                    if should_normalize:
-                        total = totals.get(x_value)
-                        if not total:
-                            total = series_dataframe[series_dataframe[x_name] == x_value][y_name].sum()
-                            totals[x_value] = total
-                        y_value = y_value / total if total != 0 else 1
+                    dataset = {
+                        "dimensions": dimensions,
+                        "source": [],
+                    }
 
-                    row_data[y_name] = y_value
+                    for _, row in series_dataframe.iterrows():
+                        if group and row[series["groupBy"]["name"]] != group:
+                            continue
 
-                    dataset["source"].append(row_data)
+                        y_name = series["column"]["name"]
+                        y_value = convert_value(series_dataframe[y_name], row[y_name])
 
-                data["dataset"].append(dataset)
+                        row_data = {}
 
-                serie = {
-                  "type": chart_type,
-                  "datasetIndex": dataset_index,
-                  "z": i,
-                }
+                        if options["xAxis"]:
+                            x_name = options["xAxis"]["name"]
+                            x_value = convert_value(series_dataframe[x_name], row[x_name])
+                            row_data[x_name] = x_value
 
-                if group:
-                    serie["name"] = group
+                        if should_normalize:
+                            total = totals.get(x_value)
+                            if not total:
+                                total = series_dataframe[series_dataframe[x_name] == x_value][y_name].sum()
+                                totals[x_value] = total
+                            y_value = y_value / total if total != 0 else 1
 
-                if is_area:
-                    serie["areaStyle"] = {}
+                        row_data[y_name] = y_value
 
-                if is_stack:
-                    serie["stack"] = f"stack_{i}"
+                        dataset["source"].append(row_data)
 
-                data["series"].append(serie)
+                    data["dataset"].append(dataset)
 
+                    serie = {
+                      "type": chart_type,
+                      "datasetIndex": dataset_index,
+                      "z": i,
+                    }
+
+                    if group:
+                        serie["name"] = group
+
+                    if is_area:
+                        serie["areaStyle"] = {}
+
+                    if is_stack:
+                        serie["stack"] = f"stack_{i}"
+
+                    data["series"].append(serie)
     output = json.dumps({
         "type": "result",
         "data": {

@@ -5,7 +5,6 @@ import * as Y from 'yjs'
 import {
   type VisualizationV2Block,
   BlockType,
-  isVisualizationBlock,
   ExecutionQueue,
   isExecutionStatusLoading,
   YBlock,
@@ -13,6 +12,7 @@ import {
   getVisualizationV2Attributes,
   isVisualizationV2Block,
   VisualizationV2BlockInput,
+  setVisualizationV2Input,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
@@ -44,6 +44,7 @@ import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { useYMemo } from '@/hooks/useYMemo'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -97,7 +98,11 @@ interface Props {
   userId: string | null
 }
 function VisualizationBlockV2(props: Props) {
-  const attrs = getVisualizationV2Attributes(props.block)
+  const attrs = useYMemo(
+    props.block,
+    (block) => getVisualizationV2Attributes(block),
+    []
+  )
 
   const dataframe = getDataframeFromVisualizationV2(
     props.block,
@@ -108,13 +113,12 @@ function VisualizationBlockV2(props: Props) {
     (dataframeName: string) => {
       const df = props.dataframes.get(dataframeName)
       if (df) {
-        props.block.setAttribute('input', {
-          ...attrs.input,
+        setVisualizationV2Input(props.block, {
           dataframeName,
         })
       }
     },
-    [props.dataframes, props.block, attrs.input]
+    [props.dataframes, props.block]
   )
 
   const dataframeOptions = Array.from(props.dataframes.values()).map((df) => ({
@@ -128,27 +132,24 @@ function VisualizationBlockV2(props: Props) {
 
   const onChangeXAxis = useCallback(
     (xAxis: DataFrameColumn | null) => {
-      const nextAttrs = { ...attrs.input, xAxis }
+      let xAxisGroupFunction = attrs.input.xAxisGroupFunction
       if (xAxis) {
         const isDateTime = NumpyDateTypes.safeParse(xAxis.type).success
         if (isDateTime && !attrs.input.xAxisGroupFunction) {
-          nextAttrs.xAxisGroupFunction = 'date'
+          xAxisGroupFunction = 'date'
         }
       }
 
-      props.block.setAttribute('input', nextAttrs)
+      setVisualizationV2Input(props.block, { xAxis, xAxisGroupFunction })
     },
-    [attrs.input, props.block]
+    [attrs.input.xAxisGroupFunction, props.block]
   )
 
   const onChangeXAxisName = useCallback(
     (name: string | null) => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
-        xAxisName: name,
-      })
+      setVisualizationV2Input(props.block, { xAxisName: name })
     },
-    [attrs.input, props.block]
+    [props.block]
   )
 
   const executions = useBlockExecutions(
@@ -209,8 +210,7 @@ function VisualizationBlockV2(props: Props) {
       operator: null,
       value: null,
     }
-    props.block.setAttribute('input', {
-      ...attrs.input,
+    setVisualizationV2Input(props.block, {
       filters: [...attrs.input.filters, newFilter],
     })
   }, [attrs.input.filters, props.block])
@@ -220,22 +220,18 @@ function VisualizationBlockV2(props: Props) {
       const filters = attrs.input.filters.map((f) =>
         f.id === filter.id ? filter : f
       )
-      props.block.setAttribute('input', {
-        ...attrs.input,
-        filters,
-      })
+      setVisualizationV2Input(props.block, { filters })
     },
-    [attrs.input, props.block]
+    [attrs.input.filters, props.block]
   )
 
   const onRemoveFilter = useCallback(
     (filter: VisualizationFilter) => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
+      setVisualizationV2Input(props.block, {
         filters: attrs.input.filters.filter((f) => f.id !== filter.id),
       })
     },
-    [props.block, attrs.input]
+    [props.block, attrs.input.filters]
   )
 
   const onToggleHidden = useCallback(() => {
@@ -272,7 +268,7 @@ function VisualizationBlockV2(props: Props) {
 
   const onChangeChartType = useCallback(
     (chartType: ChartType) => {
-      let nextInput: VisualizationV2BlockInput
+      let nextInput: Partial<VisualizationV2BlockInput>
       switch (chartType) {
         case 'trend':
         case 'number':
@@ -318,41 +314,45 @@ function VisualizationBlockV2(props: Props) {
           break
       }
 
-      props.block.setAttribute('input', nextInput)
+      setVisualizationV2Input(props.block, nextInput)
     },
-    [props.block, attrs.input]
+    [
+      props.block,
+      attrs.input.yAxes,
+      attrs.input.dataframeName,
+      attrs.input.xAxis,
+      attrs.input.xAxisSort,
+      attrs.input.xAxisGroupFunction,
+      attrs.input.filters,
+    ]
   )
 
   const onChangeXAxisGroupFunction = useCallback(
     (groupFunction: TimeUnit | null) => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
+      setVisualizationV2Input(props.block, {
         xAxisGroupFunction: groupFunction,
       })
     },
-    [props.block, attrs.input]
+    [props.block]
   )
 
   const onChangeXAxisSort = useCallback(
     (sort: 'ascending' | 'descending') => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
-        xAxisSort: sort,
-      })
+      setVisualizationV2Input(props.block, { xAxisSort: sort })
     },
-    [props.block, attrs.input]
+    [props.block]
   )
 
   const onChangeHistogramFormat = useCallback(
     (format: HistogramFormat) => {
-      // props.block.setAttribute('histogramFormat', format)
+      setVisualizationV2Input(props.block, { histogramFormat: format })
     },
     [props.block]
   )
 
   const onChangeHistogramBin = useCallback(
     (bin: HistogramBin) => {
-      // props.block.setAttribute('histogramBin', bin)
+      setVisualizationV2Input(props.block, { histogramBin: bin })
     },
     [props.block]
   )
@@ -449,12 +449,9 @@ function VisualizationBlockV2(props: Props) {
 
   const onChangeYAxes = useCallback(
     (yAxes: YAxisV2[]) => {
-      props.block.setAttribute('input', {
-        ...attrs.input,
-        yAxes,
-      })
+      setVisualizationV2Input(props.block, { yAxes })
     },
-    [props.block, attrs.input]
+    [props.block]
   )
 
   const hasAValidYAxis = attrs.input.yAxes.some((yAxis) =>
@@ -623,18 +620,12 @@ function VisualizationBlockV2(props: Props) {
             onChangeXAxisGroupFunction={onChangeXAxisGroupFunction}
             yAxes={attrs.input.yAxes}
             onChangeYAxes={onChangeYAxes}
-            // TODO
-            histogramFormat={'count'}
-            // histogramFormat={histogramFormat}
+            histogramFormat={attrs.input.histogramFormat}
             onChangeHistogramFormat={onChangeHistogramFormat}
-            // TODO
-            histogramBin={{ type: 'auto' }}
-            // histogramBin={histogramBin}
+            histogramBin={attrs.input.histogramBin}
             onChangeHistogramBin={onChangeHistogramBin}
-            // TODO
             numberValuesFormat={null}
             onChangeNumberValuesFormat={onChangeNumberValuesFormat}
-            // TODO
             showDataLabels={true}
             onChangeShowDataLabels={onChangeShowDataLabels}
             isEditable={props.isEditable}

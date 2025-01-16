@@ -293,6 +293,12 @@ function VisualizationControlsV2(props: Props) {
       case 'number':
         return null
       case 'histogram':
+        return (
+          props.dataframe?.columns.filter(
+            (c) =>
+              NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(c.type).success
+          )[0] ?? null
+        )
       case 'pie':
       case 'line':
       case 'area':
