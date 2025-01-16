@@ -364,12 +364,18 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
-  // TODO
-  const tooManyDataPointsHidden = true // props.block.getAttribute('tooManyDataPointsHidden') ?? true
+  const tooManyDataPointsHidden = !(attrs.output?.tooManyDataPoints ?? false)
 
   const onHideTooManyDataPointsWarning = useCallback(() => {
-    // props.block.setAttribute('tooManyDataPointsHidden', true)
-  }, [props.block])
+    if (!attrs.output) {
+      return
+    }
+
+    props.block.setAttribute('output', {
+      ...attrs.output,
+      tooManyDataPoints: false,
+    })
+  }, [props.block, attrs.output])
 
   const onChangeTitle = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

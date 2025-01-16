@@ -25,7 +25,7 @@ import {
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
 } from '@briefer/editor'
-import { head, last } from 'ramda'
+import { head } from 'ramda'
 
 const FONT_FAMILY = ['Inter', ...twFontFamiliy.sans].join(', ')
 
@@ -321,10 +321,6 @@ function BigNumberVisualization(props: {
     const x = props.input.xAxis?.name?.toString() ?? y
 
     let latests = head(props.result.dataset)?.source.slice(-2)
-    if (!props.input.xAxis && props.input.xAxisSort === 'descending') {
-      latests = head(props.result.dataset)?.source.slice(0, 2)
-      latests?.reverse()
-    }
     const latest = latests?.pop()
     const prev = latests?.pop()
 

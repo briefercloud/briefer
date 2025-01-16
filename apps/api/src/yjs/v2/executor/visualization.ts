@@ -279,6 +279,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         const output = {
           executedAt: new Date().toISOString(),
           result: result.data,
+          tooManyDataPoints: result.tooManyDataPoints,
         }
         block.setAttribute('output', output)
       } else {

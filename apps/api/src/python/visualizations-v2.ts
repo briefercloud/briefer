@@ -22,29 +22,40 @@ import pandas as pd
 from datetime import datetime
 
 def _briefer_create_visualization(df, options):
-    def extract_chart_type(chartType):
-        if chartType == "groupedColumn":
-            return "bar", False, False
-        elif chartType == "stackedColumn":
-            return "bar", False, True
-        elif chartType == "hundredPercentStackedColumn":
-            return "bar", False, True,
-        elif chartType == "line":
-            return "line", False, False
-        elif chartType == "area":
-            return "line", True, True
-        elif chartType == "hundredPercentStackedArea":
-            return "line", True, True
-        elif chartType == "scatterPlot":
-            return "scatter", False, False
-        elif chartType == "pie":
+    def extract_chart_type(chart_type):
+        """
+        Transforms the chart type from Briefer input to one that is supported by ECharts
+        It also returns whether the chart is an area chart and if it should be stacked.
+
+        Parameters:
+        chart_type (str): The chart type from Briefer input
+
+        Returns:
+        tuple: The transformed chart type, whether it is an area chart, whether it should be stacked and wheather it should be normalized
+        """
+
+        if chart_type == "groupedColumn":
+            return "bar", False, False, False
+        elif chart_type == "stackedColumn":
+            return "bar", False, True, False
+        elif chart_type == "hundredPercentStackedColumn":
+            return "bar", False, True, True
+        elif chart_type == "line":
+            return "line", False, False, False
+        elif chart_type == "area":
+            return "line", True, True, False
+        elif chart_type == "hundredPercentStackedArea":
+            return "line", True, True, True
+        elif chart_type == "scatterPlot":
+            return "scatter", False, False, False
+        elif chart_type == "pie":
             raise ValueError("Pie chart is not implemented yet")
-        elif chartType == "histogram":
+        elif chart_type == "histogram":
             raise ValueError("Histogram chart is not supported")
-        elif chartType == "trend":
-            return "bar", False, False
-        elif chartType == "number":
-            return "bar", False, False
+        elif chart_type == "trend":
+            return "bar", False, False, False
+        elif chart_type == "number":
+            return "bar", False, False, False
 
     def convert_value(column, value):
         if pd.api.types.is_numeric_dtype(column):
@@ -111,11 +122,14 @@ def _briefer_create_visualization(df, options):
         return df
 
     def sort_dataframe(df, options):
-        if options["xAxis"] and options["xAxisSort"]:
+        if options["xAxis"]:
             return df.sort_values(
                 by=options["xAxis"]["name"],
                 ascending=options["xAxisSort"] == "ascending"
             )
+        elif options["xAxisSort"] == "descending":
+            # just reverse the order
+            return df.iloc[::-1].reset_index(drop=True)
 
         return df
 
@@ -128,7 +142,17 @@ def _briefer_create_visualization(df, options):
 
         result = sort_dataframe(result, options)
 
-        return result
+        capped = False
+        if len(result) > 50000:
+            if options["chartType"] == "number" or options["chartType"] == "trend":
+                # number chart type are never considered capped we just pick the tail
+                # they don't ever care about more than 2 points anyways
+                result = result.tail(50000)
+            else:
+                capped = True
+                result = result.head(50000)
+
+        return result, capped
 
 
     data = {
@@ -146,13 +170,18 @@ def _briefer_create_visualization(df, options):
         "series": [],
     }
 
+    too_many_data_points = False
     for y_axis in options["yAxes"]:
         data["yAxis"].append({ "type": "value" })
 
-        for i, series in enumerate(y_axis["series"]):
-            series_dataframe = get_series_df(df, options, y_axis, series)
+        totals = {}
 
-            chart_type, is_area, is_stack = extract_chart_type(series["chartType"] or options["chartType"])
+        for i, series in enumerate(y_axis["series"]):
+            series_dataframe, capped = get_series_df(df, options, y_axis, series)
+            if capped:
+                too_many_data_points = True
+
+            chart_type, is_area, is_stack, should_normalize = extract_chart_type(series["chartType"] or options["chartType"])
             if series["groupBy"]:
                 groups = series_dataframe[series["groupBy"]["name"]].unique()
                 groups.sort()
@@ -178,12 +207,21 @@ def _briefer_create_visualization(df, options):
                     y_name = series["column"]["name"]
                     y_value = convert_value(series_dataframe[y_name], row[y_name])
 
-                    row_data = {y_name: y_value}
+                    row_data = {}
 
                     if options["xAxis"]:
                         x_name = options["xAxis"]["name"]
                         x_value = convert_value(series_dataframe[x_name], row[x_name])
                         row_data[x_name] = x_value
+
+                    if should_normalize:
+                        total = totals.get(x_value)
+                        if not total:
+                            total = series_dataframe[series_dataframe[x_name] == x_value][y_name].sum()
+                            totals[x_value] = total
+                        y_value = y_value / total if total != 0 else 1
+
+                    row_data[y_name] = y_value
 
                     dataset["source"].append(row_data)
 
@@ -210,7 +248,8 @@ def _briefer_create_visualization(df, options):
         "type": "result",
         "data": {
             "success": True,
-            "data": data
+            "data": data,
+            "tooManyDataPoints": too_many_data_points,
         }
     }, default=str)
 
@@ -238,6 +277,7 @@ const CreateVisualizationResult = z.union([
   z.object({
     success: z.literal(true),
     data: VisualizationV2BlockOutputResult,
+    tooManyDataPoints: z.boolean(),
   }),
   z.object({
     success: z.literal(false),

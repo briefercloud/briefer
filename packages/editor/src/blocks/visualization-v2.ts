@@ -123,6 +123,7 @@ export type VisualizationV2BlockOutputResult = z.infer<
 
 export const VisualizationV2BlockOutput = z.object({
   executedAt: z.string(),
+  tooManyDataPoints: z.boolean(),
   result: VisualizationV2BlockOutputResult,
 })
 

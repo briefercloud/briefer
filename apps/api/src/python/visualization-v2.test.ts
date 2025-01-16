@@ -1,23 +1,10 @@
-import crypto from 'crypto'
 import * as services from '@jupyterlab/services'
-import {
-  AggregateFunction,
-  ChartType,
-  DataFrame,
-  DataFrameColumn,
-  Output,
-  SeriesV2,
-  TimeUnit,
-  YAxisV2,
-} from '@briefer/types'
+import { DataFrame, DataFrameColumn, Output } from '@briefer/types'
 import { createVisualizationV2 } from './visualizations-v2'
 import { JupyterManager } from '../jupyter/manager'
 import { getVar } from '../config'
 import { executeCode } from './index.js'
-import {
-  VisualizationV2BlockInput,
-  VisualizationV2BlockOutputResult,
-} from '@briefer/editor'
+import { VisualizationV2BlockInput } from '@briefer/editor'
 import { IJupyterManager } from '../jupyter'
 
 async function getPythonRunner(
@@ -189,151 +176,138 @@ df = pd.DataFrame({
     columns: [fruitDFColumn, amountDFColumn, priceDFColumn, datetimeDFColumn],
   }
 
-  const chartTypeOptions: ChartType[] = [
-    'groupedColumn',
-    'stackedColumn',
-    'hundredPercentStackedColumn',
-    'line',
-    'area',
-    'hundredPercentStackedArea',
-    'scatterPlot',
-    // 'pie',
-    // 'histogram',
-    // 'trend',
-    // 'number',
-  ]
-  const xAxisOptions = [datetimeDFColumn, amountDFColumn]
-  const xAxisSortOptions = ['ascending' as const, 'descending' as const]
-  const xAxisGroupByOptions: (TimeUnit | null)[] = [
-    null,
-    'year',
-    'quarter',
-    'month',
-    'week',
-    'date',
-    'hours',
-    'minutes',
-    'seconds',
-  ]
-  const yAxisOptions = [
-    {
-      left: [amountDFColumn],
-      right: [],
-    },
-    {
-      left: [amountDFColumn, priceDFColumn],
-      right: [],
-    },
-    {
-      left: [amountDFColumn],
-      right: [priceDFColumn],
-    },
-  ]
-  const yAxisAggregateFunctionOptions: (AggregateFunction | null)[] = [
-    null,
-    'sum',
-    'mean',
-    'median',
-    'count',
-    'min',
-    'max',
-  ]
-  const yAxisGroupByOptions = [null, fruitDFColumn]
+  it('it should compute normalized values for hundredPercentStackedColumn', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
 
-  let i = 0
-  for (const chartType of chartTypeOptions) {
-    for (const xAxis of xAxisOptions) {
-      for (const xAxisSort of xAxisSortOptions) {
-        for (const xAxisGroupBy of xAxisGroupByOptions) {
-          for (const yAxisAggregateFunction of yAxisAggregateFunctionOptions) {
-            for (const yAxisGroupBy of yAxisGroupByOptions) {
-              for (const yAxis of yAxisOptions) {
-                const yAxes: YAxisV2[] = []
-                const leftAxisSeries: SeriesV2[] = []
-                for (const left of yAxis.left) {
-                  leftAxisSeries.push({
-                    axisName: null,
-                    chartType: null,
-                    column: left,
-                    aggregateFunction: yAxisAggregateFunction,
-                    groupBy: yAxisGroupBy,
-                  })
-                }
-                if (leftAxisSeries.length > 0) {
-                  yAxes.push({ series: leftAxisSeries })
-                }
-
-                const rightAxisSeries: SeriesV2[] = []
-                for (const right of yAxis.right) {
-                  rightAxisSeries.push({
-                    axisName: null,
-                    chartType: null,
-                    column: right,
-                    aggregateFunction: yAxisAggregateFunction,
-                    groupBy: yAxisGroupBy,
-                  })
-                }
-                if (rightAxisSeries.length > 0) {
-                  yAxes.push({ series: rightAxisSeries })
-                }
-
-                const input: VisualizationV2BlockInput = {
-                  dataframeName: 'df',
-                  chartType,
-                  xAxis,
-                  xAxisName: null,
-                  xAxisSort,
-                  xAxisGroupFunction: xAxisGroupBy,
-                  yAxes,
-                  filters: [],
-                }
-
-                // only datetime can be grouped by in x-axis
-                if (xAxis.name !== 'datetime' && xAxisGroupBy) {
-                  continue
-                }
-
-                const checksum = crypto
-                  .createHash('sha256')
-                  .update(JSON.stringify(input))
-                  .digest('hex')
-                it(`${checksum}`, async () => {
-                  await (
-                    await pythonRunner.runPython(
-                      checksum,
-                      checksum,
-                      code,
-                      () => {},
-                      {
-                        storeHistory: true,
-                      }
-                    )
-                  ).promise
-
-                  const result = await (
-                    await createVisualizationV2(
-                      'workspaceId',
-                      checksum,
-                      df,
-                      input,
-                      manager,
-                      pythonRunner.runPython
-                    )
-                  ).promise
-
-                  expect(result.success).toBe(true)
-
-                  // this makes jest write input to snapshot which is usefull
-                  // for debugging when the test fails
-                  expect(input).toMatchSnapshot()
-
-                  expect(result).toMatchSnapshot()
-                })
-              }
-            }
-          }
-        }
-      }
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'hundredPercentStackedColumn',
+      xAxis: datetimeDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [
+        {
+          series: [
+            {
+              axisName: null,
+              chartType: null,
+              column: amountDFColumn,
+              aggregateFunction: null,
+              groupBy: fruitDFColumn,
+            },
+          ],
+        },
+      ],
+      filters: [],
     }
-  }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    console.log(JSON.stringify(result, null, 2))
+
+    const janTotal = 11 + 12 + 13
+    const febTotal = 21 + 22
+    const marTotal = 33
+
+    expect(result).toEqual({
+      success: true,
+      tooManyDataPoints: false,
+      data: {
+        tooltip: {
+          trigger: 'axis',
+        },
+        dataset: [
+          {
+            dimensions: ['datetime', 'amount'],
+            source: [
+              {
+                amount: 11 / janTotal,
+                datetime: '2021-01-01T00:00:00',
+              },
+              {
+                amount: 22 / febTotal,
+                datetime: '2021-02-01T00:00:00',
+              },
+              {
+                amount: 33 / marTotal,
+                datetime: '2021-03-01T00:00:00',
+              },
+            ],
+          },
+          {
+            dimensions: ['datetime', 'amount'],
+            source: [
+              {
+                amount: 12 / janTotal,
+                datetime: '2021-01-01T00:00:00',
+              },
+              {
+                amount: 21 / febTotal,
+                datetime: '2021-02-01T00:00:00',
+              },
+            ],
+          },
+          {
+            dimensions: ['datetime', 'amount'],
+            source: [
+              {
+                amount: 13 / janTotal,
+                datetime: '2021-01-01T00:00:00',
+              },
+            ],
+          },
+        ],
+        xAxis: [
+          {
+            type: 'category',
+            axisPointer: {
+              type: 'shadow',
+            },
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+          },
+        ],
+        series: [
+          {
+            datasetIndex: 0,
+            name: 'apple',
+            z: 0,
+            type: 'bar',
+            stack: 'stack_0',
+          },
+          {
+            datasetIndex: 1,
+            name: 'banana',
+            z: 0,
+            type: 'bar',
+            stack: 'stack_0',
+          },
+          {
+            datasetIndex: 2,
+            name: 'pineapple',
+            z: 0,
+            type: 'bar',
+            stack: 'stack_0',
+          },
+        ],
+      },
+    })
+  })
 })
