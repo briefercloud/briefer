@@ -261,6 +261,9 @@ def _briefer_create_visualization(df, options):
             "axisPointer": {
                 "type": "shadow",
             },
+            "name": options["xAxisName"],
+            "nameLocation": "middle",
+            "nameGap": 30
         }],
         "yAxis": [],
         "series": [],

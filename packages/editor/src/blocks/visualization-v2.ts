@@ -81,6 +81,9 @@ const AxisBaseOption = z.union([
 const CartesianAxisOption = z
   .object({
     position: CartesianAxisPosition.optional(),
+    name: z.string().optional(),
+    nameLocation: z.string().optional(),
+    nameGap: z.number().optional(),
   })
   .and(AxisBaseOption)
 
