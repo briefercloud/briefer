@@ -32,6 +32,7 @@ export type VisualizationV2BlockInput = {
   histogramFormat: HistogramFormat
   histogramBin: HistogramBin
   filters: VisualizationFilter[]
+  showDataLabels: boolean
 }
 
 function emptyInput(): VisualizationV2BlockInput {
@@ -46,6 +47,7 @@ function emptyInput(): VisualizationV2BlockInput {
     filters: [],
     histogramFormat: 'count',
     histogramBin: { type: 'auto' },
+    showDataLabels: false,
   }
 }
 
@@ -91,6 +93,12 @@ const SerieCommon = z.object({
   datasetIndex: z.number(),
   name: z.string().optional(),
   z: z.number(),
+  label: z
+    .object({
+      show: z.boolean(),
+      position: z.union([z.literal('inside'), z.literal('top')]),
+    })
+    .optional(),
 })
 
 const Serie = z.union([

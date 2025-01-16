@@ -297,12 +297,15 @@ def _briefer_create_visualization(df, options):
             "source": []
         }]
         data["yAxis"].append({"type": "value"})
-        data["series"].append({
+        series = {
             "type": "bar",
             "datasetIndex": 0,
             "z": 0,
             "barWidth": "99.5%"
-        })
+        }
+        if options["showDataLabels"]:
+            series["label"] = {"show": True, "position": "top"}
+        data["series"].append(series)
         for bin, val in zip(bins, hist):
             data["dataset"][0]["source"].append({
                 "bin": bin,
@@ -379,6 +382,11 @@ def _briefer_create_visualization(df, options):
 
                     if is_stack:
                         serie["stack"] = f"stack_{i}"
+
+                    if options["showDataLabels"]:
+                        serie["label"] = {"show": True, "position": "top"}
+                        if is_stack:
+                            serie["label"]["position"] = "inside"
 
                     data["series"].append(serie)
 

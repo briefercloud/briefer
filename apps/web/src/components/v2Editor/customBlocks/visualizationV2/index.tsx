@@ -466,7 +466,7 @@ function VisualizationBlockV2(props: Props) {
 
   const onChangeShowDataLabels = useCallback(
     (showDataLabels: boolean) => {
-      // props.block.setAttribute('showDataLabels', showDataLabels)
+      setVisualizationV2Input(props.block, { showDataLabels })
     },
     [props.block]
   )
@@ -632,7 +632,7 @@ function VisualizationBlockV2(props: Props) {
             onChangeHistogramBin={onChangeHistogramBin}
             numberValuesFormat={null}
             onChangeNumberValuesFormat={onChangeNumberValuesFormat}
-            showDataLabels={true}
+            showDataLabels={attrs.input.showDataLabels}
             onChangeShowDataLabels={onChangeShowDataLabels}
             isEditable={props.isEditable}
           />
