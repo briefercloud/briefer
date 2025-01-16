@@ -133,6 +133,7 @@ describe('.createVisualizationV2', () => {
           histogramFormat: 'count',
           histogramBin: { type: 'auto' },
           filters: [],
+          showDataLabels: false,
         },
         manager,
         pythonRunner.runPython
@@ -208,6 +209,7 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'auto' },
       filters: [],
+      showDataLabels: false,
     }
 
     const result = await (
@@ -235,6 +237,7 @@ df = pd.DataFrame({
         tooltip: {
           trigger: 'axis',
         },
+        legend: {},
         dataset: [
           {
             dimensions: ['datetime', 'amount'],
@@ -282,16 +285,24 @@ df = pd.DataFrame({
             axisPointer: {
               type: 'shadow',
             },
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         yAxis: [
           {
             type: 'value',
+            position: 'left',
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         series: [
           {
             datasetIndex: 0,
+            yAxisIndex: 0,
             name: 'apple',
             z: 0,
             type: 'bar',
@@ -299,6 +310,7 @@ df = pd.DataFrame({
           },
           {
             datasetIndex: 1,
+            yAxisIndex: 0,
             name: 'banana',
             z: 0,
             type: 'bar',
@@ -306,6 +318,7 @@ df = pd.DataFrame({
           },
           {
             datasetIndex: 2,
+            yAxisIndex: 0,
             name: 'pineapple',
             z: 0,
             type: 'bar',
@@ -334,6 +347,7 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'auto' },
       filters: [],
+      showDataLabels: false,
     }
 
     const result = await (
@@ -355,6 +369,7 @@ df = pd.DataFrame({
         tooltip: {
           trigger: 'axis',
         },
+        legend: {},
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -389,16 +404,24 @@ df = pd.DataFrame({
             axisPointer: {
               type: 'shadow',
             },
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         yAxis: [
           {
             type: 'value',
+            position: 'left',
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         series: [
           {
             datasetIndex: 0,
+            yAxisIndex: 0,
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
@@ -426,6 +449,7 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'stepSize', value: 5 },
       filters: [],
+      showDataLabels: false,
     }
 
     const result = await (
@@ -447,6 +471,7 @@ df = pd.DataFrame({
         tooltip: {
           trigger: 'axis',
         },
+        legend: {},
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -485,16 +510,24 @@ df = pd.DataFrame({
             axisPointer: {
               type: 'shadow',
             },
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         yAxis: [
           {
             type: 'value',
+            position: 'left',
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         series: [
           {
             datasetIndex: 0,
+            yAxisIndex: 0,
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
@@ -522,6 +555,7 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'maxBins', value: 2 },
       filters: [],
+      showDataLabels: false,
     }
 
     const result = await (
@@ -543,6 +577,7 @@ df = pd.DataFrame({
         tooltip: {
           trigger: 'axis',
         },
+        legend: {},
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -564,16 +599,24 @@ df = pd.DataFrame({
             axisPointer: {
               type: 'shadow',
             },
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         yAxis: [
           {
             type: 'value',
+            position: 'left',
+            name: null,
+            nameLocation: 'middle',
+            nameGap: 30,
           },
         ],
         series: [
           {
             datasetIndex: 0,
+            yAxisIndex: 0,
             z: 0,
             type: 'bar',
             barWidth: '99.5%',

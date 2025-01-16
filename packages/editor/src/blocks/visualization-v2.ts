@@ -81,8 +81,8 @@ const AxisBaseOption = z.union([
 const CartesianAxisOption = z
   .object({
     position: CartesianAxisPosition.optional(),
-    name: z.string().optional(),
-    nameLocation: z.string().optional(),
+    name: z.string().optional().nullable(),
+    nameLocation: z.literal('middle'),
     nameGap: z.number().optional(),
   })
   .and(AxisBaseOption)
@@ -136,6 +136,7 @@ const YAxis = CartesianAxisOption.and(
 
 export const VisualizationV2BlockOutputResult = z.object({
   tooltip: z.object({ trigger: z.literal('axis') }),
+  legend: z.object({}),
   dataset: z.array(DataSet),
   xAxis: z.array(XAxis),
   yAxis: z.array(YAxis),

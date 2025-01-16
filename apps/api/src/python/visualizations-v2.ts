@@ -255,6 +255,7 @@ def _briefer_create_visualization(df, options):
         "tooltip": {
             "trigger": "axis",
         },
+        "legend": {},
         "dataset": [],
         "xAxis": [{
             "type": "category",
@@ -299,7 +300,13 @@ def _briefer_create_visualization(df, options):
             "dimensions": ["bin", "value"],
             "source": []
         }]
-        data["yAxis"].append({"type": "value"})
+        data["yAxis"].append({
+          "type": "value",
+          "position": "left",
+          "name": None,
+          "nameLocation": "middle",
+          "nameGap": 30
+        })
         series = {
             "type": "bar",
             "datasetIndex": 0,
@@ -320,6 +327,9 @@ def _briefer_create_visualization(df, options):
             data["yAxis"].append({
                 "type": "value",
                 "position": "left" if y_index % 2 == 0 else "right",
+                "name": None,
+                "nameLocation": "middle",
+                "nameGap": 30
             })
 
             totals = {}
