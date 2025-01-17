@@ -1,13 +1,15 @@
 import clsx from 'clsx'
 
-export type Tab = 'general' | 'x-axis' | 'y-axis' | 'labels'
+export type Tab = 'general' | 'display' | 'x-axis' | 'y-axis' | 'labels'
 
-const tabs: Tab[] = ['general', 'x-axis', 'y-axis', 'labels']
+const tabs: Tab[] = ['general', 'display', 'x-axis', 'y-axis', 'labels']
 
 function tabToName(tab: Tab): string {
   switch (tab) {
     case 'general':
       return 'General'
+    case 'display':
+      return 'Display'
     case 'x-axis':
       return 'X-Axis'
     case 'y-axis':

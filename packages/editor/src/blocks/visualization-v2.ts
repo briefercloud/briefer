@@ -36,6 +36,7 @@ export type VisualizationV2BlockInput = {
     show: boolean
     frequency: 'all' | 'some'
   }
+  colors: Record<string, string>
 }
 
 function emptyInput(): VisualizationV2BlockInput {
@@ -54,6 +55,7 @@ function emptyInput(): VisualizationV2BlockInput {
       show: false,
       frequency: 'all',
     },
+    colors: {},
   }
 }
 
@@ -103,6 +105,7 @@ const DataSet = z.object({
 })
 
 const SerieCommon = z.object({
+  id: z.string(),
   datasetIndex: z.number(),
   yAxisIndex: z.number(),
   name: z.string().optional(),
@@ -114,7 +117,6 @@ const SerieCommon = z.object({
     })
     .optional(),
   labelLayout: z.object({ hideOverlap: z.boolean() }).optional(),
-  symbolSize: z.number().optional(),
 })
 
 const Serie = z.union([
@@ -122,14 +124,30 @@ const Serie = z.union([
     type: z.literal('bar'),
     stack: z.string().optional(),
     barWidth: z.string().optional(),
+    color: z.string().optional(),
   }),
   SerieCommon.extend({
     type: z.literal('scatter'),
+    itemStyle: z
+      .object({
+        color: z.string().optional(),
+      })
+      .optional(),
   }),
   SerieCommon.extend({
     type: z.literal('line'),
-    areaStyle: z.object({}).optional(),
+    areaStyle: z
+      .object({
+        color: z.string().optional(),
+      })
+      .optional(),
+    lineStyle: z
+      .object({
+        color: z.string().optional(),
+      })
+      .optional(),
     stack: z.string().optional(),
+    symbolSize: z.number().optional(),
   }),
 ])
 const XAxis = CartesianAxisOption.and(

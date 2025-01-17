@@ -505,6 +505,16 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
+  const onChangeColors = useCallback(
+    (colors: VisualizationV2BlockInput['colors']) => {
+      setVisualizationV2Input(props.block, { colors })
+    },
+    [props.block]
+  )
+
+  console.log(JSON.stringify(attrs.output?.result, null, 2))
+  console.log(attrs.input)
+
   if (props.isDashboard) {
     return (
       <VisualizationViewV2
@@ -636,6 +646,9 @@ function VisualizationBlockV2(props: Props) {
             dataLabels={attrs.input.dataLabels}
             onChangeDataLabels={onChangeDataLabels}
             isEditable={props.isEditable}
+            result={attrs.output?.result ?? null}
+            colors={attrs.input.colors}
+            onChangeColors={onChangeColors}
           />
           <VisualizationViewV2
             title={attrs.title}

@@ -326,14 +326,20 @@ def _briefer_create_visualization(df, options):
           "name": options["yAxes"][0]["name"] if len(options["yAxes"]) > 0 else None,
           "nameLocation": "middle",
         })
+
+        id = "y-0-series-0"
         series = {
+            "id": id,
             "type": "bar",
             "datasetIndex": 0,
             "yAxisIndex": 0,
             "z": 0,
             "barWidth": "99.5%",
-            "symbolSize": 1,
         }
+        color = options.get("colors", {}).get(id)
+        if color:
+            series["color"] = color
+
         if options["dataLabels"]["show"]:
             series["label"] = {"show": True, "position": "top"}
             series["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
@@ -414,19 +420,37 @@ def _briefer_create_visualization(df, options):
 
                     data["dataset"].append(dataset)
 
+                    id = f"y-{y_index}-series-{i}"
+                    if group:
+                        id = f"{id}-{group}"
+
                     serie = {
+                      "id": id,
                       "type": chart_type,
                       "datasetIndex": dataset_index,
                       "yAxisIndex": y_index,
                       "z": i,
-                      "symbolSize": 1,
                     }
+                    if chart_type == "line":
+                        serie["symbolSize"] = 1
+
+                    color = options.get("colors", {}).get(id)
 
                     if group:
                         serie["name"] = group
 
                     if is_area:
                         serie["areaStyle"] = {}
+                        if color:
+                            serie["areaStyle"]["color"] = color
+
+                    if color:
+                        if chart_type == "bar":
+                            serie["color"] = color
+                        elif chart_type == "line":
+                            serie["lineStyle"] = {"color": color}
+                        elif chart_type == "scatter":
+                            serie["itemStyle"] = {"color": color}
 
                     if is_stack:
                         serie["stack"] = f"stack_{i}"

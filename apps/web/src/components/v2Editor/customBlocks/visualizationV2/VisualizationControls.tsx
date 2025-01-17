@@ -26,9 +26,12 @@ import VisualizationSettingsTabsV2, { Tab } from './VisualizationSettingTabs'
 import YAxisPickerV2 from './YAxisPicker'
 import VisualizationToggleV2 from './VisualizationToggle'
 import { PortalTooltip } from '@/components/Tooltips'
-import { sortWith, ascend, GT } from 'ramda'
+import { sortWith, ascend, GT, omit } from 'ramda'
 import ScrollBar from '@/components/ScrollBar'
-import { VisualizationV2BlockInput } from '@briefer/editor'
+import {
+  VisualizationV2BlockInput,
+  VisualizationV2BlockOutputResult,
+} from '@briefer/editor'
 
 interface Props {
   isHidden: boolean
@@ -56,6 +59,9 @@ interface Props {
     dataLabels: VisualizationV2BlockInput['dataLabels']
   ) => void
   isEditable: boolean
+  result: VisualizationV2BlockOutputResult | null
+  colors: VisualizationV2BlockInput['colors']
+  onChangeColors: (colors: VisualizationV2BlockInput['colors']) => void
 }
 
 function isValidD3Format(format: string): boolean {
@@ -599,6 +605,40 @@ function VisualizationControlsV2(props: Props) {
                     ))}
                 </div>
               )}
+            </div>
+          )}
+          {tab === 'display' && (
+            <div className="text-xs text-gray-500 flex flex-col space-y-8">
+              {props.result?.series.map((s) => (
+                <div className="text-xs text-gray-500 flex flex-col space-y-8">
+                  <div>
+                    <label
+                      htmlFor="xAxisName"
+                      className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+                    >
+                      {s.id}
+                    </label>
+                    <input
+                      name="xAxisName"
+                      type="text"
+                      placeholder="My X-Axis"
+                      className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                      value={props.colors[s.id] ?? ''}
+                      onChange={(e) => {
+                        if (e.target.value === '') {
+                          props.onChangeColors(omit([s.id], props.colors))
+                        } else {
+                          props.onChangeColors({
+                            ...props.colors,
+                            [s.id]: e.target.value,
+                          })
+                        }
+                      }}
+                      disabled={!props.dataframe || !props.isEditable}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {tab === 'x-axis' && (
