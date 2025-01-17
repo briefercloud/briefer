@@ -133,7 +133,10 @@ describe('.createVisualizationV2', () => {
           histogramFormat: 'count',
           histogramBin: { type: 'auto' },
           filters: [],
-          showDataLabels: false,
+          dataLabels: {
+            show: false,
+            frequency: 'all',
+          },
         },
         manager,
         pythonRunner.runPython
@@ -195,9 +198,9 @@ df = pd.DataFrame({
       xAxisGroupFunction: 'month',
       yAxes: [
         {
+          name: null,
           series: [
             {
-              axisName: null,
               chartType: null,
               column: amountDFColumn,
               aggregateFunction: null,
@@ -209,7 +212,10 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'auto' },
       filters: [],
-      showDataLabels: false,
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
     }
 
     const result = await (
@@ -347,7 +353,10 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'auto' },
       filters: [],
-      showDataLabels: false,
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
     }
 
     const result = await (
@@ -449,7 +458,10 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'stepSize', value: 5 },
       filters: [],
-      showDataLabels: false,
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
     }
 
     const result = await (
@@ -555,7 +567,10 @@ df = pd.DataFrame({
       histogramFormat: 'count',
       histogramBin: { type: 'maxBins', value: 2 },
       filters: [],
-      showDataLabels: false,
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
     }
 
     const result = await (

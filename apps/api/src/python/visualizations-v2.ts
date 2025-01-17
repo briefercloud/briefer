@@ -252,9 +252,8 @@ def _briefer_create_visualization(df, options):
         return df
 
     data = {
-        "tooltip": {
-            "trigger": "axis",
-        },
+        "tooltip": {"trigger": "axis"},
+        "grid": {"containLabel": True},
         "legend": {},
         "dataset": [],
         "xAxis": [{
@@ -264,7 +263,6 @@ def _briefer_create_visualization(df, options):
             },
             "name": options["xAxisName"],
             "nameLocation": "middle",
-            "nameGap": 30
         }],
         "yAxis": [],
         "series": [],
@@ -303,19 +301,20 @@ def _briefer_create_visualization(df, options):
         data["yAxis"].append({
           "type": "value",
           "position": "left",
-          "name": None,
+          "name": options["yAxes"][0]["name"] if len(options["yAxes"]) > 0 else None,
           "nameLocation": "middle",
-          "nameGap": 30
         })
         series = {
             "type": "bar",
             "datasetIndex": 0,
             "yAxisIndex": 0,
             "z": 0,
-            "barWidth": "99.5%"
+            "barWidth": "99.5%",
+            "symbolSize": 1,
         }
-        if options["showDataLabels"]:
+        if options["dataLabels"]["show"]:
             series["label"] = {"show": True, "position": "top"}
+            series["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
         data["series"].append(series)
         for bin, val in zip(bins, hist):
             data["dataset"][0]["source"].append({
@@ -327,9 +326,8 @@ def _briefer_create_visualization(df, options):
             data["yAxis"].append({
                 "type": "value",
                 "position": "left" if y_index % 2 == 0 else "right",
-                "name": None,
+                "name": y_axis["name"],
                 "nameLocation": "middle",
-                "nameGap": 30
             })
 
             totals = {}
@@ -390,6 +388,7 @@ def _briefer_create_visualization(df, options):
                       "datasetIndex": dataset_index,
                       "yAxisIndex": y_index,
                       "z": i,
+                      "symbolSize": 1,
                     }
 
                     if group:
@@ -401,10 +400,12 @@ def _briefer_create_visualization(df, options):
                     if is_stack:
                         serie["stack"] = f"stack_{i}"
 
-                    if options["showDataLabels"]:
+                    if options["dataLabels"]["show"]:
                         serie["label"] = {"show": True, "position": "top"}
                         if is_stack:
                             serie["label"]["position"] = "inside"
+
+                        serie["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
 
                     data["series"].append(serie)
 

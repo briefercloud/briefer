@@ -28,6 +28,7 @@ import VisualizationToggleV2 from './VisualizationToggle'
 import { PortalTooltip } from '@/components/Tooltips'
 import { sortWith, ascend, GT } from 'ramda'
 import ScrollBar from '@/components/ScrollBar'
+import { VisualizationV2BlockInput } from '@briefer/editor'
 
 interface Props {
   isHidden: boolean
@@ -50,8 +51,10 @@ interface Props {
   onChangeHistogramBin: (bin: HistogramBin) => void
   numberValuesFormat: string | null
   onChangeNumberValuesFormat: (format: string | null) => void
-  showDataLabels: boolean
-  onChangeShowDataLabels: (showDataLabels: boolean) => void
+  dataLabels: VisualizationV2BlockInput['dataLabels']
+  onChangeDataLabels: (
+    dataLabels: VisualizationV2BlockInput['dataLabels']
+  ) => void
   isEditable: boolean
 }
 
@@ -200,22 +203,15 @@ function VisualizationControlsV2(props: Props) {
   )
 
   const onChangeYAxisName = useCallback(
-    (
-      e: React.ChangeEvent<HTMLInputElement>,
-      axisIndex: number,
-      seriesIndex: number
-    ) => {
+    (e: React.ChangeEvent<HTMLInputElement>, axisIndex: number) => {
       if (props.yAxes.length === 0) {
         return
       }
 
       const name = e.target.value === '' ? null : e.target.value
 
-      const targetAxis = props.yAxes[axisIndex]
-      targetAxis.series[seriesIndex].axisName = name
-
       props.onChangeYAxes(
-        props.yAxes.map((y, i) => (i === axisIndex ? targetAxis : y))
+        props.yAxes.map((y, i) => (i === axisIndex ? { ...y, name } : y))
       )
     },
     [props.yAxes, props.onChangeYAxes]
@@ -254,9 +250,9 @@ function VisualizationControlsV2(props: Props) {
     props.onChangeYAxes([
       ...props.yAxes,
       {
+        name: null,
         series: [
           {
-            axisName: null,
             column: null,
             aggregateFunction: null,
             groupBy: null,
@@ -345,29 +341,45 @@ function VisualizationControlsV2(props: Props) {
     }
   }, [props.chartType, props.dataframe?.columns])
 
-  const axisNameComponents = props.yAxes.map((yAxis, yI) =>
-    yAxis.series.map((_, sI) => {
-      return (
+  const axisNameComponents = useMemo(
+    () =>
+      props.yAxes.map((yAxis, yI) => (
         <div>
           <label
-            htmlFor={`rightYAxisName-${yI}-${sI}`}
+            htmlFor={`rightYAxisName-${yI}`}
             className="block text-xs font-medium leading-6 text-gray-900 pb-1"
           >
             {yI === 0 ? 'Primary' : 'Secondary'} Y-Axis Title
-            {sI > 0 ? ` (Series ${sI + 1})` : ''}
           </label>
           <input
-            name={`rightYAxisName-${yI}-${sI}`}
+            name={`rightYAxisName-${yI}`}
             type="text"
             placeholder="My Y-Axis"
             className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-            value={props.yAxes[yI]?.series[sI]?.axisName ?? ''}
-            onChange={(e) => onChangeYAxisName(e, yI, sI)}
+            value={yAxis?.name ?? ''}
+            onChange={(e) => onChangeYAxisName(e, yI)}
             disabled={!props.dataframe || !props.isEditable}
           />
         </div>
-      )
+      )),
+    [props.yAxes, props.dataframe, props.isEditable, onChangeYAxisName]
+  )
+
+  const onToggleShowDataLabels = useCallback(() => {
+    props.onChangeDataLabels({
+      ...props.dataLabels,
+      show: !props.dataLabels.show,
     })
+  }, [props.dataLabels, props.onChangeDataLabels])
+
+  const onChangeDataLabelsFrequency = useCallback(
+    (frequency: string | null) => {
+      props.onChangeDataLabels({
+        ...props.dataLabels,
+        frequency: frequency === 'some' ? 'some' : 'all',
+      })
+    },
+    [props.dataLabels, props.onChangeDataLabels]
   )
 
   return (
@@ -620,9 +632,22 @@ function VisualizationControlsV2(props: Props) {
               <div>
                 <VisualizationToggleV2
                   label="Show labels"
-                  enabled={props.showDataLabels}
-                  onToggle={props.onChangeShowDataLabels}
+                  enabled={props.dataLabels.show}
+                  onToggle={onToggleShowDataLabels}
                 />
+                {props.dataLabels.show && (
+                  <AxisModifierSelector
+                    className="pt-1"
+                    label="Labels to show"
+                    value={props.dataLabels.frequency}
+                    options={[
+                      { name: 'All', value: 'all' },
+                      { name: 'Some', value: 'some' },
+                    ]}
+                    onChange={onChangeDataLabelsFrequency}
+                    disabled={!props.dataframe || !props.isEditable}
+                  />
+                )}
               </div>
               <div>
                 <div className="flex justify-between items-center pb-1">

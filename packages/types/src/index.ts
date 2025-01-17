@@ -578,10 +578,10 @@ export type AggregateFunction = z.infer<typeof AggregateFunction>
 
 export type Series = Omit<SeriesV2, 'groupBy'> & {
   colorBy: DataFrameColumn | null
+  axisName: string | null
 }
 
 export type SeriesV2 = {
-  axisName: string | null
   chartType: ChartType | null
   column: DataFrameColumn | null
   aggregateFunction: AggregateFunction | null
@@ -593,6 +593,7 @@ export type YAxis = {
 }
 
 export type YAxisV2 = {
+  name: string | null
   series: SeriesV2[]
 }
 

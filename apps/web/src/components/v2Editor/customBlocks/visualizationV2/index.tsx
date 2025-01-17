@@ -272,7 +272,8 @@ function VisualizationBlockV2(props: Props) {
       switch (chartType) {
         case 'trend':
         case 'number':
-          const series = attrs.input.yAxes[0]?.series[0] ?? null
+          const yAxis = attrs.input.yAxes[0]
+          const series = yAxis?.series[0] ?? null
           nextInput = {
             dataframeName: attrs.input.dataframeName,
             chartType,
@@ -283,9 +284,9 @@ function VisualizationBlockV2(props: Props) {
             yAxes: series
               ? [
                   {
+                    name: yAxis?.name ?? null,
                     series: [
                       {
-                        axisName: series.axisName,
                         chartType: null,
                         column: series.column,
                         aggregateFunction: series.aggregateFunction,
@@ -464,13 +465,6 @@ function VisualizationBlockV2(props: Props) {
     yAxis.series.some((s) => s.column !== null)
   )
 
-  const onChangeShowDataLabels = useCallback(
-    (showDataLabels: boolean) => {
-      setVisualizationV2Input(props.block, { showDataLabels })
-    },
-    [props.block]
-  )
-
   // TODO
   // useEffect(() => {
   //   if (status === 'running' || status === 'run-requested') {
@@ -503,6 +497,13 @@ function VisualizationBlockV2(props: Props) {
   }, [attrs.id, editorAPI.insert])
 
   const viewLoading = isExecutionStatusLoading(status)
+
+  const onChangeDataLabels = useCallback(
+    (dataLabels: VisualizationV2BlockInput['dataLabels']) => {
+      setVisualizationV2Input(props.block, { dataLabels })
+    },
+    [props.block]
+  )
 
   if (props.isDashboard) {
     return (
@@ -632,8 +633,8 @@ function VisualizationBlockV2(props: Props) {
             onChangeHistogramBin={onChangeHistogramBin}
             numberValuesFormat={null}
             onChangeNumberValuesFormat={onChangeNumberValuesFormat}
-            showDataLabels={attrs.input.showDataLabels}
-            onChangeShowDataLabels={onChangeShowDataLabels}
+            dataLabels={attrs.input.dataLabels}
+            onChangeDataLabels={onChangeDataLabels}
             isEditable={props.isEditable}
           />
           <VisualizationViewV2

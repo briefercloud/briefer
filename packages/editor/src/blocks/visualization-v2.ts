@@ -32,7 +32,10 @@ export type VisualizationV2BlockInput = {
   histogramFormat: HistogramFormat
   histogramBin: HistogramBin
   filters: VisualizationFilter[]
-  showDataLabels: boolean
+  dataLabels: {
+    show: boolean
+    frequency: 'all' | 'some'
+  }
 }
 
 function emptyInput(): VisualizationV2BlockInput {
@@ -47,7 +50,10 @@ function emptyInput(): VisualizationV2BlockInput {
     filters: [],
     histogramFormat: 'count',
     histogramBin: { type: 'auto' },
-    showDataLabels: false,
+    dataLabels: {
+      show: false,
+      frequency: 'all',
+    },
   }
 }
 
@@ -103,6 +109,8 @@ const SerieCommon = z.object({
       position: z.union([z.literal('inside'), z.literal('top')]),
     })
     .optional(),
+  labelLayout: z.object({ hideOverlap: z.boolean() }).optional(),
+  symbolSize: z.number().optional(),
 })
 
 const Serie = z.union([
@@ -137,6 +145,7 @@ const YAxis = CartesianAxisOption.and(
 export const VisualizationV2BlockOutputResult = z.object({
   tooltip: z.object({ trigger: z.literal('axis') }),
   legend: z.object({}),
+  grid: z.object({ containLabel: z.literal(true) }),
   dataset: z.array(DataSet),
   xAxis: z.array(XAxis),
   yAxis: z.array(YAxis),
@@ -205,9 +214,9 @@ function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
   if (input.yAxes.length === 0) {
     return [
       {
+        name: null,
         series: [
           {
-            axisName: null,
             column: null,
             aggregateFunction: null,
             groupBy: null,

@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { CubeTransparentIcon } from '@heroicons/react/24/solid'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
-import { ChartType, DataFrame } from '@briefer/types'
+import { DataFrame } from '@briefer/types'
 import LargeSpinner from '@/components/LargeSpinner'
 import clsx from 'clsx'
 import useSideBar from '@/hooks/useSideBar'
@@ -63,7 +63,7 @@ function VisualizationViewV2(props: Props) {
       key={key}
       className={clsx(
         !props.controlsHidden && !props.isDashboard && 'w-2/3',
-        'flex-grow h-full flex items-center justify-center relative'
+        'flex-grow h-full flex items-center justify-center relative pt-3'
       )}
     >
       {props.result ? (
@@ -254,7 +254,12 @@ function BrieferResult(props: {
 
   return (
     <div ref={container} className="ph-no-capture h-full">
-      <Echarts width={size.width} height={size.height} option={props.result} />
+      <Echarts
+        width={size.width}
+        height={size.height}
+        option={props.result}
+        renderer={props.renderer}
+      />
     </div>
   )
 }
@@ -263,6 +268,7 @@ interface EchartsProps {
   width: number
   height: number
   option: echarts.EChartsOption
+  renderer?: 'canvas' | 'svg'
 }
 function Echarts(props: EchartsProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -273,13 +279,13 @@ function Echarts(props: EchartsProps) {
       return
     }
 
-    const chart = echarts.init(ref.current)
+    const chart = echarts.init(ref.current, { renderer: props.renderer })
     setChart(chart)
 
     return () => {
       chart.dispose()
     }
-  }, [ref.current])
+  }, [ref.current, props.renderer])
 
   useEffect(() => {
     if (chart) {
@@ -288,16 +294,6 @@ function Echarts(props: EchartsProps) {
   }, [props.option, chart])
 
   return <div ref={ref} className="w-full h-full" />
-}
-
-function extractXYFromSpec(spec: any) {
-  let layer = spec.layer[0]
-  while ('layer' in layer) {
-    layer = layer.layer[0]
-  }
-
-  const { x, y } = layer.encoding
-  return { x, y }
 }
 
 function BigNumberVisualization(props: {
