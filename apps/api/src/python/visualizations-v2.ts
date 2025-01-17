@@ -42,6 +42,21 @@ def _briefer_render_filter_value(filter):
         }
         return None
 
+def _briefer_convert_to_utc_safe(datetime_series, comparison_value):
+    # Localize timezone-naive datetimes to UTC
+    if datetime_series.dt.tz is None:
+        localized_series = datetime_series.dt.tz_localize('UTC')
+    else:
+        localized_series = datetime_series.dt.tz_convert('UTC')
+
+    # Localize comparison_value to UTC if it's naive
+    if comparison_value.tzinfo is None or comparison_value.tzinfo.utcoffset(comparison_value) is None:
+        comparison_value_utc = comparison_value.tz_localize('UTC')
+    else:
+        comparison_value_utc = comparison_value.tz_convert('UTC')
+
+    return localized_series, comparison_value_utc
+
 def _briefer_create_visualization(df, options):
     def extract_chart_type(chart_type):
         """
@@ -77,15 +92,6 @@ def _briefer_create_visualization(df, options):
             return "bar", False, False, False
         elif chart_type == "number":
             return "bar", False, False, False
-
-    def convert_value(column, value):
-        if pd.api.types.is_numeric_dtype(column):
-            return pd.to_numeric(value, errors="coerce")
-
-        if pd.api.types.is_datetime64_any_dtype(column):
-            return value.isoformat()
-
-        return value
 
     def group_dataframe(df, options, y_axis, series):
         if not options["xAxis"]:
@@ -251,26 +257,42 @@ def _briefer_create_visualization(df, options):
                     df = df[df[column_name].notnull()]
         return df
 
+    def get_axis_type(df, column, options):
+        if not column or options["chartType"] == "histogram":
+            return "category"
+
+        if pd.api.types.is_numeric_dtype(df[column["name"]]):
+            return "value"
+        elif pd.api.types.is_datetime64_any_dtype(df[column["name"]]):
+            return "time"
+
+        return "category"
+
+    df = apply_filters(df, options["filters"])
+
+    x_axis = {
+        "type": get_axis_type(df, options["xAxis"], options),
+        "axisPointer": {
+            "type": "shadow",
+        },
+        "name": options["xAxisName"],
+        "nameLocation": "middle",
+    }
+    if x_axis["type"] == "time" or x_axis["type"] == "value":
+        x_axis["min"] = "dataMin"
+        x_axis["max"] = "dataMax"
+
     data = {
         "tooltip": {"trigger": "axis"},
         "grid": {"containLabel": True},
         "legend": {},
         "dataset": [],
-        "xAxis": [{
-            "type": "category",
-            "axisPointer": {
-                "type": "shadow",
-            },
-            "name": options["xAxisName"],
-            "nameLocation": "middle",
-        }],
+        "xAxis": [x_axis],
         "yAxis": [],
         "series": [],
     }
 
     too_many_data_points = False
-
-    df = apply_filters(df, options["filters"])
 
     if options["chartType"] == "histogram":
         column = df[options["xAxis"]["name"]]
@@ -323,16 +345,25 @@ def _briefer_create_visualization(df, options):
             })
     else:
         for y_index, y_axis in enumerate(options["yAxes"]):
-            data["yAxis"].append({
+            data_y_axis = {
                 "type": "value",
                 "position": "left" if y_index % 2 == 0 else "right",
                 "name": y_axis["name"],
                 "nameLocation": "middle",
-            })
+            }
+            data["yAxis"].append(data_y_axis)
 
             totals = {}
 
+            all_series_are_time = True
+
             for i, series in enumerate(y_axis["series"]):
+                is_time = get_axis_type(df, series["column"], options) == "time"
+                all_series_are_time = all_series_are_time and is_time
+
+                if not is_time and not pd.api.types.is_numeric_dtype(df[series["column"]["name"]]):
+                      data["yAxis"][y_index]["type"] = "category"
+
                 series_dataframe, capped = get_series_df(df, options, y_axis, series)
                 if capped:
                     too_many_data_points = True
@@ -361,13 +392,13 @@ def _briefer_create_visualization(df, options):
                             continue
 
                         y_name = series["column"]["name"]
-                        y_value = convert_value(series_dataframe[y_name], row[y_name])
+                        y_value = row[y_name]
 
                         row_data = {}
 
                         if options["xAxis"]:
                             x_name = options["xAxis"]["name"]
-                            x_value = convert_value(series_dataframe[x_name], row[x_name])
+                            x_value = row[x_name]
                             row_data[x_name] = x_value
 
                         if should_normalize:
@@ -408,6 +439,8 @@ def _briefer_create_visualization(df, options):
                         serie["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
 
                     data["series"].append(serie)
+            if all_series_are_time:
+                data_y_axis["type"] = "time"
 
     output = json.dumps({
         "type": "result",

@@ -66,6 +66,8 @@ const CartesianAxisPosition = z.union([
 
 const ValueAxisBaseOption = z.object({
   type: z.literal('value'),
+  min: z.union([z.number(), z.literal('dataMin')]).optional(),
+  max: z.union([z.number(), z.literal('dataMax')]).optional(),
 })
 
 const OrdinalRawValue = z.string().or(z.number())
@@ -76,6 +78,8 @@ const CategoryAxisBaseOption = z.object({
 
 const TimeAxisBaseOption = z.object({
   type: z.literal('time'),
+  min: z.string().optional(),
+  max: z.string().optional(),
 })
 
 const AxisBaseOption = z.union([
