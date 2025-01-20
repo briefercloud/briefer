@@ -5,6 +5,7 @@ import {
   PythonErrorOutput,
   jsonString,
   VisualizationFilter,
+  isInvalidVisualizationFilter,
 } from '@briefer/types'
 import { executeCode, PythonExecutionError } from './index.js'
 import { IJupyterManager } from '../jupyter/index.js'
@@ -17,7 +18,16 @@ import { z } from 'zod'
 import { logger } from '../logger.js'
 
 function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
-  const strInput = JSON.stringify(input)
+  const filters = input.filters.filter((f) => {
+    if (isInvalidVisualizationFilter(f, dataframe)) {
+      return false
+    }
+
+    return true
+  })
+
+  const strInput = JSON.stringify({ ...input, filters })
+
   let code = `import json
 import pandas as pd
 from datetime import datetime

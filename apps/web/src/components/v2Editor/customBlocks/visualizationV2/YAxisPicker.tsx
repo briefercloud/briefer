@@ -33,11 +33,11 @@ interface Props {
 const isNumberType = (column: DataFrameColumn | null) =>
   NumpyNumberTypes.safeParse(column?.type).success
 
-const getAggFunction = (
+export function getAggFunction(
   defaultChartType: ChartType,
   series: SeriesV2,
   column: DataFrameColumn | null
-) => {
+): AggregateFunction | null {
   const chartType = series.chartType ?? defaultChartType
 
   if (series.aggregateFunction !== null || !column || !isNumberType(column)) {
@@ -157,7 +157,6 @@ function YAxisPickerV2(props: Props) {
         series: [
           ...props.yAxis.series,
           {
-            axisName: null,
             column: null,
             aggregateFunction: null,
             groupBy: null,

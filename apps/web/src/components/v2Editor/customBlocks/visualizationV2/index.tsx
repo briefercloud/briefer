@@ -16,7 +16,7 @@ import {
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
 import FilterSelector from './FilterSelector'
@@ -45,6 +45,7 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { useYMemo } from '@/hooks/useYMemo'
+import { getAggFunction } from './YAxisPicker'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -104,27 +105,20 @@ function VisualizationBlockV2(props: Props) {
     []
   )
 
-  const dataframe = getDataframeFromVisualizationV2(
+  const dataframe = useYMemo(
     props.block,
-    props.dataframes
+    (block) => getDataframeFromVisualizationV2(block, props.dataframes),
+    [props.dataframes]
   )
 
-  const onChangeDataframe = useCallback(
-    (dataframeName: string) => {
-      const df = props.dataframes.get(dataframeName)
-      if (df) {
-        setVisualizationV2Input(props.block, {
-          dataframeName,
-        })
-      }
-    },
-    [props.dataframes, props.block]
+  const dataframeOptions = useMemo(
+    () =>
+      Array.from(props.dataframes.values()).map((df) => ({
+        value: df.name,
+        label: df.name,
+      })),
+    [props.dataframes]
   )
-
-  const dataframeOptions = Array.from(props.dataframes.values()).map((df) => ({
-    value: df.name,
-    label: df.name,
-  }))
 
   const onNewSQL = useCallback(() => {
     props.onAddGroupedBlock(attrs.id, BlockType.SQL, 'before')
@@ -183,6 +177,73 @@ function VisualizationBlockV2(props: Props) {
     props.userId,
     environmentStartedAt,
   ])
+
+  const onChangeDataframe = useCallback(
+    (dataframeName: string) => {
+      const df = props.dataframes.get(dataframeName)
+      if (df) {
+        const xAxis = attrs.input.xAxis
+          ? df.columns.find((c) => c.name === attrs.input.xAxis?.name) ?? null
+          : null
+
+        let xAxisGroupFunction = attrs.input.xAxisGroupFunction
+        if (xAxis) {
+          const isDateTime = NumpyDateTypes.safeParse(xAxis.type).success
+          if (!isDateTime) {
+            xAxisGroupFunction = null
+          } else if (!xAxisGroupFunction) {
+            xAxisGroupFunction = 'date'
+          }
+        }
+
+        const yAxes = attrs.input.yAxes.map((yAxis) => ({
+          ...yAxis,
+          series: yAxis.series.map((s) => {
+            if (s.column) {
+              const column =
+                df.columns.find((c) => c.name === s.column?.name) ?? null
+              const groupBy =
+                df.columns.find((c) => c.name === s.groupBy?.name) ?? null
+              const aggregateFunction = column
+                ? getAggFunction(
+                    s.chartType ?? attrs.input.chartType,
+                    s,
+                    column
+                  )
+                : null
+              return {
+                ...s,
+                column,
+                aggregateFunction,
+                groupBy,
+              }
+            }
+
+            return s
+          }),
+        }))
+
+        setVisualizationV2Input(props.block, {
+          dataframeName,
+          xAxis,
+          xAxisGroupFunction,
+          yAxes,
+        })
+        setTimeout(() => {
+          setIsDirty(true)
+        }, 500)
+      }
+    },
+    [
+      props.dataframes,
+      props.block,
+      onRun,
+      attrs.input.chartType,
+      attrs.input.xAxis,
+      attrs.input.xAxisGroupFunction,
+      attrs.input.yAxes,
+    ]
+  )
 
   const onRunAbort = useCallback(() => {
     switch (status) {
@@ -511,9 +572,6 @@ function VisualizationBlockV2(props: Props) {
     },
     [props.block]
   )
-
-  console.log(JSON.stringify(attrs.output?.result, null, 2))
-  console.log(attrs.input)
 
   if (props.isDashboard) {
     return (
