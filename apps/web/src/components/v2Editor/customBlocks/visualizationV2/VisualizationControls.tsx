@@ -49,6 +49,7 @@ import {
   useOnClickOutside,
   useOnClickOutside2,
 } from '@/hooks/useOnClickOutside'
+import { useDrag, useDrop } from 'react-dnd'
 
 const presetColors = [
   '#516b91',
@@ -733,23 +734,14 @@ function VisualizationControlsV2(props: Props) {
                                   {s.groupBy.name.toString()}
                                 </span>
                               </div>
-                              <div className="flex flex-col space-y-1">
-                                {groupBySeries.map((series, j) => {
-                                  return (
-                                    <GroupBySeriesDisplay
-                                      id={series.id}
-                                      name={series.name}
-                                      color={series.color}
-                                      yIndex={yI}
-                                      index={j}
-                                      colors={props.colors}
-                                      onChangeColors={props.onChangeColors}
-                                      dataframe={props.dataframe}
-                                      isEditable={props.isEditable}
-                                    />
-                                  )
-                                })}
-                              </div>
+                              <GroupByList
+                                items={groupBySeries}
+                                yIndex={yI}
+                                colors={props.colors}
+                                onChangeColors={props.onChangeColors}
+                                dataframe={props.dataframe}
+                                isEditable={props.isEditable}
+                              />
                             </>
                           )}
                           {i < yAxis.series.length - 1 && (
@@ -875,6 +867,41 @@ function VisualizationControlsV2(props: Props) {
   )
 }
 
+interface GroupByListItem {
+  id: string
+  name: string
+  color: string
+}
+interface GroupByListProps {
+  items: GroupByListItem[]
+  colors: VisualizationV2BlockInput['colors']
+  onChangeColors: (colors: VisualizationV2BlockInput['colors']) => void
+  dataframe: DataFrame | null
+  isEditable: boolean
+  yIndex: number
+}
+function GroupByList(props: GroupByListProps) {
+  return (
+    <div className="flex flex-col space-y-1">
+      {props.items.map((series, j) => {
+        return (
+          <GroupBySeriesDisplay
+            id={series.id}
+            name={series.name}
+            color={series.color}
+            yIndex={props.yIndex}
+            index={j}
+            colors={props.colors}
+            onChangeColors={props.onChangeColors}
+            dataframe={props.dataframe}
+            isEditable={props.isEditable}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 interface GroupBySeriesDisplayProps {
   id: string
   name: string
@@ -887,23 +914,51 @@ interface GroupBySeriesDisplayProps {
   isEditable: boolean
 }
 function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
+  const [{ isDropping }, drop] = useDrop<
+    GroupByListItem,
+    {},
+    { isDropping: boolean }
+  >(
+    {
+      accept: 'GroupByListItem',
+    },
+    []
+  )
+
+  const [, drag] = useDrag({
+    type: 'GroupByListItem',
+  })
+
   return (
-    <div className="flex items-center space-x-1">
-      <div className="relative w-full">
-        <input
-          name={`groupby-series-name-${props.yIndex}-${props.index}`}
-          type="text"
-          placeholder={props.name}
-          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
-          disabled={!props.dataframe || !props.isEditable}
-        />
-        <ColorPicker
-          className="absolute left-1 top-1"
-          id={props.id}
-          color={props.color}
-          colors={props.colors}
-          onChangeColors={props.onChangeColors}
-        />
+    <div>
+      <div
+        className="w-full h-1 bg-ceramic-200"
+        ref={(el) => {
+          drop(el)
+        }}
+      />
+      <div
+        className="flex items-center space-x-1"
+        ref={(el) => {
+          drag(el)
+        }}
+      >
+        <div className="relative w-full">
+          <input
+            name={`groupby-series-name-${props.yIndex}-${props.index}`}
+            type="text"
+            placeholder={props.name}
+            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+            disabled={!props.dataframe || !props.isEditable}
+          />
+          <ColorPicker
+            className="absolute left-1 top-1"
+            id={props.id}
+            color={props.color}
+            colors={props.colors}
+            onChangeColors={props.onChangeColors}
+          />
+        </div>
       </div>
     </div>
   )
