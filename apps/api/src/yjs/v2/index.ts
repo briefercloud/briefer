@@ -1177,7 +1177,7 @@ const setupWSConnection =
       const doc = await getDocument(ydoc.documentId)
       if (doc && doc.workspaceId === ydoc.workspaceId) {
         const dbClock = isDataApp
-          ? doc.userAppClock[user.id] ?? doc.appClock
+          ? (doc.userAppClock[user.id] ?? doc.appClock)
           : doc.clock
 
         if (dbClock !== clock) {
@@ -1205,8 +1205,26 @@ const setupWSConnection =
       role,
     }
 
+    let lastRoleUpdate = Date.now()
     // listen and reply to events
     conn.on('message', async (message: ArrayBuffer) => {
+      const now = Date.now()
+      if (now - lastRoleUpdate > 5000) {
+        lastRoleUpdate = now
+        const uw = await prisma().userWorkspace.findFirst({
+          where: {
+            userId: user.id,
+            workspaceId: ydoc.workspaceId,
+          },
+        })
+        if (!uw) {
+          closeConn(ydoc, conn)
+          return
+        }
+
+        transactionOrigin.role = uw.role
+      }
+
       if (clock !== ydoc.clock) {
         logger().warn(
           {
