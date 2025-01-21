@@ -32,6 +32,19 @@ Briefer has three permission levels:
 
 For example, if user John Doe is part of the "Finance Team" group and you give the "Finance Team" group the "View" permission, but you give John Doe the "Edit" permission, John Doe will have the "Edit" permission.
 
+## Default permissions
+
+In addition to page-level permissions, users have a workspace-level role, which determines their default permissions on pages to which the entire workspace has access.
+
+For example, if you set a user's workspace role to "Viewer," they will have the "View" permission on all pages in the workspace that the entire workspace has access to. If you set their workspace role to "Editor," they will have the "Edit" permission on all pages in the workspace that the entire workspace has access to.
+
+This is important because it allows you to set default permissions for users across the workspace, and then fine-tune permissions on a per-page basis.
+
+<Note>
+  Workspace admins can always view and edit all pages in the workspace, regardless of the page's permissions.
+</Note>
+
+
 ## Inheriting permissions
 
 By default, pages inherit permissions from their parent page. This means that if you set permissions on a parent page, all child pages will inherit those permissions unless you explicitly set different permissions on the child page.
