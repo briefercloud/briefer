@@ -146,10 +146,29 @@ const Serie = z.union([
         color: z.string().optional(),
       })
       .optional(),
+    itemStyle: z
+      .object({
+        color: z.string().optional(),
+      })
+      .optional(),
     stack: z.string().optional(),
     symbolSize: z.number().optional(),
   }),
 ])
+
+type Serie = z.infer<typeof Serie>
+
+export function getColorFromSerie(serie: Serie): string | null {
+  switch (serie.type) {
+    case 'bar':
+      return serie.color ?? null
+    case 'scatter':
+      return serie.itemStyle?.color ?? null
+    case 'line':
+      return serie.lineStyle?.color ?? null
+  }
+}
+
 const XAxis = CartesianAxisOption.and(
   z.object({
     axisPointer: z.object({

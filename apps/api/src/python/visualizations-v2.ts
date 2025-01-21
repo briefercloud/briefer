@@ -68,6 +68,23 @@ def _briefer_convert_to_utc_safe(datetime_series, comparison_value):
     return localized_series, comparison_value_utc
 
 def _briefer_create_visualization(df, options):
+    colors = [
+        "#516b91",
+        "#59c4e6",
+        "#edafda",
+        "#93b7e3",
+        "#a5e7f0",
+        "#cbb0e3",
+        "#2a9d8f",
+        "#e76f51",
+        "#f4a261",
+        "#264653",
+        "#e9c46a",
+        "#ff6f61",
+        "#6a4c93",
+        "#ffa600",
+    ]
+
     def extract_chart_type(chart_type):
         """
         Transforms the chart type from Briefer input to one that is supported by ECharts
@@ -346,9 +363,8 @@ def _briefer_create_visualization(df, options):
             "z": 0,
             "barWidth": "99.5%",
         }
-        color = options.get("colors", {}).get(id)
-        if color:
-            series["color"] = color
+        color = options.get("colors", {}).get(id) or colors[0]
+        series["color"] = color
 
         if options["dataLabels"]["show"]:
             series["label"] = {"show": True, "position": "top"}
@@ -360,6 +376,7 @@ def _briefer_create_visualization(df, options):
                 "value": val
             })
     else:
+        color_index = -1
         for y_index, y_axis in enumerate(options["yAxes"]):
             data_y_axis = {
                 "type": "value",
@@ -392,6 +409,7 @@ def _briefer_create_visualization(df, options):
                     groups = [None]
 
                 for group in groups:
+                    color_index += 1
                     dataset_index = len(data["dataset"])
 
                     dimensions = [series["column"]["name"]]
@@ -444,26 +462,25 @@ def _briefer_create_visualization(df, options):
                     if chart_type == "line":
                         serie["symbolSize"] = 1
 
-                    color = options.get("colors", {}).get(id)
+                    color = options.get("colors", {}).get(id) or colors[color_index % len(colors)]
 
                     if group:
                         serie["name"] = group
 
                     if is_area:
                         serie["areaStyle"] = {}
-                        if color:
-                            serie["areaStyle"]["color"] = color
+                        serie["areaStyle"]["color"] = color
 
-                    if color:
-                        if chart_type == "bar":
-                            serie["color"] = color
-                        elif chart_type == "line":
-                            serie["lineStyle"] = {"color": color}
-                        elif chart_type == "scatter":
-                            serie["itemStyle"] = {"color": color}
+                    if chart_type == "bar":
+                        serie["color"] = color
+                    elif chart_type == "line":
+                        serie["lineStyle"] = {"color": color}
+                        serie["itemStyle"] = {"color": color}
+                    elif chart_type == "scatter":
+                        serie["itemStyle"] = {"color": color}
 
                     if is_stack:
-                        serie["stack"] = f"stack_{i}"
+                        serie["stack"] = f"stack-{y_index}-{i}"
 
                     if options["dataLabels"]["show"]:
                         serie["label"] = {"show": True, "position": "top"}

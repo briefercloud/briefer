@@ -1,3 +1,5 @@
+import ReactDOM from 'react-dom'
+import { SketchPicker } from 'react-color'
 import { format as d3Format } from 'd3-format'
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
@@ -16,22 +18,56 @@ import {
   DataFrameStringColumn,
   DataFrameNumberColumn,
   YAxisV2,
+  SeriesV2,
 } from '@briefer/types'
 import ChartTypeSelector from '@/components/ChartTypeSelector'
 import AxisSelector from '@/components/AxisSelector'
 import AxisModifierSelector from '@/components/AxisModifierSelector'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import useResettableState from '@/hooks/useResettableState'
 import VisualizationSettingsTabsV2, { Tab } from './VisualizationSettingTabs'
 import YAxisPickerV2 from './YAxisPicker'
 import VisualizationToggleV2 from './VisualizationToggle'
 import { PortalTooltip } from '@/components/Tooltips'
-import { sortWith, ascend, GT, omit } from 'ramda'
+import { sortWith, ascend, GT, omit, length } from 'ramda'
 import ScrollBar from '@/components/ScrollBar'
 import {
+  getColorFromSerie,
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
 } from '@briefer/editor'
+import useResizeMemo from '@/hooks/useResizeMemo'
+import { Transition } from '@headlessui/react'
+import {
+  useOnClickOutside,
+  useOnClickOutside2,
+} from '@/hooks/useOnClickOutside'
+
+const presetColors = [
+  '#516b91',
+  '#59c4e6',
+  '#edafda',
+  '#93b7e3',
+  '#a5e7f0',
+  '#cbb0e3',
+  '#2a9d8f',
+  '#e76f51',
+  '#f4a261',
+  '#264653',
+  '#e9c46a',
+  '#ff6f61',
+  '#6a4c93',
+  '#ffa600',
+  '#ffffff',
+  '#000000',
+]
 
 interface Props {
   isHidden: boolean
@@ -317,29 +353,29 @@ function VisualizationControlsV2(props: Props) {
                 DataFrameDateColumn.safeParse(b).success
                   ? 0
                   : DataFrameDateColumn.safeParse(a).success
-                  ? -1
-                  : 1,
+                    ? -1
+                    : 1,
               (a, b) =>
                 DataFrameStringColumn.safeParse(a).success ===
                 DataFrameStringColumn.safeParse(b).success
                   ? 0
                   : DataFrameStringColumn.safeParse(a).success
-                  ? -1
-                  : 1,
+                    ? -1
+                    : 1,
               (a, b) =>
                 DataFrameNumberColumn.safeParse(a).success ===
                 DataFrameNumberColumn.safeParse(b).success
                   ? 0
                   : DataFrameNumberColumn.safeParse(a).success
-                  ? -1
-                  : 1,
+                    ? -1
+                    : 1,
               // Put columns with 'id' in the name at the end to avoid them being selected by default
               (a, b) =>
                 a.name.toString().toLowerCase().includes('id')
                   ? 1
                   : b.name.toString().toLowerCase().includes('id')
-                  ? -1
-                  : 0,
+                    ? -1
+                    : 0,
             ],
             props.dataframe?.columns ?? []
           )[0] ?? null
@@ -460,9 +496,9 @@ function VisualizationControlsV2(props: Props) {
                             c.type
                           ).success
                         : props.chartType === 'number' ||
-                          props.chartType === 'trend'
-                        ? NumpyDateTypes.safeParse(c.type).success
-                        : true
+                            props.chartType === 'trend'
+                          ? NumpyDateTypes.safeParse(c.type).success
+                          : true
                     ),
                   ]}
                   onChange={props.onChangeXAxis}
@@ -609,36 +645,122 @@ function VisualizationControlsV2(props: Props) {
           )}
           {tab === 'display' && (
             <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              {props.result?.series.map((s) => (
-                <div className="text-xs text-gray-500 flex flex-col space-y-8">
-                  <div>
-                    <label
-                      htmlFor="xAxisName"
-                      className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                    >
-                      {s.id}
-                    </label>
-                    <input
-                      name="xAxisName"
-                      type="text"
-                      placeholder="My X-Axis"
-                      className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                      value={props.colors[s.id] ?? ''}
-                      onChange={(e) => {
-                        if (e.target.value === '') {
-                          props.onChangeColors(omit([s.id], props.colors))
-                        } else {
-                          props.onChangeColors({
-                            ...props.colors,
-                            [s.id]: e.target.value,
-                          })
+              {props.yAxes.map((yAxis, yI) => {
+                let prefix = ''
+                if (props.yAxes.length > 1) {
+                  prefix = yI === 0 ? 'Left ' : 'Right '
+                }
+                return (
+                  <div key={yI}>
+                    <div className="text-md font-medium leading-6 text-gray-900 pb-2">
+                      {prefix} Y-Axis
+                    </div>
+                    {yAxis.series.map((s, i) => {
+                      if (!s.column) {
+                        return null
+                      }
+
+                      let groupBySeries: {
+                        id: string
+                        name: string
+                        color: string
+                      }[] = []
+                      if (s.groupBy) {
+                        for (const series of props.result?.series ?? []) {
+                          if (series.id.includes(`y-${yI}-series-${i}`)) {
+                            let color = props.colors[series.id] ?? ''
+                            if (color === '') {
+                              color =
+                                getColorFromSerie(series) ?? presetColors[0]
+                            }
+
+                            groupBySeries.push({
+                              id: series.id,
+                              name: series.name ?? '',
+                              color,
+                            })
+                          }
                         }
-                      }}
-                      disabled={!props.dataframe || !props.isEditable}
-                    />
+                      }
+
+                      let color = props.colors[`y-${yI}-series-${i}`] ?? ''
+                      if (color === '') {
+                        const result = props.result?.series.find(
+                          (s) => s.id === `y-${yI}-series-${i}`
+                        )
+                        if (result) {
+                          color = getColorFromSerie(result) ?? presetColors[0]
+                        } else {
+                          color = presetColors[0]
+                        }
+                      }
+
+                      return (
+                        <div key={i} className="pt-1.5">
+                          <label
+                            className="block text-xs leading-6 text-gray-900 pb-1 flex items-center justify-between"
+                            htmlFor={`series-name-${yI}-${i}`}
+                          >
+                            <span className="font-medium">Column</span>{' '}
+                            <span className="font-mono bg-gray-100 text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px]">
+                              {s.column.name.toString()}
+                            </span>
+                          </label>
+
+                          <div className="flex items-center space-x-1">
+                            <div className="w-full relative">
+                              <input
+                                name={`series-name-${yI}-${i}`}
+                                type="text"
+                                placeholder={s.column?.name?.toString() ?? ''}
+                                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+                                disabled={!props.dataframe || !props.isEditable}
+                              />
+                              <ColorPicker
+                                className="absolute left-1 top-1"
+                                id={`y-${yI}-series-${i}`}
+                                color={color}
+                                colors={props.colors}
+                                onChangeColors={props.onChangeColors}
+                              />
+                            </div>
+                          </div>
+                          {s.groupBy && (
+                            <>
+                              <div className="text-xs leading-6 text-gray-900 pt-1.5 flex items-center justify-between">
+                                <span className="font-medium">Group By</span>{' '}
+                                <span className="font-mono bg-gray-100 text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px]">
+                                  {s.groupBy.name.toString()}
+                                </span>
+                              </div>
+                              <div className="flex flex-col space-y-1">
+                                {groupBySeries.map((series, j) => {
+                                  return (
+                                    <GroupBySeriesDisplay
+                                      id={series.id}
+                                      name={series.name}
+                                      color={series.color}
+                                      yIndex={yI}
+                                      index={j}
+                                      colors={props.colors}
+                                      onChangeColors={props.onChangeColors}
+                                      dataframe={props.dataframe}
+                                      isEditable={props.isEditable}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </>
+                          )}
+                          {i < yAxis.series.length - 1 && (
+                            <div className="w-full bg-gray-400 my-4 border-1 border-b border-dashed" />
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
           {tab === 'x-axis' && (
@@ -750,6 +872,118 @@ function VisualizationControlsV2(props: Props) {
         </div>
       </div>
     </ScrollBar>
+  )
+}
+
+interface GroupBySeriesDisplayProps {
+  id: string
+  name: string
+  color: string
+  yIndex: number
+  index: number
+  colors: VisualizationV2BlockInput['colors']
+  onChangeColors: (colors: VisualizationV2BlockInput['colors']) => void
+  dataframe: DataFrame | null
+  isEditable: boolean
+}
+function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
+  return (
+    <div className="flex items-center space-x-1">
+      <div className="relative w-full">
+        <input
+          name={`groupby-series-name-${props.yIndex}-${props.index}`}
+          type="text"
+          placeholder={props.name}
+          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+          disabled={!props.dataframe || !props.isEditable}
+        />
+        <ColorPicker
+          className="absolute left-1 top-1"
+          id={props.id}
+          color={props.color}
+          colors={props.colors}
+          onChangeColors={props.onChangeColors}
+        />
+      </div>
+    </div>
+  )
+}
+
+interface ColorPickerProps {
+  id: string
+  color: string
+  colors: VisualizationV2BlockInput['colors']
+  onChangeColors: (colors: VisualizationV2BlockInput['colors']) => void
+  className?: string
+}
+function ColorPicker(props: ColorPickerProps) {
+  const onChangeColor = useCallback(
+    (color: { hex: string }) => {
+      props.onChangeColors({
+        ...props.colors,
+        [props.id]: color.hex,
+      })
+    },
+    [props.colors, props.id, props.onChangeColors]
+  )
+
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const onTogglePickerOpen = useCallback(() => {
+    setPickerOpen((prev) => !prev)
+  }, [])
+
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  const dropdownStyle: CSSProperties = useResizeMemo(
+    (rect) => ({
+      position: 'absolute',
+      top: rect?.bottom,
+      left: rect?.left ?? 0,
+      zIndex: 9001,
+    }),
+    buttonRef.current
+  )
+
+  const pickerContainerRef = useRef<HTMLDivElement>(null)
+  useOnClickOutside2(
+    () => {
+      setPickerOpen(false)
+    },
+    pickerContainerRef,
+    buttonRef,
+    pickerOpen
+  )
+  return (
+    <div className={props.className}>
+      <button
+        className="w-6 h-6 rounded-md border hover:opacity-90 transition-opacity duration-300"
+        style={{ backgroundColor: props.color }}
+        onClick={onTogglePickerOpen}
+        ref={buttonRef}
+      />
+      {ReactDOM.createPortal(
+        <Transition
+          className="pt-2"
+          show={pickerOpen}
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          style={dropdownStyle}
+          as="div"
+          ref={pickerContainerRef}
+        >
+          <SketchPicker
+            color={props.color}
+            onChange={onChangeColor}
+            presetColors={presetColors}
+          />
+        </Transition>,
+        document.body
+      )}
+    </div>
   )
 }
 
