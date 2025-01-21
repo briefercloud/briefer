@@ -1,6 +1,6 @@
 {
   "name": "@briefer/api",
-  "version": "0.0.86",
+  "version": "0.0.88",
   "private": true,
   "type": "module",
   "scripts": {
