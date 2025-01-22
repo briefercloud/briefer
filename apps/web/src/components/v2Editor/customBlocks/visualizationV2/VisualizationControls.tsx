@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from 'uuid'
-import { format as d3Format } from 'd3-format'
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import {
@@ -63,15 +62,6 @@ interface Props {
   isEditable: boolean
   onChangeSeries: (id: SeriesV2['id'], series: SeriesV2) => void
   result: VisualizationV2BlockOutputResult | null
-}
-
-function isValidD3Format(format: string): boolean {
-  try {
-    d3Format(format)
-    return true
-  } catch {
-    return false
-  }
 }
 
 function VisualizationControlsV2(props: Props) {
@@ -222,17 +212,6 @@ function VisualizationControlsV2(props: Props) {
       )
     },
     [props.yAxes, props.onChangeYAxes]
-  )
-
-  const onChangeNumberValuesFormat = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.value === '') {
-        props.onChangeNumberValuesFormat(null)
-        return
-      }
-      props.onChangeNumberValuesFormat(e.target.value)
-    },
-    [props.onChangeNumberValuesFormat]
   )
 
   const [tab, setTab] = useState<Tab>('general')
@@ -669,62 +648,6 @@ function VisualizationControlsV2(props: Props) {
                     disabled={!props.dataframe || !props.isEditable}
                   />
                 )}
-              </div>
-              <div>
-                <div className="flex justify-between items-center pb-1">
-                  <label
-                    htmlFor="numberValuesFormat"
-                    className="block text-xs font-medium leading-6 text-gray-900"
-                  >
-                    Number values format
-                  </label>
-                  <div className="flex items-center group relative">
-                    <PortalTooltip
-                      content={
-                        <div className="font-sans text-white text-xs rounded-md w-72 -translate-x-1/2">
-                          <div className="bg-hunter-950 p-2 rounded-md">
-                            <span className="text-gray-400 text-center">
-                              This fields accepts{' '}
-                              <a
-                                href="https://d3js.org/d3-format#locale_format"
-                                target="_blank"
-                                className="underline"
-                                rel="noreferrer"
-                              >
-                                D3 format strings
-                              </a>
-                              . For example, use{' '}
-                              <span className="font-mono">%</span> to format the
-                              numbers as percentage or{' '}
-                              <span className="font-mono">$.2f</span> to format
-                              the numbers as currency with two decimal places.
-                            </span>
-                          </div>
-                        </div>
-                      }
-                    >
-                      <QuestionMarkCircleIcon
-                        className="h-4 w-4 text-gray-300"
-                        aria-hidden="true"
-                      />
-                    </PortalTooltip>
-                  </div>
-                </div>
-                <input
-                  name="numberValuesFormat"
-                  type="text"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={props.numberValuesFormat ?? ''}
-                  onChange={onChangeNumberValuesFormat}
-                  placeholder="$.2f"
-                  disabled={!props.dataframe || !props.isEditable}
-                />
-                {props.numberValuesFormat &&
-                  !isValidD3Format(props.numberValuesFormat ?? '') && (
-                    <div className="text-red-600 text-xs pt-1">
-                      <span>Invalid format string</span>
-                    </div>
-                  )}
               </div>
             </div>
           )}

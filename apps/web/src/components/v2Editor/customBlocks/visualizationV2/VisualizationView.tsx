@@ -1,6 +1,5 @@
 import * as echarts from 'echarts'
 import { fontFamily as twFontFamiliy } from 'tailwindcss/defaultTheme'
-import { timeFormat } from 'd3-time-format'
 import { format as d3Format } from 'd3-format'
 import {
   ChevronDoubleRightIcon,

@@ -252,6 +252,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
 
       const attrs = getVisualizationV2Attributes(block)
       if (!attrs.input.dataframeName) {
+        block.setAttribute('output', null)
         block.setAttribute('error', 'dataframe-not-set')
         executionItem.setCompleted('error')
         return
@@ -259,6 +260,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
 
       const dataframe = this.dataframes.get(attrs.input.dataframeName)
       if (!dataframe) {
+        block.setAttribute('output', null)
         block.setAttribute('error', 'dataframe-not-found')
         executionItem.setCompleted('error')
         return
@@ -312,6 +314,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         if (result.reason === 'aborted') {
           executionItem.setCompleted('aborted')
         } else {
+          block.setAttribute('output', null)
           block.setAttribute('error', result.reason)
           executionItem.setCompleted('error')
         }
@@ -328,6 +331,7 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         'Failed to run visualization v2 block'
       )
 
+      block.setAttribute('output', null)
       block.setAttribute('error', 'unknown')
       executionItem.setCompleted('error')
     }

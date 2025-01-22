@@ -52,19 +52,15 @@ function DisplayControls(props: Props) {
               {prefix} Y-Axis
             </div>
             {yAxis.series.map((s, i) => (
-              <>
-                <DisplayYAxisSeries
-                  series={s}
-                  dataframe={props.dataframe}
-                  isEditable={props.isEditable}
-                  yIndex={yI}
-                  result={props.result}
-                  onChangeSeries={props.onChangeSeries}
-                />
-                {i < yAxis.series.length - 1 && (
-                  <div className="w-full bg-gray-400 my-4 border-1 border-b border-dashed" />
-                )}
-              </>
+              <DisplayYAxisSeries
+                index={i}
+                series={s}
+                dataframe={props.dataframe}
+                isEditable={props.isEditable}
+                yIndex={yI}
+                result={props.result}
+                onChangeSeries={props.onChangeSeries}
+              />
             ))}
           </div>
         )
