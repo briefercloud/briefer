@@ -572,7 +572,7 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
-  const onChangeGroups = useCallback(
+  const onChangeSeries = useCallback(
     (id: SeriesV2['id'], series: SeriesV2) => {
       const yAxes = attrs.input.yAxes.map((yAxis) => {
         const newSeries = yAxis.series.map((s) => {
@@ -588,8 +588,6 @@ function VisualizationBlockV2(props: Props) {
     },
     [props.block, attrs.input.yAxes]
   )
-
-  console.log(attrs.output)
 
   if (props.isDashboard) {
     return (
@@ -723,7 +721,7 @@ function VisualizationBlockV2(props: Props) {
             onChangeDataLabels={onChangeDataLabels}
             isEditable={props.isEditable}
             result={attrs.output?.result ?? null}
-            onChangeSeries={onChangeGroups}
+            onChangeSeries={onChangeSeries}
           />
           <VisualizationViewV2
             title={attrs.title}

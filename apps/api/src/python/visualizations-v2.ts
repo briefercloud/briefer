@@ -478,7 +478,11 @@ def _briefer_create_visualization(df, options):
                     else:
                         color = colors[color_index % len(colors)]
 
-                    if group:
+                    if not group:
+                        serie["name"] = series.get("name") or series["column"]["name"]
+                    elif group and g_options:
+                        serie["name"] = g_options.get("name") or group
+                    elif group:
                         serie["name"] = group
                     else:
                         serie["name"] = series["column"]["name"]

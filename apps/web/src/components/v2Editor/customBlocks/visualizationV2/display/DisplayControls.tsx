@@ -96,7 +96,7 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
   const groups = useMemo(
     () =>
       uniqBy(
-        (g) => g.name,
+        (g) => g.group,
         (props.series.groups ?? []).concat(
           props.result?.series
             .filter(
@@ -122,13 +122,38 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
     [props.series.id, props.onChangeSeries]
   )
 
-  const color = props.series.color ?? presetColors[0]
+  const columnsSeries = props.result?.series.find(
+    (s) => s.id === props.series.id
+  )
+  const color =
+    props.series.color ??
+    (columnsSeries ? getColorFromSerie(columnsSeries) : null) ??
+    presetColors[0]
   const onChangeColor = useCallback(
     (color: string) => {
       props.onChangeSeries(props.series.id, { ...props.series, color })
     },
     [props.series.id, props.onChangeSeries]
   )
+
+  const onChangeSerieName = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      props.onChangeSeries(props.series.id, {
+        ...props.series,
+        name: e.target.value,
+      })
+    },
+    [props.series.id, props.onChangeSeries]
+  )
+
+  const onBlur = useCallback(() => {
+    if (props.series.name?.trim() === '') {
+      props.onChangeSeries(props.series.id, {
+        ...props.series,
+        name: props.series.column?.name?.toString() ?? '',
+      })
+    }
+  }, [props.series, props.onChangeSeries])
 
   if (!props.series.column) {
     return null
@@ -154,6 +179,9 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
             placeholder={props.series.column?.name?.toString() ?? ''}
             className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
             disabled={!props.dataframe || !props.isEditable}
+            value={props.series.name ?? ''}
+            onChange={onChangeSerieName}
+            onBlur={onBlur}
           />
           <ColorPicker
             className="absolute left-1 top-1"
@@ -202,18 +230,29 @@ function GroupByList(props: GroupByListProps) {
         return
       }
 
-      const newItems = props.items.slice()
-      const item = newItems[dragIndex]
-      newItems.splice(dragIndex, 1)
-      newItems.splice(
-        position === 'above' && dragIndex < hoverIndex
-          ? hoverIndex - 1
-          : position === 'below' && dragIndex > hoverIndex
-            ? hoverIndex + 1
-            : hoverIndex,
-        0,
-        item
+      const destination = Math.min(
+        Math.max(0, position === 'above' ? hoverIndex : hoverIndex + 1),
+        props.items.length - 1
       )
+
+      const item = props.items[dragIndex]
+      if (destination === 0) {
+        const newItems = [
+          item,
+          ...props.items.filter((i) => i.group !== item.group),
+        ]
+        props.onChangeGroups(newItems)
+        return
+      }
+
+      const newItems = [
+        ...props.items
+          .slice(0, destination)
+          .filter((i) => i.group !== item.group),
+        item,
+        ...props.items.slice(destination).filter((i) => i.group !== item.group),
+      ]
+
       props.onChangeGroups(newItems)
     },
     [props.items, props.onChangeGroups]
@@ -229,6 +268,16 @@ function GroupByList(props: GroupByListProps) {
     [props.items, props.onChangeGroups]
   )
 
+  const onChangeName = useCallback(
+    (group: string, name: string) => {
+      const newItems = props.items.map((item) =>
+        item.group === group ? { ...item, name } : item
+      )
+      props.onChangeGroups(newItems)
+    },
+    [props.items, props.onChangeGroups]
+  )
+
   return (
     <div className="flex flex-col space-y-1">
       {props.items.map((series, j) => {
@@ -236,13 +285,14 @@ function GroupByList(props: GroupByListProps) {
           <GroupBySeriesDisplay
             group={series.group}
             name={series.name}
+            onChangeName={onChangeName}
             color={series.color}
+            onChangeColor={onChangeColor}
             yIndex={props.yIndex}
             index={j}
             moveItem={moveItem}
             dataframe={props.dataframe}
             isEditable={props.isEditable}
-            onChangeColor={onChangeColor}
           />
         )
       })}
@@ -253,6 +303,7 @@ function GroupByList(props: GroupByListProps) {
 interface GroupBySeriesDisplayProps {
   group: string
   name: string
+  onChangeName: (group: string, name: string) => void
   color: string
   onChangeColor: (group: string, color: string) => void
   yIndex: number
@@ -360,6 +411,19 @@ function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
     [props.onChangeColor, props.group]
   )
 
+  const onChangeName = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      props.onChangeName(props.group, e.target.value)
+    },
+    [props.onChangeName, props.group]
+  )
+
+  const onBlur = useCallback(() => {
+    if (props.name.trim() === '') {
+      props.onChangeName(props.group, props.group)
+    }
+  }, [props.group, props.name, props.onChangeName])
+
   return (
     <div
       ref={(d) => {
@@ -404,9 +468,12 @@ function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
           <input
             name={`groupby-series-name-${props.yIndex}-${props.index}`}
             type="text"
-            placeholder={props.name}
+            placeholder={props.group}
             className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
             disabled={!props.dataframe || !props.isEditable}
+            value={props.name}
+            onChange={onChangeName}
+            onBlur={onBlur}
           />
           <ColorPicker
             className="absolute left-1 top-1"
