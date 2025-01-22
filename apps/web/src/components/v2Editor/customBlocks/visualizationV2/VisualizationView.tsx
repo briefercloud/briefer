@@ -256,6 +256,7 @@ function BrieferResult(props: {
       <Echarts
         width={size.width}
         height={size.height}
+        // @ts-ignore
         option={props.result}
         renderer={props.renderer}
       />
