@@ -160,6 +160,12 @@ def _briefer_create_visualization(df, options):
 
                 # Group by the specified frequency
                 df[options["xAxis"]["name"]] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
+            else:
+                # just group by values who are the same
+                df["_grouped"] = df[options["xAxis"]["name"]]
+                df = df.groupby(grouping_columns).agg({
+                  series["column"]["name"]: "first"
+                }).reset_index()
         elif series["aggregateFunction"]:
                 y_axis_agg_func = series["aggregateFunction"]
                 datetime_agg_funcs = set(["count", "mean", "median"])
