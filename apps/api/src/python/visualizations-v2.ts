@@ -591,7 +591,6 @@ export async function createVisualizationV2(
 
   const promise = execute.then((): CreateVisualizationResult => {
     let result: CreateVisualizationResult | null = null
-    let filters = input.filters
     const pythonErrors: PythonErrorOutput[] = []
     const outputParsingErrors: Error[] = []
     for (const output of outputs) {

@@ -264,6 +264,14 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         return
       }
 
+      let aborted = false
+      let cleanup = executionItem.observeStatus((status) => {
+        if (status._tag === 'aborting') {
+          aborted = true
+        }
+      })
+
+      events.visUpdate(attrs.input.chartType)
       const { promise, abort } = await this.effects.createVisualizationV2(
         this.workspaceId,
         this.sessionId,
@@ -273,8 +281,22 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         executeCode
       )
 
+      let abortP = Promise.resolve(aborted)
+      cleanup()
+      cleanup = executionItem.observeStatus((status) => {
+        if (status._tag === 'aborting') {
+          abortP = abort().then(() => true)
+        }
+      })
+
       const result = await promise
-      events.visUpdate(attrs.input.chartType)
+      aborted = await abortP
+      cleanup()
+
+      if (aborted) {
+        executionItem.setCompleted('aborted')
+        return
+      }
 
       if (result.success) {
         const output = {
@@ -283,11 +305,17 @@ export class VisualizationExecutor implements IVisualizationExecutor {
           tooManyDataPoints: result.tooManyDataPoints,
         }
         block.setAttribute('output', output)
+        block.setAttribute('error', null)
         setVisualizationV2Input(block, { filters: result.filters })
+        executionItem.setCompleted('success')
       } else {
+        if (result.reason === 'aborted') {
+          executionItem.setCompleted('aborted')
+        } else {
+          block.setAttribute('error', result.reason)
+          executionItem.setCompleted('error')
+        }
       }
-      executionItem.setCompleted('success')
-      block.setAttribute('error', null)
     } catch (err) {
       logger().error(
         {
