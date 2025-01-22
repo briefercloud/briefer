@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import { z } from 'zod'
 import * as Y from 'yjs'
 import {
@@ -36,7 +37,6 @@ export type VisualizationV2BlockInput = {
     show: boolean
     frequency: 'all' | 'some'
   }
-  colors: Record<string, string>
 }
 
 function emptyInput(): VisualizationV2BlockInput {
@@ -55,7 +55,6 @@ function emptyInput(): VisualizationV2BlockInput {
       show: false,
       frequency: 'all',
     },
-    colors: {},
   }
 }
 
@@ -156,18 +155,7 @@ const Serie = z.union([
   }),
 ])
 
-type Serie = z.infer<typeof Serie>
-
-export function getColorFromSerie(serie: Serie): string | null {
-  switch (serie.type) {
-    case 'bar':
-      return serie.color ?? null
-    case 'scatter':
-      return serie.itemStyle?.color ?? null
-    case 'line':
-      return serie.lineStyle?.color ?? null
-  }
-}
+export type Serie = z.infer<typeof Serie>
 
 const XAxis = CartesianAxisOption.and(
   z.object({
@@ -255,13 +243,18 @@ function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
   if (input.yAxes.length === 0) {
     return [
       {
+        id: uuidv4(),
         name: null,
         series: [
           {
+            id: uuidv4(),
             column: null,
             aggregateFunction: null,
             groupBy: null,
             chartType: null,
+            name: null,
+            color: null,
+            groups: null,
           },
         ],
       },

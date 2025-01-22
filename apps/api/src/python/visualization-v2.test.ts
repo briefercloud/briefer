@@ -198,13 +198,18 @@ df = pd.DataFrame({
       xAxisGroupFunction: 'month',
       yAxes: [
         {
+          id: 'yAxis-1',
           name: null,
           series: [
             {
+              id: 'series-1',
               chartType: null,
               column: amountDFColumn,
               aggregateFunction: null,
               groupBy: fruitDFColumn,
+              name: null,
+              color: null,
+              groups: null,
             },
           ],
         },
@@ -228,8 +233,6 @@ df = pd.DataFrame({
         pythonRunner.runPython
       )
     ).promise
-
-    console.log(JSON.stringify(result, null, 2))
 
     const janTotal = 11 + 12 + 13
     const febTotal = 21 + 22

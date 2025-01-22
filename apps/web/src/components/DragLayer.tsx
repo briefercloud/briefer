@@ -132,7 +132,7 @@ const DragLayer = () => {
     }
   }, [itemType])
 
-  if (!isDragging || isEditorBlock(itemType)) {
+  if (!isDragging || itemType !== 'document') {
     return null
   }
 

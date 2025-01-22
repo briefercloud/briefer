@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid'
 import AxisModifierSelector from '@/components/AxisModifierSelector'
 import AxisSelector from '@/components/AxisSelector'
 import ChartTypeSelector from '@/components/ChartTypeSelector'
@@ -157,10 +158,14 @@ function YAxisPickerV2(props: Props) {
         series: [
           ...props.yAxis.series,
           {
+            id: uuidv4(),
             column: null,
             aggregateFunction: null,
             groupBy: null,
             chartType: null,
+            name: null,
+            color: null,
+            groups: null,
           },
         ],
       },
@@ -203,36 +208,36 @@ function YAxisPickerV2(props: Props) {
             DataFrameNumberColumn.safeParse(b).success
               ? 0
               : DataFrameNumberColumn.safeParse(a).success
-              ? -1
-              : 1,
+                ? -1
+                : 1,
           (a, b) =>
             DataFrameDateColumn.safeParse(a).success ===
             DataFrameDateColumn.safeParse(b).success
               ? 0
               : DataFrameDateColumn.safeParse(a).success
-              ? -1
-              : 1,
+                ? -1
+                : 1,
           (a, b) =>
             DataFrameBooleanColumn.safeParse(a).success ===
             DataFrameNumberColumn.safeParse(b).success
               ? 0
               : DataFrameNumberColumn.safeParse(a).success
-              ? -1
-              : 1,
+                ? -1
+                : 1,
           (a, b) =>
             DataFrameStringColumn.safeParse(a).success ===
             DataFrameStringColumn.safeParse(b).success
               ? 0
               : DataFrameStringColumn.safeParse(a).success
-              ? -1
-              : 1,
+                ? -1
+                : 1,
           // Put columns with 'id' in the name at the end to avoid them being selected by default
           (a, b) =>
             a.name.toString().toLowerCase().includes('id')
               ? 1
               : b.name.toString().toLowerCase().includes('id')
-              ? -1
-              : 0,
+                ? -1
+                : 0,
         ],
         props.dataframe?.columns ?? []
       ),
@@ -276,8 +281,8 @@ function YAxisPickerV2(props: Props) {
                       props.defaultChartType === 'trend'
                         ? 'Primary number'
                         : props.defaultChartType === 'number'
-                        ? 'Number'
-                        : `Series ${i + 1}`
+                          ? 'Number'
+                          : `Series ${i + 1}`
                     }
                     value={s.column}
                     columns={columns}

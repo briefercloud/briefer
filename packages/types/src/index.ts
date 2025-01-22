@@ -576,16 +576,29 @@ export const AggregateFunction = z.union([
 ])
 export type AggregateFunction = z.infer<typeof AggregateFunction>
 
-export type Series = Omit<SeriesV2, 'groupBy'> & {
+export type Series = {
+  chartType: ChartType | null
+  column: DataFrameColumn | null
+  aggregateFunction: AggregateFunction | null
   colorBy: DataFrameColumn | null
   axisName: string | null
 }
 
 export type SeriesV2 = {
+  id: string
   chartType: ChartType | null
   column: DataFrameColumn | null
   aggregateFunction: AggregateFunction | null
   groupBy: DataFrameColumn | null
+  name: string | null
+  color: string | null
+  groups:
+    | {
+        group: string
+        name: string
+        color: string
+      }[]
+    | null
 }
 
 export type YAxis = {
@@ -593,6 +606,7 @@ export type YAxis = {
 }
 
 export type YAxisV2 = {
+  id: string
   name: string | null
   series: SeriesV2[]
 }

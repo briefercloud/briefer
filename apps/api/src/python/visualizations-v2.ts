@@ -363,7 +363,7 @@ def _briefer_create_visualization(df, options):
             "z": 0,
             "barWidth": "99.5%",
         }
-        color = options.get("colors", {}).get(id) or colors[0]
+        color = colors[0]
         series["color"] = color
 
         if options["dataLabels"]["show"]:
@@ -408,9 +408,18 @@ def _briefer_create_visualization(df, options):
                 else:
                     groups = [None]
 
+                group_order = [g["group"] for g in series.get("groups")] if series.get("groups") else None
+                if group_order:
+                    groups = sorted(groups, key=lambda item: group_order.index(item) if item in group_order else float('inf'))
+
+                group_options = {}
+                for g_option in series.get("groups") or []:
+                    group_options[g_option["group"]] = g_option
+
                 for group in groups:
                     color_index += 1
                     dataset_index = len(data["dataset"])
+                    g_options = group_options.get(group) if group else {}
 
                     dimensions = [series["column"]["name"]]
                     if options["xAxis"]:
@@ -448,9 +457,9 @@ def _briefer_create_visualization(df, options):
 
                     data["dataset"].append(dataset)
 
-                    id = f"y-{y_index}-series-{i}"
+                    id = f"{series['id']}"
                     if group:
-                        id = f"{id}-{group}"
+                        id = f"{id}:{group}"
 
                     serie = {
                       "id": id,
@@ -462,10 +471,17 @@ def _briefer_create_visualization(df, options):
                     if chart_type == "line":
                         serie["symbolSize"] = 1
 
-                    color = options.get("colors", {}).get(id) or colors[color_index % len(colors)]
+                    if not group:
+                        color = series.get("color") or colors[color_index % len(colors)]
+                    elif g_options:
+                        color = g_options.get("color") or colors[color_index % len(colors)]
+                    else:
+                        color = colors[color_index % len(colors)]
 
                     if group:
                         serie["name"] = group
+                    else:
+                        serie["name"] = series["column"]["name"]
 
                     if is_area:
                         serie["areaStyle"] = {}

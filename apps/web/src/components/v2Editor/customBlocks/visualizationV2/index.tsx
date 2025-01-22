@@ -32,6 +32,7 @@ import {
   NumpyDateTypes,
   exhaustiveCheck,
   YAxisV2,
+  SeriesV2,
 } from '@briefer/types'
 import VisualizationControlsV2 from './VisualizationControls'
 import VisualizationViewV2 from './VisualizationView'
@@ -345,13 +346,18 @@ function VisualizationBlockV2(props: Props) {
             yAxes: series
               ? [
                   {
-                    name: yAxis?.name ?? null,
+                    id: yAxis.id,
+                    name: yAxis.name,
                     series: [
                       {
+                        id: series.id,
                         chartType: null,
                         column: series.column,
                         aggregateFunction: series.aggregateFunction,
                         groupBy: null,
+                        name: null,
+                        color: null,
+                        groups: null,
                       },
                     ],
                   },
@@ -566,11 +572,21 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
-  const onChangeColors = useCallback(
-    (colors: VisualizationV2BlockInput['colors']) => {
-      setVisualizationV2Input(props.block, { colors })
+  const onChangeGroups = useCallback(
+    (id: SeriesV2['id'], series: SeriesV2) => {
+      const yAxes = attrs.input.yAxes.map((yAxis) => {
+        const newSeries = yAxis.series.map((s) => {
+          if (s.id === id) {
+            return series
+          }
+          return s
+        })
+        return { ...yAxis, series: newSeries }
+      })
+
+      setVisualizationV2Input(props.block, { yAxes })
     },
-    [props.block]
+    [props.block, attrs.input.yAxes]
   )
 
   console.log(attrs.output)
@@ -707,8 +723,7 @@ function VisualizationBlockV2(props: Props) {
             onChangeDataLabels={onChangeDataLabels}
             isEditable={props.isEditable}
             result={attrs.output?.result ?? null}
-            colors={attrs.input.colors}
-            onChangeColors={onChangeColors}
+            onChangeSeries={onChangeGroups}
           />
           <VisualizationViewV2
             title={attrs.title}
