@@ -17,7 +17,7 @@ import LargeSpinner from '@/components/LargeSpinner'
 import clsx from 'clsx'
 import useSideBar from '@/hooks/useSideBar'
 import useResettableState from '@/hooks/useResettableState'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import debounce from 'lodash.debounce'
 import { findMaxFontSize, measureText } from '@/measureText'
 import {
@@ -232,6 +232,23 @@ function BrieferResult(props: {
     }
   }, [container.current])
 
+  // @ts-ignore
+  const option: echarts.EChartsOption = useMemo(
+    () => ({
+      ...props.result,
+      tooltip: {
+        ...props.result.tooltip,
+        valueFormatter: (value) => {
+          if (typeof value === 'number') {
+            return Math.round(value * 100) / 100
+          }
+          return value
+        },
+      },
+    }),
+    [props.result, size]
+  )
+
   if (!size) {
     return <div className="w-full h-full" ref={measureDiv} />
   }
@@ -256,8 +273,7 @@ function BrieferResult(props: {
       <Echarts
         width={size.width}
         height={size.height}
-        // @ts-ignore
-        option={props.result}
+        option={option}
         renderer={props.renderer}
       />
     </div>
@@ -324,68 +340,31 @@ function BigNumberVisualization(props: {
       throw new Error('Invalid result')
     }
 
+    let displayY = latest[y].toString()
+    if (typeof latest[y] === 'number') {
+      displayY = (Math.round(latest[y] * 100) / 100).toString()
+    }
+
     const lastValue = {
       x: latest[x],
       displayX: latest[x].toString(),
       y: Number(latest[y]),
-      displayY: latest[y].toString(),
+      displayY,
+    }
+
+    let prevDisplayY = 'N/A'
+    if (prev) {
+      prevDisplayY = prev[y].toString()
+      if (typeof prev[y] === 'number') {
+        prevDisplayY = (Math.round(prev[y] * 100) / 100).toString()
+      }
     }
     const prevValue = {
       x: prev?.[x]?.toString(),
       displayX: (prev?.[x] ?? 'N/A').toString(),
       y: prev?.[y] ? Number(prev[y]) : Number.NaN,
-      displayY: (prev?.[y] ? Number(prev[y]) : 'N/A').toString(),
+      displayY: prevDisplayY,
     }
-    // const yFormat = y.axis.format
-    // if (yFormat) {
-    //   lastValue.displayY = d3Format(yFormat)(lastValue.y)
-    //   prevValue.displayY = d3Format(yFormat)(prevValue.y)
-    // }
-
-    // TODO: formatting
-    // const xFormat = x.axis.format
-    // if (false) { // xFormat) {
-    //   lastValue.displayX = d3Format(xFormat)(lastValue.x)
-    //   prevValue.displayX = d3Format(xFormat)(prevValue.x)
-    // } else {
-    //   const xType = x.type
-    //   switch (xType) {
-    //     case 'temporal': {
-    //       const timeUnit = x.timeUnit
-
-    //       if (!timeUnit) {
-    //         lastValue.displayX = new Date(lastValue.x).toLocaleDateString()
-    //         prevValue.displayX = new Date(prevValue.x).toLocaleDateString()
-    //       } else {
-    //         const timeFormats: Record<string, string> = {
-    //           year: '%b %d, %Y %I:00 %p',
-    //           yearmonth: '%b %d, %Y %I:00 %p',
-    //           yearquarter: '%b %d, %Y %I:00 %p',
-    //           yearweek: '%b %d, %Y %I:00 %p',
-    //           yearmonthdate: '%b %d, %Y %I:00 %p',
-    //           yearmonthdatehours: '%b %d, %Y %I:00 %p',
-    //           yearmonthdatehoursminutes: '%b %d, %Y %I:%M %p',
-    //           yearmonthdatehoursminutesseconds: '%b %d, %Y %I:%M:%S %p',
-    //         }
-    //         const format = timeFormats[timeUnit]
-    //         if (format) {
-    //           const formatter = timeFormat(format)
-    //           lastValue.displayX = formatter(new Date(lastValue.x))
-    //           prevValue.displayX = formatter(new Date(prevValue.x))
-    //         }
-    //       }
-    //       break
-    //     }
-    //     case 'quantitative':
-    //       lastValue.displayX = d3Format('.2f')(lastValue.x)
-    //       prevValue.displayX = d3Format('.2f')(prevValue.x)
-    //       break
-    //     case 'ordinal':
-    //       lastValue.displayX = lastValue.x
-    //       prevValue.displayX = prevValue.x
-    //       break
-    //   }
-    // }
 
     const minDimension = Math.min(size.width, size.height)
     const fontSize = Math.min(
