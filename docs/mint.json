@@ -71,6 +71,7 @@
         "product/files",
         "product/schema-explorer",
         "product/schedules",
+        "product/inputs",
         "product/snapshots",
         "product/reusable-components",
         "product/sharing",
