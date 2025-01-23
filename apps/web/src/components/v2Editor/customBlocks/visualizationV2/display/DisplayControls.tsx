@@ -270,7 +270,7 @@ interface GroupBySeriesDisplayProps {
 const GroupBySeriesDisplay = forwardRef<
   HTMLDivElement,
   GroupBySeriesDisplayProps
->((props, ref) => {
+>(function GroupBySeriesDisplay(props, ref) {
   const onChangeColor = useCallback(
     (color: string) => {
       props.onChangeColor(props.group, color)
