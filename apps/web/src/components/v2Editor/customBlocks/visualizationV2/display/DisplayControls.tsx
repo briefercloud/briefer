@@ -1,3 +1,4 @@
+import DragList from '@/components/DragList'
 import { useOnClickOutside2 } from '@/hooks/useOnClickOutside'
 import useResizeMemo from '@/hooks/useResizeMemo'
 import { Serie, VisualizationV2BlockOutputResult } from '@briefer/editor'
@@ -5,9 +6,20 @@ import { DataFrame, SeriesV2, YAxisV2 } from '@briefer/types'
 import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
 import { uniqBy } from 'ramda'
-import { CSSProperties, useCallback, useMemo, useRef, useState } from 'react'
+import {
+  CSSProperties,
+  forwardRef,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { SketchPicker } from 'react-color'
-import { DropTargetMonitor, useDrag, useDrop } from 'react-dnd'
+import {
+  ConnectDragPreview,
+  ConnectDragSource,
+  ConnectDropTarget,
+} from 'react-dnd'
 import ReactDOM from 'react-dom'
 
 const presetColors = [
@@ -51,9 +63,9 @@ function DisplayControls(props: Props) {
             <div className="text-md font-medium leading-6 text-gray-900 pb-2">
               {prefix} Y-Axis
             </div>
-            {yAxis.series.map((s, i) => (
+            {yAxis.series.map((s) => (
               <DisplayYAxisSeries
-                index={i}
+                key={s.id}
                 series={s}
                 dataframe={props.dataframe}
                 isEditable={props.isEditable}
@@ -151,6 +163,26 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
     }
   }, [props.series, props.onChangeSeries])
 
+  const onChangeGroupName = useCallback(
+    (group: string, name: string) => {
+      const newItems = groups.map((item) =>
+        item.group === group ? { ...item, name } : item
+      )
+      onChangeGroups(newItems)
+    },
+    [groups, onChangeGroups]
+  )
+
+  const onChangeGroupColor = useCallback(
+    (group: string, color: string) => {
+      const newItems = groups.map((item) =>
+        item.group === group ? { ...item, color } : item
+      )
+      onChangeGroups(newItems)
+    },
+    [groups, onChangeGroups]
+  )
+
   if (!props.series.column) {
     return null
   }
@@ -194,212 +226,51 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
               {props.series.groupBy.name.toString()}
             </span>
           </div>
-          <GroupByList
+          <DragList
             items={groups}
-            yIndex={props.yIndex}
-            dataframe={props.dataframe}
-            isEditable={props.isEditable}
-            onChangeGroups={onChangeGroups}
-          />
+            onChange={onChangeGroups}
+            getKey={(g) => g.group}
+          >
+            {({ item, drag, dragPreview, drop, isDragging, ref }) => (
+              <GroupBySeriesDisplay
+                ref={ref}
+                drag={drag}
+                dragPreview={dragPreview}
+                drop={drop}
+                isDragging={isDragging}
+                group={item.group}
+                name={item.name}
+                onChangeName={onChangeGroupName}
+                color={item.color}
+                onChangeColor={onChangeGroupColor}
+                dataframe={props.dataframe}
+                isEditable={props.isEditable}
+              />
+            )}
+          </DragList>
         </>
       )}
     </div>
   )
 }
 
-interface GroupByListItem {
-  group: string
-  name: string
-  color: string
-}
-interface GroupByListProps {
-  items: GroupByListItem[]
-  dataframe: DataFrame | null
-  isEditable: boolean
-  yIndex: number
-  onChangeGroups: (groups: SeriesV2['groups']) => void
-}
-function GroupByList(props: GroupByListProps) {
-  const moveItem = useCallback(
-    (dragIndex: number, hoverIndex: number, position: 'below' | 'above') => {
-      if (dragIndex === hoverIndex) {
-        return
-      }
-
-      const destination = Math.min(
-        Math.max(0, position === 'above' ? hoverIndex : hoverIndex + 1),
-        props.items.length - 1
-      )
-
-      const item = props.items[dragIndex]
-      if (destination === 0) {
-        const newItems = [
-          item,
-          ...props.items.filter((i) => i.group !== item.group),
-        ]
-        props.onChangeGroups(newItems)
-        return
-      }
-
-      const newItems = [
-        ...props.items
-          .slice(0, destination)
-          .filter((i) => i.group !== item.group),
-        item,
-        ...props.items.slice(destination).filter((i) => i.group !== item.group),
-      ]
-
-      props.onChangeGroups(newItems)
-    },
-    [props.items, props.onChangeGroups]
-  )
-
-  const onChangeColor = useCallback(
-    (group: string, color: string) => {
-      const newItems = props.items.map((item) =>
-        item.group === group ? { ...item, color } : item
-      )
-      props.onChangeGroups(newItems)
-    },
-    [props.items, props.onChangeGroups]
-  )
-
-  const onChangeName = useCallback(
-    (group: string, name: string) => {
-      const newItems = props.items.map((item) =>
-        item.group === group ? { ...item, name } : item
-      )
-      props.onChangeGroups(newItems)
-    },
-    [props.items, props.onChangeGroups]
-  )
-
-  return (
-    <div className="flex flex-col space-y-1">
-      {props.items.map((series, j) => {
-        return (
-          <GroupBySeriesDisplay
-            group={series.group}
-            name={series.name}
-            onChangeName={onChangeName}
-            color={series.color}
-            onChangeColor={onChangeColor}
-            yIndex={props.yIndex}
-            index={j}
-            moveItem={moveItem}
-            dataframe={props.dataframe}
-            isEditable={props.isEditable}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
 interface GroupBySeriesDisplayProps {
+  drag: ConnectDragSource
+  drop: ConnectDropTarget
+  dragPreview: ConnectDragPreview
+  isDragging: boolean
   group: string
   name: string
   onChangeName: (group: string, name: string) => void
   color: string
   onChangeColor: (group: string, color: string) => void
-  yIndex: number
-  index: number
   dataframe: DataFrame | null
   isEditable: boolean
-  moveItem: (
-    dragIndex: number,
-    hoverIndex: number,
-    position: 'below' | 'above'
-  ) => void
 }
-function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [droppingPosition, setDroppingPosition] = useState<'above' | 'below'>(
-    'above'
-  )
-
-  const getDraggingPosition = useCallback(
-    (monitor: DropTargetMonitor) => {
-      const offset = monitor.getClientOffset()
-      const divPos = ref.current?.getBoundingClientRect()
-
-      // check if dragging to the left or right of the button
-      if (offset && divPos) {
-        const divCenter = divPos.y + divPos.height / 2
-        if (offset.y < divCenter) {
-          return 'above'
-        } else {
-          return 'below'
-        }
-      }
-    },
-    [ref]
-  )
-
-  const [{ isDragging }, drag, dragPreview] = useDrag(
-    {
-      type: 'GroupByListItem',
-      item: () => ({
-        id: props.group,
-        dragHeight: Math.ceil(ref.current?.clientHeight ?? 0),
-        index: props.index,
-      }),
-      collect: (monitor) => ({
-        isDragging: monitor.isDragging(),
-      }),
-    },
-    [props.group]
-  )
-
-  const [{ isOver, canDrop, dragHeight: dropHeight }, drop] = useDrop(
-    () => ({
-      drop: (
-        item: { id: string; dragHeight: number; index: number },
-        monitor
-      ) => {
-        const pos = getDraggingPosition(monitor)
-        if (!pos) {
-          return
-        }
-
-        props.moveItem(item.index, props.index, pos)
-      },
-      accept: 'GroupByListItem',
-      canDrop: ({ id, index }, monitor) => {
-        if (id === props.group || !monitor.isOver()) {
-          return false
-        }
-
-        const pos = getDraggingPosition(monitor)
-        if (!pos) {
-          return false
-        }
-
-        switch (pos) {
-          case 'above':
-            return index + 1 !== props.index
-          case 'below':
-            return index - 1 !== props.index
-        }
-      },
-      hover: (_item, monitor) => {
-        const position = getDraggingPosition(monitor)
-        if (position && position !== droppingPosition) {
-          setDroppingPosition(position)
-        }
-      },
-      collect: (monitor) => {
-        return {
-          isOver: monitor.isOver() ?? false,
-          canDrop: monitor.canDrop() ?? false,
-          dragHeight: monitor.getItem()?.dragHeight ?? 0,
-          index: monitor.getItem()?.index ?? 0,
-        }
-      },
-    }),
-    [ref, props.group, props.index, getDraggingPosition, droppingPosition]
-  )
-
+const GroupBySeriesDisplay = forwardRef<
+  HTMLDivElement,
+  GroupBySeriesDisplayProps
+>((props, ref) => {
   const onChangeColor = useCallback(
     (color: string) => {
       props.onChangeColor(props.group, color)
@@ -423,23 +294,17 @@ function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
   return (
     <div
       ref={(d) => {
-        drop(d)
+        props.drop(d)
       }}
     >
-      {droppingPosition === 'above' && isOver && canDrop && (
-        <div
-          className="w-full bg-gray-100"
-          style={{ height: `${dropHeight}px` }}
-        />
-      )}
       <div className="flex items-center space-x-1" ref={ref}>
         <div
           className={clsx(
-            'h-5 w-5 text-gray-400/60 group-hover/wrapper:opacity-100  transition-opacity duration-200 ease-in-out flex items-center justify-center',
-            isDragging ? 'cursor-grabbing' : 'cursor-pointer'
+            'h-5 w-5 text-gray-400/60 group-hover/wrapper:opacity-100  transition-opacity duration-200 ease-in-out flex items-center justify-center cursor-pointer',
+            props.isDragging ? 'opacity-0' : 'opacity-1'
           )}
           ref={(el) => {
-            drag(el)
+            props.drag(el)
           }}
         >
           <svg
@@ -458,11 +323,10 @@ function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
         <div
           className="relative w-full"
           ref={(el) => {
-            dragPreview(el)
+            props.dragPreview(el)
           }}
         >
           <input
-            name={`groupby-series-name-${props.yIndex}-${props.index}`}
             type="text"
             placeholder={props.group}
             className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
@@ -478,15 +342,9 @@ function GroupBySeriesDisplay(props: GroupBySeriesDisplayProps) {
           />
         </div>
       </div>
-      {droppingPosition === 'below' && isOver && canDrop && (
-        <div
-          className="w-full bg-gray-100 mt-1"
-          style={{ height: `${dropHeight}px` }}
-        />
-      )}
     </div>
   )
-}
+})
 
 interface ColorPickerProps {
   color: string
