@@ -589,6 +589,21 @@ function VisualizationBlockV2(props: Props) {
     [props.block, attrs.input.yAxes]
   )
 
+  const onChangeAllSeries = useCallback(
+    (yIndex: number, series: SeriesV2[]) => {
+      setVisualizationV2Input(props.block, {
+        yAxes: attrs.input.yAxes.map((yAxis, index) => {
+          if (index === yIndex) {
+            return { ...yAxis, series }
+          }
+
+          return yAxis
+        }),
+      })
+    },
+    [props.block, attrs.input.yAxes]
+  )
+
   if (props.isDashboard) {
     return (
       <VisualizationViewV2
@@ -722,6 +737,7 @@ function VisualizationBlockV2(props: Props) {
             isEditable={props.isEditable}
             result={attrs.output?.result ?? null}
             onChangeSeries={onChangeSeries}
+            onChangeAllSeries={onChangeAllSeries}
           />
           <VisualizationViewV2
             title={attrs.title}

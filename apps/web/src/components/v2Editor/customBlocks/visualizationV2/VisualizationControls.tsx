@@ -61,6 +61,7 @@ interface Props {
   ) => void
   isEditable: boolean
   onChangeSeries: (id: SeriesV2['id'], series: SeriesV2) => void
+  onChangeAllSeries: (yIndex: number, series: SeriesV2[]) => void
   result: VisualizationV2BlockOutputResult | null
 }
 
@@ -599,6 +600,7 @@ function VisualizationControlsV2(props: Props) {
               isEditable={props.isEditable}
               result={props.result}
               onChangeSeries={props.onChangeSeries}
+              onChangeAllSeries={props.onChangeAllSeries}
             />
           )}
           {tab === 'x-axis' && (

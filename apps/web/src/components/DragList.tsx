@@ -20,6 +20,7 @@ export interface ItemProps {
     drop: ConnectDropTarget
     dragPreview: ConnectDragPreview
   }) => JSX.Element
+  kind: string
 }
 
 interface DragItem {
@@ -33,7 +34,7 @@ function Item(props: ItemProps) {
     void,
     { handlerId: Identifier | null }
   >({
-    accept: 'box',
+    accept: props.kind,
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId(),
@@ -90,7 +91,7 @@ function Item(props: ItemProps) {
   })
 
   const [{ isDragging }, drag, dragPreview] = useDrag({
-    type: 'box',
+    type: props.kind,
     item: () => {
       return { index: props.index }
     },
@@ -108,6 +109,7 @@ export interface Item {
 }
 
 interface Props<T> {
+  kind: string
   items: T[]
   onChange: (items: T[]) => void
   getKey: (item: T) => string
@@ -141,7 +143,12 @@ export default function DragList<T>(props: Props<T>) {
     <>
       <div>
         {props.items.map((item, index) => (
-          <Item key={props.getKey(item)} index={index} move={move}>
+          <Item
+            key={props.getKey(item)}
+            index={index}
+            move={move}
+            kind={props.kind}
+          >
             {(args) =>
               props.children({
                 ...args,

@@ -47,6 +47,7 @@ interface Props {
   isEditable: boolean
   result: VisualizationV2BlockOutputResult | null
   onChangeSeries: (id: SeriesV2['id'], series: SeriesV2) => void
+  onChangeAllSeries: (yIndex: number, series: SeriesV2[]) => void
 }
 
 function DisplayControls(props: Props) {
@@ -60,20 +61,32 @@ function DisplayControls(props: Props) {
 
         return (
           <div key={yI}>
-            <div className="text-md font-medium leading-6 text-gray-900 pb-2">
+            <div className="text-md font-medium leading-6 text-gray-900">
               {prefix} Y-Axis
             </div>
-            {yAxis.series.map((s) => (
-              <DisplayYAxisSeries
-                key={s.id}
-                series={s}
-                dataframe={props.dataframe}
-                isEditable={props.isEditable}
-                yIndex={yI}
-                result={props.result}
-                onChangeSeries={props.onChangeSeries}
-              />
-            ))}
+            <DragList
+              items={yAxis.series}
+              onChange={(items) => props.onChangeAllSeries(yI, items)}
+              getKey={(s) => s.id}
+              kind={`y-axis-${yI}-series`}
+            >
+              {({ item, drag, dragPreview, drop, isDragging, ref }) => {
+                drag(drop(ref))
+
+                return (
+                  <div ref={ref} className="bg-white">
+                    <DisplayYAxisSeries
+                      series={item}
+                      dataframe={props.dataframe}
+                      isEditable={props.isEditable}
+                      yIndex={yI}
+                      result={props.result}
+                      onChangeSeries={props.onChangeSeries}
+                    />
+                  </div>
+                )
+              }}
+            </DragList>
           </div>
         )
       })}
@@ -188,21 +201,11 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
   }
 
   return (
-    <div className="pt-1.5">
-      <label
-        className="block text-xs leading-6 text-gray-900 pb-1 flex items-center justify-between"
-        htmlFor={`series-name-${props.series.id}`}
-      >
-        <span className="font-medium">Column</span>{' '}
-        <span className="font-mono bg-gray-100 text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px]">
-          {props.series.column.name.toString()}
-        </span>
-      </label>
-
+    <div className="pb-8">
       <div className="flex items-center space-x-1">
+        <DragIcon />
         <div className="w-full relative">
           <input
-            name={`series-name-${props.series.id}`}
             type="text"
             placeholder={props.series.column?.name?.toString() ?? ''}
             className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
@@ -216,12 +219,15 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
             color={color}
             onChangeColor={onChangeColor}
           />
+          <span className="font-mono bg-white text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px] absolute -top-2.5 right-4">
+            {props.series.column.name.toString()}
+          </span>
         </div>
       </div>
       {props.series.groupBy && (
         <>
-          <div className="text-xs leading-6 text-gray-900 pt-1.5 flex items-center justify-between">
-            <span className="font-medium">Group By</span>{' '}
+          <div className="text-xs leading-6 text-gray-900 pt-1.5 pl-1 flex items-center justify-between">
+            <span className="font-medium">Group by</span>{' '}
             <span className="font-mono bg-gray-100 text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px]">
               {props.series.groupBy.name.toString()}
             </span>
@@ -230,6 +236,7 @@ function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
             items={groups}
             onChange={onChangeGroups}
             getKey={(g) => g.group}
+            kind={`series-${props.series.id}-groups`}
           >
             {({ item, drag, dragPreview, drop, isDragging, ref }) => (
               <GroupBySeriesDisplay
@@ -297,7 +304,7 @@ const GroupBySeriesDisplay = forwardRef<
         props.drop(d)
       }}
     >
-      <div className="flex items-center space-x-1" ref={ref}>
+      <div className="flex items-center space-x-1 pl-1" ref={ref}>
         <div
           className={clsx(
             'h-5 w-5 text-gray-400/60 group-hover/wrapper:opacity-100  transition-opacity duration-200 ease-in-out flex items-center justify-center cursor-pointer',
@@ -307,18 +314,7 @@ const GroupBySeriesDisplay = forwardRef<
             props.drag(el)
           }}
         >
-          <svg
-            height="24"
-            viewBox="0 0 24 24"
-            width="24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path d="m0 0h24v24h-24z" fill="none" />
-            <path
-              fill="currentColor"
-              d="m11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
-            />
-          </svg>
+          <DragIcon />
         </div>
         <div
           className="relative w-full"
@@ -416,6 +412,28 @@ function ColorPicker(props: ColorPickerProps) {
         document.body
       )}
     </div>
+  )
+}
+
+function DragIcon({ drag }: { drag?: ConnectDragSource }) {
+  return (
+    <svg
+      height="24"
+      viewBox="0 0 24 24"
+      width="24"
+      xmlns="http://www.w3.org/2000/svg"
+      ref={(el) => {
+        if (drag) {
+          drag(el)
+        }
+      }}
+    >
+      <path d="m0 0h24v24h-24z" fill="none" />
+      <path
+        fill="currentColor"
+        d="m11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
+      />
+    </svg>
   )
 }
 
