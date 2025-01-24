@@ -531,6 +531,16 @@ async function _refreshDataSourceStructure(
     )
   }
 
+  let openAiApiKey = workspace.secrets?.openAiApiKey ?? null
+  if (openAiApiKey) {
+    openAiApiKey = decrypt(
+      openAiApiKey,
+      config().WORKSPACE_SECRETS_ENCRYPTION_KEY
+    )
+  } else {
+    openAiApiKey = config().OPENAI_API_KEY
+  }
+
   const updateQueue = new PQueue({ concurrency: 1 })
   const tables: { schema: string; table: string }[] = []
   let defaultSchema = ''
@@ -538,7 +548,6 @@ async function _refreshDataSourceStructure(
     defaultSchema = defaultSchema || schema
     tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
-      const openAiApiKey = workspace.secrets?.openAiApiKey
       let embedding: number[] | null = null
       if (openAiApiKey) {
         let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
@@ -546,10 +555,7 @@ async function _refreshDataSourceStructure(
           ddl += `  ${c.name} ${c.type}\n`
         }
         try {
-          embedding = await createEmbedding(
-            ddl,
-            decrypt(openAiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
-          )
+          embedding = await createEmbedding(ddl, openAiApiKey)
         } catch (err) {
           logger().error(
             {

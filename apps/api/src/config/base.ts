@@ -16,6 +16,7 @@ export interface IBaseConfig {
   AI_API_URL: string
   AI_API_USERNAME: string
   AI_API_PASSWORD: string
+  OPENAI_API_KEY: string | null
   PYTHON_ALLOWED_LIBRARIES: string
   POSTGRES_USERNAME: string
   POSTGRES_HOSTNAME: string
@@ -50,6 +51,7 @@ export class BaseConfig implements IBaseConfig {
   public readonly AI_API_URL: string
   public readonly AI_API_USERNAME: string
   public readonly AI_API_PASSWORD: string
+  public readonly OPENAI_API_KEY: string | null
   public readonly PYTHON_ALLOWED_LIBRARIES: string
   public readonly POSTGRES_USERNAME: string
   public readonly POSTGRES_HOSTNAME: string
@@ -83,6 +85,7 @@ export class BaseConfig implements IBaseConfig {
     this.AI_API_URL = getVar('AI_API_URL')
     this.AI_API_USERNAME = getVar('AI_API_USERNAME')
     this.AI_API_PASSWORD = getVar('AI_API_PASSWORD')
+    this.OPENAI_API_KEY = process.env['OPENAI_API_KEY']?.trim() || null
     this.PYTHON_ALLOWED_LIBRARIES = getVar('PYTHON_ALLOWED_LIBRARIES')
     this.POSTGRES_USERNAME = getVar('POSTGRES_USERNAME')
     this.POSTGRES_HOSTNAME = getVar('POSTGRES_HOSTNAME')

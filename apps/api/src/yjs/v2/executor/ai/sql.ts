@@ -74,11 +74,22 @@ async function editWithAI(
     dataSource.data.id,
     dataSource.type
   )
+
+  let openAiApiKey = workspace?.secrets?.openAiApiKey ?? null
+  if (openAiApiKey) {
+    openAiApiKey = decrypt(
+      openAiApiKey,
+      config().WORKSPACE_SECRETS_ENCRYPTION_KEY
+    )
+  } else {
+    openAiApiKey = config().OPENAI_API_KEY
+  }
+
   const tableInfo = await retrieveTableInfoForQuestion(
     dataSource,
     structure,
     instructions,
-    workspace?.secrets?.openAiApiKey ?? null
+    openAiApiKey
   )
 
   event(assistantModelId)
@@ -129,10 +140,7 @@ async function retrieveTableInfoForQuestion(
     return tableInfoFromStructure(datasource, structure)
   }
 
-  const questionEmbedding = await createEmbedding(
-    question,
-    decrypt(openAiApiKey, config().WORKSPACE_SECRETS_ENCRYPTION_KEY)
-  )
+  const questionEmbedding = await createEmbedding(question, openAiApiKey)
 
   const raw = await prisma()
     .$queryRaw`SELECT t.id, t.embedding <=> ${questionEmbedding}::vector AS distance FROM "DataSourceSchemaTable" t INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId" WHERE s.id = ${structure.id}::uuid ORDER BY distance LIMIT 30`
