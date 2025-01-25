@@ -118,6 +118,17 @@ export class DocumentPersistor implements Persistor {
   ): Promise<void> {
     return acquireLock(`document-persistor:${this.docId}`, async () => {
       const yjsDoc = await this.getYjsDoc(ydoc, tx)
+      if (!yjsDoc) {
+        logger().trace(
+          {
+            workspaceId: ydoc.workspaceId,
+            documentId: this.documentId,
+            docId: ydoc.id,
+          },
+          'Attempt to persist a deleted document, this is a noop'
+        )
+        return
+      }
 
       await (tx ?? prisma()).yjsDocument.update({
         where: { id: yjsDoc.id },
@@ -128,18 +139,23 @@ export class DocumentPersistor implements Persistor {
     })
   }
 
-  private async getYjsDoc(doc: WSSharedDocV2, tx?: PrismaTransaction) {
-    let yjsDoc = await (tx ?? prisma()).yjsDocument.findUnique({
-      select: { id: true, clock: true },
-      where: { documentId: this.documentId },
+  private async getYjsDoc(yDoc: WSSharedDocV2, tx?: PrismaTransaction) {
+    const docWithYjsDoc = await (tx ?? prisma()).document.findUnique({
+      select: { id: true, yjsDocument: { select: { id: true, clock: true } } },
+      where: { id: this.docId },
     })
+    if (!docWithYjsDoc) {
+      return null
+    }
+
+    let yjsDoc = docWithYjsDoc.yjsDocument
     const isNew = !yjsDoc
     if (!yjsDoc) {
       yjsDoc = await (tx ?? prisma()).yjsDocument.upsert({
         where: { documentId: this.documentId },
         create: {
           documentId: this.documentId,
-          state: Buffer.from(Y.encodeStateAsUpdate(doc.ydoc)),
+          state: Buffer.from(Y.encodeStateAsUpdate(yDoc.ydoc)),
         },
         update: {},
         select: { id: true, clock: true },
