@@ -35,7 +35,7 @@ function IconSelector(props: Props) {
     props.documentId
   )
   const [filteredIcons, setFilteredIcons] = useState(Object.keys(icons))
-  const Icon = icons[doc?.icon ?? 'DocumentIcon']
+  const Icon = icons[doc?.icon ?? 'DocumentIcon'] || (() => null)
 
   const debouncedSearch = useDebounce((search: string) => {
     if (search === '') {
