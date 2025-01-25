@@ -142,7 +142,7 @@ export class DocumentPersistor implements Persistor {
   private async getYjsDoc(yDoc: WSSharedDocV2, tx?: PrismaTransaction) {
     const docWithYjsDoc = await (tx ?? prisma()).document.findUnique({
       select: { id: true, yjsDocument: { select: { id: true, clock: true } } },
-      where: { id: this.docId },
+      where: { id: this.documentId },
     })
     if (!docWithYjsDoc) {
       return null
