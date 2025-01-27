@@ -5,6 +5,7 @@ import { Serie, VisualizationV2BlockOutputResult } from '@briefer/editor'
 import { DataFrame, SeriesV2, YAxisV2 } from '@briefer/types'
 import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
+import { GripVerticalIcon } from 'lucide-react'
 import { uniqBy } from 'ramda'
 import {
   CSSProperties,
@@ -59,23 +60,35 @@ function DisplayControls(props: Props) {
           prefix = yI === 0 ? 'Left ' : 'Right '
         }
 
+        const items = yAxis.series.map((s) => {
+          const output = props.result?.series.find((rs) => rs.id === s.id)
+          return {
+            ...s,
+            color:
+              s.color ?? (output ? getColorFromSerie(output) : null) ?? null,
+          }
+        })
+
         return (
           <div key={yI}>
-            <div className="text-md font-medium leading-6 text-gray-900">
+            <div className="text-md font-medium leading-6 text-gray-900 pb-4">
               {prefix} Y-Axis
             </div>
-            <DragList
-              items={yAxis.series}
-              onChange={(items) => props.onChangeAllSeries(yI, items)}
-              getKey={(s) => s.id}
-              kind={`y-axis-${yI}-series`}
-            >
-              {({ item, drag, dragPreview, drop, isDragging, ref }) => {
-                drag(drop(ref))
-
-                return (
-                  <div ref={ref} className="bg-white">
+            <div className="flex flex-col space-y-2 divide-y">
+              <DragList
+                items={items}
+                onChange={(items) => props.onChangeAllSeries(yI, items)}
+                getKey={(s) => s.id}
+                kind={`y-axis-${yI}-series`}
+              >
+                {({ item, drag, dragPreview, drop, isDragging, ref }) => {
+                  return (
                     <DisplayYAxisSeries
+                      ref={ref}
+                      drag={drag}
+                      dragPreview={dragPreview}
+                      drop={drop}
+                      isDragging={isDragging}
                       series={item}
                       dataframe={props.dataframe}
                       isEditable={props.isEditable}
@@ -83,10 +96,10 @@ function DisplayControls(props: Props) {
                       result={props.result}
                       onChangeSeries={props.onChangeSeries}
                     />
-                  </div>
-                )
-              }}
-            </DragList>
+                  )
+                }}
+              </DragList>
+            </div>
           </div>
         )
       })}
@@ -106,6 +119,10 @@ function getColorFromSerie(s: Serie): string | null {
 }
 
 interface DisplayYAxisSeriesProps {
+  drag: ConnectDragSource
+  drop: ConnectDropTarget
+  dragPreview: ConnectDragPreview
+  isDragging: boolean
   series: SeriesV2
   dataframe: DataFrame | null
   isEditable: boolean
@@ -113,153 +130,174 @@ interface DisplayYAxisSeriesProps {
   result: VisualizationV2BlockOutputResult | null
   onChangeSeries: (id: SeriesV2['id'], series: SeriesV2) => void
 }
-function DisplayYAxisSeries(props: DisplayYAxisSeriesProps) {
-  const groups = useMemo(
-    () =>
-      uniqBy(
-        (g) => g.group,
-        (props.series.groups ?? []).concat(
-          props.result?.series
-            .filter(
-              (s) => s.id !== props.series.id && s.id.includes(props.series.id)
-            )
-            .map((s) => {
-              const group = s.id.split(':').slice(1).join(':')
-              return {
-                group,
-                name: s.name ?? group,
-                color: getColorFromSerie(s) ?? presetColors[0],
-              }
-            }) ?? []
+const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
+  function DisplayYAxisSeries(props, ref) {
+    const groups = useMemo(
+      () =>
+        uniqBy(
+          (g) => g.group,
+          (props.series.groups ?? []).concat(
+            props.result?.series
+              .filter(
+                (s) =>
+                  s.id !== props.series.id && s.id.includes(props.series.id)
+              )
+              .map((s) => {
+                const group = s.id.split(':').slice(1).join(':')
+                return {
+                  group,
+                  name: s.name ?? group,
+                  color: getColorFromSerie(s) ?? presetColors[0],
+                }
+              }) ?? []
+          )
+        ),
+      [props.series.groups, props.result?.series, props.series.id]
+    )
+
+    const onChangeGroups = useCallback(
+      (groups: SeriesV2['groups']) => {
+        props.onChangeSeries(props.series.id, { ...props.series, groups })
+      },
+      [props.series.id, props.onChangeSeries]
+    )
+
+    const columnsSeries = props.result?.series.find(
+      (s) => s.id === props.series.id
+    )
+    const color =
+      props.series.color ??
+      (columnsSeries ? getColorFromSerie(columnsSeries) : null) ??
+      presetColors[0]
+    const onChangeColor = useCallback(
+      (color: string) => {
+        props.onChangeSeries(props.series.id, { ...props.series, color })
+      },
+      [props.series.id, props.onChangeSeries]
+    )
+
+    const onChangeSerieName = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        props.onChangeSeries(props.series.id, {
+          ...props.series,
+          name: e.target.value,
+        })
+      },
+      [props.series.id, props.onChangeSeries]
+    )
+
+    const onBlur = useCallback(() => {
+      if (props.series.name?.trim() === '') {
+        props.onChangeSeries(props.series.id, {
+          ...props.series,
+          name: props.series.column?.name?.toString() ?? '',
+        })
+      }
+    }, [props.series, props.onChangeSeries])
+
+    const onChangeGroupName = useCallback(
+      (group: string, name: string) => {
+        const newItems = groups.map((item) =>
+          item.group === group ? { ...item, name } : item
         )
-      ),
-    [props.series.groups, props.result?.series, props.series.id]
-  )
+        onChangeGroups(newItems)
+      },
+      [groups, onChangeGroups]
+    )
 
-  const onChangeGroups = useCallback(
-    (groups: SeriesV2['groups']) => {
-      props.onChangeSeries(props.series.id, { ...props.series, groups })
-    },
-    [props.series.id, props.onChangeSeries]
-  )
+    const onChangeGroupColor = useCallback(
+      (group: string, color: string) => {
+        const newItems = groups.map((item) =>
+          item.group === group ? { ...item, color } : item
+        )
+        onChangeGroups(newItems)
+      },
+      [groups, onChangeGroups]
+    )
 
-  const columnsSeries = props.result?.series.find(
-    (s) => s.id === props.series.id
-  )
-  const color =
-    props.series.color ??
-    (columnsSeries ? getColorFromSerie(columnsSeries) : null) ??
-    presetColors[0]
-  const onChangeColor = useCallback(
-    (color: string) => {
-      props.onChangeSeries(props.series.id, { ...props.series, color })
-    },
-    [props.series.id, props.onChangeSeries]
-  )
-
-  const onChangeSerieName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      props.onChangeSeries(props.series.id, {
-        ...props.series,
-        name: e.target.value,
-      })
-    },
-    [props.series.id, props.onChangeSeries]
-  )
-
-  const onBlur = useCallback(() => {
-    if (props.series.name?.trim() === '') {
-      props.onChangeSeries(props.series.id, {
-        ...props.series,
-        name: props.series.column?.name?.toString() ?? '',
-      })
+    if (!props.series.column) {
+      return null
     }
-  }, [props.series, props.onChangeSeries])
 
-  const onChangeGroupName = useCallback(
-    (group: string, name: string) => {
-      const newItems = groups.map((item) =>
-        item.group === group ? { ...item, name } : item
-      )
-      onChangeGroups(newItems)
-    },
-    [groups, onChangeGroups]
-  )
-
-  const onChangeGroupColor = useCallback(
-    (group: string, color: string) => {
-      const newItems = groups.map((item) =>
-        item.group === group ? { ...item, color } : item
-      )
-      onChangeGroups(newItems)
-    },
-    [groups, onChangeGroups]
-  )
-
-  if (!props.series.column) {
-    return null
-  }
-
-  return (
-    <div className="pb-8">
-      <div className="flex items-center space-x-1">
-        <DragIcon />
-        <div className="w-full relative">
-          <input
-            type="text"
-            placeholder={props.series.column?.name?.toString() ?? ''}
-            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
-            disabled={!props.dataframe || !props.isEditable}
-            value={props.series.name ?? ''}
-            onChange={onChangeSerieName}
-            onBlur={onBlur}
-          />
-          <ColorPicker
-            className="absolute left-1 top-1"
-            color={color}
-            onChangeColor={onChangeColor}
-          />
-          <span className="font-mono bg-white text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px] absolute -top-2.5 right-4">
-            {props.series.column.name.toString()}
-          </span>
+    return (
+      <div
+        className="pt-2"
+        ref={(d) => {
+          props.drop(d)
+        }}
+      >
+        <div
+          ref={ref}
+          className={clsx(props.isDragging ? 'opacity-50' : 'opacity-100')}
+        >
+          <div
+            className="flex items-center"
+            ref={(d) => {
+              props.dragPreview(d)
+            }}
+          >
+            <div
+              className="text-gray-400/60 hover:text-gray-400 cursor-pointer"
+              ref={(el) => {
+                props.drag(el)
+              }}
+            >
+              <GripVerticalIcon />
+            </div>
+            <div className="w-full relative">
+              <input
+                type="text"
+                placeholder={props.series.column?.name?.toString() ?? ''}
+                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+                disabled={!props.dataframe || !props.isEditable}
+                value={props.series.name ?? ''}
+                onChange={onChangeSerieName}
+                onBlur={onBlur}
+              />
+              <ColorPicker
+                className="absolute left-1 bottom-0.5"
+                color={color}
+                onChangeColor={onChangeColor}
+              />
+            </div>
+          </div>
+          {props.series.groupBy && !props.isDragging && (
+            <>
+              <div className="text-xs text-gray-900 pl-1 pb-1 flex items-center justify-between">
+                <span className="font-medium">Group by</span>{' '}
+              </div>
+              <div className="flex flex-col space-y-0.5">
+                <DragList
+                  items={groups}
+                  onChange={onChangeGroups}
+                  getKey={(g) => g.group}
+                  kind={`series-${props.series.id}-groups`}
+                >
+                  {({ item, drag, dragPreview, drop, isDragging, ref }) => (
+                    <GroupBySeriesDisplay
+                      ref={ref}
+                      drag={drag}
+                      dragPreview={dragPreview}
+                      drop={drop}
+                      isDragging={isDragging}
+                      group={item.group}
+                      name={item.name}
+                      onChangeName={onChangeGroupName}
+                      color={item.color}
+                      onChangeColor={onChangeGroupColor}
+                      dataframe={props.dataframe}
+                      isEditable={props.isEditable}
+                    />
+                  )}
+                </DragList>
+              </div>
+            </>
+          )}
         </div>
       </div>
-      {props.series.groupBy && (
-        <>
-          <div className="text-xs leading-6 text-gray-900 pt-1.5 pl-1 flex items-center justify-between">
-            <span className="font-medium">Group by</span>{' '}
-            <span className="font-mono bg-gray-100 text-gray-400 text-xs px-1 py-0.5 rounded-md flex items-center justify-center text-[10px]">
-              {props.series.groupBy.name.toString()}
-            </span>
-          </div>
-          <DragList
-            items={groups}
-            onChange={onChangeGroups}
-            getKey={(g) => g.group}
-            kind={`series-${props.series.id}-groups`}
-          >
-            {({ item, drag, dragPreview, drop, isDragging, ref }) => (
-              <GroupBySeriesDisplay
-                ref={ref}
-                drag={drag}
-                dragPreview={dragPreview}
-                drop={drop}
-                isDragging={isDragging}
-                group={item.group}
-                name={item.name}
-                onChangeName={onChangeGroupName}
-                color={item.color}
-                onChangeColor={onChangeGroupColor}
-                dataframe={props.dataframe}
-                isEditable={props.isEditable}
-              />
-            )}
-          </DragList>
-        </>
-      )}
-    </div>
-  )
-}
+    )
+  }
+)
 
 interface GroupBySeriesDisplayProps {
   drag: ConnectDragSource
@@ -300,21 +338,19 @@ const GroupBySeriesDisplay = forwardRef<
 
   return (
     <div
+      className={clsx(props.isDragging ? 'opacity-50' : 'opacity-100')}
       ref={(d) => {
         props.drop(d)
       }}
     >
       <div className="flex items-center space-x-1 pl-1" ref={ref}>
         <div
-          className={clsx(
-            'h-5 w-5 text-gray-400/60 group-hover/wrapper:opacity-100  transition-opacity duration-200 ease-in-out flex items-center justify-center cursor-pointer',
-            props.isDragging ? 'opacity-0' : 'opacity-1'
-          )}
+          className="text-gray-400/60 hover:text-gray-400 cursor-pointer"
           ref={(el) => {
             props.drag(el)
           }}
         >
-          <DragIcon />
+          <GripVerticalIcon />
         </div>
         <div
           className="relative w-full"
@@ -412,28 +448,6 @@ function ColorPicker(props: ColorPickerProps) {
         document.body
       )}
     </div>
-  )
-}
-
-function DragIcon({ drag }: { drag?: ConnectDragSource }) {
-  return (
-    <svg
-      height="24"
-      viewBox="0 0 24 24"
-      width="24"
-      xmlns="http://www.w3.org/2000/svg"
-      ref={(el) => {
-        if (drag) {
-          drag(el)
-        }
-      }}
-    >
-      <path d="m0 0h24v24h-24z" fill="none" />
-      <path
-        fill="currentColor"
-        d="m11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"
-      />
-    </svg>
   )
 }
 

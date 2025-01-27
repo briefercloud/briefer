@@ -141,24 +141,22 @@ export default function DragList<T>(props: Props<T>) {
 
   return (
     <>
-      <div>
-        {props.items.map((item, index) => (
-          <Item
-            key={props.getKey(item)}
-            index={index}
-            move={move}
-            kind={props.kind}
-          >
-            {(args) =>
-              props.children({
-                ...args,
-                item,
-                index,
-              })
-            }
-          </Item>
-        ))}
-      </div>
+      {props.items.map((item, index) => (
+        <Item
+          key={props.getKey(item)}
+          index={index}
+          move={move}
+          kind={props.kind}
+        >
+          {(args) =>
+            props.children({
+              ...args,
+              item,
+              index,
+            })
+          }
+        </Item>
+      ))}
     </>
   )
 }
