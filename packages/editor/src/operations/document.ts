@@ -25,10 +25,10 @@ import { makeWritebackBlock } from '../blocks/writeback.js'
 import { makeDateInputBlock } from '../blocks/dateInput.js'
 import {
   YDashboardItem,
-  getBaseAttributes,
   getBlocks,
   getDashboard,
   getLayout,
+  makeVisualizationV2Block,
   removeBlocksFromDashboard,
   switchBlockType,
 } from '../index.js'
@@ -55,7 +55,10 @@ export type AddBlockGroupBlock =
       isFileDataSource: boolean
       source?: string
     }
-  | { type: BlockType.Visualization; dataframeName: string | null }
+  | {
+      type: BlockType.Visualization | BlockType.VisualizationV2
+      dataframeName: string | null
+    }
   | { type: BlockType.DashboardHeader; content: string }
 
 const createBlock = (block: AddBlockGroupBlock, yBlockDefs: Y.Map<YBlock>) => {
@@ -80,6 +83,11 @@ const createBlock = (block: AddBlockGroupBlock, yBlockDefs: Y.Map<YBlock>) => {
       break
     case BlockType.Visualization:
       yBlock = makeVisualizationBlock(blockId, {
+        dataframeName: block.dataframeName,
+      })
+      break
+    case BlockType.VisualizationV2:
+      yBlock = makeVisualizationV2Block(blockId, {
         dataframeName: block.dataframeName,
       })
       break
@@ -449,6 +457,7 @@ export const removeDashboardBlock = (
     onPython: () => {},
     onSQL: () => {},
     onVisualization: () => {},
+    onVisualizationV2: () => {},
     onWriteback: () => {},
     onDashboardHeader: () => {
       yBlockDefs.delete(blockId)

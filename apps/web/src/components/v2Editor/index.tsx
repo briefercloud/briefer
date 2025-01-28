@@ -99,6 +99,7 @@ import useEditorAwareness, {
   EditorAwarenessProvider,
 } from '@/hooks/useEditorAwareness'
 import { SQLExtensionProvider } from './CodeEditor/sql'
+import VisualizationV2Block from './customBlocks/visualizationV2'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -115,6 +116,7 @@ const Dropzone = ({
   onCheckCanDrop,
   onAddBlock,
   writebackEnabled,
+  workspaceId,
 }: {
   index: number
   isLast: boolean
@@ -132,6 +134,7 @@ const Dropzone = ({
   ) => boolean
   onAddBlock: (type: BlockType, index: number) => void
   writebackEnabled: boolean
+  workspaceId: string
 }) => {
   const [{ isOver, canDrop }, drop] = useDrop(
     () => ({
@@ -165,6 +168,7 @@ const Dropzone = ({
       className={clsx('w-full', isOver && canDrop ? 'bg-ceramic-300' : '')}
     >
       <PlusButton
+        workspaceId={workspaceId}
         isLast={isLast}
         alwaysOpen={false}
         onAddBlock={addBlockHandler}
@@ -186,6 +190,7 @@ export function getTabIcon(
     case BlockType.Python:
       return CommandLineSmallIcon
     case BlockType.Visualization:
+    case BlockType.VisualizationV2:
       return ChartBarIcon
     case BlockType.Input:
       return PencilSquareIcon
@@ -866,6 +871,7 @@ file`
             </div>
             {!props.isApp && (
               <NewTabButton
+                workspaceId={props.document.workspaceId}
                 layout={layout.value}
                 blocks={blocks.value}
                 blockGroupId={props.id}
@@ -955,6 +961,7 @@ const V2EditorRow = (props: {
     <div>
       {props.index === 0 && (
         <Dropzone
+          workspaceId={props.document.workspaceId}
           index={props.index}
           isLast={false}
           isEditable={props.isEditable && !props.isApp}
@@ -989,6 +996,7 @@ const V2EditorRow = (props: {
       />
       <div className={clsx(isLast ? 'pt-2' : '')}>
         <Dropzone
+          workspaceId={props.document.workspaceId}
           index={props.index + 1}
           isLast={isLast}
           isEditable={props.isEditable && !props.isApp}
@@ -1099,6 +1107,7 @@ const Editor = (props: Props) => {
               index
             )
             break
+          case BlockType.VisualizationV2:
           case BlockType.Visualization:
             newBlockId = addBlockGroup(
               layout.value,
@@ -1278,6 +1287,7 @@ const Editor = (props: Props) => {
               position
             )
             break
+          case BlockType.VisualizationV2:
           case BlockType.Visualization:
             addGroupedBlock(
               layout.value,
@@ -1517,6 +1527,7 @@ const Editor = (props: Props) => {
                 {domBlocks.length === 0 && (
                   <div className="w-full">
                     <PlusButton
+                      workspaceId={props.document.workspaceId}
                       isLast
                       alwaysOpen
                       onAddBlock={addBlockToBottom}
@@ -1665,6 +1676,28 @@ function TabRef(props: TabRefProps) {
     ),
     onVisualization: (block) => (
       <VisualizationBlock
+        isPublicMode={props.isPublicViewer}
+        isEditable={props.isEditable}
+        document={props.document}
+        onAddGroupedBlock={props.addGroupedBlock}
+        block={block}
+        blocks={props.blocks}
+        dataframes={props.dataframes}
+        dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
+        isDashboard={false}
+        hasMultipleTabs={props.hasMultipleTabs}
+        isBlockHiddenInPublished={props.tab.isHiddenInPublished}
+        onToggleIsBlockHiddenInPublished={
+          props.onToggleIsBlockHiddenInPublished
+        }
+        isCursorWithin={isCursorWithin}
+        isCursorInserting={isCursorInserting}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+      />
+    ),
+    onVisualizationV2: (block) => (
+      <VisualizationV2Block
         isPublicMode={props.isPublicViewer}
         isEditable={props.isEditable}
         document={props.document}

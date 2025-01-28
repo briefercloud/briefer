@@ -79,6 +79,7 @@ export function getMins(t: BlockType): { minW: number; minH: number } {
   switch (t) {
     case BlockType.SQL:
     case BlockType.Visualization:
+    case BlockType.VisualizationV2:
     case BlockType.PivotTable:
       return { minW: 3, minH: 2 }
     case BlockType.Python:
@@ -100,6 +101,7 @@ export function getDefaults(t: BlockType): { minW: number; minH: number } {
   switch (t) {
     case BlockType.SQL:
     case BlockType.Visualization:
+    case BlockType.VisualizationV2:
     case BlockType.PivotTable:
     case BlockType.Python:
       return { minW: 8, minH: 4 }

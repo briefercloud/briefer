@@ -1,0 +1,20 @@
+services:
+  jupyter_server:
+    build:
+      context: 'apps/api'
+      dockerfile: 'jupyter.Dockerfile'
+    command:
+      - 'sh'
+      - '-c'
+      - 'jupyter server --ip=0.0.0.0 --ZMQChannelsWebsocketConnection.iopub_data_rate_limit=1.0e10 --ZMQChannelsWebsocketConnection.iopub_msg_rate_limit=1.0e6 --ServerApp.max_body_size=107374182400'
+    ports:
+      - '8888:8888'
+    environment:
+      # Use passed value
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?error}
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -f http://localhost:8888/api || exit 1']
+      interval: 5s
+      timeout: 10s
+      retries: 5

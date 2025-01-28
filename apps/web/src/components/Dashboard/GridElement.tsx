@@ -26,6 +26,7 @@ import clsx from 'clsx'
 import DashboardHeader from '../v2Editor/customBlocks/dashboardHeader'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
+import VisualizationV2Block from '../v2Editor/customBlocks/visualizationV2'
 
 interface Props {
   item: GridLayout.Layout
@@ -119,6 +120,26 @@ function GridElement(props: Props) {
         ),
         onVisualization: (block) => (
           <VisualizationBlock
+            document={props.document}
+            dataframes={dataframes.value}
+            block={block}
+            blocks={blocks.value}
+            dragPreview={null}
+            isEditable={false}
+            onAddGroupedBlock={() => {}}
+            isDashboard={true}
+            isPublicMode={false}
+            hasMultipleTabs={false}
+            isBlockHiddenInPublished={false}
+            onToggleIsBlockHiddenInPublished={() => {}}
+            isCursorWithin={false}
+            isCursorInserting={false}
+            userId={props.userId}
+            executionQueue={props.executionQueue}
+          />
+        ),
+        onVisualizationV2: (block) => (
+          <VisualizationV2Block
             document={props.document}
             dataframes={dataframes.value}
             block={block}
@@ -240,7 +261,8 @@ function GridElement(props: Props) {
   const showEdit = canEdit && !isEditingBlock
 
   const WrapperElement =
-    props.block?.getAttribute('type') === BlockType.Visualization
+    props.block?.getAttribute('type') === BlockType.Visualization ||
+    props.block?.getAttribute('type') === BlockType.VisualizationV2
       ? 'div'
       : ScrollBar
 

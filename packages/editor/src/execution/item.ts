@@ -74,6 +74,13 @@ export type ExecutionQueueItemVisualizationMetadata = z.infer<
   typeof ExecutionQueueItemVisualizationMetadata
 >
 
+export const ExecutionQueueItemVisualizationV2Metadata = z.object({
+  _tag: z.literal('visualization-v2'),
+})
+export type ExecutionQueueItemVisualizationV2Metadata = z.infer<
+  typeof ExecutionQueueItemVisualizationV2Metadata
+>
+
 export const ExecutionQueueItemTextInputSaveValueMetadata = z.object({
   _tag: z.literal('text-input-save-value'),
 })
@@ -142,6 +149,7 @@ export const ExecutionQueueItemMetadata = z.union([
   ExecutionQueueItemSQLMetadata,
   ExecutionQueueItemSQLRenameDataframeMetadata,
   ExecutionQueueItemVisualizationMetadata,
+  ExecutionQueueItemVisualizationV2Metadata,
   ExecutionQueueItemTextInputSaveValueMetadata,
   ExecutionQueueItemTextInputRenameVariableMetadata,
   ExecutionQueueItemDateInputMetadata,

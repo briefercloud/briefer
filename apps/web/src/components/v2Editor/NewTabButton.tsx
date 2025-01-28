@@ -8,7 +8,7 @@ import {
   YBlockGroup,
   addGroupedBlock,
 } from '@briefer/editor'
-import { useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import {
   ChartBarIcon,
   CodeBracketIcon,
@@ -18,6 +18,8 @@ import { APIDataSources } from '@/hooks/useDatasources'
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import { createPortal } from 'react-dom'
 import { Table2Icon } from 'lucide-react'
+import { FeatureFlags } from '@briefer/types'
+import useFeatureFlags from '@/hooks/useFeatureFlags'
 
 type Item = {
   name: string
@@ -25,7 +27,7 @@ type Item = {
   description: string
   icon: JSX.Element
 }
-const items: Item[] = [
+const items = (ff: FeatureFlags): Item[] => [
   {
     name: 'SQL',
     type: BlockType.SQL,
@@ -40,7 +42,9 @@ const items: Item[] = [
   },
   {
     name: 'Visualization',
-    type: BlockType.Visualization,
+    type: ff.visualizationsV2
+      ? BlockType.VisualizationV2
+      : BlockType.Visualization,
     description: 'Add a graph to your page',
     icon: <ChartBarIcon width={18} height={18} />,
   },
@@ -87,6 +91,7 @@ function NewBlockMenuItem(props: NewBlockMenuItemProps) {
 }
 
 interface Props {
+  workspaceId: string
   layout: Y.Array<YBlockGroup>
   blocks: Y.Map<YBlock>
   blockGroupId: string
@@ -94,6 +99,8 @@ interface Props {
   dataSources: APIDataSources
 }
 function NewTabButton(props: Props) {
+  const ff = useFeatureFlags(props.workspaceId)
+
   const buttonRef = useRef<HTMLButtonElement>(null)
   const { onOpen, dropdownPosition, containerRef } = useDropdownPosition(
     buttonRef,
@@ -111,14 +118,14 @@ function NewTabButton(props: Props) {
             props.lastBlockId,
             {
               type: item.type,
-              dataSourceId:
-                props.dataSources.get(0)?.config.data.id ?? null,
+              dataSourceId: props.dataSources.get(0)?.config.data.id ?? null,
               isFileDataSource: false,
             },
             'after'
           )
           break
         case BlockType.Visualization:
+        case BlockType.VisualizationV2:
           addGroupedBlock(
             props.layout,
             props.blocks,
@@ -142,8 +149,10 @@ function NewTabButton(props: Props) {
           break
       }
     },
-    [props.layout, props.blocks, props.blockGroupId, props.lastBlockId]
+    [props.layout, props.blocks, props.blockGroupId, props.lastBlockId, ff]
   )
+
+  const menuItems = useMemo(() => items(ff), [ff])
 
   return (
     <Menu as="div" className="relative">
@@ -174,7 +183,7 @@ function NewTabButton(props: Props) {
             className="rounded-md bg-white shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none font-sans py-1.5 px-1.5 flex flex-col gap-y-2"
             ref={containerRef}
           >
-            {items.map((item) => (
+            {menuItems.map((item) => (
               <NewBlockMenuItem key={item.type} item={item} onAdd={onAdd} />
             ))}
           </Menu.Items>

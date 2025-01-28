@@ -40,6 +40,7 @@ import { Heading1Icon } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { getDefaults } from './DashboardView'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
+import VisualizationV2Block from '../v2Editor/customBlocks/visualizationV2'
 
 interface Props {
   document: ApiDocument
@@ -134,6 +135,7 @@ function DashboardControls(props: Props) {
                   return block
                 },
                 onVisualization: (_) => block,
+                onVisualizationV2: (_) => block,
                 onInput: (_) => block,
                 onDropdownInput: (_) => block,
                 onDateInput: (_) => block,
@@ -364,6 +366,28 @@ function BlockListItem(props: BlockListItemProps) {
               onAddGroupedBlock={() => {}}
               isDashboard={true}
               renderer="svg"
+              isPublicMode={false}
+              hasMultipleTabs={false}
+              isBlockHiddenInPublished={false}
+              onToggleIsBlockHiddenInPublished={() => {}}
+              isCursorWithin={false}
+              isCursorInserting={false}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
+            />
+          </div>
+        ),
+        onVisualizationV2: (block) => (
+          <div className="w-full h-96">
+            <VisualizationV2Block
+              document={props.document}
+              dataframes={props.dataframes}
+              block={block}
+              blocks={props.blocks}
+              dragPreview={null}
+              isEditable={false}
+              onAddGroupedBlock={() => {}}
+              isDashboard={true}
               isPublicMode={false}
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}

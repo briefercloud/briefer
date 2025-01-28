@@ -326,6 +326,7 @@ export class ExecutionQueue {
         }),
         onPython: () => ({ _tag: 'python', isSuggestion: false }),
         onVisualization: () => ({ _tag: 'visualization' }),
+        onVisualizationV2: () => ({ _tag: 'visualization-v2' }),
         onInput: () => ({ _tag: 'text-input-save-value' }),
         onDateInput: () => ({ _tag: 'date-input' }),
         onDropdownInput: () => ({ _tag: 'dropdown-input-save-value' }),

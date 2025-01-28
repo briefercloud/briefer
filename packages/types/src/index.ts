@@ -577,15 +577,38 @@ export const AggregateFunction = z.union([
 export type AggregateFunction = z.infer<typeof AggregateFunction>
 
 export type Series = {
-  axisName: string | null
   chartType: ChartType | null
   column: DataFrameColumn | null
   aggregateFunction: AggregateFunction | null
   colorBy: DataFrameColumn | null
+  axisName: string | null
+}
+
+export type SeriesV2 = {
+  id: string
+  chartType: ChartType | null
+  column: DataFrameColumn | null
+  aggregateFunction: AggregateFunction | null
+  groupBy: DataFrameColumn | null
+  name: string | null
+  color: string | null
+  groups:
+    | {
+        group: string
+        name: string
+        color: string
+      }[]
+    | null
 }
 
 export type YAxis = {
   series: Series[]
+}
+
+export type YAxisV2 = {
+  id: string
+  name: string | null
+  series: SeriesV2[]
 }
 
 export const HistogramFormat = z.union([
@@ -1210,4 +1233,8 @@ export type TutorialState = {
   isCompleted: boolean
   isDismissed: boolean
   stepStates: StepStates
+}
+
+export type FeatureFlags = {
+  visualizationsV2: boolean
 }
