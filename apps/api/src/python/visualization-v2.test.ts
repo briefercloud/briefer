@@ -38,6 +38,8 @@ async function getPythonRunner(
     dispose: async () => {
       await kernel.shutdown()
       session.dispose()
+      sessionManager.dispose()
+      kernelManager.dispose()
     },
     runPython: async function runPython(
       _workspaceId: string,
@@ -247,21 +249,24 @@ df = pd.DataFrame({
           trigger: 'axis',
         },
         legend: {},
+        grid: {
+          containLabel: true,
+        },
         dataset: [
           {
             dimensions: ['datetime', 'amount'],
             source: [
               {
                 amount: 11 / janTotal,
-                datetime: '2021-01-01T00:00:00',
+                datetime: '2021-01-01 00:00:00',
               },
               {
                 amount: 22 / febTotal,
-                datetime: '2021-02-01T00:00:00',
+                datetime: '2021-02-01 00:00:00',
               },
               {
                 amount: 33 / marTotal,
-                datetime: '2021-03-01T00:00:00',
+                datetime: '2021-03-01 00:00:00',
               },
             ],
           },
@@ -270,11 +275,11 @@ df = pd.DataFrame({
             source: [
               {
                 amount: 12 / janTotal,
-                datetime: '2021-01-01T00:00:00',
+                datetime: '2021-01-01 00:00:00',
               },
               {
                 amount: 21 / febTotal,
-                datetime: '2021-02-01T00:00:00',
+                datetime: '2021-02-01 00:00:00',
               },
             ],
           },
@@ -283,20 +288,21 @@ df = pd.DataFrame({
             source: [
               {
                 amount: 13 / janTotal,
-                datetime: '2021-01-01T00:00:00',
+                datetime: '2021-01-01 00:00:00',
               },
             ],
           },
         ],
         xAxis: [
           {
-            type: 'category',
+            type: 'time',
             axisPointer: {
               type: 'shadow',
             },
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
+            max: 'dataMax',
+            min: 'dataMin',
           },
         ],
         yAxis: [
@@ -305,33 +311,38 @@ df = pd.DataFrame({
             position: 'left',
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         series: [
           {
+            id: 'series-1:apple',
             datasetIndex: 0,
             yAxisIndex: 0,
             name: 'apple',
             z: 0,
             type: 'bar',
-            stack: 'stack_0',
+            stack: 'stack-0-0',
+            color: '#516b91',
           },
           {
+            id: 'series-1:banana',
             datasetIndex: 1,
             yAxisIndex: 0,
             name: 'banana',
             z: 0,
             type: 'bar',
-            stack: 'stack_0',
+            stack: 'stack-0-0',
+            color: '#59c4e6',
           },
           {
+            id: 'series-1:pineapple',
             datasetIndex: 2,
             yAxisIndex: 0,
             name: 'pineapple',
             z: 0,
             type: 'bar',
-            stack: 'stack_0',
+            stack: 'stack-0-0',
+            color: '#edafda',
           },
         ],
       },
@@ -382,6 +393,9 @@ df = pd.DataFrame({
           trigger: 'axis',
         },
         legend: {},
+        grid: {
+          containLabel: true,
+        },
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -418,7 +432,6 @@ df = pd.DataFrame({
             },
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         yAxis: [
@@ -427,7 +440,6 @@ df = pd.DataFrame({
             position: 'left',
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         series: [
@@ -437,6 +449,8 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
+            color: '#516b91',
+            id: 'y-0-series-0',
           },
         ],
       },
@@ -487,6 +501,9 @@ df = pd.DataFrame({
           trigger: 'axis',
         },
         legend: {},
+        grid: {
+          containLabel: true,
+        },
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -527,7 +544,6 @@ df = pd.DataFrame({
             },
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         yAxis: [
@@ -536,16 +552,17 @@ df = pd.DataFrame({
             position: 'left',
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         series: [
           {
+            id: 'y-0-series-0',
             datasetIndex: 0,
             yAxisIndex: 0,
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
+            color: '#516b91',
           },
         ],
       },
@@ -596,6 +613,9 @@ df = pd.DataFrame({
           trigger: 'axis',
         },
         legend: {},
+        grid: {
+          containLabel: true,
+        },
         dataset: [
           {
             dimensions: ['bin', 'value'],
@@ -619,7 +639,6 @@ df = pd.DataFrame({
             },
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         yAxis: [
@@ -628,16 +647,17 @@ df = pd.DataFrame({
             position: 'left',
             name: null,
             nameLocation: 'middle',
-            nameGap: 30,
           },
         ],
         series: [
           {
+            id: 'y-0-series-0',
             datasetIndex: 0,
             yAxisIndex: 0,
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
+            color: '#516b91',
           },
         ],
       },

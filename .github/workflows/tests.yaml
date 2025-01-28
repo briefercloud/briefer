@@ -14,7 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     if: "!startsWith(github.event.head_commit.message, '[skip-tests]')"
 
+    env:
+      JUPYTER_TOKEN: 70834f1904c29ae921ce0b030ceb7f25dd7b309a3fd1677dea6f3cf207c89012
+
     steps:
+      - name: Install Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -22,6 +30,18 @@ jobs:
         with:
           node-version: 18
           cache: yarn
+
+      - name: Spin up test dependencies with Docker Compose
+        run: |
+          docker-compose -f docker-compose.test.yaml up -d
+
+      - name: Wait for services to be ready
+        run: |
+          # Replace 'service-name' and port if needed
+          while ! nc -z localhost 8888; do
+            echo "Waiting for service to be ready..."
+            sleep 2
+          done
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
@@ -31,3 +51,7 @@ jobs:
 
       - name: Run tests
         run: yarn test
+
+      - name: Tear down Docker Compose
+        if: always()
+        run: docker-compose -f docker-compose.test.yaml down
