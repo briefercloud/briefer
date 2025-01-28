@@ -15,6 +15,7 @@ import { BlockType } from '@briefer/editor'
 import { CalendarIcon, QueueListIcon } from '@heroicons/react/24/solid'
 import { Menu, Transition } from '@headlessui/react'
 import { Table2Icon } from 'lucide-react'
+import useFeatureFlags from '@/hooks/useFeatureFlags'
 
 const useClickOutside = (
   ref: React.RefObject<HTMLDivElement>,
@@ -38,6 +39,7 @@ const useClickOutside = (
 }
 
 interface Props {
+  workspaceId: string
   alwaysOpen: boolean
   onAddBlock: (type: BlockType) => void
   isEditable: boolean
@@ -93,6 +95,7 @@ function PlusButton(props: Props) {
 
       {props.isEditable && (showOptions || props.alwaysOpen) && (
         <BlockList
+          workspaceId={props.workspaceId}
           onAddBlock={addBlockHandler}
           writebackEnabled={props.writebackEnabled}
         />
@@ -108,10 +111,13 @@ const TriangleUp = () => {
 }
 
 interface BlockListProps {
+  workspaceId: string
   onAddBlock: (type: BlockType) => void
   writebackEnabled: boolean
 }
 function BlockList(props: BlockListProps) {
+  const ff = useFeatureFlags(props.workspaceId)
+
   const onAddText = useCallback(() => {
     props.onAddBlock(BlockType.RichText)
   }, [props.onAddBlock])
@@ -122,8 +128,10 @@ function BlockList(props: BlockListProps) {
     props.onAddBlock(BlockType.Python)
   }, [props.onAddBlock])
   const onAddVisualization = useCallback(() => {
-    props.onAddBlock(BlockType.VisualizationV2)
-  }, [props.onAddBlock])
+    props.onAddBlock(
+      ff.visualizationsV2 ? BlockType.VisualizationV2 : BlockType.Visualization
+    )
+  }, [props.onAddBlock, ff])
   const onAddPivotTable = useCallback(() => {
     props.onAddBlock(BlockType.PivotTable)
   }, [props.onAddBlock])

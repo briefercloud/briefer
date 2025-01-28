@@ -2,6 +2,10 @@ import fs from 'fs'
 import { getVar, parseIntOr } from './index.js'
 import { logger } from '../logger.js'
 
+type FeatureFlags = {
+  visualizationsV2: boolean
+}
+
 export interface IBaseConfig {
   NODE_ENV: string
   ALLOW_HTTP: boolean
@@ -35,6 +39,7 @@ export interface IBaseConfig {
   YJS_DOCS_CACHE_SIZE_MB: number
   DISABLE_ANONYMOUS_TELEMETRY: boolean
   DISABLE_UPDATE_CHECK: boolean
+  FEATURE_FLAGS: FeatureFlags
 }
 
 export class BaseConfig implements IBaseConfig {
@@ -70,6 +75,7 @@ export class BaseConfig implements IBaseConfig {
   public readonly DISABLE_CUSTOM_OAI_KEY: boolean
   public readonly DISABLE_ANONYMOUS_TELEMETRY: boolean
   public readonly DISABLE_UPDATE_CHECK: boolean
+  public readonly FEATURE_FLAGS: FeatureFlags
 
   public constructor() {
     this.NODE_ENV = getVar('NODE_ENV')
@@ -133,6 +139,8 @@ export class BaseConfig implements IBaseConfig {
       'DISABLE_ANONYMOUS_TELEMETRY'
     )
     this.DISABLE_UPDATE_CHECK = this.getBooleanVar('DISABLE_UPDATE_CHECK')
+
+    this.FEATURE_FLAGS = this.getFeatureFlags()
   }
 
   private getVersion() {
@@ -183,5 +191,11 @@ export class BaseConfig implements IBaseConfig {
     }
 
     return null
+  }
+
+  private getFeatureFlags(): FeatureFlags {
+    return {
+      visualizationsV2: this.getBooleanVar('FLAG_VISUALIZATIONS_V2', false),
+    }
   }
 }

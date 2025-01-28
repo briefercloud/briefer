@@ -1234,3 +1234,7 @@ export type TutorialState = {
   isDismissed: boolean
   stepStates: StepStates
 }
+
+export type FeatureFlags = {
+  visualizationsV2: boolean
+}

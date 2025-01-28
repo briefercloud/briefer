@@ -56,7 +56,7 @@ export type AddBlockGroupBlock =
       source?: string
     }
   | {
-      type: BlockType.VisualizationV2 | BlockType.Visualization
+      type: BlockType.Visualization | BlockType.VisualizationV2
       dataframeName: string | null
     }
   | { type: BlockType.DashboardHeader; content: string }

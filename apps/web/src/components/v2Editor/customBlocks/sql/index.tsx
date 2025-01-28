@@ -27,6 +27,7 @@ import {
   ExecutionQueue,
   AITasks,
   isExecutionStatusLoading,
+  AddBlockGroupBlock,
 } from '@briefer/editor'
 import SQLResult from './SQLResult'
 import type {
@@ -62,6 +63,7 @@ import { exhaustiveCheck, SQLQueryConfiguration } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
+import useFeatureFlags from '@/hooks/useFeatureFlags'
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -760,6 +762,7 @@ function SQLBlock(props: Props) {
         </button>
         {((result && !isResultHidden) || !isCodeHidden) && (
           <ToChartButton
+            workspaceId={props.document.workspaceId}
             layout={props.layout}
             block={props.block}
             blocks={props.blocks}
@@ -796,11 +799,14 @@ function SQLBlock(props: Props) {
 }
 
 type ToChartButtonProps = {
+  workspaceId: string
   layout: Y.Array<YBlockGroup>
   block: Y.XmlElement<SQLBlock>
   blocks: Y.Map<YBlock>
 }
 const ToChartButton = (props: ToChartButtonProps) => {
+  const flags = useFeatureFlags(props.workspaceId)
+
   const onAdd = useCallback(() => {
     const blockId = props.block.getAttribute('id')
 
@@ -818,15 +824,19 @@ const ToChartButton = (props: ToChartButtonProps) => {
       return
     }
 
+    const block: AddBlockGroupBlock = {
+      type: flags.visualizationsV2
+        ? BlockType.VisualizationV2
+        : BlockType.Visualization,
+      dataframeName: props.block.getAttribute('dataframeName')?.value ?? null,
+    }
+
     addGroupedBlock(
       props.layout,
       props.blocks,
       blockGroupId,
       blockId,
-      {
-        type: BlockType.VisualizationV2,
-        dataframeName: props.block.getAttribute('dataframeName')?.value ?? null,
-      },
+      block,
       'after'
     )
   }, [props.layout, props.blocks, props.block])

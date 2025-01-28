@@ -116,6 +116,7 @@ const Dropzone = ({
   onCheckCanDrop,
   onAddBlock,
   writebackEnabled,
+  workspaceId,
 }: {
   index: number
   isLast: boolean
@@ -133,6 +134,7 @@ const Dropzone = ({
   ) => boolean
   onAddBlock: (type: BlockType, index: number) => void
   writebackEnabled: boolean
+  workspaceId: string
 }) => {
   const [{ isOver, canDrop }, drop] = useDrop(
     () => ({
@@ -166,6 +168,7 @@ const Dropzone = ({
       className={clsx('w-full', isOver && canDrop ? 'bg-ceramic-300' : '')}
     >
       <PlusButton
+        workspaceId={workspaceId}
         isLast={isLast}
         alwaysOpen={false}
         onAddBlock={addBlockHandler}
@@ -868,6 +871,7 @@ file`
             </div>
             {!props.isApp && (
               <NewTabButton
+                workspaceId={props.document.workspaceId}
                 layout={layout.value}
                 blocks={blocks.value}
                 blockGroupId={props.id}
@@ -957,6 +961,7 @@ const V2EditorRow = (props: {
     <div>
       {props.index === 0 && (
         <Dropzone
+          workspaceId={props.document.workspaceId}
           index={props.index}
           isLast={false}
           isEditable={props.isEditable && !props.isApp}
@@ -991,6 +996,7 @@ const V2EditorRow = (props: {
       />
       <div className={clsx(isLast ? 'pt-2' : '')}>
         <Dropzone
+          workspaceId={props.document.workspaceId}
           index={props.index + 1}
           isLast={isLast}
           isEditable={props.isEditable && !props.isApp}
@@ -1101,8 +1107,8 @@ const Editor = (props: Props) => {
               index
             )
             break
-          case BlockType.Visualization:
           case BlockType.VisualizationV2:
+          case BlockType.Visualization:
             newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
@@ -1281,8 +1287,8 @@ const Editor = (props: Props) => {
               position
             )
             break
-          case BlockType.Visualization:
           case BlockType.VisualizationV2:
+          case BlockType.Visualization:
             addGroupedBlock(
               layout.value,
               blocks.value,
@@ -1521,6 +1527,7 @@ const Editor = (props: Props) => {
                 {domBlocks.length === 0 && (
                   <div className="w-full">
                     <PlusButton
+                      workspaceId={props.document.workspaceId}
                       isLast
                       alwaysOpen
                       onAddBlock={addBlockToBottom}
