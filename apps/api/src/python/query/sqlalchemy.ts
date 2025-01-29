@@ -412,7 +412,7 @@ def get_columns(conn, inspector, table_name, schema_name):
 
     return inspector.get_columns(table_name, schema=schema_name)
 
-def schema_from_tables(conn, inspector, tables):
+def schema_from_tables(conn, inspector, tables, default_schema):
     made_progress = False
     exceptions = []
     for table in tables:
@@ -438,7 +438,7 @@ def schema_from_tables(conn, inspector, tables):
             "table": {
                 "columns": columns
             },
-            "defaultSchema": "public"
+            "defaultSchema": default_schema
         }
         print(json.dumps(progress, default=str))
 
@@ -460,9 +460,16 @@ def get_data_source_structure(data_source_id, credentials_info=None):
                 oracledb.init_oracle_client()
 
             inspector = inspect(engine)
+
+            default_schema = "public"
+            try:
+                default_schema = inspector.default_schema_name or default_schema
+            except:
+                pass
+
             if ${JSON.stringify(ds.type)} == "bigquery":
                 tables = inspector.get_table_names()
-                schema_from_tables(conn, inspector, tables)
+                schema_from_tables(conn, inspector, tables, default_schema)
             else:
                 tables = []
                 exceptions = []
@@ -475,7 +482,7 @@ def get_data_source_structure(data_source_id, credentials_info=None):
                         exceptions.append(e)
                         print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
                         continue
-                schema_from_tables(conn, inspector, tables)
+                schema_from_tables(conn, inspector, tables, default_schema)
                 if len(tables) == 0 and len(exceptions) > 0:
                     raise BrieferAggregateException(exceptions)
     finally:

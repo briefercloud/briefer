@@ -209,7 +209,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
+        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
     },
   })
 
@@ -544,8 +544,8 @@ async function _refreshDataSourceStructure(
   const updateQueue = new PQueue({ concurrency: 1 })
   const tables: { schema: string; table: string }[] = []
   let defaultSchema = ''
-  const onTable: OnTable = (schema, tableName, table, defaultSchema) => {
-    defaultSchema = defaultSchema || schema
+  const onTable: OnTable = (schema, tableName, table, newDefaultSchema) => {
+    defaultSchema = newDefaultSchema || schema
     tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
       let embedding: number[] | null = null
