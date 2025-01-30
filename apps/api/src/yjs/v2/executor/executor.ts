@@ -262,7 +262,9 @@ export class Executor {
         break
       case 'unknown':
       case 'aborting':
-        // TODO: when getting here we should try to abort one more time
+        // This means we looped the executor and found an aborting item
+        // TODO:
+        // We should make sure that the jupyter queue is empty before we advance
         current.setCompleted('aborted')
         break
       default:

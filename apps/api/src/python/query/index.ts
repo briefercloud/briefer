@@ -196,10 +196,6 @@ export async function makeQuery(
     sessionId,
     code,
     (outputs) => {
-      if (error || aborted) {
-        return
-      }
-
       for (const output of outputs) {
         if (output.type === 'stdio' && output.name === 'stdout') {
           const lines = output.text.trim().split('\n')
@@ -208,15 +204,21 @@ export async function makeQuery(
               const parsed = JSON.parse(line.trim())
               switch (parsed.type) {
                 case 'success':
-                  onProgress(parsed)
-                  result = parsed
+                  if (!aborted) {
+                    onProgress(parsed)
+                    result = parsed
+                  }
                   break
                 case 'syntax-error':
-                  result = parsed
+                  if (!aborted) {
+                    result = parsed
+                  }
                   break
                 case 'abort-error':
-                  result = parsed
-                  aborted = true
+                  if (!aborted) {
+                    result = parsed
+                    aborted = true
+                  }
                   break
                 case 'log':
                   logger().debug(
@@ -230,7 +232,10 @@ export async function makeQuery(
                   )
                   break
                 default:
-                  error = new Error('Unexpected output: ' + line)
+                  if (!aborted) {
+                    error = new Error('Unexpected output: ' + line)
+                  }
+                  break
               }
             } catch {}
           }

@@ -14,16 +14,11 @@ import {
   renameDataFrame,
 } from '../../../python/query/index.js'
 import { logger } from '../../../logger.js'
-import {
-  DataFrame,
-  OnboardingTutorialStep,
-  RunQueryResult,
-} from '@briefer/types'
+import { DataFrame, RunQueryResult } from '@briefer/types'
 import { SQLEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
 import { updateDataframes } from './index.js'
 import { advanceTutorial } from '../../../tutorials.js'
-import { IOServer } from '../../../websocket/index.js'
 import { broadcastTutorialStepStates } from '../../../websocket/workspace/tutorial.js'
 
 export type SQLEffects = {
