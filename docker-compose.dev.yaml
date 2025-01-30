@@ -69,11 +69,7 @@ services:
   haproxy:
     image: haproxy:3.0
     volumes:
-      - type: bind
-        source: ./haproxy.cfg
-        target: /usr/local/etc/haproxy/haproxy.cfg
-        volume:
-          nocopy: true
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     ports:
       - '8080:8080'
 
