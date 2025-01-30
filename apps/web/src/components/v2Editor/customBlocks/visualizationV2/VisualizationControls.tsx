@@ -303,29 +303,29 @@ function VisualizationControlsV2(props: Props) {
                 DataFrameDateColumn.safeParse(b).success
                   ? 0
                   : DataFrameDateColumn.safeParse(a).success
-                    ? -1
-                    : 1,
+                  ? -1
+                  : 1,
               (a, b) =>
                 DataFrameStringColumn.safeParse(a).success ===
                 DataFrameStringColumn.safeParse(b).success
                   ? 0
                   : DataFrameStringColumn.safeParse(a).success
-                    ? -1
-                    : 1,
+                  ? -1
+                  : 1,
               (a, b) =>
                 DataFrameNumberColumn.safeParse(a).success ===
                 DataFrameNumberColumn.safeParse(b).success
                   ? 0
                   : DataFrameNumberColumn.safeParse(a).success
-                    ? -1
-                    : 1,
+                  ? -1
+                  : 1,
               // Put columns with 'id' in the name at the end to avoid them being selected by default
               (a, b) =>
                 a.name.toString().toLowerCase().includes('id')
                   ? 1
                   : b.name.toString().toLowerCase().includes('id')
-                    ? -1
-                    : 0,
+                  ? -1
+                  : 0,
             ],
             props.dataframe?.columns ?? []
           )[0] ?? null
@@ -446,9 +446,9 @@ function VisualizationControlsV2(props: Props) {
                             c.type
                           ).success
                         : props.chartType === 'number' ||
-                            props.chartType === 'trend'
-                          ? NumpyDateTypes.safeParse(c.type).success
-                          : true
+                          props.chartType === 'trend'
+                        ? NumpyDateTypes.safeParse(c.type).success
+                        : true
                     ),
                   ]}
                   onChange={props.onChangeXAxis}
@@ -631,7 +631,7 @@ function VisualizationControlsV2(props: Props) {
           )}
           {tab === 'labels' && (
             <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              <div>
+              <div className="flex flex-col gap-y-3">
                 <VisualizationToggleV2
                   label="Show labels"
                   enabled={props.dataLabels.show}
@@ -639,7 +639,6 @@ function VisualizationControlsV2(props: Props) {
                 />
                 {props.dataLabels.show && (
                   <AxisModifierSelector
-                    className="pt-1"
                     label="Labels to show"
                     value={props.dataLabels.frequency}
                     options={[
