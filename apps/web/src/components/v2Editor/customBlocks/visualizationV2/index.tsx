@@ -313,7 +313,7 @@ function VisualizationBlockV2(props: Props) {
     if (!attrs.controlsHidden) {
       onToggleHidden()
       // tick to ensure the canvas size gets updated
-      await new Promise((r) => setTimeout(r, 0))
+      await new Promise((r) => setTimeout(r, 500))
     }
 
     const canvas = document.querySelector(
