@@ -228,7 +228,7 @@ const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
       >
         <div
           ref={ref}
-          className={clsx(props.isDragging ? 'opacity-50' : 'opacity-100')}
+          className={clsx(props.isDragging ? 'opacity-30' : 'opacity-100')}
         >
           <div className="flex items-center">
             <div
@@ -243,13 +243,17 @@ const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
               <input
                 type="text"
                 placeholder={props.series.column?.name?.toString() ?? ''}
-                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative bg-white"
-                disabled={!props.dataframe || !props.isEditable}
+                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-blue-300 group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative bg-white disabled:cursor-not-allowed disabled:bg-gray-50"
+                disabled={
+                  !props.dataframe ||
+                  !props.isEditable ||
+                  props.series.groupBy !== null
+                }
                 value={props.series.name ?? ''}
                 onChange={onChangeSerieName}
                 onBlur={onBlur}
               />
-              <div className="absolute left-2 top-1/2 leading-[0px] transform -translate-y-1/2">
+              <div className="absolute left-2 top-1/2 leading-[0px] transform -translate-y-1/2 cursor-pointer">
                 <ColorPicker
                   className=""
                   color={color}
@@ -350,7 +354,7 @@ const GroupBySeriesDisplay = forwardRef<
           <GripVerticalIcon />
         </div>
         <div
-          className="relative w-full"
+          className="relative w-full group"
           ref={(el) => {
             props.dragPreview(el)
           }}
@@ -358,7 +362,7 @@ const GroupBySeriesDisplay = forwardRef<
           <input
             type="text"
             placeholder={props.group}
-            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-blue-300 bg-white pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
             disabled={!props.dataframe || !props.isEditable}
             value={props.name}
             onChange={onChangeName}
