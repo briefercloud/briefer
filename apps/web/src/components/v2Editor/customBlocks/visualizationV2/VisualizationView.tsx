@@ -211,6 +211,15 @@ function BrieferResult(props: {
     const observer = new ResizeObserver(
       debounce(() => {
         const { width, height } = parent.getBoundingClientRect()
+
+        // we must compare whether the values distance surpasses 1 pixel to prevent
+        // infinite loops due to mismatching floating points
+        const widthDiff = Math.abs((size?.width ?? 0) - width)
+        const heightDiff = Math.abs((size?.height ?? 0) - height)
+        if (size && widthDiff < 1 && heightDiff < 1) {
+          return
+        }
+
         setSize((size) => {
           if (
             width &&
