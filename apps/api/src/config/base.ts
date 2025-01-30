@@ -195,7 +195,10 @@ export class BaseConfig implements IBaseConfig {
 
   private getFeatureFlags(): FeatureFlags {
     return {
-      visualizationsV2: this.getBooleanVar('FLAG_VISUALIZATIONS_V2', false),
+      visualizationsV2: !this.getBooleanVar(
+        'FLAG_DISABLE_VISUALIZATIONS_V2',
+        false
+      ),
     }
   }
 }
