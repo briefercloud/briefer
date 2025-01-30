@@ -656,7 +656,14 @@ export async function createVisualizationV2(
               }
               break
             case 'stderr':
-              console.error(output.text)
+              logger().error(
+                {
+                  workspaceId,
+                  sessionId,
+                  message: output.text,
+                },
+                'Got stderr while running createVisualizationV2'
+              )
               break
             default:
               exhaustiveCheck(output.name)
