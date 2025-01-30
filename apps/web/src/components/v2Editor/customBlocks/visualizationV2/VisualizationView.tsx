@@ -245,6 +245,14 @@ function BrieferResult(props: {
   const option: echarts.EChartsOption = useMemo(
     () => ({
       ...props.result,
+      xAxis: props.result.xAxis.map((axis) => ({
+        ...axis,
+        nameGap: 40,
+      })),
+      yAxis: props.result.yAxis.map((axis) => ({
+        ...axis,
+        nameGap: 50,
+      })),
       tooltip: {
         ...props.result.tooltip,
         valueFormatter: (value) => {
