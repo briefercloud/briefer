@@ -112,13 +112,14 @@ function VisualizationBlockV2(props: Props) {
     [props.dataframes]
   )
 
-  const dataframeOptions = useMemo(
-    () =>
-      Array.from(props.dataframes.values()).map((df) => ({
+  const dataframeOptions = useYMemo(
+    props.dataframes,
+    (dataframes) =>
+      Array.from(dataframes.values()).map((df) => ({
         value: df.name,
         label: df.name,
       })),
-    [props.dataframes]
+    []
   )
 
   const onNewSQL = useCallback(() => {
