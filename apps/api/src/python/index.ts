@@ -83,7 +83,7 @@ export async function executeCode(
 
       if (executing) {
         const { kernel } = await getSession(workspaceId, sessionId)
-        await kernel.interrupt()
+        await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel)
         return
       }
     },
@@ -601,9 +601,9 @@ async function waitForKernelToBecomeIdle(
           sessionId,
           kernelStatus: kernel.status,
         },
-        'Spent more than 1 minute trying to get an idle kernel to execute code. Crashing.'
+        'Spent more than 1 minute attempting to make the kernel be idle. Crashing.'
       )
-      throw new Error('Failed to get an idle kernel to execute code')
+      throw new Error('Failed to get an idle kernel')
     }
 
     // stuck trying to interrupt a non idle kernel for more than 10 seconds
@@ -615,7 +615,7 @@ async function waitForKernelToBecomeIdle(
           sessionId,
           kernelStatus: kernel.status,
         },
-        'Spent more than 10 seconds trying to interrupt a non idle kernel before code execution. Restarting kernel instead.'
+        'Spent more than 10 seconds trying to interrupt a non idle kernel. Restarting kernel instead.'
       )
       await kernel.restart()
       await new Promise((resolve) => setTimeout(resolve, 500))
