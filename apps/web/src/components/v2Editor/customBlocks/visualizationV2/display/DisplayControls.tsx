@@ -71,10 +71,10 @@ function DisplayControls(props: Props) {
 
         return (
           <div key={yI}>
-            <div className="text-md font-medium leading-6 text-gray-900 pb-4">
+            <div className="text-sm font-medium leading-6 text-gray-900 pb-2">
               {prefix} Y-Axis
             </div>
-            <div className="flex flex-col space-y-2 divide-y">
+            <div className="flex flex-col space-y-4">
               <DragList
                 items={items}
                 onChange={(items) => props.onChangeAllSeries(yI, items)}
@@ -221,23 +221,18 @@ const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
 
     return (
       <div
-        className="pt-2"
+        className="rounded-md border border-gray-200 shadow-sm px-2 py-3.5 bg-gray-50"
         ref={(d) => {
-          props.drop(d)
+          props.dragPreview(props.drop(d))
         }}
       >
         <div
           ref={ref}
           className={clsx(props.isDragging ? 'opacity-50' : 'opacity-100')}
         >
-          <div
-            className="flex items-center"
-            ref={(d) => {
-              props.dragPreview(d)
-            }}
-          >
+          <div className="flex items-center">
             <div
-              className="text-gray-400/60 hover:text-gray-400 cursor-pointer"
+              className="text-gray-400/60 hover:text-gray-400 cursor-grab"
               ref={(el) => {
                 props.drag(el)
               }}
@@ -248,25 +243,27 @@ const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
               <input
                 type="text"
                 placeholder={props.series.column?.name?.toString() ?? ''}
-                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative"
+                className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 group pr-2.5 pl-10 text-gray-800 text-xs placeholder:text-gray-400 relative bg-white"
                 disabled={!props.dataframe || !props.isEditable}
                 value={props.series.name ?? ''}
                 onChange={onChangeSerieName}
                 onBlur={onBlur}
               />
-              <ColorPicker
-                className="absolute left-1 bottom-0.5"
-                color={color}
-                onChangeColor={onChangeColor}
-              />
+              <div className="absolute left-2 top-1/2 leading-[0px] transform -translate-y-1/2">
+                <ColorPicker
+                  className=""
+                  color={color}
+                  onChangeColor={onChangeColor}
+                />
+              </div>
             </div>
           </div>
           {props.series.groupBy && !props.isDragging && (
             <>
-              <div className="text-xs text-gray-900 pl-1 pb-1 flex items-center justify-between">
+              <div className="text-xs text-gray-900 pl-2 pt-4 pb-2 flex items-center justify-between">
                 <span className="font-medium">Group by</span>{' '}
               </div>
-              <div className="flex flex-col space-y-0.5">
+              <div className="flex flex-col space-y-1.5">
                 <DragList
                   items={groups}
                   onChange={onChangeGroups}
@@ -367,11 +364,9 @@ const GroupBySeriesDisplay = forwardRef<
             onChange={onChangeName}
             onBlur={onBlur}
           />
-          <ColorPicker
-            className="absolute left-1 top-1"
-            color={props.color}
-            onChangeColor={onChangeColor}
-          />
+          <div className="absolute left-2 top-1/2 leading-[0px] transform -translate-y-1/2">
+            <ColorPicker color={props.color} onChangeColor={onChangeColor} />
+          </div>
         </div>
       </div>
     </div>
@@ -420,7 +415,7 @@ function ColorPicker(props: ColorPickerProps) {
   return (
     <div className={props.className}>
       <button
-        className="w-6 h-6 rounded-md border hover:opacity-90 transition-opacity duration-300"
+        className="w-5 h-5 rounded-full border hover:opacity-90 transition-opacity duration-300"
         style={{ backgroundColor: props.color }}
         onClick={onTogglePickerOpen}
         ref={buttonRef}

@@ -184,7 +184,7 @@ function VisualizationBlockV2(props: Props) {
       const df = props.dataframes.get(dataframeName)
       if (df) {
         const xAxis = attrs.input.xAxis
-          ? (df.columns.find((c) => c.name === attrs.input.xAxis?.name) ?? null)
+          ? df.columns.find((c) => c.name === attrs.input.xAxis?.name) ?? null
           : null
 
         let xAxisGroupFunction = attrs.input.xAxisGroupFunction
@@ -710,7 +710,7 @@ function VisualizationBlockV2(props: Props) {
             />
           ))}
         </div>
-        <div className="h-[496px] border-t border-gray-200 flex items-center">
+        <div className="h-[564px] border-t border-gray-200 flex items-center">
           <VisualizationControlsV2
             isHidden={attrs.controlsHidden || !props.isEditable}
             dataframe={dataframe}
