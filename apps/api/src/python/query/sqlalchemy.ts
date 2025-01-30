@@ -75,18 +75,6 @@ def briefer_make_sqlalchemy_query():
         df.columns = new_cols
         return df
 
-    def cancel_query(engine, job_id, datasource_type):
-        try:
-            with engine.connect() as conn:
-                if datasource_type == "snowflake":
-                    conn.execute(text(f"SELECT SYSTEM$CANCEL_QUERY('{job_id}');"))
-                elif datasource_type == "psql" or datasource_type == "redshift":
-                    conn.execute(text(f"SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE query LIKE '%{job_id}%';"))
-                elif datasource_type == "mysql":
-                    conn.execute(text(f"KILL QUERY WHERE query LIKE '%{job_id}%';"))
-        except:
-            pass
-
     dump_file_base = f'/home/jupyteruser/.briefer/query-${queryId}'
     parquet_file_path = f'{dump_file_base}.parquet.gzip'
     csv_file_path = f'{dump_file_base}.csv'
@@ -150,7 +138,6 @@ def briefer_make_sqlalchemy_query():
                     print(json.dumps({"type": "log", "message": "Iterating over chunks"}))
                     for chunk in chunks:
                         if not os.path.exists(flag_file_path):
-                            cancel_query(engine, job_id, datasource_type)
                             aborted = True
                             break
 
@@ -285,7 +272,6 @@ def briefer_make_sqlalchemy_query():
 
     process = None
     def abort():
-        cancel_query(engine, job_id, datasource_type)
         print(json.dumps({"type": "log", "message": "Query aborted 2"}))
         result = {
             "type": "abort-error",
