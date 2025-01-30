@@ -30,23 +30,27 @@ interface YObservable {
   unobserveDeep: (fn: () => void) => void
 }
 export function useYMemo<O extends YObservable, T>(
-  observable: O,
-  fn: (observable: O) => T,
+  observables: O[],
+  fn: () => T,
   deps: DependencyList
 ) {
-  const [value, setValue] = useResettableState<T>(() => fn(observable), deps)
+  const [value, setValue] = useResettableState<T>(() => fn(), deps)
 
   useEffect(() => {
     const onUpdate = () => {
-      setValue(fn(observable))
+      setValue(fn())
     }
 
-    observable.observeDeep(onUpdate)
+    for (const observable of observables) {
+      observable.observeDeep(onUpdate)
+    }
 
     return () => {
-      observable.unobserveDeep(onUpdate)
+      for (const observable of observables) {
+        observable.unobserveDeep(onUpdate)
+      }
     }
-  }, [observable, ...deps])
+  }, [observables, ...deps])
 
   return value
 }

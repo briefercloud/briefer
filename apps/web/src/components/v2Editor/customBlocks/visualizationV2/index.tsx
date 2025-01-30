@@ -101,21 +101,21 @@ interface Props {
 }
 function VisualizationBlockV2(props: Props) {
   const attrs = useYMemo(
-    props.block,
-    (block) => getVisualizationV2Attributes(block),
+    [props.block],
+    () => getVisualizationV2Attributes(props.block),
     []
   )
 
   const dataframe = useYMemo(
-    props.block,
-    (block) => getDataframeFromVisualizationV2(block, props.dataframes),
-    [props.dataframes]
+    [props.block, props.dataframes],
+    () => getDataframeFromVisualizationV2(props.block, props.dataframes),
+    []
   )
 
   const dataframeOptions = useYMemo(
-    props.dataframes,
-    (dataframes) =>
-      Array.from(dataframes.values()).map((df) => ({
+    [props.dataframes],
+    () =>
+      Array.from(props.dataframes.values()).map((df) => ({
         value: df.name,
         label: df.name,
       })),

@@ -236,24 +236,24 @@ const getCurrColumns = (currDataframe: DataFrame | null) => {
 
 const DynamicInput = (props: DynamicInputProps) => {
   const attrs = useYMemo(
-    props.blocks,
-    (blocks) => getDropdownInputAttributes(props.block, blocks),
+    [props.blocks],
+    () => getDropdownInputAttributes(props.block, props.blocks),
     [props.block]
   )
 
   const dataframes = useYMemo(
-    props.dataframes,
-    (dataframes) =>
-      Array.from(dataframes.values()).map((df) => ({
+    [props.dataframes],
+    () =>
+      Array.from(props.dataframes.values()).map((df) => ({
         label: df.name,
         value: df.name,
       })),
     []
   )
   const currDataframe = useYMemo(
-    props.dataframes,
-    (dataframes) => getCurrDataframe(attrs.dataframeName, dataframes),
-    [attrs.dataframeName, props.dataframes]
+    [props.dataframes],
+    () => getCurrDataframe(attrs.dataframeName, props.dataframes),
+    [attrs.dataframeName]
   )
   const columns = getCurrColumns(currDataframe)
 
@@ -276,7 +276,7 @@ const DynamicInput = (props: DynamicInputProps) => {
       (col) => col.name === attrs.columnName
     )
     const categories =
-      currCol && 'categories' in currCol ? (currCol.categories ?? []) : []
+      currCol && 'categories' in currCol ? currCol.categories ?? [] : []
     appendDropdownInputOptions(
       props.block,
       props.blocks,
