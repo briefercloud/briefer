@@ -236,9 +236,9 @@ function YAxisPickerV2(props: Props) {
               ? -1
               : 0,
         ],
-        props.dataframe?.columns ?? []
+        columns
       ),
-    [props.dataframe]
+    [columns]
   )
 
   return (

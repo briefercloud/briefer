@@ -390,6 +390,9 @@ def _briefer_create_visualization(df, options):
             totals = {}
 
             for i, series in enumerate(y_axis["series"]):
+                if not series.get("column"):
+                    continue
+
                 series_dataframe, capped = get_series_df(df, options, y_axis, series)
                 if capped:
                     too_many_data_points = True
