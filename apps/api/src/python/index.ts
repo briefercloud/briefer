@@ -1,11 +1,11 @@
 import { Output, PythonErrorOutput } from '@briefer/types'
 import * as services from '@jupyterlab/services'
-import PQueue from 'p-queue'
 
 import { logger } from '../logger.js'
 import { getJupyterManager } from '../jupyter/index.js'
 import prisma, { decrypt } from '@briefer/database'
 import { config } from '../config/index.js'
+import { acquireLock } from '../lock.js'
 
 export class PythonExecutionError extends Error {
   constructor(
@@ -56,7 +56,6 @@ const getManager = async (workspaceId: string) => {
   return { kernelManager, sessionManager }
 }
 
-const executionQueues = new Map<string, PQueue>()
 export async function executeCode(
   workspaceId: string,
   sessionId: string,
@@ -64,27 +63,19 @@ export async function executeCode(
   onOutputs: (outputs: Output[]) => void,
   opts: { storeHistory: boolean }
 ) {
-  const queueKey = `${workspaceId}-${sessionId}`
-  let queue = executionQueues.get(queueKey)
-  if (!queue) {
-    queue = new PQueue({ concurrency: 1 })
-    executionQueues.set(queueKey, queue)
-  }
-
   let aborted = false
   let executing = false
-  logger().debug(
-    { workspaceId, sessionId, queueSize: queue.size },
-    'Adding code to execution queue'
-  )
-  const promise = queue.add(async () => {
-    if (aborted) {
-      return
-    }
+  const promise = acquireLock(
+    `executeCode:${workspaceId}:${sessionId}`,
+    async () => {
+      if (aborted) {
+        return
+      }
 
-    executing = true
-    await innerExecuteCode(workspaceId, sessionId, code, onOutputs, opts)
-  })
+      executing = true
+      await innerExecuteCode(workspaceId, sessionId, code, onOutputs, opts)
+    }
+  )
 
   return {
     async abort() {
@@ -92,7 +83,7 @@ export async function executeCode(
 
       if (executing) {
         const { kernel } = await getSession(workspaceId, sessionId)
-        await kernel.interrupt()
+        await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel)
         return
       }
     },
@@ -116,6 +107,9 @@ async function innerExecuteCode(
   logger().trace({ workspaceId, sessionId }, 'Jupyter is up.')
 
   const { kernel } = await getSession(workspaceId, sessionId)
+
+  await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel)
+
   const future = kernel.requestExecute({
     code,
     allow_stdin: true,
@@ -123,11 +117,15 @@ async function innerExecuteCode(
   })
 
   let kernelRestarted = false
-  kernel.statusChanged.connect((_, status) => {
+  const onKernelRestarted = (
+    _: services.Kernel.IKernelConnection,
+    status: services.Kernel.Status
+  ) => {
     if (status === 'restarting' || status === 'autorestarting') {
       kernelRestarted = true
     }
-  })
+  }
+  kernel.statusChanged.connect(onKernelRestarted)
 
   future.onIOPub = (message) => {
     switch (message.header.msg_type) {
@@ -334,8 +332,12 @@ async function innerExecuteCode(
       }
     })
 
-    await Promise.race([future.done, idlePromise])
-    done = true
+    try {
+      await Promise.race([future.done, idlePromise])
+      done = true
+    } finally {
+      kernel.statusChanged.disconnect(onKernelRestarted)
+    }
   } catch (err) {
     if (kernelRestarted) {
       onOutputs([
@@ -572,4 +574,66 @@ export async function disposeAll(workspaceId: string) {
     })
   )
   sessions.clear()
+}
+
+async function waitForKernelToBecomeIdle(
+  workspaceId: string,
+  sessionId: string,
+  kernel: services.Kernel.IKernelConnection
+) {
+  const startTime = Date.now()
+
+  let kernelStatus = kernel.status
+  const onStatusChanged = (
+    _: services.Kernel.IKernelConnection,
+    status: services.Kernel.Status
+  ) => {
+    kernelStatus = status
+  }
+  kernel.statusChanged.connect(onStatusChanged)
+
+  while (kernelStatus !== 'idle') {
+    // stuck trying to get an idle kernel to run code for more than a minute
+    if (Date.now() - startTime > 60000) {
+      logger().error(
+        {
+          workspaceId,
+          sessionId,
+          kernelStatus: kernel.status,
+        },
+        'Spent more than 1 minute attempting to make the kernel be idle. Crashing.'
+      )
+      throw new Error('Failed to get an idle kernel')
+    }
+
+    // stuck trying to interrupt a non idle kernel for more than 10 seconds
+    // we'll restart the kernel
+    if (Date.now() - startTime > 10000) {
+      logger().warn(
+        {
+          workspaceId,
+          sessionId,
+          kernelStatus: kernel.status,
+        },
+        'Spent more than 10 seconds trying to interrupt a non idle kernel. Restarting kernel instead.'
+      )
+      await kernel.restart()
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      continue
+    }
+
+    // since we make sure that only a single code execution is running at a time
+    // if we found a non idle kernel, we first interrupt it
+    logger().warn(
+      {
+        workspaceId,
+        sessionId,
+        kernelStatus: kernel.status,
+      },
+      'Found non idle kernel before attempting to execute code. Interrupting first.'
+    )
+    await kernel.interrupt()
+    await new Promise((resolve) => setTimeout(resolve, 500))
+  }
+  kernel.statusChanged.disconnect(onStatusChanged)
 }
