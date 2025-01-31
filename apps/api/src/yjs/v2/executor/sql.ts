@@ -126,6 +126,7 @@ export class SQLExecutor implements ISQLExecutor {
       }
 
       block.setAttribute('result', null)
+      block.setAttribute('sort', null)
 
       let actualSource =
         (metadata.isSuggestion ? aiSuggestions : source)?.toJSON().trim() ?? ''

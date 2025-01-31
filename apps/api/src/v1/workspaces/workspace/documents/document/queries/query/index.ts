@@ -5,6 +5,7 @@ import { Response, Request, Router } from 'express'
 import csvRouter from './csv.js'
 import { readDataframePage } from '../../../../../../../python/query/index.js'
 import { getJupyterManager } from '../../../../../../../jupyter/index.js'
+import { TableSort } from '@briefer/types'
 
 const queryRouter = Router({ mergeParams: true })
 
@@ -23,6 +24,8 @@ export async function getQueryHandler(req: Request, res: Response) {
         (a) => parseInt(z.string().parse(a), 10),
         z.number().nonnegative()
       ),
+      sortColumn: TableSort.shape.column.optional().nullable(),
+      sortOrder: TableSort.shape.order.optional().nullable(),
     })
     .safeParse(req.query)
 
@@ -44,7 +47,10 @@ export async function getQueryHandler(req: Request, res: Response) {
       queryId,
       data.dataframeName,
       data.page,
-      pageSize
+      pageSize,
+      data.sortColumn && data.sortOrder
+        ? { column: data.sortColumn, order: data.sortOrder }
+        : null
     )
     if (!result) {
       res.status(404).end()

@@ -4,16 +4,42 @@ import {
   FlagIcon,
   HashtagIcon,
 } from '@heroicons/react/24/outline'
-import { DataFrameColumn, Json } from '@briefer/types'
+import {
+  DataFrameColumn,
+  exhaustiveCheck,
+  Json,
+  TableSort,
+} from '@briefer/types'
 import clsx from 'clsx'
 import ScrollBar from '@/components/ScrollBar'
+import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid'
 
 interface Props {
   rows: Record<string, Json>[]
   columns: DataFrameColumn[]
   isDashboard: boolean
+  sort: TableSort | null
+  onChangeSort: (sort: TableSort | null) => void
 }
 function Table(props: Props) {
+  const onChangeSort = (column: string) => () => {
+    const currentOrder =
+      props.sort && props.sort.column === column ? props.sort.order : null
+    switch (currentOrder) {
+      case 'asc':
+        props.onChangeSort({ column, order: 'desc' })
+        break
+      case 'desc':
+        props.onChangeSort(null)
+        break
+      case null:
+        props.onChangeSort({ column, order: 'asc' })
+        break
+      default:
+        exhaustiveCheck(currentOrder)
+    }
+  }
+
   return (
     <ScrollBar
       className={clsx(
@@ -38,10 +64,24 @@ function Table(props: Props) {
                     'px-2 py-1.5 text-gray-500 whitespace-nowrap font-normal'
                   )}
                 >
-                  <div className="flex space-x-1 items-center">
-                    <Icon className="h-3 w-3 text-gray-400" />
-                    <span>{column.name}</span>
-                  </div>
+                  <button
+                    className="flex space-x-1 items-center w-full justify-between"
+                    onClick={onChangeSort(column.name.toString())}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <Icon className="h-3 w-3 text-gray-400" />
+                      <span>{column.name}</span>
+                    </div>
+                    {props.sort && props.sort.column === column.name && (
+                      <div>
+                        {props.sort.order === 'asc' ? (
+                          <ArrowUpIcon className="h-3 w-3" />
+                        ) : (
+                          <ArrowDownIcon className="h-3 w-3" />
+                        )}
+                      </div>
+                    )}
+                  </button>
                 </th>
               )
             })}

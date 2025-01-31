@@ -1,5 +1,3 @@
-import * as dfns from 'date-fns'
-import Ansi from '@cocalc/ansi-to-react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import PageButtons from '@/components/PageButtons'
 import Spin from '@/components/Spin'
@@ -9,11 +7,12 @@ import {
   RunQueryResult,
   SuccessRunQueryResult,
   SyntaxErrorRunQueryResult,
+  TableSort,
 } from '@briefer/types'
 import clsx from 'clsx'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Table from './Table'
-import { fromPairs, splitEvery } from 'ramda'
+import { fromPairs, splitEvery, map } from 'ramda'
 import useResettableState from '@/hooks/useResettableState'
 import LargeSpinner from '@/components/LargeSpinner'
 import {
@@ -24,6 +23,7 @@ import {
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
 import { NEXT_PUBLIC_API_URL } from '@/utils/env'
+import qs from 'querystring'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -50,6 +50,8 @@ interface Props {
   onFixWithAI: () => void
   dashboardMode: 'live' | 'editing' | 'none'
   canFixWithAI: boolean
+  sort: TableSort | null
+  onChangeSort: (sort: TableSort | null) => void
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -65,6 +67,8 @@ function SQLResult(props: Props) {
           toggleResultHidden={props.toggleResultHidden}
           blockId={props.blockId}
           dashboardMode={props.dashboardMode}
+          sort={props.sort}
+          onChangeSort={props.onChangeSort}
         />
       )
     case 'abort-error':
@@ -103,6 +107,8 @@ interface SQLSuccessProps {
   isResultHidden: boolean
   toggleResultHidden: () => void
   dashboardMode: 'live' | 'editing' | 'none'
+  sort: TableSort | null
+  onChangeSort: (sort: TableSort | null) => void
 }
 function SQLSuccess(props: SQLSuccessProps) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
@@ -118,6 +124,10 @@ function SQLSuccess(props: SQLSuccessProps) {
       ),
     [rowsPerPage, props.result.rows]
   )
+
+  useEffect(() => {
+    setPages((pages) => map((page) => ({ ...page, status: 'loading' }), pages))
+  }, [props.sort])
 
   const currentRows = useMemo(() => {
     if (
@@ -154,14 +164,21 @@ function SQLSuccess(props: SQLSuccessProps) {
       return
     }
 
+    const args: Record<string, string | number> = {
+      page: currentPageIndex,
+      pageSize: rowsPerPage,
+      dataframeName: props.dataframeName,
+    }
+
+    if (props.sort) {
+      args['sortColumn'] = props.sort.column
+      args['sortOrder'] = props.sort.order
+    }
+
     fetch(
       `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${props.workspaceId}/documents/${
         props.documentId
-      }/queries/${
-        props.blockId
-      }?page=${currentPageIndex}&pageSize=${rowsPerPage}&dataframeName=${
-        props.dataframeName
-      }`,
+      }/queries/${props.blockId}?${qs.stringify(args)}`,
       {
         credentials: 'include',
       }
@@ -238,6 +255,7 @@ function SQLSuccess(props: SQLSuccessProps) {
     props.documentId,
     props.workspaceId,
     rowsPerPage,
+    props.sort,
   ])
 
   const prevPage = useCallback(() => {
@@ -365,6 +383,8 @@ function SQLSuccess(props: SQLSuccessProps) {
             rows={currentRows}
             columns={props.result.columns}
             isDashboard={props.dashboardMode !== 'none'}
+            sort={props.sort}
+            onChangeSort={props.onChangeSort}
           />
         )}
       </div>

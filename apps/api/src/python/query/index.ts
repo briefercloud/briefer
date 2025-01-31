@@ -7,6 +7,7 @@ import {
   RunQueryResult,
   SQLQueryConfiguration,
   SuccessRunQueryResult,
+  TableSort,
   jsonString,
 } from '@briefer/types'
 import { logger } from '../../logger.js'
@@ -346,9 +347,12 @@ export async function readDataframePage(
   queryId: string,
   dataframeName: string,
   page: number,
-  pageSize: number
+  pageSize: number,
+  sort: TableSort | null
 ): Promise<RunQueryResult | null> {
   const code = `import json
+
+sort_config = json.loads(${JSON.stringify(JSON.stringify(sort))})
 
 if not ("${dataframeName}" in globals()):
     import pandas as pd
@@ -360,9 +364,19 @@ if not ("${dataframeName}" in globals()):
 if "${dataframeName}" in globals():
     start = ${page * pageSize}
     end = (${page} + 1) * ${pageSize}
-    rows = json.loads(${dataframeName}.iloc[start:end].to_json(
-      orient="records", date_format="iso"
-    ))
+
+    df = ${dataframeName}
+    if sort_config:
+        try:
+            df = df.sort_values(by=sort_config["column"], ascending=sort_config["order"] == "asc")
+        except:
+            # try sorting as string
+            try:
+                df = df.sort_values(by=sort_config["column"], ascending=sort_config["order"] == "asc", key=lambda x: x.astype(str))
+            except:
+                pass
+
+    rows = json.loads(df.iloc[start:end].to_json(orient="records", date_format="iso"))
 
     # convert all values to string to make sure we preserve the python values
     # when displaying this data in the browser

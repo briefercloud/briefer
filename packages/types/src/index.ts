@@ -1238,3 +1238,10 @@ export type TutorialState = {
 export type FeatureFlags = {
   visualizationsV2: boolean
 }
+
+export const TableSort = z.object({
+  order: z.union([z.literal('asc'), z.literal('desc')]),
+  column: z.string(),
+})
+
+export type TableSort = z.infer<typeof TableSort>
