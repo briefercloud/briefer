@@ -1,5 +1,9 @@
 import * as Y from 'yjs'
-import { RunQueryResult, SQLQueryConfiguration } from '@briefer/types'
+import {
+  RunQueryResult,
+  SQLQueryConfiguration,
+  TableSort,
+} from '@briefer/types'
 import {
   BlockType,
   BaseBlock,
@@ -33,6 +37,7 @@ export type SQLBlock = BaseBlock<BlockType.SQL> & {
   isEditWithAIPromptOpen: boolean
   aiSuggestions: Y.Text | null
   configuration: SQLQueryConfiguration | null
+  sort: TableSort | null
 
   // wether the block originated from a reusable component and the id of the component
   componentId: string | null
@@ -72,6 +77,7 @@ export const makeSQLBlock = (
     aiSuggestions: null,
     componentId: null,
     configuration: null,
+    sort: null,
   }
 
   for (const [key, value] of Object.entries(attrs)) {
@@ -111,6 +117,7 @@ export function getSQLAttributes(
     aiSuggestions: getSQLAISuggestions(block),
     componentId: getAttributeOr(block, 'componentId', null),
     configuration: getAttributeOr(block, 'configuration', null),
+    sort: getAttributeOr(block, 'sort', null),
   }
 }
 
@@ -153,6 +160,7 @@ export function duplicateSQLBlock(
         : null,
     componentId: options?.componentId ?? prevAttributes.componentId,
     configuration: clone(prevAttributes.configuration),
+    sort: clone(prevAttributes.sort),
   }
 
   const yBlock = new Y.XmlElement<SQLBlock>('block')

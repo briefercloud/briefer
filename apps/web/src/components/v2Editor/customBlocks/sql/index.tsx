@@ -59,7 +59,11 @@ import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
 import { CodeEditor } from '../../CodeEditor'
 import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
-import { exhaustiveCheck, SQLQueryConfiguration } from '@briefer/types'
+import {
+  exhaustiveCheck,
+  SQLQueryConfiguration,
+  TableSort,
+} from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
@@ -130,6 +134,7 @@ function SQLBlock(props: Props) {
     dataSourceId,
     isFileDataSource,
     componentId,
+    sort,
   } = getSQLAttributes(props.block, props.blocks)
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -438,6 +443,13 @@ function SQLBlock(props: Props) {
     [props.block]
   )
 
+  const onChangeSort = useCallback(
+    (sort: TableSort | null) => {
+      props.block.setAttribute('sort', sort)
+    },
+    [props.block]
+  )
+
   if (props.dashboardMode !== 'none') {
     if (!result) {
       return (
@@ -465,6 +477,8 @@ function SQLBlock(props: Props) {
         onFixWithAI={onFixWithAI}
         dashboardMode={props.dashboardMode}
         canFixWithAI={hasOaiKey}
+        sort={sort}
+        onChangeSort={onChangeSort}
       />
     )
   }
@@ -714,6 +728,8 @@ function SQLBlock(props: Props) {
             onFixWithAI={onFixWithAI}
             dashboardMode={props.dashboardMode}
             canFixWithAI={hasOaiKey}
+            sort={sort}
+            onChangeSort={onChangeSort}
           />
         )}
       </div>
