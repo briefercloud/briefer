@@ -126,13 +126,16 @@ function SQLSuccess(props: SQLSuccessProps) {
   )
 
   useEffect(() => {
-    setPages((pages) => map((page) => ({ ...page, status: 'loading' }), pages))
+    setPages((pages) =>
+      map((page) => ({ ...page, status: 'refreshing' }), pages)
+    )
   }, [props.sort])
 
   const currentRows = useMemo(() => {
     if (
       pages[currentPageIndex] &&
-      pages[currentPageIndex].status === 'success'
+      (pages[currentPageIndex].status === 'success' ||
+        pages[currentPageIndex].status === 'refreshing')
     ) {
       return pages[currentPageIndex].rows
     }
@@ -159,7 +162,8 @@ function SQLSuccess(props: SQLSuccessProps) {
   useEffect(() => {
     if (
       !pages[currentPageIndex] ||
-      pages[currentPageIndex].status !== 'loading'
+      (pages[currentPageIndex].status !== 'loading' &&
+        pages[currentPageIndex].status !== 'refreshing')
     ) {
       return
     }
@@ -317,7 +321,8 @@ function SQLSuccess(props: SQLSuccessProps) {
 
   return (
     <div className="relative w-full h-full">
-      {currentPage?.status === 'loading' ? (
+      {currentPage?.status === 'loading' ||
+      currentPage?.status === 'refreshing' ? (
         <div className="absolute top-0 left-0 bottom-8 right-0 bg-white opacity-50 z-10 flex items-center justify-center">
           <LargeSpinner color="#deff80" />
         </div>
