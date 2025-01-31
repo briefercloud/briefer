@@ -69,20 +69,15 @@ def _briefer_convert_to_utc_safe(datetime_series, comparison_value):
 
 def _briefer_create_visualization(df, options):
     colors = [
-        "#516b91",
-        "#59c4e6",
-        "#edafda",
-        "#93b7e3",
-        "#a5e7f0",
-        "#cbb0e3",
-        "#2a9d8f",
-        "#e76f51",
-        "#f4a261",
-        "#264653",
-        "#e9c46a",
-        "#ff6f61",
-        "#6a4c93",
-        "#ffa600",
+        "#5470c6",
+        "#91cc75",
+        "#fac858",
+        "#ee6666",
+        "#73c0de",
+        "#3ba272",
+        "#fc8452",
+        "#9a60b4",
+        "#ea7ccc"
     ]
 
     def extract_chart_type(chart_type):
