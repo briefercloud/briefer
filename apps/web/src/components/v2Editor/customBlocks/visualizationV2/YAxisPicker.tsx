@@ -190,11 +190,8 @@ function YAxisPickerV2(props: Props) {
 
   const columns = useMemo(
     () =>
-      (props.dataframe?.columns ?? []).filter((c) =>
-        props.defaultChartType === 'trend' ||
-        props.defaultChartType === 'number'
-          ? NumpyNumberTypes.safeParse(c.type).success
-          : true
+      (props.dataframe?.columns ?? []).filter(
+        (c) => NumpyNumberTypes.safeParse(c.type).success
       ),
     [props.dataframe, props.defaultChartType]
   )
@@ -208,36 +205,36 @@ function YAxisPickerV2(props: Props) {
             DataFrameNumberColumn.safeParse(b).success
               ? 0
               : DataFrameNumberColumn.safeParse(a).success
-                ? -1
-                : 1,
+              ? -1
+              : 1,
           (a, b) =>
             DataFrameDateColumn.safeParse(a).success ===
             DataFrameDateColumn.safeParse(b).success
               ? 0
               : DataFrameDateColumn.safeParse(a).success
-                ? -1
-                : 1,
+              ? -1
+              : 1,
           (a, b) =>
             DataFrameBooleanColumn.safeParse(a).success ===
             DataFrameNumberColumn.safeParse(b).success
               ? 0
               : DataFrameNumberColumn.safeParse(a).success
-                ? -1
-                : 1,
+              ? -1
+              : 1,
           (a, b) =>
             DataFrameStringColumn.safeParse(a).success ===
             DataFrameStringColumn.safeParse(b).success
               ? 0
               : DataFrameStringColumn.safeParse(a).success
-                ? -1
-                : 1,
+              ? -1
+              : 1,
           // Put columns with 'id' in the name at the end to avoid them being selected by default
           (a, b) =>
             a.name.toString().toLowerCase().includes('id')
               ? 1
               : b.name.toString().toLowerCase().includes('id')
-                ? -1
-                : 0,
+              ? -1
+              : 0,
         ],
         props.dataframe?.columns ?? []
       ),
@@ -281,8 +278,8 @@ function YAxisPickerV2(props: Props) {
                       props.defaultChartType === 'trend'
                         ? 'Primary number'
                         : props.defaultChartType === 'number'
-                          ? 'Number'
-                          : `Series ${i + 1}`
+                        ? 'Number'
+                        : `Series ${i + 1}`
                     }
                     value={s.column}
                     columns={columns}

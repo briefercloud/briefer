@@ -389,16 +389,7 @@ def _briefer_create_visualization(df, options):
 
             totals = {}
 
-            all_series_are_time = True
-
             for i, series in enumerate(y_axis["series"]):
-                is_time = get_axis_type(df, series["column"], options) == "time"
-                all_series_are_time = all_series_are_time and is_time
-
-
-                if not is_time and not pd.api.types.is_numeric_dtype(df[series["column"]["name"]]) and not series["aggregateFunction"]:
-                      data["yAxis"][y_index]["type"] = "category"
-
                 series_dataframe, capped = get_series_df(df, options, y_axis, series)
                 if capped:
                     too_many_data_points = True
@@ -438,7 +429,9 @@ def _briefer_create_visualization(df, options):
 
                         y_name = series["column"]["name"]
                         y_value = row[y_name]
-
+                        # if y_value is not a number set data_y_axis["type"] to category
+                        if type(y_value) not in [int, float]:
+                            data_y_axis["type"] = "category"
                         row_data = {}
 
                         if options["xAxis"]:
@@ -516,8 +509,6 @@ def _briefer_create_visualization(df, options):
                         serie["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
 
                     data["series"].append(serie)
-            if all_series_are_time:
-                data_y_axis["type"] = "time"
 
     output = json.dumps({
         "type": "result",
