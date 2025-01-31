@@ -145,7 +145,7 @@ def _briefer_create_visualization(df, options):
 
                 # Group by the specified frequency and aggregate the values
                 df["_grouped"] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
-                df = df.groupby(grouping_columns).agg({
+                df = df.groupby(grouping_columns, as_index=False).agg({
                   series["column"]["name"]: y_axis_agg_func
                 }).reset_index()
             elif options["xAxisGroupFunction"]:
@@ -158,8 +158,8 @@ def _briefer_create_visualization(df, options):
             else:
                 # just group by values who are the same
                 df["_grouped"] = df[options["xAxis"]["name"]]
-                df = df.groupby(grouping_columns).agg({
-                  series["column"]["name"]: "first"
+                df = df.groupby(grouping_columns, as_index=False).agg({
+                  series["column"]["name"]: "count"
                 }).reset_index()
         elif series["aggregateFunction"]:
                 y_axis_agg_func = series["aggregateFunction"]
@@ -169,7 +169,7 @@ def _briefer_create_visualization(df, options):
                         y_axis_agg_func = "count"
 
                 df["_grouped"] = df[options["xAxis"]["name"]]
-                df = df.groupby(grouping_columns).agg({
+                df = df.groupby(grouping_columns, as_index=False).agg({
                   series["column"]["name"]: y_axis_agg_func
                 }).reset_index()
 
@@ -395,7 +395,8 @@ def _briefer_create_visualization(df, options):
                 is_time = get_axis_type(df, series["column"], options) == "time"
                 all_series_are_time = all_series_are_time and is_time
 
-                if not is_time and not pd.api.types.is_numeric_dtype(df[series["column"]["name"]]):
+
+                if not is_time and not pd.api.types.is_numeric_dtype(df[series["column"]["name"]]) and not series["aggregateFunction"]:
                       data["yAxis"][y_index]["type"] = "category"
 
                 series_dataframe, capped = get_series_df(df, options, y_axis, series)
@@ -468,6 +469,10 @@ def _briefer_create_visualization(df, options):
                       "datasetIndex": dataset_index,
                       "yAxisIndex": y_index,
                       "z": i,
+                      "encode": {
+                        "x": options["xAxis"]["name"],
+                        "y": series["column"]["name"],
+                      }
                     }
                     if chart_type == "line":
                         serie["symbolSize"] = 1

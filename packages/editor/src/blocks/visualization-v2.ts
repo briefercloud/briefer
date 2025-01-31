@@ -116,6 +116,12 @@ const SerieCommon = z.object({
     })
     .optional(),
   labelLayout: z.object({ hideOverlap: z.boolean() }).optional(),
+  encode: z
+    .object({
+      x: z.string().or(z.number()),
+      y: z.string().or(z.number()),
+    })
+    .optional(),
 })
 
 const Serie = z.union([
