@@ -86,7 +86,7 @@ def _briefer_make_duckdb_query():
             "type": "success",
             "columns": columns,
             "rows": rows,
-            "count": len(df)
+            "count": len(df),
 
             "page": 0,
             "pageSize": 50,
