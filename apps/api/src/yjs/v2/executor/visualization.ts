@@ -308,7 +308,16 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         }
         block.setAttribute('output', output)
         block.setAttribute('error', null)
-        setVisualizationV2Input(block, { filters: result.filters })
+        const filters = attrs.input.filters.map((f) => {
+          const resultFilter = result.filters.find((rf) => rf.id === f.id)
+          if (resultFilter) {
+            return resultFilter
+          }
+
+          return f
+        })
+
+        setVisualizationV2Input(block, { filters })
         executionItem.setCompleted('success')
       } else {
         if (result.reason === 'aborted') {

@@ -50,21 +50,24 @@ import { getAggFunction } from './YAxisPicker'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
-  newFilters: VisualizationFilter[]
+  newFilters: VisualizationFilter[],
+  dataframe: DataFrame
 ) {
   const toCompare = new Set(newFilters.map((f) => f.id))
-
-  if (oldFilters.length !== newFilters.length) {
-    return true
-  }
 
   const didChange = oldFilters.some((of) => {
     const nf = newFilters.find((f) => f.id === of.id)
     if (!nf) {
-      return true
+      return !isInvalidVisualizationFilter(of, dataframe)
     }
 
     toCompare.delete(of.id)
+
+    const wasInvalid = isInvalidVisualizationFilter(of, dataframe)
+    const isInvalid = isInvalidVisualizationFilter(nf, dataframe)
+    if (wasInvalid && isInvalid) {
+      return false
+    }
 
     return (
       !equals(of.value, nf.value) ||
@@ -72,6 +75,15 @@ function didChangeFilters(
       of.column?.name !== nf.column?.name
     )
   })
+
+  if (toCompare.size > 0) {
+    for (const id of Array.from(toCompare.values())) {
+      const nf = newFilters.find((f) => f.id === id)
+      if (nf && isInvalidVisualizationFilter(nf, dataframe)) {
+        toCompare.delete(id)
+      }
+    }
+  }
 
   return didChange || toCompare.size > 0
 }
@@ -485,7 +497,8 @@ function VisualizationBlockV2(props: Props) {
             )
 
             return (
-              isEqual && !didChangeFilters(val.oldValue.filters, input.filters)
+              isEqual &&
+              !didChangeFilters(val.oldValue.filters, input.filters, dataframe)
             )
           }
 
