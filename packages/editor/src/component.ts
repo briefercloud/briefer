@@ -102,6 +102,7 @@ export function updateBlockFromComponent(
       dataSourceId: compAttrs.dataSourceId,
       isFileDataSource: compAttrs.isFileDataSource,
       configuration: clone(compAttrs.configuration),
+      page: compAttrs.page,
       sort: clone(compAttrs.sort),
     }
     for (const [key, value] of Object.entries(nextAttrs)) {

@@ -1,12 +1,16 @@
 import { DataSource } from '@briefer/database'
 import { executeCode } from '../index.js'
 import {
+  AbortErrorRunQueryResult,
   DataFrame,
   DataFrameColumn,
   DataFrameStringColumn,
+  PythonErrorRunQueryResult,
   RunQueryResult,
   SQLQueryConfiguration,
   SuccessRunQueryResult,
+  SuccessRunQueryResultV2,
+  SyntaxErrorRunQueryResult,
   TableSort,
   jsonString,
 } from '@briefer/types'
@@ -341,6 +345,12 @@ del _briefer_read_query`
   return [resultPromise, abortFunction]
 }
 
+export type ReadDataFramePageResult =
+  | Omit<SuccessRunQueryResultV2, 'queryDurationMs'>
+  | SyntaxErrorRunQueryResult
+  | AbortErrorRunQueryResult
+  | PythonErrorRunQueryResult
+
 export async function readDataframePage(
   workspaceId: string,
   sessionId: string,
@@ -349,7 +359,7 @@ export async function readDataframePage(
   page: number,
   pageSize: number,
   sort: TableSort | null
-): Promise<RunQueryResult | null> {
+): Promise<ReadDataFramePageResult> {
   const code = `import json
 
 sort_config = json.loads(${JSON.stringify(JSON.stringify(sort))})
@@ -386,14 +396,19 @@ if "${dataframeName}" in globals():
 
     columns = [{"name": col, "type": dtype.name} for col, dtype in ${dataframeName}.dtypes.items()]
     result = {
+      "version": 2,
       "type": "success",
       "rows": rows,
       "count": len(${dataframeName}),
-      "columns": columns
+      "columns": columns,
+
+      "page": ${page},
+      "pageSize": ${pageSize},
+      "pageCount": int(len(${dataframeName}) / ${pageSize} + 1),
     }
     print(json.dumps(result))`
 
-  let result: RunQueryResult | null = null
+  let result: ReadDataFramePageResult | null = null
   let error: Error | null = null
   await (
     await executeCode(
@@ -439,6 +454,10 @@ if "${dataframeName}" in globals():
 
   if (error) {
     throw error
+  }
+
+  if (!result) {
+    throw new Error('No result')
   }
 
   return result

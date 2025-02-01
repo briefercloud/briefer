@@ -127,6 +127,7 @@ function SQLBlock(props: Props) {
     id: blockId,
     title,
     result,
+    page,
     isCodeHidden,
     isResultHidden,
     editWithAIPrompt,
@@ -186,6 +187,16 @@ function SQLBlock(props: Props) {
   )
   const execution = head(executions) ?? null
   const status = execution?.item.getStatus() ?? { _tag: 'idle' }
+
+  const pageExecutions = useBlockExecutions(
+    props.executionQueue,
+    props.block,
+    'sql-load-page'
+  )
+  const pageExecution = head(pageExecutions)
+  const pageStatus = pageExecution?.item.getStatus()._tag ?? 'idle'
+
+  const loadingPage = isExecutionStatusLoading(pageStatus)
 
   const statusIsDisabled: boolean = (() => {
     switch (status._tag) {
@@ -445,7 +456,46 @@ function SQLBlock(props: Props) {
 
   const onChangeSort = useCallback(
     (sort: TableSort | null) => {
-      props.block.setAttribute('sort', sort)
+      const run = () => {
+        props.block.setAttribute('sort', sort)
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'sql-load-page',
+          }
+        )
+      }
+
+      if (props.block.doc) {
+        props.block.doc.transact(run)
+      } else {
+        run()
+      }
+    },
+    [props.block]
+  )
+
+  const onChangePage = useCallback(
+    (page: number) => {
+      const run = () => {
+        props.block.setAttribute('page', page)
+        props.executionQueue.enqueueBlock(
+          props.block,
+          props.userId,
+          environmentStartedAt,
+          {
+            _tag: 'sql-load-page',
+          }
+        )
+      }
+
+      if (props.block.doc) {
+        props.block.doc.transact(run)
+      } else {
+        run()
+      }
     },
     [props.block]
   )
@@ -465,6 +515,7 @@ function SQLBlock(props: Props) {
 
     return (
       <SQLResult
+        page={page}
         result={result}
         isPublic={props.isPublicMode}
         documentId={props.document.id}
@@ -479,6 +530,8 @@ function SQLBlock(props: Props) {
         canFixWithAI={hasOaiKey}
         sort={sort}
         onChangeSort={onChangeSort}
+        onChangePage={onChangePage}
+        loadingPage={loadingPage}
       />
     )
   }
@@ -716,6 +769,7 @@ function SQLBlock(props: Props) {
         </div>
         {result && (
           <SQLResult
+            page={page}
             result={result}
             isPublic={false}
             documentId={props.document.id}
@@ -730,6 +784,8 @@ function SQLBlock(props: Props) {
             canFixWithAI={hasOaiKey}
             sort={sort}
             onChangeSort={onChangeSort}
+            onChangePage={onChangePage}
+            loadingPage={loadingPage}
           />
         )}
       </div>

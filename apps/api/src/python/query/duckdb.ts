@@ -42,16 +42,22 @@ def _briefer_make_duckdb_query():
         query = duckdb.query(${JSON.stringify(renderedQuery)})
         if query == None:
             result = {
+                "version": 2,
+
                 "type": "success",
-                "rows": [],
                 "columns": [],
-                "count": 0
+                "rows": [],
+                "count": 0,
+
+                "page": 0,
+                "pageSize": 50,
+                "pageCount": 1,
             }
             print(json.dumps(result, ensure_ascii=False, default=str))
             return
 
         df = query.df()
-        rows = json.loads(df.head(250).to_json(orient='records', date_format='iso'))
+        rows = json.loads(df.head(50).to_json(orient='records', date_format='iso'))
 
         # convert all values to string to make sure we preserve the python values
         # when displaying this data in the browser
@@ -75,10 +81,16 @@ def _briefer_make_duckdb_query():
                 except:
                     pass
         result = {
+            "version": 2,
+
             "type": "success",
-            "rows": rows,
             "columns": columns,
+            "rows": rows,
             "count": len(df)
+
+            "page": 0,
+            "pageSize": 50,
+            "pageCount": int(len(df) // 50 + 1),
         }
         print(json.dumps(result, ensure_ascii=False, default=str))
         df.to_parquet(parquet_file_path, compression='gzip', index=False)

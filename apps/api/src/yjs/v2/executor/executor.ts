@@ -37,6 +37,7 @@ import {
   ExecutionQueueItemVisualizationV2Metadata,
   isVisualizationV2Block,
   VisualizationV2Block,
+  ExecutionQueueItemSQLLoadPageMetadata,
 } from '@briefer/editor'
 import { IPythonExecutor, PythonExecutor } from './python.js'
 import { logger } from '../../../logger.js'
@@ -337,6 +338,9 @@ export class Executor {
       case 'sql':
         await this.sqlExecutor.run(item, data.block, data.metadata, events)
         break
+      case 'sql-load-page':
+        await this.sqlExecutor.loadPage(item, data.block, data.metadata)
+        break
       case 'sql-rename-dataframe':
         await this.sqlExecutor.renameDataframe(
           item,
@@ -437,6 +441,7 @@ export class Executor {
         return { _tag: 'python', metadata, block }
       }
       case 'sql':
+      case 'sql-load-page':
       case 'sql-rename-dataframe': {
         if (!isSQLBlock(block)) {
           logger().error(
@@ -456,6 +461,8 @@ export class Executor {
         switch (metadata._tag) {
           case 'sql':
             return { _tag: 'sql', metadata, block }
+          case 'sql-load-page':
+            return { _tag: 'sql-load-page', metadata, block }
           case 'sql-rename-dataframe':
             return { _tag: 'sql-rename-dataframe', metadata, block }
         }
@@ -632,6 +639,11 @@ type ExecutionItemData =
   | {
       _tag: 'sql'
       metadata: ExecutionQueueItemSQLMetadata
+      block: Y.XmlElement<SQLBlock>
+    }
+  | {
+      _tag: 'sql-load-page'
+      metadata: ExecutionQueueItemSQLLoadPageMetadata
       block: Y.XmlElement<SQLBlock>
     }
   | {

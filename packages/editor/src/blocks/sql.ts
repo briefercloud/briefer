@@ -28,6 +28,7 @@ export type SQLBlock = BaseBlock<BlockType.SQL> & {
   dataSourceId: string | null
   isFileDataSource: boolean
   result: RunQueryResult | null
+  page: number
   lastQuery: string | null
   lastQueryTime: string | null
   startQueryTime: string | null
@@ -67,6 +68,7 @@ export const makeSQLBlock = (
     dataSourceId: opts?.dataSourceId ?? null,
     isFileDataSource: opts?.isFileDataSource ?? false,
     result: null,
+    page: 0,
     lastQuery: null,
     lastQueryTime: null,
     startQueryTime: null,
@@ -103,6 +105,7 @@ export function getSQLAttributes(
     dataSourceId: getAttributeOr(block, 'dataSourceId', null),
     isFileDataSource: getAttributeOr(block, 'isFileDataSource', false),
     result: getAttributeOr(block, 'result', null),
+    page: getAttributeOr(block, 'page', 0),
     lastQuery: getAttributeOr(block, 'lastQuery', null),
     lastQueryTime: getAttributeOr(block, 'lastQueryTime', null),
     startQueryTime: getAttributeOr(block, 'startQueryTime', null),
@@ -143,6 +146,7 @@ export function duplicateSQLBlock(
       : null,
     isFileDataSource: prevAttributes.isFileDataSource,
     result: options?.noState ? null : clone(prevAttributes.result),
+    page: prevAttributes.page,
     lastQuery: options?.noState ? null : prevAttributes.lastQuery,
     lastQueryTime: options?.noState ? null : prevAttributes.lastQueryTime,
     startQueryTime: options?.noState ? null : prevAttributes.startQueryTime,

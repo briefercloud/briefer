@@ -306,14 +306,61 @@ export const Json: z.ZodType<Json> = z.lazy(() =>
 
 export const JsonObject = z.record(z.string(), Json)
 
-export const SuccessRunQueryResult = z.object({
+export const SuccessRunQueryResultV1 = z.object({
   type: z.literal('success'),
   columns: z.array(DataFrameColumn),
   rows: z.array(z.record(z.string(), Json)),
   count: z.number(),
   durationMs: z.number().optional(),
 })
+export type SuccessRunQueryResultV1 = z.infer<typeof SuccessRunQueryResultV1>
+
+export const SuccessRunQueryResultV2 = z.object({
+  version: z.literal(2),
+
+  type: z.literal('success'),
+  columns: z.array(DataFrameColumn),
+  rows: z.array(z.record(z.string(), Json)),
+  count: z.number(),
+
+  // page is 0-indexed
+  page: z.number(),
+  pageSize: z.number(),
+  pageCount: z.number(),
+
+  queryDurationMs: z.number().optional(),
+})
+export type SuccessRunQueryResultV2 = z.infer<typeof SuccessRunQueryResultV2>
+
+export const SuccessRunQueryResult = z.union([
+  SuccessRunQueryResultV1,
+  SuccessRunQueryResultV2,
+])
 export type SuccessRunQueryResult = z.infer<typeof SuccessRunQueryResult>
+
+export function migrateSuccessSQLResult(
+  current: SuccessRunQueryResult
+): SuccessRunQueryResultV2 {
+  if ('version' in current) {
+    switch (current.version) {
+      case 2:
+        return current
+    }
+  }
+
+  const pageSize = 50
+  return {
+    version: 2,
+    type: 'success',
+    columns: current.columns,
+    rows: current.rows.slice(0, pageSize),
+    count: current.count,
+    page: 0,
+    pageSize,
+    pageCount: current.count > 0 ? Math.ceil(current.count / pageSize) : 1,
+    queryDurationMs: current.durationMs,
+  }
+}
 
 const AbortErrorRunQueryResult = z.object({
   type: z.literal('abort-error'),

@@ -3,6 +3,7 @@ import PageButtons from '@/components/PageButtons'
 import Spin from '@/components/Spin'
 import { useCSV } from '@/hooks/useQueryCSV'
 import {
+  migrateSuccessSQLResult,
   PythonErrorRunQueryResult,
   RunQueryResult,
   SuccessRunQueryResult,
@@ -10,10 +11,8 @@ import {
   TableSort,
 } from '@briefer/types'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import Table from './Table'
-import { fromPairs, splitEvery, map } from 'ramda'
-import useResettableState from '@/hooks/useResettableState'
 import LargeSpinner from '@/components/LargeSpinner'
 import {
   ChevronDownIcon,
@@ -22,8 +21,6 @@ import {
 } from '@heroicons/react/20/solid'
 import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
-import { NEXT_PUBLIC_API_URL } from '@/utils/env'
-import qs from 'querystring'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -42,6 +39,8 @@ interface Props {
   documentId: string
   workspaceId: string
   result: RunQueryResult
+  page: number
+  loadingPage: boolean
   dataframeName: string
   isPublic: boolean
   isResultHidden: boolean
@@ -52,6 +51,7 @@ interface Props {
   canFixWithAI: boolean
   sort: TableSort | null
   onChangeSort: (sort: TableSort | null) => void
+  onChangePage: (page: number) => void
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -59,6 +59,7 @@ function SQLResult(props: Props) {
       return (
         <SQLSuccess
           result={props.result}
+          page={props.page}
           isPublic={props.isPublic}
           documentId={props.documentId}
           workspaceId={props.workspaceId}
@@ -69,6 +70,8 @@ function SQLResult(props: Props) {
           dashboardMode={props.dashboardMode}
           sort={props.sort}
           onChangeSort={props.onChangeSort}
+          loadingPage={props.loadingPage}
+          onChangePage={props.onChangePage}
         />
       )
     case 'abort-error':
@@ -101,7 +104,10 @@ interface SQLSuccessProps {
   blockId: string
   documentId: string
   workspaceId: string
+  page: number
+  loadingPage: boolean
   result: SuccessRunQueryResult
+  onChangePage: (page: number) => void
   isPublic: boolean
   dataframeName: string
   isResultHidden: boolean
@@ -111,176 +117,24 @@ interface SQLSuccessProps {
   onChangeSort: (sort: TableSort | null) => void
 }
 function SQLSuccess(props: SQLSuccessProps) {
-  const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const rowsPerPage = 50
-  const totalPages = Math.ceil(props.result.count / rowsPerPage)
-  const [pages, setPages] = useResettableState(
-    () =>
-      fromPairs(
-        splitEvery(rowsPerPage, props.result.rows).map((rows, i) => [
-          i,
-          { rows, status: 'success' },
-        ])
-      ),
-    [rowsPerPage, props.result.rows]
+  const result = useMemo(
+    () => migrateSuccessSQLResult(props.result),
+    [props.result]
   )
 
-  useEffect(() => {
-    setPages((pages) =>
-      map((page) => ({ ...page, status: 'refreshing' }), pages)
-    )
-  }, [props.sort])
-
-  const currentRows = useMemo(() => {
-    if (
-      pages[currentPageIndex] &&
-      (pages[currentPageIndex].status === 'success' ||
-        pages[currentPageIndex].status === 'refreshing')
-    ) {
-      return pages[currentPageIndex].rows
-    }
-
-    let prevPage = currentPageIndex - 1
-    while (prevPage >= 0 && !pages[prevPage]) {
-      prevPage--
-    }
-
-    return pages[prevPage]?.rows ?? []
-  }, [currentPageIndex, props.result.rows, rowsPerPage, pages])
-
-  useEffect(() => {
-    if (pages[currentPageIndex]) {
-      return
-    }
-
-    setPages((p) => ({
-      ...p,
-      [currentPageIndex]: { rows: [], status: 'loading' },
-    }))
-  }, [currentPageIndex, pages, setPages])
-
-  useEffect(() => {
-    if (
-      !pages[currentPageIndex] ||
-      (pages[currentPageIndex].status !== 'loading' &&
-        pages[currentPageIndex].status !== 'refreshing')
-    ) {
-      return
-    }
-
-    const args: Record<string, string | number> = {
-      page: currentPageIndex,
-      pageSize: rowsPerPage,
-      dataframeName: props.dataframeName,
-    }
-
-    if (props.sort) {
-      args['sortColumn'] = props.sort.column
-      args['sortOrder'] = props.sort.order
-    }
-
-    fetch(
-      `${NEXT_PUBLIC_API_URL()}/v1/workspaces/${props.workspaceId}/documents/${
-        props.documentId
-      }/queries/${props.blockId}?${qs.stringify(args)}`,
-      {
-        credentials: 'include',
-      }
-    )
-      .then(async (res) => {
-        if (res.status === 404) {
-          setPages((p) => ({
-            ...p,
-            [currentPageIndex]: {
-              ...(p[currentPageIndex] ?? { rows: [] }),
-              status: 'not-found',
-            },
-          }))
-          return
-        }
-
-        if (res.status !== 200) {
-          setPages((p) => ({
-            ...p,
-            [currentPageIndex]: {
-              ...(p[currentPageIndex] ?? { rows: [] }),
-              status: 'unknown-error',
-            },
-          }))
-          return
-        }
-
-        const parsedBody = RunQueryResult.safeParse(await res.json())
-        if (!parsedBody.success) {
-          setPages((p) => ({
-            ...p,
-            [currentPageIndex]: {
-              ...(p[currentPageIndex] ?? { rows: [] }),
-              status: 'unknown-error',
-            },
-          }))
-          return
-        }
-
-        const data = parsedBody.data
-        if (data.type !== 'success') {
-          setPages((p) => ({
-            ...p,
-            [currentPageIndex]: {
-              ...(p[currentPageIndex] ?? { rows: [] }),
-              status: 'unknown-error',
-            },
-          }))
-          return
-        }
-
-        setPages((p) => ({
-          ...p,
-          [currentPageIndex]: {
-            rows: data.rows,
-            status: 'success',
-          },
-        }))
-      })
-      .catch(() => {
-        setPages((p) => ({
-          ...p,
-          [currentPageIndex]: {
-            ...(p[currentPageIndex] ?? { rows: [] }),
-            status: 'unknown-error',
-          },
-        }))
-      })
-  }, [
-    pages,
-    currentPageIndex,
-    props.blockId,
-    props.dataframeName,
-    props.documentId,
-    props.workspaceId,
-    rowsPerPage,
-    props.sort,
-  ])
-
   const prevPage = useCallback(() => {
-    setCurrentPageIndex((prev) => Math.max(0, prev - 1))
-  }, [setCurrentPageIndex])
-  const nextPage = useCallback(() => {
-    setCurrentPageIndex((prev) => {
-      if (prev + 1 > totalPages) {
-        return 0
-      }
+    props.onChangePage(Math.max(0, result.page - 1))
+  }, [props.onChangePage, result.page])
 
-      return prev + 1
-    })
-  }, [setCurrentPageIndex, totalPages])
+  const nextPage = useCallback(() => {
+    props.onChangePage(Math.min(result.page + 1, result.pageCount - 1))
+  }, [props.onChangePage, result.page])
+
   const setPage = useCallback(
     (page: number) => {
-      setCurrentPageIndex(
-        Math.max(0, Math.min(page, Math.ceil(totalPages) - 1))
-      )
+      props.onChangePage(Math.max(0, Math.min(page, result.pageCount - 1)))
     },
-    [setCurrentPageIndex, totalPages]
+    [props.onChangePage, result.pageCount]
   )
 
   const [csvRes, getCSV] = useCSV(props.workspaceId, props.documentId)
@@ -310,46 +164,13 @@ function SQLSuccess(props: SQLSuccessProps) {
     }
   }, [csvRes, props.dataframeName])
 
-  const onRetryPage = useCallback(() => {
-    setPages((p) => ({
-      ...p,
-      [currentPageIndex]: { rows: [], status: 'loading' },
-    }))
-  }, [currentPageIndex])
-
-  const currentPage = pages[currentPageIndex]
-
   return (
     <div className="relative w-full h-full">
-      {currentPage?.status === 'loading' ||
-      currentPage?.status === 'refreshing' ? (
+      {props.loadingPage && (
         <div className="absolute top-0 left-0 bottom-8 right-0 bg-white opacity-50 z-10 flex items-center justify-center">
           <LargeSpinner color="#deff80" />
         </div>
-      ) : currentPage?.status === 'not-found' ? (
-        <div className="absolute top-1 left-1 bottom-8 right-0 bg-white z-10 flex items-center justify-center">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <ExclamationTriangleIcon className="h-12 w-12 text-gray-300" />
-            <span className="text-lg text-gray-300">
-              Dataframe not found, run the query again.
-            </span>
-          </div>
-        </div>
-      ) : currentPage?.status === 'unknown-error' ? (
-        <div className="absolute top-1 left-1 bottom-8 right-0 bg-white z-10 flex items-center justify-center">
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <ExclamationTriangleIcon className="h-12 w-12 text-gray-300" />
-            <span className="text-lg text-gray-300">Something went wrong.</span>
-            <button
-              className="text-gray-300 hover:underline"
-              onClick={onRetryPage}
-            >
-              Click here to retry.
-            </button>
-          </div>
-        </div>
-      ) : null}
-
+      )}
       <div
         className={clsx(
           props.dashboardMode !== 'none'
@@ -377,15 +198,15 @@ function SQLSuccess(props: SQLSuccessProps) {
             </div>
 
             <span>
-              {props.result.count} {props.result.count === 1 ? 'row' : 'rows'}
-              {typeof props.result.durationMs === 'number' &&
-                ` · ${formatMs(props.result.durationMs)}`}
+              {result.count} {result.count === 1 ? 'row' : 'rows'}
+              {typeof result.queryDurationMs === 'number' &&
+                ` · ${formatMs(result.queryDurationMs)}`}
             </span>
           </div>
         )}
         {props.isResultHidden && props.dashboardMode === 'none' ? null : (
           <Table
-            rows={currentRows}
+            rows={result.rows}
             columns={props.result.columns}
             isDashboard={props.dashboardMode !== 'none'}
             sort={props.sort}
@@ -398,12 +219,12 @@ function SQLSuccess(props: SQLSuccessProps) {
         <div className="flex w-full items-center justify-between border-t border-gray-200 px-3 py-1.5 bg-gray-50 text-xs font-syne rounded-b-md">
           <div className="text-gray-400">
             <PageButtons
-              currentPage={currentPageIndex}
-              totalPages={totalPages}
+              currentPage={props.page}
+              totalPages={result.pageCount}
               prevPage={prevPage}
               nextPage={nextPage}
               setPage={setPage}
-              loading={false}
+              loading={props.loadingPage}
               isPublic={props.isPublic}
             />
           </div>

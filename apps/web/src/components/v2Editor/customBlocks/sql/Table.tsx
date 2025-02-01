@@ -12,7 +12,11 @@ import {
 } from '@briefer/types'
 import clsx from 'clsx'
 import ScrollBar from '@/components/ScrollBar'
-import { ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/20/solid'
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowsUpDownIcon,
+} from '@heroicons/react/20/solid'
 
 interface Props {
   rows: Record<string, Json>[]
@@ -72,14 +76,16 @@ function Table(props: Props) {
                       <Icon className="h-3 w-3 text-gray-400" />
                       <span>{column.name}</span>
                     </div>
-                    {props.sort && props.sort.column === column.name && (
-                      <div>
+                    {props.sort && props.sort.column === column.name ? (
+                      <>
                         {props.sort.order === 'asc' ? (
                           <ArrowUpIcon className="h-3 w-3" />
                         ) : (
                           <ArrowDownIcon className="h-3 w-3" />
                         )}
-                      </div>
+                      </>
+                    ) : (
+                      <ArrowsUpDownIcon className="w-3 h-3 text-gray-300" />
                     )}
                   </button>
                 </th>

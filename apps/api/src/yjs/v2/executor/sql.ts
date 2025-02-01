@@ -1,5 +1,6 @@
 import {
   ExecutionQueueItem,
+  ExecutionQueueItemSQLLoadPageMetadata,
   ExecutionQueueItemSQLMetadata,
   ExecutionQueueItemSQLRenameDataframeMetadata,
   SQLBlock,
@@ -11,10 +12,16 @@ import prisma, { listDataSources } from '@briefer/database'
 import {
   listDataFrames,
   makeSQLQuery,
+  readDataframePage,
   renameDataFrame,
 } from '../../../python/query/index.js'
 import { logger } from '../../../logger.js'
-import { DataFrame, RunQueryResult } from '@briefer/types'
+import {
+  DataFrame,
+  exhaustiveCheck,
+  migrateSuccessSQLResult,
+  RunQueryResult,
+} from '@briefer/types'
 import { SQLEvents } from '../../../events/index.js'
 import { WSSharedDocV2 } from '../index.js'
 import { updateDataframes } from './index.js'
@@ -26,6 +33,7 @@ export type SQLEffects = {
   listDataSources: typeof listDataSources
   renameDataFrame: typeof renameDataFrame
   listDataFrames: typeof listDataFrames
+  readDataframePage: typeof readDataframePage
   documentHasRunSQLSelectionEnabled: (id: string) => Promise<boolean>
   advanceTutorial: typeof advanceTutorial
   broadcastTutorialStepStates: (
@@ -40,6 +48,11 @@ export interface ISQLExecutor {
     block: Y.XmlElement<SQLBlock>,
     metadata: ExecutionQueueItemSQLMetadata,
     events: SQLEvents
+  ): Promise<void>
+  loadPage(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<SQLBlock>,
+    metadata: ExecutionQueueItemSQLLoadPageMetadata
   ): Promise<void>
   renameDataframe(
     executionItem: ExecutionQueueItem,
@@ -126,6 +139,7 @@ export class SQLExecutor implements ISQLExecutor {
       }
 
       block.setAttribute('result', null)
+      block.setAttribute('page', 0)
       block.setAttribute('sort', null)
 
       let actualSource =
@@ -270,6 +284,67 @@ export class SQLExecutor implements ISQLExecutor {
     }
   }
 
+  public async loadPage(
+    executionItem: ExecutionQueueItem,
+    block: Y.XmlElement<SQLBlock>,
+    _metadata: ExecutionQueueItemSQLLoadPageMetadata
+  ) {
+    try {
+      const attrs = getSQLAttributes(block, this.blocks)
+      const prevResult =
+        attrs.result?.type === 'success'
+          ? migrateSuccessSQLResult(attrs.result)
+          : null
+      const queryDurationMs = prevResult?.queryDurationMs
+
+      const nextResult = await this.effects.readDataframePage(
+        this.workspaceId,
+        this.sessionId,
+        attrs.id,
+        attrs.dataframeName.value,
+        attrs.page,
+        50,
+        attrs.sort
+      )
+
+      switch (nextResult.type) {
+        case 'success':
+          block.setAttribute('result', {
+            ...nextResult,
+            queryDurationMs,
+          })
+          executionItem.setCompleted('success')
+          break
+        case 'abort-error':
+          block.setAttribute('result', nextResult)
+          executionItem.setCompleted('aborted')
+          break
+        case 'syntax-error':
+        case 'python-error':
+          block.setAttribute('result', nextResult)
+          executionItem.setCompleted('error')
+          break
+        default:
+          exhaustiveCheck(nextResult)
+      }
+
+      executionItem.setCompleted('success')
+    } catch (err) {
+      logger().error(
+        {
+          workspaceId: this.workspaceId,
+          documentId: this.documentId,
+          blockId: block.getAttribute('id'),
+          page: block.getAttribute('page'),
+          err,
+        },
+        'Error while loading SQL Block page'
+      )
+
+      executionItem.setCompleted('error')
+    }
+  }
+
   public async renameDataframe(
     executionItem: ExecutionQueueItem,
     block: Y.XmlElement<SQLBlock>,
@@ -364,6 +439,7 @@ export class SQLExecutor implements ISQLExecutor {
         renameDataFrame,
         listDataFrames,
         advanceTutorial,
+        readDataframePage,
         broadcastTutorialStepStates: (
           workspaceId: string,
           tutorialType: 'onboarding'

@@ -284,10 +284,16 @@ def briefer_make_athena_query():
         df, columns = to_pandas(data)
 
         result = {
+            "version": 2,
+
             "type": "success",
-            "rows": json.loads(df.head(250).to_json(orient='records', date_format="iso")),
-            "columns": get_columns_result(columns),
+            "rows": json.loads(df.head(50).to_json(orient='records', date_format="iso")),
             "count": len(df),
+            "columns": get_columns_result(columns),
+
+            "page": 0,
+            "pageSize": 50,
+            "pageCount": int(len(df) // 50 + 1),
         }
         print(json.dumps(result, ensure_ascii=False, default=str))
 
@@ -364,11 +370,18 @@ def briefer_make_athena_query():
                 return
 
             result = {
+                "version": 2,
+
                 "type": "success",
-                "rows": json.loads(df.head(250).to_json(orient='records', date_format="iso")),
                 "columns": get_columns_result(columns),
+                "rows": json.loads(df.head(50).to_json(orient='records', date_format="iso")),
                 "count": len(df),
-                "durationMs": query_status.get("QueryExecution", {}).get("Statistics", {}).get("TotalExecutionTimeInMillis", None),
+
+                "page": 0,
+                "pageSize": 50,
+                "pageCount": int(len(df) // 50 + 1),
+
+                "queryDurationMs": query_status.get("QueryExecution", {}).get("Statistics", {}).get("TotalExecutionTimeInMillis", None),
             }
             print(json.dumps(result, ensure_ascii=False, default=str))
 

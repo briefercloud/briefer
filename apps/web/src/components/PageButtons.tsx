@@ -24,8 +24,8 @@ const PageButtons: React.FC<PageButtonsProps> = ({
     currentPage === 0
       ? 1
       : currentPage === totalPages - 1
-        ? totalPages - 2
-        : currentPage + 1
+      ? totalPages - 2
+      : currentPage + 1
   return (
     totalPages > 1 && (
       <div className="flex items-center justify-end left-0 bottom-0 w-full">
@@ -63,8 +63,8 @@ const PageButtons: React.FC<PageButtonsProps> = ({
                 currentPage === 0
                   ? 1
                   : currentPage === totalPages - 1
-                    ? totalPages - 2
-                    : currentPage + 1
+                  ? totalPages - 2
+                  : currentPage + 1
               )
             }
             disabled={secondButtonPage > 5 && isPublic}
@@ -72,8 +72,8 @@ const PageButtons: React.FC<PageButtonsProps> = ({
             {currentPage === 0
               ? 2
               : currentPage === totalPages - 1
-                ? totalPages - 1
-                : currentPage + 1}
+              ? totalPages - 1
+              : currentPage + 1}
           </button>
         )}
         <button

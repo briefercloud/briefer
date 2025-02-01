@@ -145,10 +145,16 @@ def _briefer_make_bq_query():
         print(json.dumps({"type": "log", "message": f"rows count {query_result.total_rows}"}))
         if query_result.total_rows == 0:
             result = {
+                "version": 2,
+
                 "type": "success",
-                "rows": [],
                 "columns": [],
-                "count": 0
+                "rows": [],
+                "count": 0,
+
+                "page": 0,
+                "pageSize": 50,
+                "pageCount": 1,
             }
             df = query_result.to_dataframe()
             convert_columns(df, columns_by_type)
@@ -176,10 +182,10 @@ def _briefer_make_bq_query():
             rows_count += len(chunk)
             chunks.append(chunk)
 
-            if len(initial_rows) < 250:
+            if len(initial_rows) < 50:
                 df = pd.concat(chunks, ignore_index=True)
                 convert_columns(df, columns_by_type)
-                initial_rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+                initial_rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
 
                 # convert all values to string to make sure we preserve the python values
                 # when displaying this data in the browser
@@ -193,10 +199,16 @@ def _briefer_make_bq_query():
             now = time.time()
             if now - last_emitted_at > 1:
                 result = {
+                    "version": 2,
+
                     "type": "success",
-                    "rows": initial_rows,
                     "columns": columns,
-                    "count": rows_count
+                    "rows": initial_rows,
+                    "count": rows_count,
+
+                    "page": 0,
+                    "pageSize": 50,
+                    "pageCount": int(rows_count // 50 + 1),
                 }
                 print(json.dumps({"type": "log", "message": f"Emitting {rows_count} rows"}))
                 print(json.dumps(result, default=str))
@@ -213,8 +225,8 @@ def _briefer_make_bq_query():
             print(json.dumps(result, default=str))
             return None
 
-        if len(initial_rows) < 250:
-            initial_rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+        if len(initial_rows) < 50:
+            initial_rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
 
             # convert all values to string to make sure we preserve the python values
             # when displaying this data in the browser
@@ -224,10 +236,16 @@ def _briefer_make_bq_query():
 
         columns = get_columns(df)
         result = {
+            "version": 2,
+
             "type": "success",
-            "rows": initial_rows,
             "columns": columns,
-            "count": rows_count
+            "rows": initial_rows,
+            "count": rows_count,
+
+            "page": 0,
+            "pageSize": 50,
+            "pageCount": int(rows_count // 50 + 1),
         }
 
         df = pd.concat(chunks, ignore_index=True)

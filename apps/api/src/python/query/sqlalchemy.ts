@@ -146,7 +146,7 @@ def briefer_make_sqlalchemy_query():
                         chunk = rename_duplicates(chunk)
                         df = convert_df(pd.concat([df, chunk], ignore_index=True))
                         if rows is None:
-                            rows = json.loads(df.head(250).to_json(orient='records', date_format="iso"))
+                            rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
 
                             # convert all values to string to make sure we preserve the python values
                             # when displaying this data in the browser
@@ -183,10 +183,16 @@ def briefer_make_sqlalchemy_query():
                         now = time.time()
                         if now - last_emitted_at > 1:
                             result = {
+                                "version": 2,
+
                                 "type": "success",
-                                "rows": rows,
                                 "columns": columns,
-                                "count": count
+                                "rows": rows,
+                                "count": count,
+
+                                "page": 0,
+                                "pageSize": 50,
+                                "pageCount": int(len(df) // 50 + 1),
                             }
                             print(json.dumps(result, ensure_ascii=False, default=str))
                             last_emitted_at = now
@@ -238,11 +244,18 @@ def briefer_make_sqlalchemy_query():
                         return
 
                     result = {
+                        "version": 2,
+
                         "type": "success",
-                        "rows": rows,
                         "columns": columns,
+                        "rows": rows,
                         "count": count,
-                        "durationMs": duration_ms,
+
+                        "page": 0,
+                        "pageSize": 50,
+                        "pageCount": int(len(df) // 50 + 1),
+
+                        "queryDurationMs": duration_ms,
                     }
                     print(json.dumps(result, ensure_ascii=False, default=str))
                 queue.put(None)
