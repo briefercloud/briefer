@@ -42,7 +42,7 @@ function PivotTableView(props: Props) {
         'flex-grow h-full flex relative'
       )}
     >
-      {props.result && !props.loadingTable ? (
+      {props.result && !props.loadingTable && !props.error ? (
         <>
           {props.loadingPage && (
             <div className="absolute top-0 left-0 bottom-8 right-0 bg-white opacity-50 z-10 flex items-center justify-center">
