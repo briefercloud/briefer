@@ -1,4 +1,7 @@
-import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import {
+  ExclamationTriangleIcon,
+  PresentationChartLineIcon,
+} from '@heroicons/react/24/outline'
 import PageButtons from '@/components/PageButtons'
 import Spin from '@/components/Spin'
 import { useCSV } from '@/hooks/useQueryCSV'
@@ -19,8 +22,13 @@ import {
   ChevronRightIcon,
   SparklesIcon,
 } from '@heroicons/react/20/solid'
-import { ArrowDownTrayIcon } from '@heroicons/react/24/solid'
+import {
+  ArrowDownTrayIcon,
+  ChartBarIcon,
+  ChartPieIcon,
+} from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
+import { T } from 'ramda'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -50,6 +58,8 @@ interface Props {
   dashboardMode: 'live' | 'editing' | 'none'
   canFixWithAI: boolean
   sort: TableSort | null
+  isAddVisualizationDisabled: boolean
+  onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
   onChangePage: (page: number) => void
 }
@@ -72,6 +82,8 @@ function SQLResult(props: Props) {
           onChangeSort={props.onChangeSort}
           loadingPage={props.loadingPage}
           onChangePage={props.onChangePage}
+          isAddVisualizationDisabled={props.isAddVisualizationDisabled}
+          onAddVisualization={props.onAddVisualization}
         />
       )
     case 'abort-error':
@@ -114,6 +126,8 @@ interface SQLSuccessProps {
   toggleResultHidden: () => void
   dashboardMode: 'live' | 'editing' | 'none'
   sort: TableSort | null
+  isAddVisualizationDisabled: boolean
+  onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
 }
 function SQLSuccess(props: SQLSuccessProps) {
@@ -173,13 +187,13 @@ function SQLSuccess(props: SQLSuccessProps) {
       )}
       <div
         className={clsx(
-          props.dashboardMode !== 'none'
-            ? 'h-[calc(100%-2rem)]'
-            : 'h-full border-t border-gray-100',
+          props.dashboardMode !== 'none' ? 'h-[calc(100%-2rem)]' : 'h-full',
           'max-w-full ph-no-capture bg-white font-sans rounded-b-md'
         )}
       >
-        {props.dashboardMode === 'none' && (
+        {/*
+            TODO: Add back in when we have a better way to show/hide the results
+            props.dashboardMode === 'none' && (
           <div className="p-3 text-xs text-gray-300 flex items-center gap-x-0.5 justify-between">
             <div className="flex">
               <button
@@ -197,13 +211,10 @@ function SQLSuccess(props: SQLSuccessProps) {
               </span>
             </div>
 
-            <span>
-              {result.count} {result.count === 1 ? 'row' : 'rows'}
-              {typeof result.queryDurationMs === 'number' &&
-                ` · ${formatMs(result.queryDurationMs)}`}
-            </span>
           </div>
-        )}
+        )
+
+       */}
         {props.isResultHidden && props.dashboardMode === 'none' ? null : (
           <Table
             rows={result.rows}
@@ -216,8 +227,13 @@ function SQLSuccess(props: SQLSuccessProps) {
       </div>
 
       {props.isResultHidden && props.dashboardMode === 'none' ? null : (
-        <div className="flex w-full items-center justify-between border-t border-gray-200 px-3 py-1.5 bg-gray-50 text-xs font-syne rounded-b-md">
-          <div className="text-gray-400">
+        <div className="flex w-full items-center justify-between border-t border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400">
+          <div className="flex-1">
+            {result.count} {result.count === 1 ? 'row' : 'rows'}
+            {typeof result.queryDurationMs === 'number' &&
+              ` · ${formatMs(result.queryDurationMs)}`}
+          </div>
+          <div className="flex-1 flex justify-center">
             <PageButtons
               currentPage={props.page}
               totalPages={result.pageCount}
@@ -230,38 +246,59 @@ function SQLSuccess(props: SQLSuccessProps) {
           </div>
           <div
             className={clsx(
-              'print:hidden group/csv-btn relative',
+              'flex-1 print:hidden group/csv-btn relative flex justify-end h-full py-2 gap-x-1.5',
               props.isPublic ? 'hidden' : 'block'
             )}
           >
-            <button
-              disabled={csvRes.loading}
-              className={clsx(
-                csvRes.loading
-                  ? 'bg-gray-100'
-                  : 'bg-primary-100 hover:bg-primary-200 border border-primary-300',
-                'py-0.5 px-1 rounded-sm text-primary-600 flex items-center gap-x-1'
-              )}
-              onClick={onDownloadCSV}
-            >
-              {csvRes.loading ? (
-                <Spin />
-              ) : (
-                <ArrowDownTrayIcon className="h-3 w-3" />
-              )}
-            </button>
-            {props.dashboardMode !== 'editing' && (
-              <div
-                className={clsx(
-                  'font-sans pointer-events-none absolute -top-1 -translate-y-full w-max opacity-0 transition-opacity group-hover/csv-btn:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-                  props.dashboardMode === 'live'
-                    ? 'right-0'
-                    : '-translate-x-1/2 left-1/2'
-                )}
+            {props.dashboardMode === 'none' && (
+              <Tooltip
+                title="Visualize results"
+                message="Create a new tab with a visualization of this data."
+                className="flex h-full items-center"
+                tooltipClassname="w-40"
+                active
               >
-                <span>Download as CSV</span>
-              </div>
+                <button
+                  className={clsx(
+                    'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-600 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
+                  )}
+                  disabled={props.isAddVisualizationDisabled}
+                  onClick={props.onAddVisualization}
+                >
+                  <ChartPieIcon className="w-3 h-3" />
+                  <span>Visualize</span>
+                </button>
+              </Tooltip>
             )}
+
+            <div className="flex items-center">
+              <Tooltip
+                title="Download as CSV"
+                className="flex h-full items-center"
+                tooltipClassname="w-32"
+                active={props.dashboardMode !== 'editing'}
+              >
+                <button
+                  disabled={csvRes.loading}
+                  className={clsx(
+                    csvRes.loading
+                      ? 'bg-gray-100'
+                      : 'bg-white hover:bg-gray-100 border border-gray-300',
+                    'py-0.5 px-2 rounded-sm text-gray-600 flex items-center gap-x-1 h-full aspect-square'
+                  )}
+                  onClick={onDownloadCSV}
+                >
+                  {csvRes.loading ? (
+                    <Spin />
+                  ) : (
+                    <>
+                      <ArrowDownTrayIcon className="w-3.5 h-3.5" />
+                      <span>CSV</span>
+                    </>
+                  )}
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
       )}

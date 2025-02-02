@@ -501,6 +501,43 @@ function SQLBlock(props: Props) {
     [props.block]
   )
 
+  const flags = useFeatureFlags(props.document.workspaceId)
+  const isVisualizationButtonDisabled =
+    props.block.getAttribute('result')?.type !== 'success'
+  const onAddVisualization = useCallback(() => {
+    const blockId = props.block.getAttribute('id')
+
+    const blockGroup = props.layout.toArray().find((blockGroup) => {
+      return blockGroup
+        .getAttribute('tabs')
+        ?.toArray()
+        .some((tab) => {
+          return tab.getAttribute('id') === blockId
+        })
+    })
+    const blockGroupId = blockGroup?.getAttribute('id')
+
+    if (!blockId || !blockGroupId) {
+      return
+    }
+
+    const block: AddBlockGroupBlock = {
+      type: flags.visualizationsV2
+        ? BlockType.VisualizationV2
+        : BlockType.Visualization,
+      dataframeName: props.block.getAttribute('dataframeName')?.value ?? null,
+    }
+
+    addGroupedBlock(
+      props.layout,
+      props.blocks,
+      blockGroupId,
+      blockId,
+      block,
+      'after'
+    )
+  }, [props.layout, props.blocks, props.block, flags])
+
   if (props.dashboardMode !== 'none') {
     if (!result) {
       return (
@@ -530,6 +567,8 @@ function SQLBlock(props: Props) {
         dashboardMode={props.dashboardMode}
         canFixWithAI={hasOaiKey}
         sort={sort}
+        isAddVisualizationDisabled={isVisualizationButtonDisabled}
+        onAddVisualization={onAddVisualization}
         onChangeSort={onChangeSort}
         onChangePage={onChangePage}
         loadingPage={loadingPage}
@@ -787,6 +826,8 @@ function SQLBlock(props: Props) {
             dashboardMode={props.dashboardMode}
             canFixWithAI={hasOaiKey}
             sort={sort}
+            isAddVisualizationDisabled={isVisualizationButtonDisabled}
+            onAddVisualization={onAddVisualization}
             onChangeSort={onChangeSort}
             onChangePage={onChangePage}
             loadingPage={loadingPage}
@@ -836,14 +877,6 @@ function SQLBlock(props: Props) {
             <MissingDataSourceTooltip />
           )}
         </button>
-        {((result && !isResultHidden) || !isCodeHidden) && (
-          <ToChartButton
-            workspaceId={props.document.workspaceId}
-            layout={props.layout}
-            block={props.block}
-            blocks={props.blocks}
-          />
-        )}
 
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
@@ -871,70 +904,6 @@ function SQLBlock(props: Props) {
           )}
       </div>
     </div>
-  )
-}
-
-type ToChartButtonProps = {
-  workspaceId: string
-  layout: Y.Array<YBlockGroup>
-  block: Y.XmlElement<SQLBlock>
-  blocks: Y.Map<YBlock>
-}
-const ToChartButton = (props: ToChartButtonProps) => {
-  const flags = useFeatureFlags(props.workspaceId)
-
-  const onAdd = useCallback(() => {
-    const blockId = props.block.getAttribute('id')
-
-    const blockGroup = props.layout.toArray().find((blockGroup) => {
-      return blockGroup
-        .getAttribute('tabs')
-        ?.toArray()
-        .some((tab) => {
-          return tab.getAttribute('id') === blockId
-        })
-    })
-    const blockGroupId = blockGroup?.getAttribute('id')
-
-    if (!blockId || !blockGroupId) {
-      return
-    }
-
-    const block: AddBlockGroupBlock = {
-      type: flags.visualizationsV2
-        ? BlockType.VisualizationV2
-        : BlockType.Visualization,
-      dataframeName: props.block.getAttribute('dataframeName')?.value ?? null,
-    }
-
-    addGroupedBlock(
-      props.layout,
-      props.blocks,
-      blockGroupId,
-      blockId,
-      block,
-      'after'
-    )
-  }, [props.block, props.layout, flags, props.blocks])
-
-  const isDisabled = props.block.getAttribute('result')?.type !== 'success'
-
-  return (
-    <button
-      onClick={onAdd}
-      className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-200"
-      disabled={isDisabled}
-    >
-      <ChartBarIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
-        <span>Create visualization</span>
-        <span className="inline-flex items-center text-gray-400">
-          {isDisabled
-            ? 'Run a successful query before creating a visualization.'
-            : "Create graphs based on this query's results."}
-        </span>
-      </div>
-    </button>
   )
 }
 

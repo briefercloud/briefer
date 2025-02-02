@@ -65,7 +65,7 @@ function Table(props: Props) {
                   scope="col"
                   className={clsx(
                     props.isDashboard ? 'border-b' : 'border-y',
-                    'px-2 py-1.5 text-gray-500 whitespace-nowrap font-normal'
+                    'px-2 py-2 text-gray-500 whitespace-nowrap font-normal'
                   )}
                 >
                   <button

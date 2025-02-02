@@ -13,7 +13,7 @@ export const Tooltip = ({
   active,
 }: {
   title?: string
-  message: string
+  message?: string
   children: React.ReactNode
   className?: string
   position?: 'top' | 'bottom' | 'left' | 'right' | 'manual'
@@ -33,9 +33,11 @@ export const Tooltip = ({
           )}
         >
           {title && <span>{title}</span>}
-          <span className="inline-flex items-center justify-center text-gray-400 text-center">
-            {message}
-          </span>
+          {message && (
+            <span className="inline-flex items-center justify-center text-gray-400 text-center">
+              {message}
+            </span>
+          )}
         </div>
       )}
     </div>
