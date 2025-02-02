@@ -50,6 +50,7 @@ import { exhaustiveCheck } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
+import { CommandLineIcon } from '@heroicons/react/24/solid'
 
 interface Props {
   document: ApiDocument
@@ -369,28 +370,37 @@ function PythonBlock(props: Props) {
         )}
       >
         <div
-          className={clsx('rounded-md', { 'bg-gray-100': statusIsDisabled })}
+          className={clsx(
+            'rounded-md',
+            statusIsDisabled ? 'bg-gray-100' : 'bg-white',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
+          )}
         >
           <div
-            className="py-3"
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
             ref={(d) => {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex items-center justify-between px-3 pr-3 gap-x-4 h-[1.6rem] font-sans">
-              <div className="select-none text-gray-300 text-xs flex items-center h-full w-full">
+            <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+              <div className="select-none text-gray-300 text-xs flex items-center h-full w-full flex gap-x-1.5">
+                {/*
+                  TODO: Add back in when we have a way to toggle code hidden
+
                 <button
                   className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
                   onClick={toggleCodeHidden}
                 >
                   {isCodeHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
                 </button>
+                */}
+                <CommandLineIcon className="h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   className={clsx(
-                    'font-sans bg-transparent pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 hover:ring-1 focus:ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs disabled:ring-0 h-full'
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
                   )}
-                  placeholder="Python"
+                  placeholder="Python (click to add a title)"
                   value={title}
                   disabled={!props.isEditable}
                   onChange={onChangeTitle}
