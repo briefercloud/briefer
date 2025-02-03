@@ -383,7 +383,7 @@ def _briefer_create_visualization(df, options):
                 chart_type, is_area, is_stack, should_normalize = extract_chart_type(series["chartType"] or options["chartType"])
                 if series["groupBy"]:
                     groups = series_dataframe[series["groupBy"]["name"]].unique()
-                    groups.sort()
+                    groups = np.sort(groups)
                 else:
                     groups = [None]
 
