@@ -46,7 +46,7 @@ function EnvBar(props: Props) {
         {props.publishedAt ? (
           <div className="flex items-center gap-x-1.5 text-sm text-gray-500 font-medium">
             <NewspaperIcon className="h-4 w-4" />
-            <span>{`Published ${publishedAtDisplay} ago. ${lastUpdatedAt}`}</span>
+            <span>{`Saved ${publishedAtDisplay} ago. ${lastUpdatedAt}`}</span>
           </div>
         ) : (
           <>

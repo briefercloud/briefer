@@ -298,8 +298,8 @@ function PrivateDocumentPageInner(
         ) : (
           <>
             <Tooltip
-              title="Click to publish"
-              message="This notebook has unpublished changes."
+              title="Click to save"
+              message="This notebook has unsaved changes."
               active={props.document.publishedAt !== null && isDirty}
               position="bottom"
               tooltipClassname="w-40"
@@ -313,7 +313,7 @@ function PrivateDocumentPageInner(
                   className="w-4 h-4 rotate-12 group-hover:rotate-0 transition transition-transform duration-400"
                   strokeWidth={1}
                 />
-                <span>Publish</span>
+                <span>Save</span>
                 {isDirty && props.document.publishedAt && (
                   <PublishBlinkingSignal />
                 )}

@@ -27,7 +27,7 @@ function HiddenInPublishedButton(props: Props) {
       <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
         <span className="inline-flex items-center text-gray-400">
           {props.isBlockHiddenInPublished ? 'Show' : 'Hide'} this{' '}
-          {props.hasMultipleTabs ? 'tab' : 'block'} on the published page.
+          {props.hasMultipleTabs ? 'tab' : 'block'} on the saved page.
         </span>
       </div>
     </button>
