@@ -243,7 +243,7 @@ function VisualizationControlsV2(props: Props) {
           {
             id: uuidv4(),
             column: null,
-            aggregateFunction: null,
+            aggregateFunction: 'sum',
             groupBy: null,
             chartType: null,
             name: null,

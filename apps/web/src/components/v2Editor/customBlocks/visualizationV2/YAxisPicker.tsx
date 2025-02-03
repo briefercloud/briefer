@@ -31,32 +31,19 @@ interface Props {
   onAddYAxis?: () => void
 }
 
-const isNumberType = (column: DataFrameColumn | null) =>
-  NumpyNumberTypes.safeParse(column?.type).success
-
 export function getAggFunction(
-  defaultChartType: ChartType,
   series: SeriesV2,
   column: DataFrameColumn | null
-): AggregateFunction | null {
-  const chartType = series.chartType ?? defaultChartType
-
-  if (series.aggregateFunction !== null || !column || !isNumberType(column)) {
-    return series.aggregateFunction
+): AggregateFunction {
+  if (!column) {
+    return series.aggregateFunction ?? 'sum'
   }
 
-  if (
-    chartType === 'groupedColumn' ||
-    chartType === 'stackedColumn' ||
-    chartType === 'hundredPercentStackedColumn' ||
-    chartType === 'line' ||
-    chartType === 'area' ||
-    chartType === 'hundredPercentStackedArea'
-  ) {
-    return 'sum'
+  if (NumpyNumberTypes.safeParse(column.type).success) {
+    return series.aggregateFunction ?? 'sum'
   }
 
-  return null
+  return 'count'
 }
 
 function YAxisPickerV2(props: Props) {
@@ -70,11 +57,7 @@ function YAxisPickerV2(props: Props) {
               ? {
                   ...s,
                   column,
-                  aggregateFunction: getAggFunction(
-                    props.defaultChartType,
-                    s,
-                    column
-                  ),
+                  aggregateFunction: getAggFunction(s, column),
                 }
               : s
           ),
@@ -86,20 +69,7 @@ function YAxisPickerV2(props: Props) {
   )
 
   const onChangeAggregateFunction = useCallback(
-    (aggregateFunction: string | null, index: number) => {
-      if (!aggregateFunction) {
-        props.onChange(
-          {
-            ...props.yAxis,
-            series: props.yAxis.series.map((s, i) =>
-              i === index ? { ...s, aggregateFunction: null } : s
-            ),
-          },
-          props.index
-        )
-        return
-      }
-
+    (aggregateFunction: string, index: number) => {
       const func = AggregateFunction.safeParse(aggregateFunction)
       if (func.success) {
         props.onChange(
@@ -160,7 +130,7 @@ function YAxisPickerV2(props: Props) {
           {
             id: uuidv4(),
             column: null,
-            aggregateFunction: null,
+            aggregateFunction: 'sum',
             groupBy: null,
             chartType: null,
             name: null,
@@ -190,8 +160,11 @@ function YAxisPickerV2(props: Props) {
 
   const columns = useMemo(
     () =>
-      (props.dataframe?.columns ?? []).filter(
-        (c) => NumpyNumberTypes.safeParse(c.type).success
+      (props.dataframe?.columns ?? []).filter((c) =>
+        props.defaultChartType === 'trend' ||
+        props.defaultChartType === 'number'
+          ? NumpyNumberTypes.safeParse(c.type).success
+          : true
       ),
     [props.dataframe, props.defaultChartType]
   )
@@ -322,7 +295,6 @@ function YAxisPickerV2(props: Props) {
                         s.column.type
                       ).success
                         ? [
-                            { name: 'None', value: null },
                             { name: 'Sum', value: 'sum' },
                             { name: 'Average', value: 'mean' },
                             { name: 'Median', value: 'median' },
@@ -330,12 +302,13 @@ function YAxisPickerV2(props: Props) {
                             { name: 'Max', value: 'max' },
                             { name: 'Count', value: 'count' },
                           ]
-                        : [
-                            { name: 'None', value: null },
-                            { name: 'Count', value: 'count' },
-                          ]
+                        : [{ name: 'Count', value: 'count' }]
                     }
-                    onChange={(agg) => onChangeAggregateFunction(agg, i)}
+                    onChange={(agg) => {
+                      if (agg) {
+                        onChangeAggregateFunction(agg, i)
+                      }
+                    }}
                     disabled={!props.dataframe || !props.isEditable}
                   />
                   {props.defaultChartType !== 'trend' &&

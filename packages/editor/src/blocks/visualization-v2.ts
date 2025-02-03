@@ -255,7 +255,7 @@ function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
           {
             id: uuidv4(),
             column: null,
-            aggregateFunction: null,
+            aggregateFunction: 'sum',
             groupBy: null,
             chartType: null,
             name: null,

@@ -257,7 +257,7 @@ function VisualizationControls(props: Props) {
           {
             axisName: null,
             column: null,
-            aggregateFunction: null,
+            aggregateFunction: 'sum',
             colorBy: null,
             chartType: null,
           },

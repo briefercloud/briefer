@@ -132,47 +132,30 @@ def _briefer_create_visualization(df, options):
 
         y_group_by = series["groupBy"]["name"] if series["groupBy"] else None
         grouping_columns = ["_grouped"] + ([y_group_by] if y_group_by else [])
+        aggregate_func = series["aggregateFunction"] or "count"
+
+        df[series["id"]] = df[series["column"]["name"]]
 
         if pd.api.types.is_datetime64_any_dtype(df[options["xAxis"]["name"]]):
-            if options["xAxisGroupFunction"] and series["aggregateFunction"]:
+            if options["xAxisGroupFunction"]:
                 freq = freqs.get(options["xAxisGroupFunction"], "s")
-
-                y_axis_agg_func = series["aggregateFunction"]
-                datetime_agg_funcs = set(["count", "mean", "median"])
-                if pd.api.types.is_datetime64_any_dtype(df[series["column"]["name"]]):
-                    if y_axis_agg_func not in datetime_agg_funcs:
-                        y_axis_agg_func = "count"
 
                 # Group by the specified frequency and aggregate the values
                 df["_grouped"] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
                 df = df.groupby(grouping_columns, as_index=False).agg({
-                  series["column"]["name"]: y_axis_agg_func
+                  series["id"]: aggregate_func
                 }).reset_index()
-            elif options["xAxisGroupFunction"]:
-                freq = freqs.get(options["xAxisGroupFunction"], "s")
-
-                df[options["xAxis"]["name"]] = pd.to_datetime(df[options["xAxis"]["name"]])
-
-                # Group by the specified frequency
-                df[options["xAxis"]["name"]] = df[options["xAxis"]["name"]].dt.to_period(freq).dt.start_time
             else:
                 # just group by values who are the same
                 df["_grouped"] = df[options["xAxis"]["name"]]
                 df = df.groupby(grouping_columns, as_index=False).agg({
-                  series["column"]["name"]: "count"
+                  series["id"]: "count"
                 }).reset_index()
-        elif series["aggregateFunction"]:
-                y_axis_agg_func = series["aggregateFunction"]
-                datetime_agg_funcs = set(["count", "mean", "median"])
-                if pd.api.types.is_datetime64_any_dtype(df[series["column"]["name"]]):
-                    if y_axis_agg_func not in datetime_agg_funcs:
-                        y_axis_agg_func = "count"
-
-                df["_grouped"] = df[options["xAxis"]["name"]]
-                df = df.groupby(grouping_columns, as_index=False).agg({
-                  series["column"]["name"]: y_axis_agg_func
-                }).reset_index()
-
+        else:
+            df["_grouped"] = df[options["xAxis"]["name"]]
+            df = df.groupby(grouping_columns, as_index=False).agg({
+              series["id"]: aggregate_func
+            }).reset_index()
 
         return df
 
@@ -412,12 +395,14 @@ def _briefer_create_visualization(df, options):
                 for g_option in series.get("groups") or []:
                     group_options[g_option["group"]] = g_option
 
+                y_name = series["id"]
+
                 for group in groups:
                     color_index += 1
                     dataset_index = len(data["dataset"])
                     g_options = group_options.get(group) if group else {}
 
-                    dimensions = [series["column"]["name"]]
+                    dimensions = [y_name]
                     if options["xAxis"]:
                         dimensions.insert(0, options["xAxis"]["name"])
 
@@ -430,11 +415,7 @@ def _briefer_create_visualization(df, options):
                         if group and row[series["groupBy"]["name"]] != group:
                             continue
 
-                        y_name = series["column"]["name"]
                         y_value = row[y_name]
-                        # if y_value is not a number set data_y_axis["type"] to category
-                        if type(y_value) not in [int, float]:
-                            data_y_axis["type"] = "category"
                         row_data = {}
 
                         if options["xAxis"]:
@@ -467,7 +448,7 @@ def _briefer_create_visualization(df, options):
                       "z": i,
                       "encode": {
                         "x": options["xAxis"]["name"],
-                        "y": series["column"]["name"],
+                        "y": y_name,
                       }
                     }
                     if chart_type == "line":

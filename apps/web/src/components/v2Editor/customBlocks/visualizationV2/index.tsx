@@ -219,11 +219,7 @@ function VisualizationBlockV2(props: Props) {
               const groupBy =
                 df.columns.find((c) => c.name === s.groupBy?.name) ?? null
               const aggregateFunction = column
-                ? getAggFunction(
-                    s.chartType ?? attrs.input.chartType,
-                    s,
-                    column
-                  )
+                ? getAggFunction(s, column)
                 : null
               return {
                 ...s,
