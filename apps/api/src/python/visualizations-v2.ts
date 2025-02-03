@@ -400,7 +400,7 @@ def _briefer_create_visualization(df, options):
                 for group in groups:
                     color_index += 1
                     dataset_index = len(data["dataset"])
-                    g_options = group_options.get(group) if group else {}
+                    g_options = group_options.get(group) if group is not None else {}
 
                     dimensions = [y_name]
                     if options["xAxis"]:
@@ -412,7 +412,7 @@ def _briefer_create_visualization(df, options):
                     }
 
                     for _, row in series_dataframe.iterrows():
-                        if group and row[series["groupBy"]["name"]] != group:
+                        if group is not None and row[series["groupBy"]["name"]] != group:
                             continue
 
                         y_value = row[y_name]
@@ -437,7 +437,7 @@ def _briefer_create_visualization(df, options):
                     data["dataset"].append(dataset)
 
                     id = f"{series['id']}"
-                    if group:
+                    if group is not None:
                         id = f"{id}:{group}"
 
                     serie = {
@@ -454,18 +454,18 @@ def _briefer_create_visualization(df, options):
                     if chart_type == "line":
                         serie["symbolSize"] = 1
 
-                    if not group:
+                    if group is None:
                         color = series.get("color") or colors[color_index % len(colors)]
                     elif g_options:
                         color = g_options.get("color") or colors[color_index % len(colors)]
                     else:
                         color = colors[color_index % len(colors)]
 
-                    if not group:
+                    if group is None:
                         serie["name"] = series.get("name") or series["column"]["name"]
                     elif group and g_options:
                         serie["name"] = g_options.get("name") or group
-                    elif group:
+                    elif group is not None:
                         serie["name"] = group
                     else:
                         serie["name"] = series["column"]["name"]
