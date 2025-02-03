@@ -53,7 +53,7 @@ function emptyInput(): VisualizationV2BlockInput {
     histogramBin: { type: 'auto' },
     dataLabels: {
       show: false,
-      frequency: 'all',
+      frequency: 'some',
     },
   }
 }
