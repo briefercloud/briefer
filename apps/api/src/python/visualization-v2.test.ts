@@ -207,7 +207,7 @@ df = pd.DataFrame({
               id: 'series-1',
               chartType: null,
               column: amountDFColumn,
-              aggregateFunction: null,
+              aggregateFunction: 'sum',
               groupBy: fruitDFColumn,
               name: null,
               color: null,
@@ -254,40 +254,40 @@ df = pd.DataFrame({
         },
         dataset: [
           {
-            dimensions: ['datetime', 'amount'],
+            dimensions: ['datetime', 'series-1'],
             source: [
               {
-                amount: 11 / janTotal,
+                'series-1': 11 / janTotal,
                 datetime: '2021-01-01 00:00:00',
               },
               {
-                amount: 22 / febTotal,
+                'series-1': 22 / febTotal,
                 datetime: '2021-02-01 00:00:00',
               },
               {
-                amount: 33 / marTotal,
+                'series-1': 33 / marTotal,
                 datetime: '2021-03-01 00:00:00',
               },
             ],
           },
           {
-            dimensions: ['datetime', 'amount'],
+            dimensions: ['datetime', 'series-1'],
             source: [
               {
-                amount: 12 / janTotal,
+                'series-1': 12 / janTotal,
                 datetime: '2021-01-01 00:00:00',
               },
               {
-                amount: 21 / febTotal,
+                'series-1': 21 / febTotal,
                 datetime: '2021-02-01 00:00:00',
               },
             ],
           },
           {
-            dimensions: ['datetime', 'amount'],
+            dimensions: ['datetime', 'series-1'],
             source: [
               {
-                amount: 13 / janTotal,
+                'series-1': 13 / janTotal,
                 datetime: '2021-01-01 00:00:00',
               },
             ],
@@ -322,7 +322,11 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             stack: 'stack-0-0',
-            color: '#516b91',
+            color: '#5470c6',
+            encode: {
+              x: 'datetime',
+              y: 'series-1',
+            },
           },
           {
             id: 'series-1:banana',
@@ -332,7 +336,11 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             stack: 'stack-0-0',
-            color: '#59c4e6',
+            color: '#91cc75',
+            encode: {
+              x: 'datetime',
+              y: 'series-1',
+            },
           },
           {
             id: 'series-1:pineapple',
@@ -342,7 +350,11 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             stack: 'stack-0-0',
-            color: '#edafda',
+            color: '#fac858',
+            encode: {
+              x: 'datetime',
+              y: 'series-1',
+            },
           },
         ],
       },
@@ -449,7 +461,7 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
-            color: '#516b91',
+            color: '#5470c6',
             id: 'y-0-series-0',
           },
         ],
@@ -562,7 +574,7 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
-            color: '#516b91',
+            color: '#5470c6',
           },
         ],
       },
@@ -657,7 +669,7 @@ df = pd.DataFrame({
             z: 0,
             type: 'bar',
             barWidth: '99.5%',
-            color: '#516b91',
+            color: '#5470c6',
           },
         ],
       },
