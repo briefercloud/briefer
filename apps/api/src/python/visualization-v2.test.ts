@@ -156,7 +156,8 @@ df = pd.DataFrame({
   'amount': [11, 12, 13, 21, 22, 33],
   'price': [1.1, 1.2, 1.3, 2.1, 2.2, 3.3],
   'datetime': pd.to_datetime(['2021-01-01', '2021-01-02', '2021-01-03', '2021-02-01', '2021-02-02', '2021-03-03']),
-  'fruit': ['apple', 'banana', 'pineapple', 'banana', 'apple', 'apple']
+  'fruit': ['apple', 'banana', 'pineapple', 'banana', 'apple', 'apple'],
+  'is_apple': [True, False, False, False, True, True]
 })`
 
   const fruitDFColumn: DataFrameColumn = {
@@ -179,9 +180,20 @@ df = pd.DataFrame({
     name: 'datetime',
   }
 
+  const isAppleDFColumn: DataFrameColumn = {
+    type: 'bool',
+    name: 'is_apple',
+  }
+
   const df: DataFrame = {
     name: 'df',
-    columns: [fruitDFColumn, amountDFColumn, priceDFColumn, datetimeDFColumn],
+    columns: [
+      fruitDFColumn,
+      amountDFColumn,
+      priceDFColumn,
+      datetimeDFColumn,
+      isAppleDFColumn,
+    ],
   }
 
   it('it should compute normalized values for hundredPercentStackedColumn', async () => {
@@ -670,6 +682,160 @@ df = pd.DataFrame({
             type: 'bar',
             barWidth: '99.5%',
             color: '#5470c6',
+          },
+        ],
+      },
+    })
+  })
+
+  it('should work properly when group by is on a boolean column', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
+
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'groupedColumn',
+      xAxis: datetimeDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [
+        {
+          id: 'yAxis-1',
+          name: null,
+          series: [
+            {
+              id: 'series-1',
+              chartType: null,
+              column: amountDFColumn,
+              aggregateFunction: 'sum',
+              groupBy: isAppleDFColumn,
+              name: null,
+              color: null,
+              groups: null,
+            },
+          ],
+        },
+      ],
+      histogramFormat: 'count',
+      histogramBin: { type: 'auto' },
+      filters: [],
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
+    }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    const janAppleTotal = 11
+    const janNotAppleTotal = 12 + 13
+    const febAppleTotal = 22
+    const febNotAppleTotal = 21
+    const marAppleTotal = 33
+
+    expect(result).toEqual({
+      success: true,
+      tooManyDataPoints: false,
+      filters: [],
+      data: {
+        tooltip: {
+          trigger: 'axis',
+        },
+        legend: {},
+        grid: {
+          containLabel: true,
+        },
+        dataset: [
+          {
+            dimensions: ['datetime', 'series-1'],
+            source: [
+              {
+                'series-1': janNotAppleTotal,
+                datetime: '2021-01-01 00:00:00',
+              },
+              {
+                'series-1': febNotAppleTotal,
+                datetime: '2021-02-01 00:00:00',
+              },
+            ],
+          },
+          {
+            dimensions: ['datetime', 'series-1'],
+            source: [
+              {
+                'series-1': janAppleTotal,
+                datetime: '2021-01-01 00:00:00',
+              },
+              {
+                'series-1': febAppleTotal,
+                datetime: '2021-02-01 00:00:00',
+              },
+              {
+                'series-1': marAppleTotal,
+                datetime: '2021-03-01 00:00:00',
+              },
+            ],
+          },
+        ],
+        xAxis: [
+          {
+            type: 'time',
+            axisPointer: {
+              type: 'shadow',
+            },
+            name: null,
+            nameLocation: 'middle',
+            max: 'dataMax',
+            min: 'dataMin',
+          },
+        ],
+        yAxis: [
+          {
+            type: 'value',
+            position: 'left',
+            name: null,
+            nameLocation: 'middle',
+          },
+        ],
+        series: [
+          {
+            id: 'series-1:False',
+            datasetIndex: 0,
+            yAxisIndex: 0,
+            name: 'False',
+            z: 0,
+            type: 'bar',
+            color: '#5470c6',
+            encode: {
+              x: 'datetime',
+              y: 'series-1',
+            },
+          },
+          {
+            id: 'series-1:True',
+            datasetIndex: 1,
+            yAxisIndex: 0,
+            name: 'True',
+            z: 0,
+            type: 'bar',
+            color: '#91cc75',
+            encode: {
+              x: 'datetime',
+              y: 'series-1',
+            },
           },
         ],
       },
