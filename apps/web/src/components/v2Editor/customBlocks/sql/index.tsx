@@ -911,7 +911,7 @@ const ToChartButton = (props: ToChartButtonProps) => {
       block,
       'after'
     )
-  }, [props.layout, props.blocks, props.block])
+  }, [props.block, props.layout, flags, props.blocks])
 
   const isDisabled = props.block.getAttribute('result')?.type !== 'success'
 

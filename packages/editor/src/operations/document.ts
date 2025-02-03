@@ -483,31 +483,43 @@ export const addGroupedBlock = (
   }
 
   const blockGroup = yLayout.get(blockGroupIndex)
-  const newBlockId = createBlock(block, yBlockDefs)
 
-  const blockPos = blockGroup
-    .getAttribute('tabs')
-    ?.toArray()
-    .findIndex((tab) => {
-      return tab.getAttribute('id') === blockId
-    })
+  let result: string | null = null
 
-  if (blockPos === -1 || blockPos === undefined) {
-    return null
+  const run = () => {
+    const newBlockId = createBlock(block, yBlockDefs)
+    const blockPos = blockGroup
+      .getAttribute('tabs')
+      ?.toArray()
+      .findIndex((tab) => {
+        return tab.getAttribute('id') === blockId
+      })
+
+    if (blockPos === -1 || blockPos === undefined) {
+      result = null
+      return
+    }
+
+    const ref = new Y.XmlElement('block-ref')
+    ref.setAttribute('id', newBlockId)
+
+    if (position === 'before') {
+      blockGroup.getAttribute('tabs')?.insert(blockPos, [ref])
+    } else {
+      blockGroup.getAttribute('tabs')?.insert(blockPos + 1, [ref])
+    }
+
+    blockGroup.setAttribute('current', ref.clone())
+    result = newBlockId
   }
 
-  const ref = new Y.XmlElement('block-ref')
-  ref.setAttribute('id', newBlockId)
-
-  if (position === 'before') {
-    blockGroup.getAttribute('tabs')?.insert(blockPos, [ref])
+  if (yLayout.doc) {
+    yLayout.doc.transact(run)
   } else {
-    blockGroup.getAttribute('tabs')?.insert(blockPos + 1, [ref])
+    run()
   }
 
-  blockGroup.setAttribute('current', ref.clone())
-
-  return newBlockId
+  return result
 }
 
 export const duplicateBlockGroup = (
