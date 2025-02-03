@@ -36,8 +36,8 @@ function DashboardNotebookGroupButton(props: Props) {
         <span>Notebook</span>
       </Link>
       <Tooltip
-        title="This page has not been published"
-        message="Ask an editor to publish this page to view the dashboard."
+        title="This page has not been saved"
+        message="Ask an editor to save this page to view the dashboard."
         className="flex"
         tooltipClassname="w-56"
         position="bottom"

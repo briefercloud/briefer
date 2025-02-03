@@ -278,7 +278,7 @@ async function executeDocument(
       orderBy: { createdAt: 'desc' },
     })
     if (!yjsApp) {
-      throw new Error('Trying to run a schedule for a never published document')
+      throw new Error('Trying to run a schedule for a never saved document')
     }
 
     await executeNotebook(scheduleId, socketServer, doc, yjsApp)

@@ -261,18 +261,18 @@ function ScheduleList(props: ScheduleListProps) {
             </h3>
 
             <p className="text-gray-500 text-sm pt-1">
-              Schedule to run the latest published version.
+              Schedule to run the latest saved version.
             </p>
           </div>
           <div>
             <Tooltip
               title={
-                props.isLimited ? "You've hit the free limit" : 'Not published'
+                props.isLimited ? "You've hit the free limit" : 'Not saved'
               }
               message={
                 props.isLimited
                   ? 'Upgrade to the professional plan to schedule more runs.'
-                  : "You haven't published this page yet. Publish to be able to schedule it."
+                  : "You haven't saved this page yet. Save to be able to schedule it."
               }
               className="flex"
               tooltipClassname="-bottom-1 right-0 translate-y-full translate-x-0 w-48"
@@ -337,8 +337,8 @@ function ScheduleList(props: ScheduleListProps) {
           <div className="flex flex-col gap-y-1 bg-ceramic-50/60 p-4 rounded-xl border-2 border-gray-100 border-dashed">
             <ExclamationTriangleIcon className="w-16 h-16 mx-auto text-yellow-300/40" />
             <div className="text-gray-500 text-center text-sm pb-2">
-              <p>{`You haven't published this page yet.`}</p>
-              <p>{`Publish it to be able to create a schedule.`}</p>
+              <p>{`You haven't saved this page yet.`}</p>
+              <p>{`Save it to be able to create a schedule.`}</p>
             </div>
             <div className="flex items-center justify-center">
               <button
@@ -346,7 +346,7 @@ function ScheduleList(props: ScheduleListProps) {
                 onClick={props.onPublish}
                 disabled={props.publishing}
               >
-                Publish
+                Save
               </button>
             </div>
           </div>

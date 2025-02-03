@@ -125,9 +125,9 @@ You can view each Briefer page as a notebook or a dashboard.
 
 Then, **in the dashboard mode**, you can create dashboards by dragging and dropping the elements from your notebook. You can also add inputs, dropdowns, and date pickers to create interactive filters or data apps.
 
-After you're done creating your notebook or dashboard, you can publish your changes so that other users can see them.
+After you're done creating your notebook or dashboard, you can save your changes so that other users can see them.
 
-Once a page is published, you'll be able to schedule it to run periodically so that your dashboards and notebooks are always up-to-date.
+Once a page is saved, you'll be able to schedule it to run periodically so that your dashboards and notebooks are always up-to-date.
 
 <br />
 

@@ -9,7 +9,7 @@ When you log into Briefer, you'll see a list of pages on the left, and your docu
 Additionally, on the bottom left corner, you'll see menu options to add data source connections, configure your workspace, invite collaborators, and more.
 
 <Frame caption="Briefer's main interface">
-![](/images/overview-general.png)
+  ![](/images/overview-general.png)
 </Frame>
 
 ## Briefer's editor
@@ -19,7 +19,7 @@ Briefer's editor is where you'll edit your pages, write code, and create visuali
 Every page is made of blocks. You can add a new block by clicking the plus icon that appears when you hover over the gaps between blocks.
 
 <Frame caption={`The "add block" button and the list of available blocks`}>
-![Blocks](/images/overview-add-block.png)
+  ![Blocks](/images/overview-add-block.png)
 </Frame>
 
 There are multiple types of blocks you can add, such as:
@@ -34,25 +34,25 @@ There are multiple types of blocks you can add, such as:
 After adding a block, you'll see a block-specific editor where you can write your content, queries, or code.
 
 <Frame caption="Adding a Python block and running a piece of code">
-![](/images/run_python.gif)
+  ![](/images/run_python.gif)
 </Frame>
 
 All blocks display a "drag handle" on the top left corner once you hover over them. You can use this handle to move the block around or you can click it to view a menu in which you can duplicate, delete, or hide the block.
 
 <Frame caption="The drag handle and the block menu">
-![](/images/overview-block-menu.png)
+  ![](/images/overview-block-menu.png)
 </Frame>
 
 Additionally, most blocks also display action buttons on the top right corner. These buttons depend on the block type and allow you to perform actions such as running a query or a piece of code, refreshing a visualization, or exploring your data source's schema.
 
 <Frame caption="The action buttons on the top right corner of a block">
-![](/images/overview-right-blocks.png)
+  ![](/images/overview-right-blocks.png)
 </Frame>
 
 Finally, on the top right corner of the editor, you'll see button with three dots within. Clicking this button will open a menu showing additional features, like managing files, scheduling the page to run periodically, or opening the schema explorer.
 
 <Frame caption="The three dots menu on the top right corner of the editor">
-![](/images/overview-threedots.png)
+  ![](/images/overview-threedots.png)
 </Frame>
 
 ## Notebooks and Dashboards
@@ -62,25 +62,28 @@ You can switch between notebooks and dashboards by clicking the "Notebook" or "D
 After switching to a dashboard, you'll see a grid into which you can drag and drop blocks from the left sidebar. This allows you to create a layout for your dashboard.
 
 <Frame caption="Creating a dashboard by dragging and dropping blocks">
-![](/images/overview-notebooks-dashboards.gif)
+  ![](/images/overview-notebooks-dashboards.gif)
 </Frame>
 
-## Publishing and editing
+## Saving and editing
 
-Once you're done editing a page, you can publish it by clicking the "Publish" button on the top right corner of the editor.
+Once you're done editing a page, you can save it by clicking the "Save" button on the top right corner of the editor.
 
-**In a way, publishing a page is similar to "git commit" in that it saves the current state of the page as the latest version.**
+**In a way, saving a page is similar to "git commit" in that it saves the current state of the page as the latest version.**
 
-<Info>The publishing mechanism exists so that editors can make changes to a page without disrupting the people who are viewing it.</Info>
+<Info>
+  The saving mechanism exists so that editors can make changes to a page without
+  disrupting the people who are viewing it.
+</Info>
 
-To edit a page that has already been published, click the "Edit" button on the top right corner of the editor. This will take you to the the editor where you can make changes.
+To edit a page that has already been saved, click the "Edit" button on the top right corner of the editor. This will take you to the the editor where you can make changes.
 
 ## Organizing documents and finding them
 
 The file tree on the left allows you to nest documents into one another. This is useful for organizing your work into different sections or categories, as folders in a file system.
 
 <Frame caption="Briefer's file tree showing nested documents">
-![File tree](/images/overview-file-tree.png)
+  ![File tree](/images/overview-file-tree.png)
 </Frame>
 
 To nest a document into another, simply drag and drop it into the folder you want it to be in. Alternatively, you can click the plus icon next to desired document to create a child document.
@@ -89,7 +92,10 @@ Expand and collapse folders by clicking on the arrow next to the folder name.
 
 You can also drag and drop documents to move them around.
 
-<Tip>Search for a document by clicking the magnifying glass icon next to the "Pages" title (or by pressing `Cmd+K` on Mac or `Ctrl+K` on Windows).</Tip>
+<Tip>
+  Search for a document by clicking the magnifying glass icon next to the
+  "Pages" title (or by pressing `Cmd+K` on Mac or `Ctrl+K` on Windows).
+</Tip>
 
 ## Your environment and environment variables
 
@@ -100,5 +106,5 @@ The bottom bar also includes buttons for adding environment variables, which are
 Finally, you can use the "files" button to manage files that are available to your notebooks.
 
 <Frame caption="The bottom bar in the editor">
-![](/images/overview-bottom-bar.png)
+  ![](/images/overview-bottom-bar.png)
 </Frame>

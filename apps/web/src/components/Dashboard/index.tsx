@@ -91,7 +91,9 @@ export default function Dashboard(props: Props) {
     () =>
       `${NEXT_PUBLIC_PUBLIC_URL()}/workspaces/${
         props.document.workspaceId
-      }/documents/${props.document.id}/dashboard${shareLinkWithoutSidebar ? '?sidebarCollapsed=true' : ''}`,
+      }/documents/${props.document.id}/dashboard${
+        shareLinkWithoutSidebar ? '?sidebarCollapsed=true' : ''
+      }`,
     [props.document.workspaceId, props.document.id, shareLinkWithoutSidebar]
   )
 
@@ -181,8 +183,8 @@ export default function Dashboard(props: Props) {
         {props.role !== 'viewer' && props.isEditing && (
           <>
             <Tooltip
-              title="Click to publish"
-              message="This dashboard has unpublished changes."
+              title="Click to save"
+              message="This dashboard has unsaved changes."
               active={props.document.publishedAt !== null && isDirty}
               position="bottom"
               tooltipClassname="w-40"
@@ -200,7 +202,7 @@ export default function Dashboard(props: Props) {
                 {isDirty && props.document.publishedAt && (
                   <PublishBlinkingSignal />
                 )}
-                <span>Publish</span>
+                <span>Save</span>
               </button>
             </Tooltip>
           </>

@@ -39,7 +39,7 @@ function useDocument(workspaceId: string, documentId: string): UseDocument {
     try {
       await api.publish(documentId)
     } catch (err) {
-      alert('Failed to publish document')
+      alert('Failed to save document')
     } finally {
       setPublishing(false)
     }

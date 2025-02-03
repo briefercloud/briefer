@@ -718,7 +718,7 @@ export function useDocuments(workspaceId: string): UseDocuments {
         }
       )
       if (!res.ok) {
-        throw new Error(`Error publishing Document(${id})`)
+        throw new Error(`Error saving Document(${id})`)
       }
 
       setState((s) => {

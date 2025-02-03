@@ -235,7 +235,7 @@ export const OnboardingTutorial = () => {
           </TutorialStep>
 
           <TutorialStep
-            name={'Publish a dashboard'}
+            name={'Save a dashboard'}
             description={
               <>
                 <p>
@@ -250,7 +250,7 @@ export const OnboardingTutorial = () => {
                 </p>
                 <p>
                   {
-                    "When you're done, click the 'publish' button to save your dashboard."
+                    "When you're done, click the 'save' button to save your dashboard."
                   }
                 </p>
               </>
@@ -275,7 +275,7 @@ export const OnboardingTutorial = () => {
             />
             <TutorialStepAction
               hidden={!router.pathname.endsWith('/dashboard/edit')}
-              label="Publish the dashboard"
+              label="Save the dashboard"
               onClick={() => {
                 // TODO we need a setTimeout here because otherwise the listener
                 // within the tour highlight provider will trigger before the
