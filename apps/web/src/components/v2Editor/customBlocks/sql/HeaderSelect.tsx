@@ -79,7 +79,7 @@ export default function HeaderSelect(props: Props) {
           <Listbox.Button
             as="div"
             className={clsx(
-              'h-full border border-gray-200 relative w-full rounded-md pl-2 pr-10 text-left text-gray-500 sm:text-xs flex items-center ',
+              'h-full relative w-full rounded-tr-md pl-3 pr-10 text-left text-gray-500 sm:text-xs flex items-center bg-gray-50',
               !isDisabled ? 'hover:bg-gray-100 cursor-pointer' : 'select-none'
             )}
           >
@@ -96,7 +96,7 @@ export default function HeaderSelect(props: Props) {
               )}
               <span className="block truncate">{selectedOptionLabel}</span>
             </div>
-            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+            <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
               <ChevronUpDownIcon
                 className="h-3 w-3 text-gray-400"
                 aria-hidden="true"
@@ -113,7 +113,9 @@ export default function HeaderSelect(props: Props) {
           >
             <Listbox.Options
               as="div"
-              className="mt-1 absolute z-10 max-h-60 w-full overflow-auto rounded-md bg-white text-base shadow-lg border border-gray-200 focus:outline-none sm:text-xs"
+              className="mt-[1px] absolute z-10 max-h-60 w-full overflow-aut
+o bg-white text-base shadow-lg ring-1 ring-gray-200 focus:outline-none sm:tex
+t-xs w-[calc(100%-1px)]"
             >
               {options
                 .slice(0, options.length - 1)
@@ -138,7 +140,7 @@ export default function HeaderSelect(props: Props) {
                   <hr className="border-t border-gray-200" />
                   <button
                     onClick={props.onAdd}
-                    className="flex items-center w-full text-left py-2 pl-3 pr-9 text-gray-900 hover:bg-primary-200 gap-x-3"
+                    className="flex items-center w-full text-left py-3 pl-3 pr-9 text-gray-900 hover:bg-blue-50 gap-x-3"
                   >
                     <PlusIcon className="h-3 w-3" aria-hidden="true" />
                     <span>{props.onAddLabel ?? ''}</span>
@@ -160,8 +162,8 @@ function DataSourceOption({ option }: { option: Option }) {
       as="div"
       className={({ active }) =>
         clsx(
-          active ? 'bg-primary-200' : '',
-          'relative select-none pl-3 pr-9 text-gray-900 hover:cursor-pointer py-2'
+          active ? 'bg-blue-50' : '',
+          'relative select-none pl-3 pr-9 text-gray-900 hover:cursor-pointer py-3'
         )
       }
       value={option.value}

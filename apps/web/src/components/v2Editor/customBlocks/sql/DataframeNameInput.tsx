@@ -121,14 +121,12 @@ function DataframeNameInput(props: Props) {
   }
 
   return (
-    <div className="relative min-w-[124px]">
+    <div className="relative min-w-[124px] h-full">
       <input
         type="text"
         className={clsx(
-          dataframeName.error
-            ? 'ring-red-200 focus:ring-red-200'
-            : 'ring-gray-200 focus:ring-gray-400',
-          'pl-2 pr-6 block w-full rounded-md border-0 text-gray-500 ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-6 py-0 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed bg-transparent'
+          dataframeName.error ? 'bg-red-50' : 'bg-transparent',
+          'pl-2.5 pr-8 block w-full border-0 text-gray-500 ring-0 focus:ring-0 placeholder:text-gray-400 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed h-full focus:bg-white hover:bg-gray-100/50 font-mono font-medium'
         )}
         placeholder="Dataframe name"
         value={dataframeName.newValue}
@@ -136,7 +134,7 @@ function DataframeNameInput(props: Props) {
         disabled={props.disabled || status._tag !== 'idle'}
         onBlur={onBlur}
       />
-      <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 group">
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 group">
         {dataframeName.error ? (
           <>
             <button
