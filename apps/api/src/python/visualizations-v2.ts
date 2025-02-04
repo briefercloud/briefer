@@ -149,7 +149,7 @@ def _briefer_create_visualization(df, options):
                 # just group by values who are the same
                 df["_grouped"] = df[options["xAxis"]["name"]]
                 df = df.groupby(grouping_columns, as_index=False).agg({
-                  series["id"]: "count"
+                  series["id"]: aggregate_func
                 }).reset_index()
         else:
             df["_grouped"] = df[options["xAxis"]["name"]]
