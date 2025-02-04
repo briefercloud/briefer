@@ -383,7 +383,7 @@ function PythonBlock(props: Props) {
             }}
           >
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
-              <div className="select-none text-gray-300 text-xs flex items-center h-full w-full flex gap-x-1.5">
+              <div className="select-none text-gray-300 text-xs flex items-center h-2/3 w-full flex gap-x-1.5">
                 {/*
                   TODO: Add back in when we have a way to toggle code hidden
 
