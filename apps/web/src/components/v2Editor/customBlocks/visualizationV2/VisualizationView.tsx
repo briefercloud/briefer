@@ -340,9 +340,7 @@ function BigNumberVisualization(props: {
   const { size } = props
 
   try {
-    const y = head(
-      head(props.input.yAxes)?.series ?? []
-    )?.column?.name.toString()
+    const y = head(head(props.input.yAxes)?.series ?? [])?.id
     if (!y) {
       throw new Error('Invalid input')
     }
