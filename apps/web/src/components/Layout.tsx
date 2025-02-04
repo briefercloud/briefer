@@ -335,7 +335,7 @@ export default function Layout({
       />
 
       {isSideBarOpen && (
-        <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[360px] max-w-[360px] 3xl:min-w-[400px] 3xl:max-w-[400px] overflow-auto border-r border-gray-200">
+        <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[320px] max-w-[320px] 3xl:min-w-[400px] 3xl:max-w-[400px] overflow-auto border-r border-gray-200">
           <div className="flex items-center justify-between pt-0.5 pl-4 pr-5">
             <div className="font-trap tracking-tight text-2xl antialiased text-gray-800 flex items-center gap-x-1 scale-90">
               <SparklesIcon className="h-4 w-4" />
@@ -493,7 +493,7 @@ export default function Layout({
         className={clsx(
           `flex flex-col h-screen w-full ${syne.className} relative`,
           isSideBarOpen
-            ? `max-w-[calc(100%-360px)] 3xl:max-w-[calc(100%-400px)]`
+            ? `max-w-[calc(100%-320px)] 3xl:max-w-[calc(100%-400px)]`
             : `md:max-w-[100%] lg:max-w-[100%]`
         )}
       >
