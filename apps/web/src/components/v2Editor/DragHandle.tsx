@@ -90,7 +90,10 @@ const DragHandle = ({
                 leaveTo="opacity-0"
                 style={{
                   top: dropdownPosition.top,
-                  left: dropdownPosition.left,
+                  right:
+                    dropdownPosition.right +
+                    (buttonRef.current?.getBoundingClientRect().width ?? 0) +
+                    6,
                 }}
               >
                 <Menu.Items

@@ -610,17 +610,13 @@ function SQLBlock(props: Props) {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+            <div
+              className={clsx(
+                'flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12',
+                !isCodeHidden && 'divide-x divide-gray-200'
+              )}
+            >
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                {/*
-                    TODO: Add back in when we have a way to toggle code visibility
-                <button
-                  className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
-                  onClick={toggleCodeHidden}
-                >
-                  {isCodeHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                </button>
-                */}
                 <CircleStackIcon className="h-4 w-4 text-gray-400" />
                 <input
                   type="text"
@@ -665,7 +661,7 @@ function SQLBlock(props: Props) {
 
               <div
                 className={clsx(
-                  'print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap',
+                  'print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap pr-3',
                   {
                     hidden: !isCodeHidden && dataframeName?.value,
                   }
@@ -882,6 +878,10 @@ function SQLBlock(props: Props) {
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
+          isCodeHidden={isCodeHidden}
+          onToggleIsCodeHidden={toggleCodeHidden}
+          isOutputHidden={isResultHidden}
+          onToggleIsOutputHidden={toggleResultHidden}
         />
 
         {((result && !isResultHidden) || !isCodeHidden) && (

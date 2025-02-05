@@ -580,6 +580,8 @@ function FileUploadBlock(props: Props) {
             isBlockHiddenInPublished={props.isBlockHiddenInPublished}
             onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
             hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={false}
+            isOutputHidden={false}
           />
         </div>
       )}

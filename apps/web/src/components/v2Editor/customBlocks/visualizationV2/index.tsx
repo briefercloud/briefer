@@ -844,6 +844,8 @@ function VisualizationBlockV2(props: Props) {
                 onToggleIsBlockHiddenInPublished
               }
               hasMultipleTabs={props.hasMultipleTabs}
+              isCodeHidden={false}
+              isOutputHidden={false}
             />
           </div>
         </div>
