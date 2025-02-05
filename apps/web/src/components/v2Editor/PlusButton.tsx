@@ -127,6 +127,9 @@ function BlockList(props: BlockListProps) {
   const onAddPython = useCallback(() => {
     props.onAddBlock(BlockType.Python)
   }, [props.onAddBlock])
+  const onAddVisualizationV1 = useCallback(() => {
+    props.onAddBlock(BlockType.Visualization)
+  }, [props.onAddBlock, ff])
   const onAddVisualization = useCallback(() => {
     props.onAddBlock(
       ff.visualizationsV2 ? BlockType.VisualizationV2 : BlockType.Visualization
@@ -171,6 +174,12 @@ function BlockList(props: BlockListProps) {
           icon={<CodeBracketIcon className="w-4 h-4" />}
           onAdd={onAddPython}
           text="Python"
+        />
+        <BlockSuggestion
+          id="add-block-visualization-v1"
+          icon={<ChartBarIcon className="w-4 h-4" />}
+          onAdd={onAddVisualizationV1}
+          text="Visualization V1"
         />
         <BlockSuggestion
           id="add-block-visualization"
