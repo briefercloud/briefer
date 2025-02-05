@@ -268,6 +268,7 @@ export const PythonPlotlyOutput = z.object({
   type: z.literal('plotly'),
   data: z.any(),
   layout: z.any(),
+  frames: z.any().optional(),
 })
 export type PythonPlotlyOutput = z.infer<typeof PythonPlotlyOutput>
 
