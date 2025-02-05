@@ -180,6 +180,10 @@ async function innerExecuteCode(
                 message.content.data['application/vnd.plotly.v1+json'][
                   'layout'
                 ],
+              frames:
+                message.content.data['application/vnd.plotly.v1+json'][
+                  'frames'
+                ],
             },
           ])
         } else if (

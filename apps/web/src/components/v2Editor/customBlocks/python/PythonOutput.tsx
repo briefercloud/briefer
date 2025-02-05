@@ -280,6 +280,7 @@ function PythonPlotOutput(props: {
       data={data}
       layout={layout}
       config={config}
+      frames={props.output.frames}
       useResizeHandler={true}
       className="w-full printable-block"
     />
@@ -369,6 +370,7 @@ function DashboardPlotOutput(props: { output: PythonPlotlyOutput }) {
         data={props.output.data}
         layout={layout}
         config={config}
+        frames={props.output.frames}
         useResizeHandler={true}
       />
     </div>
