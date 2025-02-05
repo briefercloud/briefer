@@ -1109,7 +1109,8 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.VisualizationV2:
-          case BlockType.Visualization: {
+          case BlockType.Visualization:
+          case BlockType.PivotTable: {
             const dataframe = getClosestDataframe(props.yDoc, index)
             newBlockId = addBlockGroup(
               layout.value,
@@ -1291,7 +1292,8 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.VisualizationV2:
-          case BlockType.Visualization: {
+          case BlockType.Visualization:
+          case BlockType.PivotTable: {
             const blockPos = getBlockFlatPosition(
               blockId,
               layout.value,
@@ -1301,6 +1303,7 @@ const Editor = (props: Props) => {
               props.yDoc,
               Math.max(position === 'before' ? blockPos - 1 : blockPos + 1, 0)
             )
+
             addGroupedBlock(
               layout.value,
               blocks.value,
