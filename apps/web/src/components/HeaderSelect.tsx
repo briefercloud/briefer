@@ -47,7 +47,7 @@ export default function HeaderSelect(props: Props) {
             className={clsx(
               'h-full relative w-full rounded-tr-md pl-3 pr-10 text-left sm:text-xs flex items-center cursor-pointer',
               hasValue
-                ? 'text-gray-400 bg-gray-100 hover:bg-gray-100'
+                ? 'text-gray-400 bg-gray-50 hover:bg-gray-100'
                 : 'text-red-400 bg-red-50 hover:bg-red-100'
             )}
           >
