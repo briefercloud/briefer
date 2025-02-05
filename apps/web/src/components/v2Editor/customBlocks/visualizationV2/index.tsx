@@ -21,7 +21,7 @@ import {
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
 import FilterSelector from './FilterSelector'
@@ -196,6 +196,20 @@ function VisualizationBlockV2(props: Props) {
     props.userId,
     environmentStartedAt,
   ])
+
+  useEffect(() => {
+    if (
+      attrs.output ||
+      (attrs.error && attrs.error !== 'dataframe-not-set') ||
+      status !== 'idle'
+    ) {
+      return
+    }
+
+    if (attrs.input.dataframeName) {
+      onRun()
+    }
+  }, [attrs.output, attrs.input.dataframeName, onRun])
 
   const onChangeDataframe = useCallback(
     (dataframeName: string) => {
@@ -546,28 +560,6 @@ function VisualizationBlockV2(props: Props) {
   const hasAValidYAxis = attrs.input.yAxes.some((yAxis) =>
     yAxis.series.some((s) => s.column !== null)
   )
-
-  // TODO
-  // useEffect(() => {
-  //   if (status === 'running' || status === 'run-requested') {
-  //     // 30 seconds timeout
-  //     const timeout = setTimeout(() => {
-  //       const status = props.block.getAttribute('status')
-  //       if (status === 'running') {
-  //         props.block.setAttribute('status', 'run-requested')
-  //       } else if (status === 'run-requested') {
-  //         props.block.setAttribute('status', 'idle')
-  //         requestAnimationFrame(() => {
-  //           props.block.setAttribute('status', 'run-requested')
-  //         })
-  //       }
-  //     }, 1000 * 30)
-
-  //     return () => {
-  //       clearTimeout(timeout)
-  //     }
-  //   }
-  // }, [props.block, status])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(attrs.id)

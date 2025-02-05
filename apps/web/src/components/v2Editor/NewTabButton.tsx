@@ -7,6 +7,10 @@ import {
   YBlock,
   YBlockGroup,
   addGroupedBlock,
+  getBlockFlatPosition,
+  getBlocks,
+  getClosestDataframe,
+  getLayout,
 } from '@briefer/editor'
 import { useCallback, useMemo, useRef } from 'react'
 import {
@@ -92,8 +96,7 @@ function NewBlockMenuItem(props: NewBlockMenuItemProps) {
 
 interface Props {
   workspaceId: string
-  layout: Y.Array<YBlockGroup>
-  blocks: Y.Map<YBlock>
+  yDoc: Y.Doc
   blockGroupId: string
   lastBlockId: string
   dataSources: APIDataSources
@@ -109,11 +112,14 @@ function NewTabButton(props: Props) {
 
   const onAdd = useCallback(
     (item: Item) => {
+      const layout = getLayout(props.yDoc)
+      const blocks = getBlocks(props.yDoc)
+
       switch (item.type) {
         case BlockType.SQL:
           addGroupedBlock(
-            props.layout,
-            props.blocks,
+            layout,
+            blocks,
             props.blockGroupId,
             props.lastBlockId,
             {
@@ -125,22 +131,29 @@ function NewTabButton(props: Props) {
           )
           break
         case BlockType.Visualization:
-        case BlockType.VisualizationV2:
+        case BlockType.VisualizationV2: {
+          const flatPosition = getBlockFlatPosition(
+            props.lastBlockId,
+            layout,
+            blocks
+          )
+          const dataframe = getClosestDataframe(props.yDoc, flatPosition)
           addGroupedBlock(
-            props.layout,
-            props.blocks,
+            layout,
+            blocks,
             props.blockGroupId,
             props.lastBlockId,
-            { type: item.type, dataframeName: null },
+            { type: item.type, dataframeName: dataframe?.name ?? null },
             'after'
           )
           break
+        }
         case BlockType.DashboardHeader:
           break
         default:
           addGroupedBlock(
-            props.layout,
-            props.blocks,
+            layout,
+            blocks,
             props.blockGroupId,
             props.lastBlockId,
             { type: item.type },
@@ -149,7 +162,7 @@ function NewTabButton(props: Props) {
           break
       }
     },
-    [props.layout, props.blocks, props.blockGroupId, props.lastBlockId, ff]
+    [props.yDoc, props.blockGroupId, props.lastBlockId, ff]
   )
 
   const menuItems = useMemo(() => items(ff), [ff])
