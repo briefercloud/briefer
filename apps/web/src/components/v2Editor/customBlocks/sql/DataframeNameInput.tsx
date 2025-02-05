@@ -165,7 +165,7 @@ function DataframeNameInput(props: Props) {
             <div className="font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity scale-0 group-hover:scale-100 group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 w-72">
               <span className="inline-flex gap-x-1 items-center text-gray-400 text-center">
                 Use this variable name to reference the results as a Pandas
-                dataframe in further Python blocks.
+                DataFrame in further Python blocks.
               </span>
             </div>
           </>
