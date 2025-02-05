@@ -131,7 +131,8 @@ function NewTabButton(props: Props) {
           )
           break
         case BlockType.Visualization:
-        case BlockType.VisualizationV2: {
+        case BlockType.VisualizationV2:
+        case BlockType.PivotTable: {
           const flatPosition = getBlockFlatPosition(
             props.lastBlockId,
             layout,
