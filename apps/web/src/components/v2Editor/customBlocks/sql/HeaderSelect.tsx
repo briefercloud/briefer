@@ -113,9 +113,7 @@ export default function HeaderSelect(props: Props) {
           >
             <Listbox.Options
               as="div"
-              className="mt-[1px] absolute z-10 max-h-60 w-full overflow-aut
-o bg-white text-base shadow-lg ring-1 ring-gray-200 focus:outline-none sm:tex
-t-xs w-[calc(100%-1px)]"
+              className="mt-[1px] absolute z-10 max-h-60 w-full overflow-auto bg-white text-base shadow-lg ring-1 ring-gray-200 focus:outline-none sm:text-xs w-[calc(100%-1px)]"
             >
               {options
                 .slice(0, options.length - 1)
