@@ -384,16 +384,6 @@ function PythonBlock(props: Props) {
           >
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                {/*
-                  TODO: Add back in when we have a way to toggle code hidden
-
-                <button
-                  className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
-                  onClick={toggleCodeHidden}
-                >
-                  {isCodeHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                </button>
-                */}
                 <CommandLineIcon className="h-4 w-4 text-gray-400" />
                 <input
                   type="text"
@@ -589,13 +579,19 @@ function PythonBlock(props: Props) {
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
+          isCodeHidden={isCodeHidden ?? false}
+          onToggleIsCodeHidden={toggleCodeHidden}
+          isOutputHidden={isResultHidden ?? false}
+          onToggleIsOutputHidden={toggleResultHidden}
         />
-        <SaveReusableComponentButton
-          isComponent={blockId === component?.blockId}
-          onSave={onSaveReusableComponent}
-          disabled={!props.isEditable || isComponentInstance}
-          isComponentInstance={isComponentInstance}
-        />
+        {!isCodeHidden && (
+          <SaveReusableComponentButton
+            isComponent={blockId === component?.blockId}
+            onSave={onSaveReusableComponent}
+            disabled={!props.isEditable || isComponentInstance}
+            isComponentInstance={isComponentInstance}
+          />
+        )}
       </div>
     </div>
   )
