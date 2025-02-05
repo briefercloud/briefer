@@ -31,6 +31,7 @@ import {
   ExecutionStatus,
   YBlockGroup,
   getInputBlockResultStatus,
+  getTabsFromBlockGroup,
   switchBlockType,
 } from '../index.js'
 import { FileUploadBlock, duplicateFileUploadBlock } from './fileUpload.js'
@@ -430,6 +431,19 @@ export const isRunnableBlock = <B extends YBlock>(block: B): boolean => {
     onDashboardHeader: () => false,
     onPivotTable: () => true,
   })
+}
+
+export function getBlockFlatPosition(
+  blockId: string,
+  layout: Y.Array<YBlockGroup>,
+  blocks: Y.Map<YBlock>
+): number {
+  const flatLayout = layout.toArray().flatMap((blockGroup) => {
+    const tab = getTabsFromBlockGroup(blockGroup, blocks)
+    return tab.map((b) => b.blockId)
+  })
+
+  return flatLayout.findIndex((b) => b === blockId)
 }
 
 export * from './dashboard.js'

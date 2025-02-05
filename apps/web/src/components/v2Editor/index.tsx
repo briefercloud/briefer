@@ -53,6 +53,8 @@ import {
   isRunnableBlock,
   ExecutionQueue,
   AITasks,
+  getClosestDataframe,
+  getBlockFlatPosition,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -872,8 +874,7 @@ file`
             {!props.isApp && (
               <NewTabButton
                 workspaceId={props.document.workspaceId}
-                layout={layout.value}
-                blocks={blocks.value}
+                yDoc={props.yDoc}
                 blockGroupId={props.id}
                 lastBlockId={tabRefs[tabRefs.length - 1].blockId}
                 dataSources={props.dataSources}
@@ -1108,14 +1109,16 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.VisualizationV2:
-          case BlockType.Visualization:
+          case BlockType.Visualization: {
+            const dataframe = getClosestDataframe(props.yDoc, index)
             newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
-              { type, dataframeName: null },
+              { type, dataframeName: dataframe?.name ?? null },
               index
             )
             break
+          }
           case BlockType.DashboardHeader:
             break
           default:
@@ -1288,16 +1291,26 @@ const Editor = (props: Props) => {
             )
             break
           case BlockType.VisualizationV2:
-          case BlockType.Visualization:
+          case BlockType.Visualization: {
+            const blockPos = getBlockFlatPosition(
+              blockId,
+              layout.value,
+              blocks.value
+            )
+            const dataframe = getClosestDataframe(
+              props.yDoc,
+              Math.max(position === 'before' ? blockPos - 1 : blockPos + 1, 0)
+            )
             addGroupedBlock(
               layout.value,
               blocks.value,
               blockGroupId,
               blockId,
-              { type, dataframeName: null },
+              { type, dataframeName: dataframe?.name ?? null },
               position
             )
             break
+          }
           case BlockType.DashboardHeader:
             break
           default:
