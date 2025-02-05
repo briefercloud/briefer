@@ -39,6 +39,7 @@ export default function HeaderSelect(props: Props) {
   )
 
   const hasOptions = options.length > 0
+  const hasValue = options.some((option) => option.value === value)
   const isDisabled = disabled || (!hasOptions && !props.onAdd)
 
   const selectedOption = hasOptions
@@ -80,7 +81,12 @@ export default function HeaderSelect(props: Props) {
             as="div"
             className={clsx(
               'h-full relative w-full rounded-tr-md pl-3 pr-10 text-left text-gray-500 sm:text-xs flex items-center bg-gray-50',
-              !isDisabled ? 'hover:bg-gray-100 cursor-pointer' : 'select-none'
+              !isDisabled
+                ? 'hover:bg-gray-100 cursor-pointer'
+                : 'select-none cursor-not-allowed',
+              !hasValue || !hasOptions
+                ? 'text-red-400 bg-red-50 hover:bg-red-100'
+                : 'text-gray-400 bg-gray-100 hover:bg-gray-100'
             )}
           >
             <div className="flex gap-x-3 items-center font-mono overflow-hidden">

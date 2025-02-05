@@ -23,10 +23,11 @@ export default function HeaderSelect(props: Props) {
 
   const hasOptions = options.length > 0
   const isDisabled = disabled || !hasOptions
+  const hasValue = options.some((option) => option.value === value)
   const selectedOptionContent = hasOptions
     ? options.find((option) => option.value === value)?.label ||
-      (props.placeholders?.[0] ?? 'No data source selected')
-    : props.placeholders?.[1] ?? 'No data sources'
+      (props.placeholders?.[0] ?? 'No data frames selected')
+    : props.placeholders?.[1] ?? 'No data frames'
 
   const onChange = useCallback(
     (value: string) => {
@@ -43,9 +44,14 @@ export default function HeaderSelect(props: Props) {
         <div className="h-full w-56 max-w-56 relative overflow-visible font-normal">
           <Listbox.Button
             as="div"
-            className="h-full relative w-full rounded-tr-md pl-3 pr-10 text-left text-gray-500 sm:text-xs flex items-center bg-gray-50 hover:bg-gray-100 cursor-pointer"
+            className={clsx(
+              'h-full relative w-full rounded-tr-md pl-3 pr-10 text-left sm:text-xs flex items-center cursor-pointer',
+              hasValue
+                ? 'text-gray-400 bg-gray-100 hover:bg-gray-100'
+                : 'text-red-400 bg-red-50 hover:bg-red-100'
+            )}
           >
-            <div className="flex gap-x-3 items-center font-mono overflow-hidden">
+            <div className="flex gap-x-3 items-center font-sans overflow-hidden">
               <span className="block truncate">{selectedOptionContent}</span>
             </div>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
@@ -110,7 +116,7 @@ export default function HeaderSelect(props: Props) {
               {props.onAdd && (
                 <button
                   onClick={props.onAdd}
-                  className="flex items-center w-full text-left mt-1 py-2 pl-3 pr-9 text-gray-900 border-t border-gray-200 hover:bg-blue-50 space-x-1 h-10"
+                  className="flex items-center w-full text-left py-2 pl-3 pr-9 text-gray-900 border-t border-gray-200 hover:bg-blue-50 space-x-1 h-10"
                 >
                   <PlusIcon className="h-3 w-3" aria-hidden="true" />
                   <span>{props.onAddLabel ?? ''}</span>

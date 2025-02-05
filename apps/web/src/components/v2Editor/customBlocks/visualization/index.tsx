@@ -638,7 +638,7 @@ function VisualizationBlock(props: Props) {
               <div className="print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200">
                 <button
                   className={clsx(
-                    'font-sans text-xs flex items-center gap-x-1.5 text-gray-400 px-2.5 whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed h-full min-w-[124px]',
+                    'font-sans text-xs flex justify-center items-center gap-x-1.5 text-gray-400 px-2.5 whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed h-full min-w-[124px]',
                     props.isPublicMode ? 'hidden' : 'inline-block'
                   )}
                   onClick={onAddFilter}
@@ -662,7 +662,7 @@ function VisualizationBlock(props: Props) {
 
         <div
           className={clsx(
-            'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-t border-gray-200',
+            'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-b border-gray-200',
             {
               hidden: filters.length === 0,
             }
@@ -687,7 +687,7 @@ function VisualizationBlock(props: Props) {
             />
           ))}
         </div>
-        <div className="h-[600px] border-t border-gray-200 flex items-center">
+        <div className="h-[580px] flex items-center">
           <VisualizationControls
             isHidden={controlsHidden || !props.isEditable}
             dataframe={dataframe}
