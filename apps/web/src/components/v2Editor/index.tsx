@@ -64,7 +64,7 @@ import VisualizationBlock from './customBlocks/visualization'
 import { DataFrame, ElementType } from '@briefer/types'
 import {
   Bars3CenterLeftIcon,
-  ChartBarIcon,
+  ChartPieIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CircleStackIcon,
@@ -191,7 +191,7 @@ export function getTabIcon(
       return CommandLineSmallIcon
     case BlockType.Visualization:
     case BlockType.VisualizationV2:
-      return ChartBarIcon
+      return ChartPieIcon
     case BlockType.Input:
       return PencilSquareIcon
     case BlockType.DropdownInput:

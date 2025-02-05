@@ -121,14 +121,16 @@ function DataframeNameInput(props: Props) {
   }
 
   return (
-    <div className="relative min-w-[124px] h-full">
+    <div className="relative min-w-[148px] h-full group">
       <input
         type="text"
         className={clsx(
-          dataframeName.error ? 'bg-red-50' : 'bg-transparent',
-          'pl-2.5 pr-8 block w-full border-0 text-gray-500 ring-0 focus:ring-0 placeholder:text-gray-400 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed h-full focus:bg-white hover:bg-gray-100/50 font-mono font-medium'
+          dataframeName.error
+            ? 'bg-red-50 group-hover:bg-red-100'
+            : 'bg-transparent group-hover:bg-gray-100/50',
+          'pl-2.5 pr-8 block w-full border-0 text-gray-500 ring-0 focus:ring-0 placeholder:text-gray-400 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed h-full focus:bg-white font-mono font-medium'
         )}
-        placeholder="Dataframe name"
+        placeholder="DataFrame name"
         value={dataframeName.newValue}
         onChange={onChange}
         disabled={props.disabled || status._tag !== 'idle'}

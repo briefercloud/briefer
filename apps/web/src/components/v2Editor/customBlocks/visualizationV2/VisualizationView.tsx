@@ -151,15 +151,15 @@ function VisualizationViewV2(props: Props) {
       {!props.isDashboard && props.isEditable && (
         <button
           className={clsx(
-            'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-1 hover:bg-gray-50 z-10',
+            'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-2 hover:bg-gray-50 z-10',
             props.isHidden ? 'left-0 rounded-bl-md' : '-left-[1px]'
           )}
           onClick={props.onToggleHidden}
         >
           {props.isHidden ? (
-            <ChevronDoubleRightIcon className="h-3 w-3 text-gray-400" />
+            <ChevronDoubleRightIcon className="h-4 w-4 text-gray-400" />
           ) : (
-            <ChevronDoubleLeftIcon className="h-3 w-3 text-gray-400" />
+            <ChevronDoubleLeftIcon className="h-4 w-4 text-gray-400" />
           )}
         </button>
       )}
@@ -167,7 +167,7 @@ function VisualizationViewV2(props: Props) {
         props.input.chartType !== 'number' &&
         props.input.chartType !== 'trend' && (
           <button
-            className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-1 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
+            className="absolute bottom-0 bg-white rounded-tl-md rounded-br-md border-t border-l border-gray-200 p-2 hover:bg-gray-50 z-10 right-0 text-xs text-gray-400"
             onClick={props.onExportToPNG}
           >
             PNG
