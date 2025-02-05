@@ -63,10 +63,7 @@ function Table(props: Props) {
                 <th
                   key={index}
                   scope="col"
-                  className={clsx(
-                    props.isDashboard ? 'border-b' : 'border-y',
-                    'px-2 py-2 text-gray-500 whitespace-nowrap font-normal'
-                  )}
+                  className="px-2 py-2 text-gray-500 whitespace-nowrap font-normal border-b"
                 >
                   <button
                     className="flex space-x-1 items-center w-full justify-between"

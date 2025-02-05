@@ -635,228 +635,207 @@ function VisualizationBlockV2(props: Props) {
     )
   }
 
-  if (1 < 2) {
-    return (
+  return (
+    <div
+      className="relative group/block"
+      onClick={onClickWithin}
+      data-block-id={attrs.id}
+    >
       <div
-        className="relative group/block"
-        onClick={onClickWithin}
-        data-block-id={attrs.id}
+        className={clsx(
+          'rounded-md border',
+          props.isBlockHiddenInPublished && 'border-dashed',
+          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+
+          props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
+        )}
       >
         <div
           className={clsx(
-            'rounded-md border',
-            props.isBlockHiddenInPublished && 'border-dashed',
-            props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-
-            props.isCursorWithin
-              ? 'border-blue-400 shadow-sm'
-              : 'border-gray-200'
+            'rounded-md',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
           )}
         >
           <div
-            className={clsx(
-              'rounded-md',
-              props.hasMultipleTabs ? 'rounded-tl-none' : ''
-            )}
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
+            ref={(d) => {
+              props.dragPreview?.(d)
+            }}
           >
-            <div
-              className="border-b border-gray-200 bg-gray-50 rounded-t-md"
-              ref={(d) => {
-                props.dragPreview?.(d)
-              }}
-            >
-              <div className="flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 divide-x divide-gray-200">
-                <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                  <ChartPieIcon className="h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    className={clsx(
-                      'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
-                    )}
-                    placeholder="Visualization (click to add a title)"
-                    value={attrs.title}
-                    onChange={onChangeTitle}
-                    disabled={!props.isEditable}
-                  />
-                </div>
-                <div className="print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200">
-                  <button
-                    className={clsx(
-                      'font-sans text-xs flex justify-center items-center gap-x-1.5 text-gray-400 px-2.5 whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed h-full min-w-[124px]',
-                      props.isPublicMode ? 'hidden' : 'inline-block'
-                    )}
-                    onClick={onAddFilter}
-                    disabled={!props.isEditable}
-                  >
-                    <FunnelIcon className="h-4 w-4 text-gray-400" />
-                    <span>Add filter</span>
-                  </button>
-                  <HeaderSelect
-                    value={dataframe?.name ?? ''}
-                    onChange={onChangeDataframe}
-                    options={dataframeOptions}
-                    onAdd={onNewSQL}
-                    onAddLabel="New query"
-                    disabled={!props.isEditable}
-                  />
-                </div>
+            <div className="flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <ChartPieIcon className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={clsx(
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                  )}
+                  placeholder="Visualization (click to add a title)"
+                  value={attrs.title}
+                  onChange={onChangeTitle}
+                  disabled={!props.isEditable}
+                />
+              </div>
+              <div className="print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200">
+                <button
+                  className={clsx(
+                    'font-sans text-xs flex justify-center items-center gap-x-1.5 text-gray-400 px-2.5 whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed h-full min-w-[124px]',
+                    props.isPublicMode ? 'hidden' : 'inline-block'
+                  )}
+                  onClick={onAddFilter}
+                  disabled={!props.isEditable}
+                >
+                  <FunnelIcon className="h-4 w-4 text-gray-400" />
+                  <span>Add filter</span>
+                </button>
+                <HeaderSelect
+                  value={dataframe?.name ?? ''}
+                  onChange={onChangeDataframe}
+                  options={dataframeOptions}
+                  onAdd={onNewSQL}
+                  onAddLabel="New query"
+                  disabled={!props.isEditable}
+                />
               </div>
             </div>
           </div>
+        </div>
 
-          <div
-            className={clsx(
-              'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-b border-gray-200',
-              {
-                hidden: attrs.input.filters.length === 0,
-              }
-            )}
-          >
-            {attrs.input.filters.map((filter) => (
-              <FilterSelector
-                key={filter.id}
-                filter={filter}
-                dataframe={dataframe ?? { name: '', columns: [] }}
-                onChange={onChangeFilter}
-                onRemove={onRemoveFilter}
-                isInvalid={
-                  !dataframe ||
-                  (filter.column !== null &&
-                    (!dataframe.columns.some(
-                      (c) => c.name === filter.column?.name
-                    ) ||
-                      isInvalidVisualizationFilter(filter, dataframe)))
-                }
-                disabled={!props.isEditable}
-              />
-            ))}
-          </div>
-          <div className="h-[580px] flex items-center">
-            <VisualizationControlsV2
-              isHidden={attrs.controlsHidden || !props.isEditable}
-              dataframe={dataframe}
-              chartType={attrs.input.chartType}
-              onChangeChartType={onChangeChartType}
-              xAxis={attrs.input.xAxis}
-              onChangeXAxis={onChangeXAxis}
-              xAxisName={attrs.input.xAxisName}
-              onChangeXAxisName={onChangeXAxisName}
-              xAxisSort={attrs.input.xAxisSort}
-              onChangeXAxisSort={onChangeXAxisSort}
-              xAxisGroupFunction={attrs.input.xAxisGroupFunction}
-              onChangeXAxisGroupFunction={onChangeXAxisGroupFunction}
-              yAxes={attrs.input.yAxes}
-              onChangeYAxes={onChangeYAxes}
-              histogramFormat={attrs.input.histogramFormat}
-              onChangeHistogramFormat={onChangeHistogramFormat}
-              histogramBin={attrs.input.histogramBin}
-              onChangeHistogramBin={onChangeHistogramBin}
-              numberValuesFormat={null}
-              onChangeNumberValuesFormat={onChangeNumberValuesFormat}
-              dataLabels={attrs.input.dataLabels}
-              onChangeDataLabels={onChangeDataLabels}
-              isEditable={props.isEditable}
-              result={attrs.output?.result ?? null}
-              onChangeSeries={onChangeSeries}
-              onChangeAllSeries={onChangeAllSeries}
-            />
-            <VisualizationViewV2
-              title={attrs.title}
-              input={attrs.input}
-              tooManyDataPointsHidden={tooManyDataPointsHidden}
-              onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
-              loading={viewLoading}
-              error={attrs.error}
-              dataframe={dataframe}
-              onNewSQL={onNewSQL}
-              result={attrs.output?.result ?? null}
-              controlsHidden={attrs.controlsHidden}
-              isFullscreen={isFullscreen}
-              renderer={props.renderer}
-              isHidden={attrs.controlsHidden}
-              onToggleHidden={onToggleHidden}
-              onExportToPNG={onExportToPNG}
-              isDashboard={props.isDashboard}
-              isEditable={props.isEditable}
-            />
-          </div>
-          <div
-            className={clsx(
-              'absolute transition-opacity opacity-0 group-hover/block:opacity-100 right-0 translate-x-full pl-1.5 top-0 flex flex-col gap-y-1',
-              viewLoading ? 'opacity-100' : 'opacity-0',
-              {
-                hidden: !props.isEditable,
-              }
-            )}
-          >
-            <button
-              className={clsx(
-                {
-                  'bg-gray-200 cursor-not-allowed':
-                    status !== 'idle' && status !== 'running',
-                  'bg-red-200': status === 'running' && envStatus === 'Running',
-                  'bg-yellow-300':
-                    status === 'running' && envStatus !== 'Running',
-                  'bg-primary-200': status === 'idle',
-                },
-                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-              )}
-              onClick={onRunAbort}
-              disabled={
+        <div
+          className={clsx(
+            'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-b border-gray-200',
+            {
+              hidden: attrs.input.filters.length === 0,
+            }
+          )}
+        >
+          {attrs.input.filters.map((filter) => (
+            <FilterSelector
+              key={filter.id}
+              filter={filter}
+              dataframe={dataframe ?? { name: '', columns: [] }}
+              onChange={onChangeFilter}
+              onRemove={onRemoveFilter}
+              isInvalid={
                 !dataframe ||
-                (!attrs.input.xAxis &&
-                  attrs.input.chartType !== 'number' &&
-                  attrs.input.chartType !== 'trend') ||
-                (!hasAValidYAxis && attrs.input.chartType !== 'histogram') ||
-                !props.isEditable ||
-                (status !== 'idle' && status !== 'running')
+                (filter.column !== null &&
+                  (!dataframe.columns.some(
+                    (c) => c.name === filter.column?.name
+                  ) ||
+                    isInvalidVisualizationFilter(filter, dataframe)))
               }
-            >
-              {status !== 'idle' ? (
-                <div>
-                  {status === 'enqueued' ? (
-                    <ClockIcon className="w-3 h-3 text-gray-500" />
-                  ) : (
-                    <StopIcon className="w-3 h-3 text-gray-500" />
-                  )}
-                  <VisualizationExecTooltip
-                    envStatus={envStatus}
-                    envLoading={envLoading}
-                    execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
-                    runningAll={execution?.batch.isRunAll() ?? false}
-                  />
-                </div>
-              ) : (
-                <RunVisualizationTooltip />
-              )}
-            </button>
-            <HiddenInPublishedButton
-              isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-              onToggleIsBlockHiddenInPublished={
-                onToggleIsBlockHiddenInPublished
-              }
-              hasMultipleTabs={props.hasMultipleTabs}
-              isCodeHidden={false}
-              isOutputHidden={false}
+              disabled={!props.isEditable}
             />
-          </div>
+          ))}
+        </div>
+        <div className="h-[580px] flex items-center">
+          <VisualizationControlsV2
+            isHidden={attrs.controlsHidden || !props.isEditable}
+            dataframe={dataframe}
+            chartType={attrs.input.chartType}
+            onChangeChartType={onChangeChartType}
+            xAxis={attrs.input.xAxis}
+            onChangeXAxis={onChangeXAxis}
+            xAxisName={attrs.input.xAxisName}
+            onChangeXAxisName={onChangeXAxisName}
+            xAxisSort={attrs.input.xAxisSort}
+            onChangeXAxisSort={onChangeXAxisSort}
+            xAxisGroupFunction={attrs.input.xAxisGroupFunction}
+            onChangeXAxisGroupFunction={onChangeXAxisGroupFunction}
+            yAxes={attrs.input.yAxes}
+            onChangeYAxes={onChangeYAxes}
+            histogramFormat={attrs.input.histogramFormat}
+            onChangeHistogramFormat={onChangeHistogramFormat}
+            histogramBin={attrs.input.histogramBin}
+            onChangeHistogramBin={onChangeHistogramBin}
+            numberValuesFormat={null}
+            onChangeNumberValuesFormat={onChangeNumberValuesFormat}
+            dataLabels={attrs.input.dataLabels}
+            onChangeDataLabels={onChangeDataLabels}
+            isEditable={props.isEditable}
+            result={attrs.output?.result ?? null}
+            onChangeSeries={onChangeSeries}
+            onChangeAllSeries={onChangeAllSeries}
+          />
+          <VisualizationViewV2
+            title={attrs.title}
+            input={attrs.input}
+            tooManyDataPointsHidden={tooManyDataPointsHidden}
+            onHideTooManyDataPointsWarning={onHideTooManyDataPointsWarning}
+            loading={viewLoading}
+            error={attrs.error}
+            dataframe={dataframe}
+            onNewSQL={onNewSQL}
+            result={attrs.output?.result ?? null}
+            controlsHidden={attrs.controlsHidden}
+            isFullscreen={isFullscreen}
+            renderer={props.renderer}
+            isHidden={attrs.controlsHidden}
+            onToggleHidden={onToggleHidden}
+            onExportToPNG={onExportToPNG}
+            isDashboard={props.isDashboard}
+            isEditable={props.isEditable}
+          />
+        </div>
+        <div
+          className={clsx(
+            'absolute transition-opacity opacity-0 group-hover/block:opacity-100 right-0 translate-x-full pl-1.5 top-0 flex flex-col gap-y-1',
+            viewLoading ? 'opacity-100' : 'opacity-0',
+            {
+              hidden: !props.isEditable,
+            }
+          )}
+        >
+          <button
+            className={clsx(
+              {
+                'bg-gray-200 cursor-not-allowed':
+                  status !== 'idle' && status !== 'running',
+                'bg-red-200': status === 'running' && envStatus === 'Running',
+                'bg-yellow-300':
+                  status === 'running' && envStatus !== 'Running',
+                'bg-primary-200': status === 'idle',
+              },
+              'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+            )}
+            onClick={onRunAbort}
+            disabled={
+              !dataframe ||
+              (!attrs.input.xAxis &&
+                attrs.input.chartType !== 'number' &&
+                attrs.input.chartType !== 'trend') ||
+              (!hasAValidYAxis && attrs.input.chartType !== 'histogram') ||
+              !props.isEditable ||
+              (status !== 'idle' && status !== 'running')
+            }
+          >
+            {status !== 'idle' ? (
+              <div>
+                {status === 'enqueued' ? (
+                  <ClockIcon className="w-3 h-3 text-gray-500" />
+                ) : (
+                  <StopIcon className="w-3 h-3 text-gray-500" />
+                )}
+                <VisualizationExecTooltip
+                  envStatus={envStatus}
+                  envLoading={envLoading}
+                  execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
+                  runningAll={execution?.batch.isRunAll() ?? false}
+                />
+              </div>
+            ) : (
+              <RunVisualizationTooltip />
+            )}
+          </button>
+          <HiddenInPublishedButton
+            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={false}
+            isOutputHidden={false}
+          />
         </div>
       </div>
-    )
-  }
-
-  return (
-    <div
-      onClick={onClickWithin}
-      className={clsx(
-        'relative group/block bg-white printable-block h-full rounded-md border',
-        props.isBlockHiddenInPublished && 'border-dashed',
-        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-        props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
-      )}
-      data-block-id={attrs.id}
-    >
-      <div className="h-full"></div>
     </div>
   )
 }

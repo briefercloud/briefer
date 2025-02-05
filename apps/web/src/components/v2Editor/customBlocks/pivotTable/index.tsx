@@ -28,6 +28,7 @@ import { PivotTableExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { TableCellsIcon } from '@heroicons/react/24/solid'
 
 interface Props {
   workspaceId: string
@@ -395,35 +396,46 @@ function PivotTableBlock(props: Props) {
 
   return (
     <div
+      className="relative group/block"
       onClick={onClickWithin}
-      className={clsx(
-        'relative group/block bg-white printable-block h-full rounded-md border',
-        props.isBlockHiddenInPublished && 'border-dashed',
-        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-        props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
-      )}
       data-block-id={attrs.id}
     >
-      <div className="h-full">
-        <div className="py-3">
+      <div
+        className={clsx(
+          'rounded-md border',
+          props.isBlockHiddenInPublished && 'border-dashed',
+          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+
+          props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
+        )}
+      >
+        <div
+          className={clsx(
+            'rounded-md',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
+          )}
+        >
           <div
-            className="flex items-center justify-between px-3 pr-3 gap-x-2 h-[1.6rem] font-sans"
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
             ref={(d) => {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex gap-x-4 h-full w-full">
-              <input
-                type="text"
-                disabled={!isEditable}
-                className={clsx(
-                  'font-sans bg-transparent pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 disabled:ring-0 hover:ring-1 focus:ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs h-full'
-                )}
-                placeholder="Pivot Table"
-                value={attrs.title}
-                onChange={onChangeTitle}
-              />
-              <div className="print:hidden flex gap-x-2 min-h-3 text-xs">
+            <div className="flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <TableCellsIcon className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={clsx(
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                  )}
+                  placeholder="Pivot Table (click to add a title)"
+                  value={attrs.title}
+                  onChange={onChangeTitle}
+                  disabled={!props.isEditable}
+                />
+              </div>
+              <div className="print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200">
                 <HeaderSelect
                   value={dataframe?.name ?? ''}
                   onChange={onChangeDataframe}
@@ -437,7 +449,7 @@ function PivotTableBlock(props: Props) {
             </div>
           </div>
         </div>
-        <div className="h-[496px] border-t border-gray-200 flex items-center">
+        <div className="h-[580px] flex items-center">
           <PivotTableControls
             dataframe={dataframe}
             rows={attrs.rows}
