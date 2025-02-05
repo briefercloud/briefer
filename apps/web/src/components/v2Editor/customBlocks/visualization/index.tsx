@@ -14,7 +14,7 @@ import {
   YBlock,
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
-import { ChartPieIcon, FunnelIcon } from '@heroicons/react/24/solid'
+import { ChartPieIcon } from '@heroicons/react/24/solid'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
@@ -44,6 +44,7 @@ import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
+import { FunnelIcon } from '@heroicons/react/24/outline'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],

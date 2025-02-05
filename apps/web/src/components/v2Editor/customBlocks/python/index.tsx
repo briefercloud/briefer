@@ -383,7 +383,7 @@ function PythonBlock(props: Props) {
             }}
           >
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
-              <div className="select-none text-gray-300 text-xs flex items-center h-2/3 w-full flex gap-x-1.5">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
                 {/*
                   TODO: Add back in when we have a way to toggle code hidden
 
@@ -398,7 +398,7 @@ function PythonBlock(props: Props) {
                 <input
                   type="text"
                   className={clsx(
-                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
                   )}
                   placeholder="Python (click to add a title)"
                   value={title}
