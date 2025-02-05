@@ -354,7 +354,7 @@ function Tab(props: TabProps) {
           'flex gap-x-2 items-center border-l border-r border-t border-gray-200 px-2.5 py-1.5 rounded-t-sm whitespace-nowrap',
           props.tabRef.isCurrent
             ? 'bg-white text-gray-950'
-            : 'bg-gray-50 text-gray-400',
+            : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
           isDragging ? 'opacity-0' : '',
           !props.isFirst ? '-ml-[1px]' : ''
         )}
