@@ -185,37 +185,15 @@ function SQLSuccess(props: SQLSuccessProps) {
           <LargeSpinner color="#deff80" />
         </div>
       )}
-      <div
-        className={clsx(
-          props.dashboardMode !== 'none' ? 'h-[calc(100%-2rem)]' : 'h-full',
-          'max-w-full ph-no-capture bg-white font-sans rounded-b-md'
-        )}
-      >
-        {/*
-            TODO: Add back in when we have a better way to show/hide the results
-            props.dashboardMode === 'none' && (
-          <div className="p-3 text-xs text-gray-300 flex items-center gap-x-0.5 justify-between">
-            <div className="flex">
-              <button
-                className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm"
-                onClick={props.toggleResultHidden}
-              >
-                {props.isResultHidden ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronDownIcon />
-                )}
-              </button>
-              <span className="print:hidden pl-1.5">
-                {props.isResultHidden ? 'Results collapsed' : 'Query results'}
-              </span>
-            </div>
-
-          </div>
-        )
-
-       */}
-        {props.isResultHidden && props.dashboardMode === 'none' ? null : (
+      {(!props.isResultHidden || props.dashboardMode !== 'none') && (
+        <div
+          className={clsx(
+            props.dashboardMode !== 'none'
+              ? 'h-[calc(100%-2rem)] rounded-b-md'
+              : 'h-full border-b',
+            'max-w-full ph-no-capture bg-white font-sans'
+          )}
+        >
           <Table
             rows={result.rows}
             columns={props.result.columns}
@@ -223,11 +201,11 @@ function SQLSuccess(props: SQLSuccessProps) {
             sort={props.sort}
             onChangeSort={props.onChangeSort}
           />
-        )}
-      </div>
+        </div>
+      )}
 
       {props.isResultHidden && props.dashboardMode === 'none' ? null : (
-        <div className="flex w-full items-center justify-between border-t border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400">
+        <div className="flex w-full items-center justify-between border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400">
           <div className="flex-1">
             {result.count} {result.count === 1 ? 'row' : 'rows'}
             {typeof result.queryDurationMs === 'number' &&
@@ -308,7 +286,7 @@ function SQLSuccess(props: SQLSuccessProps) {
 
 function SQLAborted() {
   return (
-    <div className="text-xs border-t p-4">
+    <div className="text-xs p-4">
       <div className="flex border border-red-300 p-2 gap-x-3 items-center">
         <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
         <div>
@@ -329,7 +307,7 @@ function SQLSyntaxError(props: {
   toggleResultHidden: () => void
 }) {
   return (
-    <div className="text-xs border-t">
+    <div className="text-xs">
       {props.dashboardMode === 'none' && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
@@ -417,7 +395,7 @@ function SQLPythonError(props: {
   toggleResultHidden: () => void
 }) {
   return (
-    <div className="text-xs border-t">
+    <div className="text-xs">
       {props.dashboardMode === 'none' && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
