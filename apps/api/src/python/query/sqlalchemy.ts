@@ -523,6 +523,11 @@ def get_data_source_structure(data_source_id, credentials_info=None):
                         exceptions.append(e)
                         print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
                         continue
+
+                    if len(tables) >= 20:
+                        schema_from_tables(conn, inspector, tables, default_schema)
+                        tables = []
+
                 schema_from_tables(conn, inspector, tables, default_schema)
                 if len(tables) == 0 and len(exceptions) > 0:
                     raise BrieferAggregateException(exceptions)
