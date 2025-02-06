@@ -70,7 +70,7 @@ function HiddenInPublishedButton(props: Props) {
                         <BookUpIcon className="w-4 h-4 " />
                         <span>
                           {props.isBlockHiddenInPublished ? 'Show' : 'Hide'} in
-                          saved version
+                          view mode
                         </span>
                       </Menu.Item>
                     </div>
