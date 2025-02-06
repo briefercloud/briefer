@@ -50,6 +50,7 @@ interface Props {
   isCursorInserting: boolean
   userId: string | null
   executionQueue: ExecutionQueue
+  isFullScreen: boolean
 }
 function PivotTableBlock(props: Props) {
   const attrs = getPivotTableAttributes(props.block, props.blocks)
@@ -394,6 +395,8 @@ function PivotTableBlock(props: Props) {
     )
   }
 
+  console.log(props.isFullScreen)
+
   return (
     <div
       className="relative group/block"
@@ -537,10 +540,13 @@ function PivotTableBlock(props: Props) {
                   pageExecution?.batch.isRunAll() ??
                   false
                 }
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             </div>
           ) : (
-            <RunPivotTableTooltip />
+            <RunPivotTableTooltip
+              position={props.isFullScreen ? 'left' : 'top'}
+            />
           )}
         </button>
         <HiddenInPublishedButton
@@ -555,11 +561,18 @@ function PivotTableBlock(props: Props) {
   )
 }
 
-function RunPivotTableTooltip() {
+function RunPivotTableTooltip(props: { position: 'top' | 'left' }) {
   return (
     <div>
       <ArrowPathIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
+      <div
+        className={clsx(
+          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
+          props.position === 'top'
+            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
+            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
+        )}
+      >
         <span>Refresh</span>
       </div>
     </div>

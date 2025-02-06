@@ -1,4 +1,3 @@
-import useDropdownPosition from '@/hooks/dropdownPosition'
 import { Menu, Transition } from '@headlessui/react'
 import {
   ForwardIcon,
@@ -11,7 +10,7 @@ import {
   PlayIcon,
 } from '@heroicons/react/24/outline'
 import clsx from 'clsx'
-import { useRef } from 'react'
+import { CSSProperties, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 const DragHandle = ({
@@ -26,6 +25,7 @@ const DragHandle = ({
   onDuplicateBlock,
   onHideAllTabs,
   targetRef,
+  menuPosition,
 }: {
   isDragging: boolean
   hasMultipleTabs: boolean
@@ -38,22 +38,45 @@ const DragHandle = ({
   onDuplicateBlock: () => void
   onHideAllTabs: () => void
   targetRef: React.RefObject<HTMLDivElement>
+  menuPosition: 'left' | 'right'
 }) => {
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const { onOpen, dropdownPosition, containerRef } = useDropdownPosition(
-    buttonRef,
-    'top',
-    4
-  )
+  const menuContainerRef = useRef<HTMLDivElement>(null)
 
   return (
     <Menu as="div" className=" inline-block text-left">
       {({ open }) => {
+        let portalStyle: CSSProperties = {}
+        if (buttonRef.current && menuContainerRef.current) {
+          const xScreenPosition = buttonRef.current.getBoundingClientRect().left
+          const yScreenPosition = buttonRef.current.getBoundingClientRect().top
+
+          switch (menuPosition) {
+            case 'left':
+              portalStyle = {
+                top: yScreenPosition,
+                left:
+                  xScreenPosition -
+                  menuContainerRef.current.getBoundingClientRect().width -
+                  6,
+              }
+              break
+            case 'right':
+              portalStyle = {
+                top: yScreenPosition,
+                left:
+                  xScreenPosition +
+                  buttonRef.current.getBoundingClientRect().width +
+                  6,
+              }
+              break
+          }
+        }
+
         return (
           <>
             <Menu.Button
               ref={buttonRef}
-              onClick={onOpen}
               className="rounded-md hover:bg-gray-100 h-6 w-6 flex items-center justify-center"
             >
               <div
@@ -88,18 +111,13 @@ const DragHandle = ({
                 leave="transition-opacity duration-300"
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
-                style={{
-                  top: dropdownPosition.top,
-                  right:
-                    dropdownPosition.right +
-                    (buttonRef.current?.getBoundingClientRect().width ?? 0) +
-                    6,
-                }}
+                style={portalStyle}
+                show={open}
               >
                 <Menu.Items
                   as="div"
-                  ref={containerRef}
-                  className="absolute -translate-x-full z-30 rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600"
+                  ref={menuContainerRef}
+                  className="absolute z-30 rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600"
                 >
                   <div className="flex flex-col divide-y divide-gray-200">
                     <div className="py-0.5 px-0.5">

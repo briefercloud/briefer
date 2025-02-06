@@ -217,6 +217,7 @@ interface SaveReusableComponentButtonProps {
   onSave: () => void
   disabled: boolean
   isComponentInstance: boolean
+  tooltipPosition: 'top' | 'left'
 }
 export function SaveReusableComponentButton(
   props: SaveReusableComponentButtonProps
@@ -239,7 +240,7 @@ export function SaveReusableComponentButton(
     <>
       <div className="relative">
         <Tooltip
-          position="top"
+          position={props.tooltipPosition}
           message={
             props.isComponentInstance
               ? "You can't save this component because it's an instance of an existing component."

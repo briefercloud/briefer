@@ -97,6 +97,7 @@ function GridElement(props: Props) {
             userId={props.userId}
             executionQueue={props.executionQueue}
             aiTasks={props.aiTasks}
+            isFullScreen={true}
           />
         ),
         onPython: (block) => (
@@ -116,6 +117,7 @@ function GridElement(props: Props) {
             userId={props.userId}
             executionQueue={props.executionQueue}
             aiTasks={props.aiTasks}
+            isFullScreen={true}
           />
         ),
         onVisualization: (block) => (
@@ -136,6 +138,7 @@ function GridElement(props: Props) {
             isCursorInserting={false}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            isFullscreen={true}
           />
         ),
         onVisualizationV2: (block) => (
@@ -156,6 +159,7 @@ function GridElement(props: Props) {
             isCursorInserting={false}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            isFullscreen={true}
           />
         ),
         onPivotTable: (block) => (
@@ -175,6 +179,7 @@ function GridElement(props: Props) {
             isCursorInserting={false}
             userId={props.userId}
             executionQueue={props.executionQueue}
+            isFullScreen={true}
           />
         ),
         onInput: (block) => (

@@ -85,6 +85,7 @@ interface Props {
   executionQueue: ExecutionQueue
   userId: string | null
   aiTasks: AITasks
+  isFullScreen: boolean
 }
 function SQLBlock(props: Props) {
   const properties = useProperties()
@@ -875,12 +876,15 @@ function SQLBlock(props: Props) {
                 envLoading={envLoading}
                 execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             </div>
           ) : props.dataSources.size > 0 || headerSelectValue === 'duckdb' ? (
-            <RunQueryTooltip />
+            <RunQueryTooltip position={props.isFullScreen ? 'left' : 'top'} />
           ) : (
-            <MissingDataSourceTooltip />
+            <MissingDataSourceTooltip
+              position={props.isFullScreen ? 'left' : 'top'}
+            />
           )}
         </button>
 
@@ -900,6 +904,7 @@ function SQLBlock(props: Props) {
             onSave={onSaveReusableComponent}
             disabled={!props.isEditable || isComponentInstance}
             isComponentInstance={isComponentInstance}
+            tooltipPosition={props.isFullScreen ? 'left' : 'top'}
           />
         )}
 
@@ -917,11 +922,18 @@ function SQLBlock(props: Props) {
   )
 }
 
-const MissingDataSourceTooltip = () => {
+function MissingDataSourceTooltip(props: { position: 'top' | 'left' }) {
   return (
     <div>
       <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
+      <div
+        className={clsx(
+          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
+          props.position === 'top'
+            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
+            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
+        )}
+      >
         <span>No data sources.</span>
         <span className="inline-flex items-center text-gray-400">
           Add a data source to run queries.
@@ -931,11 +943,18 @@ const MissingDataSourceTooltip = () => {
   )
 }
 
-const RunQueryTooltip = () => {
+function RunQueryTooltip(props: { position: 'top' | 'left' }) {
   return (
     <div>
       <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
+      <div
+        className={clsx(
+          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
+          props.position === 'top'
+            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
+            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
+        )}
+      >
         <span>Run query</span>
         <span className="inline-flex gap-x-1 items-center text-gray-400">
           <span>⌘</span>

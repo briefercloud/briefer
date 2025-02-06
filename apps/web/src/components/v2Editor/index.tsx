@@ -102,6 +102,7 @@ import useEditorAwareness, {
 } from '@/hooks/useEditorAwareness'
 import { SQLExtensionProvider } from './CodeEditor/sql'
 import VisualizationV2Block from './customBlocks/visualizationV2'
+import useSideBar from '@/hooks/useSideBar'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -423,6 +424,7 @@ const DraggableTabbedBlock = (props: {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -634,6 +636,7 @@ file`
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ))
   }, [
@@ -806,6 +809,8 @@ file`
     })
   }, [tabRefs, blocks])
 
+  const [isSideBarOpen] = useSideBar()
+
   return (
     <div className="flex group/wrapper gap-x-1 relative">
       <div
@@ -832,6 +837,7 @@ file`
           onDeleteBlock={onRemoveBlockGroup}
           targetRef={popupContainerRef}
           onHideAllTabs={onHideAllTabs}
+          menuPosition={isSideBarOpen ? 'left' : 'right'}
         />
       </div>
       <div className="flex-grow max-w-full">
@@ -956,6 +962,7 @@ const V2EditorRow = (props: {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }) => {
   const isLast = props.index === props.totalBlocks - 1
   return (
@@ -994,6 +1001,7 @@ const V2EditorRow = (props: {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
       <div className={clsx(isLast ? 'pt-2' : '')}>
         <Dropzone
@@ -1450,6 +1458,7 @@ const Editor = (props: Props) => {
           userId={props.userId}
           executionQueue={props.executionQueue}
           aiTasks={props.aiTasks}
+          isFullScreen={props.isFullScreen}
         />
       )
     })
@@ -1623,6 +1632,7 @@ interface TabRefProps {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }
 function TabRef(props: TabRefProps) {
   const [editorState] = useEditorAwareness()
@@ -1667,6 +1677,7 @@ function TabRef(props: TabRefProps) {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onPython: (block) => (
@@ -1688,6 +1699,7 @@ function TabRef(props: TabRefProps) {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onVisualization: (block) => (
@@ -1710,6 +1722,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullscreen={props.isFullScreen}
       />
     ),
     onVisualizationV2: (block) => (
@@ -1732,6 +1745,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullscreen={props.isFullScreen}
       />
     ),
     onInput: (block) => (
@@ -1824,6 +1838,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onPivotTable: (block) => (
@@ -1845,6 +1860,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
   })

@@ -333,6 +333,7 @@ function BlockListItem(props: BlockListItemProps) {
               userId={props.userId}
               executionQueue={props.executionQueue}
               aiTasks={props.aiTasks}
+              isFullScreen={true}
             />
           </div>
         ),
@@ -352,6 +353,7 @@ function BlockListItem(props: BlockListItemProps) {
             userId={props.userId}
             executionQueue={props.executionQueue}
             aiTasks={props.aiTasks}
+            isFullScreen={true}
           />
         ),
         onVisualization: (block) => (
@@ -374,6 +376,7 @@ function BlockListItem(props: BlockListItemProps) {
               isCursorInserting={false}
               userId={props.userId}
               executionQueue={props.executionQueue}
+              isFullScreen={true}
             />
           </div>
         ),
@@ -396,6 +399,7 @@ function BlockListItem(props: BlockListItemProps) {
               isCursorInserting={false}
               userId={props.userId}
               executionQueue={props.executionQueue}
+              isFullScreen={true}
             />
           </div>
         ),
@@ -467,6 +471,7 @@ function BlockListItem(props: BlockListItemProps) {
               isCursorInserting={false}
               userId={props.userId}
               executionQueue={props.executionQueue}
+              isFullScreen={true}
             />
           </div>
         ),

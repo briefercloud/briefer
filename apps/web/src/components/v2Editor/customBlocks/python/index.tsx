@@ -27,7 +27,7 @@ import {
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
   ExecutingPythonText,
   LoadingEnvText,
@@ -68,6 +68,7 @@ interface Props {
   executionQueue: ExecutionQueue
   aiTasks: AITasks
   userId: string | null
+  isFullScreen: boolean
 }
 function PythonBlock(props: Props) {
   const properties = useProperties()
@@ -569,10 +570,11 @@ function PythonBlock(props: Props) {
                 envLoading={envLoading}
                 execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             </div>
           ) : (
-            <RunPythonTooltip />
+            <RunPythonTooltip position={props.isFullScreen ? 'left' : 'top'} />
           )}
         </button>
         <HiddenInPublishedButton
@@ -590,6 +592,7 @@ function PythonBlock(props: Props) {
             onSave={onSaveReusableComponent}
             disabled={!props.isEditable || isComponentInstance}
             isComponentInstance={isComponentInstance}
+            tooltipPosition={props.isFullScreen ? 'left' : 'top'}
           />
         )}
       </div>
@@ -597,11 +600,18 @@ function PythonBlock(props: Props) {
   )
 }
 
-function RunPythonTooltip() {
+function RunPythonTooltip(props: { position: 'top' | 'left' }) {
   return (
     <div>
       <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
+      <div
+        className={clsx(
+          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
+          props.position === 'top'
+            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
+            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
+        )}
+      >
         <span>Run code</span>
         <span className="inline-flex gap-x-1 items-center text-gray-400">
           <span>⌘</span>

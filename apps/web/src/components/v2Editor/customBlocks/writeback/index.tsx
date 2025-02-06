@@ -44,6 +44,7 @@ interface Props {
   isCursorInserting: boolean
   userId: string | null
   executionQueue: ExecutionQueue
+  isFullScreen: boolean
 }
 function WritebackBlock(props: Props) {
   const {
@@ -274,12 +275,20 @@ function WritebackBlock(props: Props) {
                 envLoading={envLoading}
                 execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             </div>
           ) : (
             <div>
               <PlayIcon className="w-3 h-3 text-gray-500" />
-              <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
+              <div
+                className={clsx(
+                  'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
+                  !props.isFullScreen
+                    ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
+                    : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
+                )}
+              >
                 <span>Run writeback</span>
               </div>
             </div>
