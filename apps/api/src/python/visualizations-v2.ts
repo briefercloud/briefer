@@ -6,6 +6,7 @@ import {
   jsonString,
   VisualizationFilter,
   isInvalidVisualizationFilter,
+  isUnfinishedVisualizationFilter,
 } from '@briefer/types'
 import { executeCode, PythonExecutionError } from './index.js'
 import { IJupyterManager } from '../jupyter/index.js'
@@ -19,7 +20,7 @@ import { logger } from '../logger.js'
 
 function getCode(dataframe: DataFrame, input: VisualizationV2BlockInput) {
   const filters = input.filters.filter((f) => {
-    if (isInvalidVisualizationFilter(f, dataframe)) {
+    if (isUnfinishedVisualizationFilter(f)) {
       return false
     }
 
