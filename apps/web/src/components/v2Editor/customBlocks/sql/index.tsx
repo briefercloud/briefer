@@ -902,6 +902,7 @@ function SQLBlock(props: Props) {
           onToggleIsCodeHidden={toggleCodeHidden}
           isOutputHidden={isResultHidden}
           onToggleIsOutputHidden={toggleResultHidden}
+          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
 
         {((result && !isResultHidden) || !isCodeHidden) && (

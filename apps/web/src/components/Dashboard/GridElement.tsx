@@ -138,7 +138,7 @@ function GridElement(props: Props) {
             isCursorInserting={false}
             userId={props.userId}
             executionQueue={props.executionQueue}
-            isFullscreen={true}
+            isFullScreen={true}
           />
         ),
         onVisualizationV2: (block) => (
@@ -159,7 +159,7 @@ function GridElement(props: Props) {
             isCursorInserting={false}
             userId={props.userId}
             executionQueue={props.executionQueue}
-            isFullscreen={true}
+            isFullScreen={true}
           />
         ),
         onPivotTable: (block) => (

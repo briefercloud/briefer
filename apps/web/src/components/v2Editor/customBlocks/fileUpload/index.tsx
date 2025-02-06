@@ -582,6 +582,7 @@ function FileUploadBlock(props: Props) {
             hasMultipleTabs={props.hasMultipleTabs}
             isCodeHidden={false}
             isOutputHidden={false}
+            tooltipPosition="top"
           />
         </div>
       )}

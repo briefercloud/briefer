@@ -585,6 +585,7 @@ function PythonBlock(props: Props) {
           onToggleIsCodeHidden={toggleCodeHidden}
           isOutputHidden={isResultHidden ?? false}
           onToggleIsOutputHidden={toggleResultHidden}
+          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
         {!isCodeHidden && (
           <SaveReusableComponentButton

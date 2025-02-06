@@ -555,6 +555,7 @@ function PivotTableBlock(props: Props) {
           hasMultipleTabs={props.hasMultipleTabs}
           isCodeHidden={false}
           isOutputHidden={false}
+          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
       </div>
     </div>

@@ -178,7 +178,7 @@ interface Props {
   isCursorInserting: boolean
   executionQueue: ExecutionQueue
   userId: string | null
-  isFullscreen: boolean
+  isFullScreen: boolean
 }
 function VisualizationBlock(props: Props) {
   const dataframe = getDataframe(props.block, props.dataframes)
@@ -518,7 +518,7 @@ function VisualizationBlock(props: Props) {
     }
   }, [isDirty, props.block, onRun])
 
-  const [isFullscreen] = useFullScreenDocument(props.document.id)
+  const [isFullScreen] = useFullScreenDocument(props.document.id)
 
   const onChangeYAxes = useCallback(
     (yAxes: YAxis[]) => {
@@ -584,7 +584,7 @@ function VisualizationBlock(props: Props) {
         dataframe={dataframe}
         onNewSQL={onNewSQL}
         controlsHidden={controlsHidden}
-        isFullscreen={isFullscreen}
+        isFullScreen={isFullScreen}
         renderer={props.renderer}
         isHidden={controlsHidden}
         onToggleHidden={onToggleHidden}
@@ -725,7 +725,7 @@ function VisualizationBlock(props: Props) {
             dataframe={dataframe}
             onNewSQL={onNewSQL}
             controlsHidden={controlsHidden}
-            isFullscreen={isFullscreen}
+            isFullScreen={isFullScreen}
             renderer={props.renderer}
             isHidden={controlsHidden}
             onToggleHidden={onToggleHidden}
@@ -776,12 +776,12 @@ function VisualizationBlock(props: Props) {
                 envLoading={envLoading}
                 execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
                 runningAll={execution?.batch.isRunAll() ?? false}
-                position={props.isFullscreen ? 'left' : 'top'}
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             </div>
           ) : (
             <RunVisualizationTooltip
-              position={props.isFullscreen ? 'left' : 'top'}
+              position={props.isFullScreen ? 'left' : 'top'}
             />
           )}
         </button>
@@ -791,6 +791,7 @@ function VisualizationBlock(props: Props) {
           hasMultipleTabs={props.hasMultipleTabs}
           isCodeHidden={false}
           isOutputHidden={false}
+          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
       </div>
     </div>

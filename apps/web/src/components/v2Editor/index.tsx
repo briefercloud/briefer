@@ -1722,7 +1722,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
-        isFullscreen={props.isFullScreen}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onVisualizationV2: (block) => (
@@ -1745,7 +1745,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
-        isFullscreen={props.isFullScreen}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onInput: (block) => (

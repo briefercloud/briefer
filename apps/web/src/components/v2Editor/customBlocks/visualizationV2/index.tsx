@@ -115,7 +115,7 @@ interface Props {
   isCursorInserting: boolean
   executionQueue: ExecutionQueue
   userId: string | null
-  isFullscreen: boolean
+  isFullScreen: boolean
 }
 function VisualizationBlockV2(props: Props) {
   const attrs = useYMemo(
@@ -549,7 +549,7 @@ function VisualizationBlockV2(props: Props) {
     }
   }, [isDirty, props.block, onRun])
 
-  const [isFullscreen] = useFullScreenDocument(props.document.id)
+  const [isFullScreen] = useFullScreenDocument(props.document.id)
 
   const onChangeYAxes = useCallback(
     (yAxes: YAxisV2[]) => {
@@ -625,7 +625,7 @@ function VisualizationBlockV2(props: Props) {
         onNewSQL={onNewSQL}
         result={attrs.output?.result ?? null}
         controlsHidden={attrs.controlsHidden}
-        isFullscreen={isFullscreen}
+        isFullScreen={isFullScreen}
         renderer={props.renderer}
         isHidden={attrs.controlsHidden}
         onToggleHidden={onToggleHidden}
@@ -769,7 +769,7 @@ function VisualizationBlockV2(props: Props) {
             onNewSQL={onNewSQL}
             result={attrs.output?.result ?? null}
             controlsHidden={attrs.controlsHidden}
-            isFullscreen={isFullscreen}
+            isFullScreen={isFullScreen}
             renderer={props.renderer}
             isHidden={attrs.controlsHidden}
             onToggleHidden={onToggleHidden}
@@ -822,12 +822,12 @@ function VisualizationBlockV2(props: Props) {
                   envLoading={envLoading}
                   execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
                   runningAll={execution?.batch.isRunAll() ?? false}
-                  position={props.isFullscreen ? 'left' : 'top'}
+                  position={props.isFullScreen ? 'left' : 'top'}
                 />
               </div>
             ) : (
               <RunVisualizationTooltip
-                position={props.isFullscreen ? 'left' : 'top'}
+                position={props.isFullScreen ? 'left' : 'top'}
               />
             )}
           </button>
@@ -837,6 +837,7 @@ function VisualizationBlockV2(props: Props) {
             hasMultipleTabs={props.hasMultipleTabs}
             isCodeHidden={false}
             isOutputHidden={false}
+            tooltipPosition={props.isFullScreen ? 'left' : 'top'}
           />
         </div>
       </div>

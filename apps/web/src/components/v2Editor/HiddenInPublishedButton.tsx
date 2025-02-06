@@ -8,6 +8,7 @@ import {
 import { BookUpIcon } from 'lucide-react'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { Tooltip } from '../Tooltips'
 
 interface Props {
   isBlockHiddenInPublished: boolean
@@ -17,6 +18,7 @@ interface Props {
   onToggleIsCodeHidden?: () => void
   isOutputHidden: boolean
   onToggleIsOutputHidden?: () => void
+  tooltipPosition: 'top' | 'left'
 }
 function HiddenInPublishedButton(props: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -30,13 +32,20 @@ function HiddenInPublishedButton(props: Props) {
       {() => {
         return (
           <>
-            <Menu.Button
-              ref={buttonRef}
-              onClick={onOpen}
-              className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
+            <Tooltip
+              position={props.tooltipPosition}
+              message="Hide, collapse, or expand parts of this block."
+              active
+              tooltipClassname="w-36"
             >
-              <EyeIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-            </Menu.Button>
+              <Menu.Button
+                ref={buttonRef}
+                onClick={onOpen}
+                className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
+              >
+                <EyeIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
+              </Menu.Button>
+            </Tooltip>
             {createPortal(
               <Transition
                 as="div"
