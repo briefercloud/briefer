@@ -73,31 +73,36 @@ function HiddenInPublishedButton(props: Props) {
                           saved version
                         </span>
                       </Menu.Item>
-                      {props.onToggleIsCodeHidden && (
-                        <Menu.Item
-                          as="button"
-                          onClick={props.onToggleIsCodeHidden}
-                          className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
-                        >
-                          <CodeBracketIcon className="h-4 w-4" />
-                          <span>
-                            {props.isCodeHidden ? 'Show' : 'Hide'} code
-                          </span>
-                        </Menu.Item>
-                      )}
-                      {props.onToggleIsOutputHidden && (
-                        <Menu.Item
-                          as="button"
-                          onClick={props.onToggleIsOutputHidden}
-                          className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
-                        >
-                          <ComputerDesktopIcon className="h-4 w-4" />
-                          <span>
-                            {props.isOutputHidden ? 'Show' : 'Hide'} output
-                          </span>
-                        </Menu.Item>
-                      )}
                     </div>
+                    {(props.onToggleIsCodeHidden ||
+                      props.onToggleIsOutputHidden) && (
+                      <div className="py-0.5 px-0.5">
+                        {props.onToggleIsCodeHidden && (
+                          <Menu.Item
+                            as="button"
+                            onClick={props.onToggleIsCodeHidden}
+                            className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                          >
+                            <CodeBracketIcon className="h-4 w-4" />
+                            <span>
+                              {props.isCodeHidden ? 'Show' : 'Hide'} code
+                            </span>
+                          </Menu.Item>
+                        )}
+                        {props.onToggleIsOutputHidden && (
+                          <Menu.Item
+                            as="button"
+                            onClick={props.onToggleIsOutputHidden}
+                            className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                          >
+                            <ComputerDesktopIcon className="h-4 w-4" />
+                            <span>
+                              {props.isOutputHidden ? 'Show' : 'Hide'} output
+                            </span>
+                          </Menu.Item>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </Menu.Items>
               </Transition>,
