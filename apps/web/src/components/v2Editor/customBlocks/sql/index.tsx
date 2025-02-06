@@ -600,19 +600,21 @@ function SQLBlock(props: Props) {
       >
         <div
           className={clsx(
+            'rounded-t-md',
             statusIsDisabled ? 'bg-gray-100' : 'bg-white',
             props.hasMultipleTabs ? 'rounded-tl-none' : '',
-            !isResultHidden && !isCodeHidden && 'border-b border-gray-200',
-            isResultHidden && !isCodeHidden && 'rounded-b-md'
+            !(isResultHidden || !result) &&
+              !isCodeHidden &&
+              'border-b border-gray-200',
+            (isResultHidden || !result) && !isCodeHidden && 'rounded-b-md',
+            (isResultHidden || !result) && isCodeHidden && 'rounded-b-md'
           )}
         >
           <div
             className={clsx(
               'bg-gray-50 rounded-t-md',
               props.hasMultipleTabs ? 'rounded-tl-none' : '',
-              isCodeHidden && isResultHidden
-                ? 'rounded-b-md'
-                : 'border-b border-gray-200'
+              isCodeHidden && (isResultHidden || !result) ? 'rounded-b-md' : ''
             )}
             ref={(d) => {
               props.dragPreview?.(d)
@@ -620,8 +622,12 @@ function SQLBlock(props: Props) {
           >
             <div
               className={clsx(
-                'flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12',
-                !isCodeHidden && 'divide-x divide-gray-200'
+                'flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 rounded-t-md',
+                !isCodeHidden && 'divide-x divide-gray-200',
+                props.hasMultipleTabs ? 'rounded-tl-none' : '',
+                isCodeHidden && (isResultHidden || !result)
+                  ? 'rounded-b-md'
+                  : 'border-b border-gray-200'
               )}
             >
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
@@ -694,7 +700,7 @@ function SQLBlock(props: Props) {
               </div>
             </div>
           </div>
-          <div className={clsx(isResultHidden && 'rounded-b-md')}>
+          <div className={clsx((isResultHidden || !result) && 'rounded-b-md')}>
             <div
               className={clsx(
                 'print:hidden',
@@ -740,7 +746,7 @@ function SQLBlock(props: Props) {
               <div
                 className={clsx('print:hidden px-3 pb-3', {
                   hidden: isCodeHidden,
-                  'rounded-b-md': isResultHidden,
+                  'rounded-b-md': isResultHidden || !result,
                 })}
               >
                 <div className="flex justify-between text-xs">
