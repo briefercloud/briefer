@@ -508,7 +508,7 @@ function PythonBlock(props: Props) {
                         !props.isEditable || !hasOaiKey
                           ? 'cursor-not-allowed bg-gray-200'
                           : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                        'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
+                        'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
                       )}
                     >
                       <SparklesIcon className="w-3 h-3" />
