@@ -4,6 +4,7 @@ import {
   ClockIcon,
   SparklesIcon,
   BookOpenIcon,
+  VariableIcon,
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import {
@@ -847,7 +848,7 @@ function SQLBlock(props: Props) {
                             !props.isEditable
                               ? 'cursor-not-allowed bg-gray-200'
                               : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
+                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
                           )}
                         >
                           <BookOpenIcon className="w-3 h-3" />
@@ -872,11 +873,11 @@ function SQLBlock(props: Props) {
                                 !props.isEditable || !hasOaiKey
                                   ? 'cursor-not-allowed bg-gray-200'
                                   : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
                               )}
                               onClick={onAddVariable}
                             >
-                              <SparklesIcon className="w-3 h-3" />
+                              <VariableIcon className="w-3 h-3" />
                               <span>Variable</span>
                             </button>
                           )}
@@ -927,7 +928,7 @@ function SQLBlock(props: Props) {
                                 !props.isEditable || !hasOaiKey
                                   ? 'cursor-not-allowed bg-gray-200'
                                   : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
                               )}
                             >
                               <SparklesIcon className="w-3 h-3" />

@@ -435,7 +435,7 @@ function PythonBlock(props: Props) {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+            <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12">
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
                 <CommandLineIcon className="h-4 w-4 text-gray-400" />
                 <input
@@ -449,6 +449,14 @@ function PythonBlock(props: Props) {
                   onChange={onChangeTitle}
                 />
               </div>
+
+              {results.some((r) => r.type === 'error') && (
+                <div className="print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap">
+                  <code className="bg-red-50 text-red-700 px-1.5 py-0.5 font-mono rounded-md relative">
+                    contain errors
+                  </code>
+                </div>
+              )}
             </div>
           </div>
           <div
@@ -501,44 +509,55 @@ function PythonBlock(props: Props) {
                   !props.isPublicMode &&
                   props.isEditable &&
                   !isAIFixing && (
-                    <button
-                      disabled={!props.isEditable}
-                      onClick={onToggleEditWithAIPromptOpen}
-                      className={clsx(
-                        !props.isEditable || !hasOaiKey
-                          ? 'cursor-not-allowed bg-gray-200'
-                          : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                        'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
-                      )}
-                    >
-                      <SparklesIcon className="w-3 h-3" />
-                      <span>Edit with AI</span>
-                      <div
-                        className={clsx(
-                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
-                          hasOaiKey ? 'w-28' : 'w-40'
-                        )}
-                      >
-                        <span>
-                          {hasOaiKey
-                            ? 'Open AI edit form'
-                            : 'Missing OpenAI API key'}
-                        </span>
-                        <span className="inline-flex gap-x-1 items-center text-gray-400">
-                          {hasOaiKey ? (
-                            <>
-                              <span>⌘</span>
-                              <span>+</span>
-                              <span>e</span>
-                            </>
-                          ) : (
-                            <span>
-                              Admins can add an OpenAI key in settings.
-                            </span>
+                    <TooltipV2<HTMLButtonElement>
+                      content={(ref, pos) => (
+                        <div
+                          ref={ref}
+                          className={clsx(
+                            'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
+                            hasOaiKey ? 'w-32' : 'w-40'
                           )}
-                        </span>
-                      </div>
-                    </button>
+                          style={pos}
+                        >
+                          <span className="text-center">
+                            {hasOaiKey
+                              ? 'Open AI edit form'
+                              : 'Missing OpenAI API key'}
+                          </span>
+                          <span className="inline-flex gap-x-1 items-center text-gray-400">
+                            {hasOaiKey ? (
+                              <>
+                                <span>⌘</span>
+                                <span>+</span>
+                                <span>e</span>
+                              </>
+                            ) : (
+                              <span>
+                                Admins can add an OpenAI key in settings.
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      active={true}
+                    >
+                      {(ref) => (
+                        <button
+                          ref={ref}
+                          disabled={!props.isEditable}
+                          onClick={onToggleEditWithAIPromptOpen}
+                          className={clsx(
+                            !props.isEditable || !hasOaiKey
+                              ? 'cursor-not-allowed bg-gray-200'
+                              : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
+                          )}
+                        >
+                          <SparklesIcon className="w-3 h-3" />
+                          <span>Edit with AI</span>
+                        </button>
+                      )}
+                    </TooltipV2>
                   )}
               </div>
             </div>
@@ -547,31 +566,11 @@ function PythonBlock(props: Props) {
 
         <div
           className={clsx('p-3 text-xs border-t border-gray-200', {
-            hidden: results.length === 0,
+            hidden: isResultHidden || results.length === 0,
           })}
         >
-          <div className="print:hidden flex text-gray-300 items-center gap-x-1">
-            <button
-              className="h-4 w-4 hover:text-gray-400"
-              onClick={toggleResultHidden}
-            >
-              {isResultHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-            </button>
-            <div className="flex justify-between items-center w-full">
-              <span className="font-sans">
-                {isResultHidden ? 'Output collapsed' : 'Output'}
-              </span>
-              {results.some((r) => r.type === 'error') && (
-                <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10">
-                  contains errors
-                </span>
-              )}
-            </div>
-          </div>
-
           <ScrollBar
             className={clsx('overflow-auto ph-no-capture', {
-              hidden: isResultHidden,
               'px-0.5 pt-3.5 pb-2': !props.isPDF,
             })}
           >
