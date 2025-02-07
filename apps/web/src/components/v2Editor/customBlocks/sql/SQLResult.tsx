@@ -1,7 +1,4 @@
-import {
-  ExclamationTriangleIcon,
-  PresentationChartLineIcon,
-} from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import PageButtons from '@/components/PageButtons'
 import Spin from '@/components/Spin'
 import { useCSV } from '@/hooks/useQueryCSV'
@@ -22,13 +19,8 @@ import {
   ChevronRightIcon,
   SparklesIcon,
 } from '@heroicons/react/20/solid'
-import {
-  ArrowDownTrayIcon,
-  ChartBarIcon,
-  ChartPieIcon,
-} from '@heroicons/react/24/solid'
+import { ArrowDownTrayIcon, ChartPieIcon } from '@heroicons/react/24/solid'
 import { Tooltip } from '@/components/Tooltips'
-import { T } from 'ramda'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -228,26 +220,27 @@ function SQLSuccess(props: SQLSuccessProps) {
               props.isPublic ? 'hidden' : 'block'
             )}
           >
-            {props.dashboardMode === 'none' && (
-              <Tooltip
-                title="Visualize results"
-                message="Create a new tab with a visualization of this data."
-                className="flex h-full items-center"
-                tooltipClassname="w-40"
-                active
-              >
-                <button
-                  className={clsx(
-                    'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
-                  )}
-                  disabled={props.isAddVisualizationDisabled}
-                  onClick={props.onAddVisualization}
+            {props.dashboardMode === 'none' &&
+              !props.isAddVisualizationDisabled && (
+                <Tooltip
+                  title="Visualize results"
+                  message="Create a new tab with a visualization of this data."
+                  className="flex h-full items-center"
+                  tooltipClassname="w-40"
+                  active
                 >
-                  <ChartPieIcon className="w-3 h-3" />
-                  <span>Visualize</span>
-                </button>
-              </Tooltip>
-            )}
+                  <button
+                    className={clsx(
+                      'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
+                    )}
+                    disabled={props.isAddVisualizationDisabled}
+                    onClick={props.onAddVisualization}
+                  >
+                    <ChartPieIcon className="w-3 h-3" />
+                    <span>Visualize</span>
+                  </button>
+                </Tooltip>
+              )}
 
             <div className="flex items-center">
               <Tooltip

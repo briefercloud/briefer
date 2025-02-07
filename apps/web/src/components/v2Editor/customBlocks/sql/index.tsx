@@ -510,7 +510,7 @@ function SQLBlock(props: Props) {
 
   const flags = useFeatureFlags(props.document.workspaceId)
   const isVisualizationButtonDisabled =
-    props.block.getAttribute('result')?.type !== 'success'
+    props.block.getAttribute('result')?.type !== 'success' || !props.isEditable
   const onAddVisualization = useCallback(() => {
     const blockId = props.block.getAttribute('id')
 
