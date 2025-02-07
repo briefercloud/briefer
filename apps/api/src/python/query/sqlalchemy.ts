@@ -427,33 +427,38 @@ class BrieferAggregateException(Exception):
 
 
 
-def get_columns(conn, inspector, table_name, schema_name):
+def get_columns(engine, inspector, table_name, schema_name):
     if ${JSON.stringify(ds.type)} == "redshift":
-        result = []
-        columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
-
-        exceptions = []
-        for row in columns:
+        with engine.connect() as conn:
+            result = []
             try:
-                csv_reader = csv.reader([row[0].strip("()")])
-                column = next(csv_reader)
-                result.append({
-                    "name": column[2],
-                    "type": column[3]
-                })
+                columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
             except Exception as e:
-                print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
-                exceptions.append(e)
-                continue
+                conn.execute(text("ROLLBACK"))
+                raise e
 
-        if len(result) == 0 and len(exceptions) > 0:
-            raise BrieferAggregateException(exceptions)
+            exceptions = []
+            for row in columns:
+                try:
+                    csv_reader = csv.reader([row[0].strip("()")])
+                    column = next(csv_reader)
+                    result.append({
+                        "name": column[2],
+                        "type": column[3]
+                    })
+                except Exception as e:
+                    print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
+                    exceptions.append(e)
+                    continue
 
-        return result
+            if len(result) == 0 and len(exceptions) > 0:
+                raise BrieferAggregateException(exceptions)
+
+            return result
 
     return inspector.get_columns(table_name, schema=schema_name)
 
-def schema_from_tables(conn, inspector, tables, default_schema):
+def schema_from_tables(engine, inspector, tables, default_schema):
     made_progress = False
     exceptions = []
     for table in tables:
@@ -461,7 +466,7 @@ def schema_from_tables(conn, inspector, tables, default_schema):
         print(json.dumps({"log": f"Getting schema for table {table}"}))
         columns = []
         try:
-            for column in get_columns(conn, inspector, table_name, schema_name):
+            for column in get_columns(engine, inspector, table_name, schema_name):
                 columns.append({
                     "name": column["name"],
                     "type": str(column["type"])
@@ -494,43 +499,42 @@ def get_data_source_structure(data_source_id, credentials_info=None):
         engine = create_engine(f"${databaseUrl}")
 
     try:
-        with engine.connect() as conn:
-            # if oracle, initialize the oracle client
-            if ${JSON.stringify(ds.type)} == "oracle":
-                import oracledb
-                oracledb.init_oracle_client()
+        # if oracle, initialize the oracle client
+        if ${JSON.stringify(ds.type)} == "oracle":
+            import oracledb
+            oracledb.init_oracle_client()
 
-            inspector = inspect(engine)
+        inspector = inspect(engine)
 
-            default_schema = "public"
-            try:
-                default_schema = inspector.default_schema_name or default_schema
-            except:
-                pass
+        default_schema = "public"
+        try:
+            default_schema = inspector.default_schema_name or default_schema
+        except:
+            pass
 
-            if ${JSON.stringify(ds.type)} == "bigquery":
-                tables = inspector.get_table_names()
-                schema_from_tables(conn, inspector, tables, default_schema)
-            else:
-                tables = []
-                exceptions = []
-                for schema_name in inspector.get_schema_names():
-                    print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
-                    try:
-                        schema_tables = inspector.get_table_names(schema=schema_name)
-                        tables += [f"{schema_name}.{table}" for table in schema_tables]
-                    except Exception as e:
-                        exceptions.append(e)
-                        print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
-                        continue
+        if ${JSON.stringify(ds.type)} == "bigquery":
+            tables = inspector.get_table_names()
+            schema_from_tables(engine, inspector, tables, default_schema)
+        else:
+            tables = []
+            exceptions = []
+            for schema_name in inspector.get_schema_names():
+                print(json.dumps({"log": f"Getting table names for schema {schema_name}"}))
+                try:
+                    schema_tables = inspector.get_table_names(schema=schema_name)
+                    tables += [f"{schema_name}.{table}" for table in schema_tables]
+                except Exception as e:
+                    exceptions.append(e)
+                    print(json.dumps({"log": f"Failed to get tables for schema {schema_name}: {str(e)}"}))
+                    continue
 
-                    if len(tables) >= 20:
-                        schema_from_tables(conn, inspector, tables, default_schema)
-                        tables = []
+                if len(tables) >= 20:
+                    schema_from_tables(engine, inspector, tables, default_schema)
+                    tables = []
 
-                schema_from_tables(conn, inspector, tables, default_schema)
-                if len(tables) == 0 and len(exceptions) > 0:
-                    raise BrieferAggregateException(exceptions)
+            schema_from_tables(engine, inspector, tables, default_schema)
+            if len(tables) == 0 and len(exceptions) > 0:
+                raise BrieferAggregateException(exceptions)
     finally:
         engine.dispose()
 
