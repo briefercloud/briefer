@@ -245,6 +245,12 @@ function BrieferResult(props: {
   const option: echarts.EChartsOption = useMemo(
     () => ({
       ...props.result,
+      grid: {
+        ...props.result.grid,
+        left: '2%',
+        right: '2%',
+        bottom: props.isDashboard ? '2%' : '10%',
+      },
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
         nameGap: 40,
