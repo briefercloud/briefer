@@ -258,7 +258,9 @@ function BrieferResult(props: {
       ...props.result,
       legend: {
         ...props.result.legend,
-        padding: props.isDashboard ? [4, 28, 0, 8] : [28, 28, 0, 28],
+        padding: props.isDashboard
+          ? [props.title ? 4 : 20, 28, 0, 8]
+          : [28, 28, 0, 28],
         type: 'scroll',
         icon: 'circle',
         textStyle: {
