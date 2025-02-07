@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 
 import { VisualizationSpec } from 'react-vega'
-import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
+import { PlayIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
 import * as Y from 'yjs'
 import {
   type VisualizationBlock,
@@ -15,7 +15,14 @@ import {
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { ChartPieIcon } from '@heroicons/react/24/solid'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CSSProperties,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
 import FilterSelector from './FilterSelector'
@@ -38,13 +45,13 @@ import VisualizationView from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
 import { clone, equals, head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { FunnelIcon } from '@heroicons/react/24/outline'
+import { TooltipV2 } from '@/components/Tooltips'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -571,6 +578,53 @@ function VisualizationBlock(props: Props) {
 
   const viewLoading = isExecutionStatusLoading(status)
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before rendering the visualization.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Refresh</span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   if (props.isDashboard) {
     return (
       <VisualizationView
@@ -744,73 +798,51 @@ function VisualizationBlock(props: Props) {
           }
         )}
       >
-        <button
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-          onClick={onRunAbort}
-          disabled={
-            !dataframe ||
-            (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
-            (!hasAValidYAxis && chartType !== 'histogram') ||
-            !props.isEditable ||
-            (status !== 'idle' && status !== 'running')
-          }
-        >
-          {status !== 'idle' ? (
-            <div>
-              {status === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+          {(ref) => (
+            <button
+              ref={ref}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    status !== 'idle' && status !== 'running',
+                  'bg-red-200': status === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status === 'running' && envStatus !== 'Running',
+                  'bg-primary-200': status === 'idle',
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <VisualizationExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-                position={props.isFullScreen ? 'left' : 'top'}
-              />
-            </div>
-          ) : (
-            <RunVisualizationTooltip
-              position={props.isFullScreen ? 'left' : 'top'}
-            />
+              onClick={onRunAbort}
+              disabled={
+                !dataframe ||
+                (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
+                (!hasAValidYAxis && chartType !== 'histogram') ||
+                !props.isEditable ||
+                (status !== 'idle' && status !== 'running')
+              }
+            >
+              {status !== 'idle' ? (
+                <div>
+                  {status === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
           isCodeHidden={false}
           isOutputHidden={false}
-          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
-      </div>
-    </div>
-  )
-}
-
-function RunVisualizationTooltip(props: { position: 'top' | 'left' }) {
-  return (
-    <div>
-      <ArrowPathIcon className="w-3 h-3 text-gray-500" />
-      <div
-        className={clsx(
-          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-          props.position === 'top'
-            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
-            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
-        )}
-      >
-        <span>Refresh</span>
       </div>
     </div>
   )

@@ -16,19 +16,26 @@ import {
   type PivotTableBlock,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import { useCallback, useEffect, useState } from 'react'
+import {
+  CSSProperties,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import PivotTableControls from './PivotTableControls'
 import PivotTableView from './PivotTableView'
 import { equals, head } from 'ramda'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
-import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
+import { ClockIcon, PlayIcon, StopIcon } from '@heroicons/react/20/solid'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { PivotTableExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { TableCellsIcon } from '@heroicons/react/24/solid'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   workspaceId: string
@@ -357,6 +364,53 @@ function PivotTableBlock(props: Props) {
     editorAPI.insert(attrs.id, { scrollIntoView: false })
   }, [attrs.id, editorAPI.insert])
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before rendering the pivot table.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Refresh</span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   if (props.dashboardMode !== 'none') {
     if (!attrs.result) {
       return (
@@ -394,8 +448,6 @@ function PivotTableBlock(props: Props) {
       />
     )
   }
-
-  console.log(props.isFullScreen)
 
   return (
     <div
@@ -496,85 +548,59 @@ function PivotTableBlock(props: Props) {
           }
         )}
       >
-        <button
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                execStatus !== 'idle' &&
-                execStatus !== 'running' &&
-                execStatus !== 'completed' &&
-                execStatus !== 'unknown',
-              'bg-red-200': execStatus === 'running' && envStatus === 'Running',
-              'bg-yellow-300':
-                execStatus === 'running' && envStatus !== 'Running',
-              'bg-primary-200':
-                execStatus === 'idle' ||
-                execStatus === 'completed' ||
-                execStatus === 'unknown',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-          onClick={onRunAbort}
-          disabled={
-            !dataframe ||
-            !isEditable ||
-            (execStatus !== 'idle' &&
-              execStatus !== 'running' &&
-              execStatus !== 'completed' &&
-              execStatus !== 'unknown')
-          }
-        >
-          {isExecutionStatusLoading(execStatus) ? (
-            <div>
-              {execStatus === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+          {(ref) => (
+            <button
+              ref={ref}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    execStatus !== 'idle' &&
+                    execStatus !== 'running' &&
+                    execStatus !== 'completed' &&
+                    execStatus !== 'unknown',
+                  'bg-red-200':
+                    execStatus === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    execStatus === 'running' && envStatus !== 'Running',
+                  'bg-primary-200':
+                    execStatus === 'idle' ||
+                    execStatus === 'completed' ||
+                    execStatus === 'unknown',
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <PivotTableExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={
-                  execution?.batch.isRunAll() ??
-                  pageExecution?.batch.isRunAll() ??
-                  false
-                }
-                position={props.isFullScreen ? 'left' : 'top'}
-              />
-            </div>
-          ) : (
-            <RunPivotTableTooltip
-              position={props.isFullScreen ? 'left' : 'top'}
-            />
+              onClick={onRunAbort}
+              disabled={
+                !dataframe ||
+                !isEditable ||
+                (execStatus !== 'idle' &&
+                  execStatus !== 'running' &&
+                  execStatus !== 'completed' &&
+                  execStatus !== 'unknown')
+              }
+            >
+              {isExecutionStatusLoading(execStatus) ? (
+                <div>
+                  {execStatus === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
           isCodeHidden={false}
           isOutputHidden={false}
-          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
-      </div>
-    </div>
-  )
-}
-
-function RunPivotTableTooltip(props: { position: 'top' | 'left' }) {
-  return (
-    <div>
-      <ArrowPathIcon className="w-3 h-3 text-gray-500" />
-      <div
-        className={clsx(
-          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-          props.position === 'top'
-            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
-            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
-        )}
-      >
-        <span>Refresh</span>
       </div>
     </div>
   )

@@ -8,7 +8,8 @@ import {
 import { BookUpIcon } from 'lucide-react'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Tooltip } from '../Tooltips'
+import { TooltipV2 } from '../Tooltips'
+import { computeMenuPosition } from '@/utils/dom'
 
 interface Props {
   isBlockHiddenInPublished: boolean
@@ -18,34 +19,43 @@ interface Props {
   onToggleIsCodeHidden?: () => void
   isOutputHidden: boolean
   onToggleIsOutputHidden?: () => void
-  tooltipPosition: 'top' | 'left'
 }
 function HiddenInPublishedButton(props: Props) {
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const { onOpen, dropdownPosition, containerRef } = useDropdownPosition(
-    buttonRef,
-    'top'
-  )
+  const containerRef = useRef<HTMLDivElement>(null)
+  // const { onOpen, dropdownPosition, containerRef } = useDropdownPosition(
+  //   buttonRef,
+  //   'top'
+  // )
+  // const menuPosition = useMenuPosition(buttonRef, containerRef, 'left', 6)
+
+  // console.log(menuPosition)
 
   return (
     <Menu as="div" className="inline-block">
-      {() => {
+      {({ open }) => {
+        const menuPosition = computeMenuPosition(
+          buttonRef,
+          containerRef,
+          'left',
+          6
+        )
         return (
           <>
-            <Tooltip
-              position={props.tooltipPosition}
+            <TooltipV2<HTMLButtonElement>
               message="Hide, collapse, or expand parts of this block."
-              active
-              tooltipClassname="w-36"
+              referenceRef={buttonRef}
+              active={!open}
             >
-              <Menu.Button
-                ref={buttonRef}
-                onClick={onOpen}
-                className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
-              >
-                <EyeIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-              </Menu.Button>
-            </Tooltip>
+              {(ref) => (
+                <Menu.Button
+                  ref={ref}
+                  className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50"
+                >
+                  <EyeIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
+                </Menu.Button>
+              )}
+            </TooltipV2>
             {createPortal(
               <Transition
                 as="div"
@@ -56,18 +66,13 @@ function HiddenInPublishedButton(props: Props) {
                 leave="transition-opacity duration-300"
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0"
-                style={{
-                  top: dropdownPosition.top,
-                  right:
-                    dropdownPosition.right +
-                    (buttonRef.current?.getBoundingClientRect().width ?? 0) +
-                    4,
-                }}
+                style={menuPosition}
+                show={open}
               >
                 <Menu.Items
                   as="div"
                   ref={containerRef}
-                  className="absolute z-30 -translate-x-full rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600"
+                  className="absolute z-30 rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600"
                 >
                   <div className="flex flex-col divide-y divide-gray-200">
                     <div className="py-0.5 px-0.5">

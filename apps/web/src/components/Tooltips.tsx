@@ -1,6 +1,7 @@
 import useDropdownPosition from '@/hooks/dropdownPosition'
+import { computeTooltipPosition } from '@/utils/dom'
 import clsx from 'clsx'
-import { useEffect, useRef, useState } from 'react'
+import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export const Tooltip = ({
@@ -103,6 +104,76 @@ export function PortalTooltip(props: PortalTooltipProps) {
         </div>,
         document.body
       )}
+    </div>
+  )
+}
+
+interface TooltipV2Props<T extends HTMLElement> {
+  title?: string
+  message?: string
+  content?: (
+    tooltipRef: React.RefObject<HTMLDivElement>,
+    pos: CSSProperties
+  ) => React.ReactNode
+  referenceRef?: React.RefObject<T>
+  children: (ref: React.RefObject<T>) => React.ReactNode
+  active: boolean
+}
+export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const _referenceRef = useRef<T>(null)
+  const referenceRef = props.referenceRef ?? _referenceRef
+  const [pos, setPos] = useState<CSSProperties>(
+    computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 4)
+  )
+  useEffect(() => {
+    if (!parentRef.current || !props.active) {
+      return
+    }
+
+    const cb = () => {
+      setPos(
+        computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 4)
+      )
+    }
+
+    const mut = new MutationObserver(cb)
+    mut.observe(parentRef.current, {
+      attributes: true,
+      childList: true,
+      subtree: true,
+    })
+    cb()
+
+    return () => {
+      mut.disconnect()
+    }
+  }, [parentRef, referenceRef, tooltipRef, props.active])
+
+  return (
+    <div className="group relative" ref={parentRef}>
+      {props.children(referenceRef)}
+      {props.active ? (
+        props.content ? (
+          props.content(tooltipRef, pos)
+        ) : props.title || props.message ? (
+          <div
+            ref={tooltipRef}
+            className="font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-[4000] w-36"
+            style={pos}
+          >
+            <>
+              {props.title && (
+                <span className="text-center">{props.title}</span>
+              )}
+              <span className="inline-flex items-center justify-center text-gray-400 text-center">
+                {props.message}
+              </span>
+            </>
+          </div>
+        ) : null
+      ) : null}
     </div>
   )
 }

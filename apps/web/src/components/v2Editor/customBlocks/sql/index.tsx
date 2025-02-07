@@ -6,7 +6,14 @@ import {
   BookOpenIcon,
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CSSProperties,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import * as Y from 'yjs'
 import {
   type SQLBlock,
@@ -44,7 +51,6 @@ import {
 import { ConnectDragPreview } from 'react-dnd'
 import EditWithAIForm from '../../EditWithAIForm'
 import ApproveDiffButons from '../../ApproveDiffButtons'
-import { SQLExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import { APIDataSources } from '@/hooks/useDatasources'
 import { useRouter } from 'next/router'
@@ -66,6 +72,7 @@ import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import useFeatureFlags from '@/hooks/useFeatureFlags'
 import { CircleStackIcon } from '@heroicons/react/24/solid'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -536,6 +543,74 @@ function SQLBlock(props: Props) {
     )
   }, [props.layout, props.blocks, props.block, flags])
 
+  const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
+
+  const isEditorFocused = editorState.cursorBlockId === blockId
+
+  const runTooltipContent = useMemo(() => {
+    if (status._tag !== 'idle') {
+      switch (status._tag) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to save your query as a dataframe so you can use it in Python blocks.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else if (props.dataSources.size > 0 || headerSelectValue === 'duckdb') {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Run query</span>
+            <span className="inline-flex gap-x-1 items-center text-gray-400">
+              <span>⌘</span>
+              <span>+</span>
+              <span>Enter</span>
+            </span>
+          </div>
+        ),
+      }
+    } else {
+      return {
+        title: 'No data sources',
+        message: 'Please add a data source to run this query.',
+      }
+    }
+  }, [
+    status,
+    envStatus,
+    envLoading,
+    execution,
+    props.dataSources.size,
+    headerSelectValue,
+  ])
+
   if (props.dashboardMode !== 'none') {
     if (!result) {
       return (
@@ -573,10 +648,6 @@ function SQLBlock(props: Props) {
       />
     )
   }
-
-  const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
-
-  const isEditorFocused = editorState.cursorBlockId === blockId
 
   return (
     <div
@@ -852,47 +923,41 @@ function SQLBlock(props: Props) {
           !props.isEditable ? 'hidden' : 'block'
         )}
       >
-        <button
-          onClick={onRunAbort}
-          disabled={status._tag !== 'idle' && status._tag !== 'running'}
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                (status._tag !== 'idle' && status._tag !== 'running') ||
-                headerSelectValue === null,
-              'bg-red-200':
-                status._tag === 'running' && envStatus === 'Running',
-              'bg-yellow-300':
-                status._tag === 'running' && envStatus !== 'Running',
-              'bg-primary-200':
-                status._tag === 'idle' && headerSelectValue !== null,
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-        >
-          {status._tag !== 'idle' ? (
-            <div>
-              {status._tag === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+          {(ref) => (
+            <button
+              ref={ref}
+              onClick={onRunAbort}
+              disabled={status._tag !== 'idle' && status._tag !== 'running'}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    (status._tag !== 'idle' && status._tag !== 'running') ||
+                    headerSelectValue === null,
+                  'bg-red-200':
+                    status._tag === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status._tag === 'running' && envStatus !== 'Running',
+                  'bg-primary-200':
+                    status._tag === 'idle' && headerSelectValue !== null,
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <SQLExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-                position={props.isFullScreen ? 'left' : 'top'}
-              />
-            </div>
-          ) : props.dataSources.size > 0 || headerSelectValue === 'duckdb' ? (
-            <RunQueryTooltip position={props.isFullScreen ? 'left' : 'top'} />
-          ) : (
-            <MissingDataSourceTooltip
-              position={props.isFullScreen ? 'left' : 'top'}
-            />
+            >
+              {status._tag !== 'idle' ? (
+                <div>
+                  {status._tag === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
 
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
@@ -902,7 +967,6 @@ function SQLBlock(props: Props) {
           onToggleIsCodeHidden={toggleCodeHidden}
           isOutputHidden={isResultHidden}
           onToggleIsOutputHidden={toggleResultHidden}
-          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
 
         {((result && !isResultHidden) || !isCodeHidden) && (
@@ -911,7 +975,6 @@ function SQLBlock(props: Props) {
             onSave={onSaveReusableComponent}
             disabled={!props.isEditable || isComponentInstance}
             isComponentInstance={isComponentInstance}
-            tooltipPosition={props.isFullScreen ? 'left' : 'top'}
           />
         )}
 
@@ -924,50 +987,6 @@ function SQLBlock(props: Props) {
               disabled={!props.isEditable}
             />
           )}
-      </div>
-    </div>
-  )
-}
-
-function MissingDataSourceTooltip(props: { position: 'top' | 'left' }) {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div
-        className={clsx(
-          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-          props.position === 'top'
-            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
-            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
-        )}
-      >
-        <span>No data sources.</span>
-        <span className="inline-flex items-center text-gray-400">
-          Add a data source to run queries.
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function RunQueryTooltip(props: { position: 'top' | 'left' }) {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div
-        className={clsx(
-          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-          props.position === 'top'
-            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
-            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
-        )}
-      >
-        <span>Run query</span>
-        <span className="inline-flex gap-x-1 items-center text-gray-400">
-          <span>⌘</span>
-          <span>+</span>
-          <span>Enter</span>
-        </span>
       </div>
     </div>
   )

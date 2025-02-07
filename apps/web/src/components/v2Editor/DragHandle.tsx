@@ -1,3 +1,4 @@
+import { computeMenuPosition } from '@/utils/dom'
 import { Menu, Transition } from '@headlessui/react'
 import {
   ForwardIcon,
@@ -46,32 +47,12 @@ const DragHandle = ({
   return (
     <Menu as="div" className=" inline-block text-left">
       {({ open }) => {
-        let portalStyle: CSSProperties = {}
-        if (buttonRef.current && menuContainerRef.current) {
-          const xScreenPosition = buttonRef.current.getBoundingClientRect().left
-          const yScreenPosition = buttonRef.current.getBoundingClientRect().top
-
-          switch (menuPosition) {
-            case 'left':
-              portalStyle = {
-                top: yScreenPosition,
-                left:
-                  xScreenPosition -
-                  menuContainerRef.current.getBoundingClientRect().width -
-                  6,
-              }
-              break
-            case 'right':
-              portalStyle = {
-                top: yScreenPosition,
-                left:
-                  xScreenPosition +
-                  buttonRef.current.getBoundingClientRect().width +
-                  6,
-              }
-              break
-          }
-        }
+        const portalStyle = computeMenuPosition(
+          buttonRef,
+          menuContainerRef,
+          menuPosition,
+          6
+        )
 
         return (
           <>

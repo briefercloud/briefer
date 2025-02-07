@@ -27,7 +27,7 @@ import {
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { useCallback, useMemo } from 'react'
+import { CSSProperties, RefObject, useCallback, useMemo } from 'react'
 import {
   ExecutingPythonText,
   LoadingEnvText,
@@ -36,7 +36,6 @@ import {
 import { ConnectDragPreview } from 'react-dnd'
 import ApproveDiffButons from '../../ApproveDiffButtons'
 import EditWithAIForm from '../../EditWithAIForm'
-import { PythonExecTooltip } from '../../ExecTooltip'
 import { PythonOutputs } from './PythonOutput'
 import ScrollBar from '@/components/ScrollBar'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
@@ -51,6 +50,7 @@ import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import { CommandLineIcon } from '@heroicons/react/24/solid'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   document: ApiDocument
@@ -332,6 +332,58 @@ function PythonBlock(props: Props) {
     props.document.title,
   ])
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before executing python code.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Run code</span>
+            <span className="inline-flex gap-x-1 items-center text-gray-400">
+              <span>⌘</span>
+              <span>+</span>
+              <span>Enter</span>
+            </span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   if (props.dashboardPlace) {
     return (
       <PythonOutputs
@@ -544,39 +596,38 @@ function PythonBlock(props: Props) {
           !props.isEditable ? 'hidden' : 'block'
         )}
       >
-        <button
-          onClick={onRunAbort}
-          disabled={status !== 'idle' && status !== 'running'}
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-        >
-          {status !== 'idle' ? (
-            <div>
-              {status === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+          {(ref) => (
+            <button
+              ref={ref}
+              onClick={onRunAbort}
+              disabled={status !== 'idle' && status !== 'running'}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    status !== 'idle' && status !== 'running',
+                  'bg-red-200': status === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status === 'running' && envStatus !== 'Running',
+                  'bg-primary-200': status === 'idle',
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <PythonExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-                position={props.isFullScreen ? 'left' : 'top'}
-              />
-            </div>
-          ) : (
-            <RunPythonTooltip position={props.isFullScreen ? 'left' : 'top'} />
+            >
+              {status !== 'idle' ? (
+                <div>
+                  {status === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
@@ -585,7 +636,6 @@ function PythonBlock(props: Props) {
           onToggleIsCodeHidden={toggleCodeHidden}
           isOutputHidden={isResultHidden ?? false}
           onToggleIsOutputHidden={toggleResultHidden}
-          tooltipPosition={props.isFullScreen ? 'left' : 'top'}
         />
         {!isCodeHidden && (
           <SaveReusableComponentButton
@@ -593,32 +643,8 @@ function PythonBlock(props: Props) {
             onSave={onSaveReusableComponent}
             disabled={!props.isEditable || isComponentInstance}
             isComponentInstance={isComponentInstance}
-            tooltipPosition={props.isFullScreen ? 'left' : 'top'}
           />
         )}
-      </div>
-    </div>
-  )
-}
-
-function RunPythonTooltip(props: { position: 'top' | 'left' }) {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div
-        className={clsx(
-          'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1',
-          props.position === 'top'
-            ? '-top-1 left-1/2 -translate-y-full -translate-x-1/2'
-            : 'top-1/2 -translate-y-1/2 -left-1 -translate-x-full'
-        )}
-      >
-        <span>Run code</span>
-        <span className="inline-flex gap-x-1 items-center text-gray-400">
-          <span>⌘</span>
-          <span>+</span>
-          <span>Enter</span>
-        </span>
       </div>
     </div>
   )
