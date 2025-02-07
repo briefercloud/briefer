@@ -103,6 +103,15 @@ import useEditorAwareness, {
 import { SQLExtensionProvider } from './CodeEditor/sql'
 import VisualizationV2Block from './customBlocks/visualizationV2'
 import useSideBar from '@/hooks/useSideBar'
+import { createPortal } from 'react-dom'
+import { Transition } from '@headlessui/react'
+import {
+  BarsArrowDownIcon,
+  FolderIcon,
+  MinusCircleIcon,
+  PlayIcon,
+} from '@heroicons/react/24/outline'
+import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -232,6 +241,10 @@ interface TabProps {
   isFirst?: boolean
   isDraggable: boolean
   executionQueue: ExecutionQueue
+  onRun: (blockId: string) => void
+  onRunOnwards: (blockId: string) => void
+  onDuplicateTab: (blockId: string) => void
+  onDeleteTab: (blockId: string) => void
 }
 function Tab(props: TabProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -337,58 +350,158 @@ function Tab(props: TabProps) {
 
   const Icon = getTabIcon(props.tabRef.type)
 
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const onRightClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const onRun = useCallback(() => {
+    props.onRun(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onRun])
+
+  const onRunOnwards = useCallback(() => {
+    props.onRunOnwards(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onRunOnwards])
+
+  const onDuplicateTab = useCallback(() => {
+    props.onDuplicateTab(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onDuplicateTab])
+
+  const onDeleteTab = useCallback(() => {
+    props.onDeleteTab(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onDeleteTab])
+
+  const contextMenuRef = useRef<HTMLDivElement>(null)
+  useOnClickOutside(
+    () => setContextMenu(null),
+    contextMenuRef,
+    contextMenu !== null
+  )
+
   return (
-    <div
-      ref={(d) => {
-        drop(d)
-      }}
-      className="h-full flex text-xs"
-    >
-      {draggingSide === 'left' && isOver && canDrop && (
-        <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
-      )}
-      <button
-        key={props.tabRef.blockId}
-        ref={buttonRef}
-        onClick={() => props.onSwitchActiveTab(props.tabRef.blockId)}
-        className={clsx(
-          'flex gap-x-2 items-center border-l border-r border-t border-gray-200 px-2.5 py-1.5 rounded-t-sm whitespace-nowrap',
-          props.tabRef.isCurrent
-            ? 'bg-white text-gray-950'
-            : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
-          isDragging ? 'opacity-0' : '',
-          !props.isFirst ? '-ml-[1px]' : ''
-        )}
+    <>
+      <div
+        ref={(d) => {
+          drop(d)
+        }}
+        className="h-full flex text-xs"
       >
-        <div className="flex items-center gap-x-1">
-          <Icon
-            className={clsx(
-              'h-3 w-3',
-              props.tabRef.isCurrent ? 'text-gray-600' : 'text-gray-300'
-            )}
+        {draggingSide === 'left' && isOver && canDrop && (
+          <div
+            className={`bg-ceramic-100`}
+            style={{ width: `${dragSize}px` }}
           />
-          {props.tabRef.title || getPrettyTitle(props.tabRef.type)}{' '}
-          {props.tabRef.isHiddenInPublished && (
-            <span
-              className={clsx(
-                'pl-0.5 text-[10px]',
-                props.tabRef.isCurrent ? 'text-gray-400' : 'text-gray-300'
-              )}
-            >
-              hidden
-            </span>
+        )}
+        <button
+          key={props.tabRef.blockId}
+          ref={buttonRef}
+          onClick={() => props.onSwitchActiveTab(props.tabRef.blockId)}
+          className={clsx(
+            'flex gap-x-2 items-center border-l border-r border-t border-gray-200 px-2.5 py-1.5 rounded-t-sm whitespace-nowrap',
+            props.tabRef.isCurrent
+              ? 'bg-white text-gray-950'
+              : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
+            isDragging ? 'opacity-0' : '',
+            !props.isFirst ? '-ml-[1px]' : ''
           )}
-        </div>
-        <ExecIndicator
-          tabRef={props.tabRef}
-          blocks={props.blocks}
-          executionQueue={props.executionQueue}
-        />
-      </button>
-      {draggingSide === 'right' && isOver && canDrop && (
-        <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
+          onContextMenu={onRightClick}
+        >
+          <div className="flex items-center gap-x-1">
+            <Icon
+              className={clsx(
+                'h-3 w-3',
+                props.tabRef.isCurrent ? 'text-gray-600' : 'text-gray-300'
+              )}
+            />
+            {props.tabRef.title || getPrettyTitle(props.tabRef.type)}{' '}
+            {props.tabRef.isHiddenInPublished && (
+              <span
+                className={clsx(
+                  'pl-0.5 text-[10px]',
+                  props.tabRef.isCurrent ? 'text-gray-400' : 'text-gray-300'
+                )}
+              >
+                hidden
+              </span>
+            )}
+          </div>
+          <ExecIndicator
+            tabRef={props.tabRef}
+            blocks={props.blocks}
+            executionQueue={props.executionQueue}
+          />
+        </button>
+        {draggingSide === 'right' && isOver && canDrop && (
+          <div
+            className={`bg-ceramic-100`}
+            style={{ width: `${dragSize}px` }}
+          />
+        )}
+      </div>
+      {createPortal(
+        <Transition
+          as="div"
+          className="absolute z-30"
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          style={{ left: contextMenu?.x, top: contextMenu?.y }}
+          show={contextMenu !== null}
+          ref={contextMenuRef}
+        >
+          <div className="rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600">
+            <div className="flex flex-col divide-y divide-gray-200">
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onRun}
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  <span>Run tab</span>
+                </button>
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onRunOnwards}
+                >
+                  <BarsArrowDownIcon className="h-4 w-4" />
+                  <span>Run onwards</span>
+                </button>
+              </div>
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onDuplicateTab}
+                >
+                  <FolderIcon className="h-4 w-4" />
+                  <span>Duplicate tab</span>
+                </button>
+              </div>
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onDeleteTab}
+                >
+                  <MinusCircleIcon className="h-4 w-4" />
+                  <span>Delete tab</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
@@ -706,6 +819,59 @@ file`
     props.onRemoveBlock(props.id, currentBlockId)
   }, [currentBlockId, props.id, props.onRemoveBlock])
 
+  const onDeleteTab = useCallback(
+    (blockId: string) => {
+      props.onRemoveBlock(props.id, blockId)
+    },
+    [props.id, props.onRemoveBlock]
+  )
+
+  const onRunTab = useCallback(
+    (blockId: string) => {
+      const block = blocks.value.get(blockId)
+      if (!block) {
+        return
+      }
+
+      const metadata =
+        props.executionQueue.getExecutionQueueMetadataForBlock(block)
+      if (!metadata) {
+        return
+      }
+
+      props.executionQueue.enqueueBlock(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        metadata
+      )
+    },
+    [blocks, props.executionQueue, props.userId, environmentStartedAt]
+  )
+
+  const onRunOnwardsTab = useCallback(
+    (blockId: string) => {
+      const block = blocks.value.get(blockId)
+      if (!block) {
+        return
+      }
+
+      const metadata =
+        props.executionQueue.getExecutionQueueMetadataForBlock(block)
+      if (!metadata) {
+        return
+      }
+
+      props.executionQueue.enqueueBlockOnwards(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        metadata
+      )
+    },
+    [blocks, props.executionQueue, props.userId, environmentStartedAt]
+  )
+
   const runAllTabs = useCallback(() => {
     props.executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
   }, [props.executionQueue, props.yDoc, props.id])
@@ -765,6 +931,13 @@ file`
 
     props.onDuplicateBlock(props.id, currentBlockId)
   }, [currentBlockId, props.id, props.onDuplicateBlock])
+
+  const onDuplicateTab = useCallback(
+    (blockId: string) => {
+      props.onDuplicateBlock(props.id, blockId)
+    },
+    [props.id, props.onDuplicateBlock]
+  )
 
   const onRemoveBlockGroup = useCallback(() => {
     props.onRemoveBlockGroup(props.id)
@@ -866,6 +1039,10 @@ file`
                   isDraggable={hasMultipleTabs && !props.isApp}
                   blocks={blocks.value}
                   executionQueue={props.executionQueue}
+                  onRun={onRunTab}
+                  onRunOnwards={onRunOnwardsTab}
+                  onDuplicateTab={onDuplicateTab}
+                  onDeleteTab={onDeleteTab}
                 />
               ))}
               {isScrollable && !isScrolledAllTheWayRight && (

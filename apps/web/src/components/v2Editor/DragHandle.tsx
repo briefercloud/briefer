@@ -45,7 +45,7 @@ const DragHandle = ({
   const menuContainerRef = useRef<HTMLDivElement>(null)
 
   return (
-    <Menu as="div" className=" inline-block text-left">
+    <Menu as="div" className="inline-block text-left">
       {({ open }) => {
         const portalStyle = computeMenuPosition(
           buttonRef,
