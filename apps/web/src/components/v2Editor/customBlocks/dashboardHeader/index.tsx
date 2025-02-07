@@ -28,7 +28,12 @@ const DashboardHeader = (props: Props) => {
     props.onFinishedEditing()
   }, [onEdit, props.onFinishedEditing])
 
-  const currContent = props.block.getAttribute('content')
+  let content = props.block.getAttribute('content')
+  if (!props.isEditing && !content) {
+    content = ''
+  } else if (!content) {
+    content = 'Click the pencil to edit'
+  }
 
   return (
     <div
@@ -59,10 +64,10 @@ const DashboardHeader = (props: Props) => {
         <h1
           className={clsx(
             'text-2xl font-semibold font-medium text-left text-3l truncate min-h-6 pt-0.5',
-            currContent !== '' ? 'text-gray-900' : 'text-gray-400'
+            content !== '' ? 'text-gray-900' : 'text-gray-400'
           )}
         >
-          {currContent || 'Click the pencil to edit'}
+          {content}
         </h1>
       )}
     </div>

@@ -272,7 +272,12 @@ function GridElement(props: Props) {
       : ScrollBar
 
   return (
-    <div className="relative group h-full cursor-move">
+    <div
+      className={clsx(
+        'relative group h-full',
+        props.isEditingDashboard && 'cursor-move'
+      )}
+    >
       {props.block ? (
         <WrapperElement
           className={clsx(
