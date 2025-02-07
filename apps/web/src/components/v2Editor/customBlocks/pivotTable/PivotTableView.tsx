@@ -118,15 +118,15 @@ function PivotTableView(props: Props) {
       {props.dashboardMode === 'none' && props.isEditable && (
         <button
           className={clsx(
-            'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-1 hover:bg-gray-50 z-10',
+            'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-2 hover:bg-gray-50 z-10',
             props.controlsHidden ? 'left-0 rounded-bl-md' : '-left-[1px]'
           )}
           onClick={props.onToggleControlsHidden}
         >
           {props.controlsHidden ? (
-            <ChevronDoubleRightIcon className="h-3 w-3 text-gray-400" />
+            <ChevronDoubleRightIcon className="h-4 w-4 text-gray-400" />
           ) : (
-            <ChevronDoubleLeftIcon className="h-3 w-3 text-gray-400" />
+            <ChevronDoubleLeftIcon className="h-4 w-4 text-gray-400" />
           )}
         </button>
       )}

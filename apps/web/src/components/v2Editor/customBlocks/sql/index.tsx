@@ -1,15 +1,21 @@
 import {
   PlayIcon,
   StopIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
   ClockIcon,
   SparklesIcon,
-  ChartBarIcon,
   BookOpenIcon,
+  VariableIcon,
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CSSProperties,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import * as Y from 'yjs'
 import {
   type SQLBlock,
@@ -47,7 +53,6 @@ import {
 import { ConnectDragPreview } from 'react-dnd'
 import EditWithAIForm from '../../EditWithAIForm'
 import ApproveDiffButons from '../../ApproveDiffButtons'
-import { SQLExecTooltip } from '../../ExecTooltip'
 import LargeSpinner from '@/components/LargeSpinner'
 import { APIDataSources } from '@/hooks/useDatasources'
 import { useRouter } from 'next/router'
@@ -57,7 +62,7 @@ import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
-import { CodeEditor } from '../../CodeEditor'
+import CodeEditor, { CodeEditorRef } from '../../CodeEditor'
 import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
 import {
   exhaustiveCheck,
@@ -68,6 +73,8 @@ import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import useFeatureFlags from '@/hooks/useFeatureFlags'
+import { CircleStackIcon } from '@heroicons/react/24/solid'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -87,6 +94,7 @@ interface Props {
   executionQueue: ExecutionQueue
   userId: string | null
   aiTasks: AITasks
+  isFullScreen: boolean
 }
 function SQLBlock(props: Props) {
   const properties = useProperties()
@@ -500,386 +508,10 @@ function SQLBlock(props: Props) {
     [props.block]
   )
 
-  if (props.dashboardMode !== 'none') {
-    if (!result) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          {status._tag !== 'idle' ? (
-            <LargeSpinner color="#b8f229" />
-          ) : (
-            <div className="text-gray-500">No query results</div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <SQLResult
-        page={page}
-        result={result}
-        isPublic={props.isPublicMode}
-        documentId={props.document.id}
-        workspaceId={props.document.workspaceId}
-        blockId={blockId}
-        dataframeName={dataframeName?.value ?? ''}
-        isResultHidden={isResultHidden ?? false}
-        toggleResultHidden={toggleResultHidden}
-        isFixingWithAI={isAIFixing}
-        onFixWithAI={onFixWithAI}
-        dashboardMode={props.dashboardMode}
-        canFixWithAI={hasOaiKey}
-        sort={sort}
-        onChangeSort={onChangeSort}
-        onChangePage={onChangePage}
-        loadingPage={loadingPage}
-      />
-    )
-  }
-
-  const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
-
-  const isEditorFocused = editorState.cursorBlockId === blockId
-
-  return (
-    <div
-      className="relative group/block"
-      onClick={onClickWithin}
-      data-block-id={blockId}
-    >
-      <div
-        className={clsx(
-          'rounded-md border',
-          props.isBlockHiddenInPublished && 'border-dashed',
-          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-          {
-            'border-ceramic-400 shadow-sm':
-              isEditorFocused && editorState.mode === 'insert',
-            'border-blue-400 shadow-sm':
-              isEditorFocused && editorState.mode === 'normal',
-            'border-gray-200': !isEditorFocused,
-          }
-        )}
-      >
-        <div
-          className={clsx(
-            'rounded-md',
-            statusIsDisabled ? 'bg-gray-100' : 'bg-white',
-            props.hasMultipleTabs ? 'rounded-tl-none' : ''
-          )}
-        >
-          <div
-            className="py-3"
-            ref={(d) => {
-              props.dragPreview?.(d)
-            }}
-          >
-            <div className="flex items-center justify-between px-3 pr-3 gap-x-4 font-sans h-[1.6rem]">
-              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full">
-                <button
-                  className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
-                  onClick={toggleCodeHidden}
-                >
-                  {isCodeHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                </button>
-                <input
-                  type="text"
-                  className={clsx(
-                    'font-sans pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs disabled:ring-0 h-full bg-transparent'
-                  )}
-                  placeholder="SQL"
-                  value={title}
-                  onChange={onChangeTitle}
-                  disabled={!props.isEditable}
-                />
-              </div>
-              <div
-                className={clsx(
-                  'print:hidden flex items-center gap-x-2 group-focus/block:opacity-100 h-full',
-                  {
-                    hidden: isCodeHidden,
-                  }
-                )}
-              >
-                <DataframeNameInput
-                  disabled={!props.isEditable || statusIsDisabled}
-                  block={props.block}
-                  environmentStartedAt={environmentStartedAt}
-                  userId={props.userId}
-                  executionQueue={props.executionQueue}
-                />
-                <HeaderSelect
-                  hidden={props.isPublicMode}
-                  value={headerSelectValue ?? ''}
-                  options={dataSourcesOptions}
-                  onChange={onChangeDataSource}
-                  disabled={!props.isEditable || statusIsDisabled}
-                  onAdd={
-                    props.dataSources.size === 0 ? onAddDataSource : undefined
-                  }
-                  onAddLabel={
-                    props.dataSources.size === 0 ? 'New data source' : undefined
-                  }
-                />
-              </div>
-
-              <div
-                className={clsx(
-                  'print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap',
-                  {
-                    hidden: !isCodeHidden && dataframeName?.value,
-                  }
-                )}
-              >
-                <CopyToClipboard
-                  text={dataframeName?.value ?? ''}
-                  onCopy={() => setCopied(true)}
-                >
-                  <code className="bg-primary-500/20 text-primary-700 px-1.5 py-0.5 font-mono rounded-md relative group cursor-pointer">
-                    {copied ? 'Copied!' : dataframeName?.value}
-
-                    <div className="font-sans pointer-events-none absolute -top-2 right-0 -translate-y-full opacity-0 transition-opacity scale-0 group-hover:scale-100 group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 w-56 whitespace-normal z-20">
-                      <span className="text-gray-400 text-center">
-                        Use this variable name to reference the results as a
-                        Pandas dataframe in further Python blocks.{' '}
-                        <span className="underline">Click to copy</span>.
-                      </span>
-                    </div>
-                  </code>
-                </CopyToClipboard>
-              </div>
-            </div>
-          </div>
-          <div
-            className={clsx(
-              'print:hidden',
-              isCodeHidden ? 'invisible h-0 overflow-hidden' : 'py-5'
-            )}
-          >
-            <div>
-              <CodeEditor
-                workspaceId={props.document.workspaceId}
-                documentId={props.document.id}
-                blockId={blockId}
-                source={source}
-                language="sql"
-                readOnly={!props.isEditable || statusIsDisabled}
-                onEditWithAI={onToggleEditWithAIPromptOpen}
-                onRun={onRun}
-                onInsertBlock={props.insertBelow}
-                diff={aiSuggestions ?? undefined}
-                dataSourceId={dataSourceId}
-                disabled={statusIsDisabled}
-                onSelectionChanged={onSQLSelectionChanged}
-              />
-            </div>
-          </div>
-          <ApproveDiffButons
-            visible={diffButtonsVisible}
-            canTry={status._tag === 'idle'}
-            onTry={onTry}
-            onAccept={onAcceptAISuggestion}
-            onReject={onRejectAISuggestion}
-          />
-          {isSQLBlockEditWithAIPromptOpen(props.block) &&
-          !props.isPublicMode ? (
-            <EditWithAIForm
-              loading={isAIEditing}
-              disabled={isAIEditing || aiSuggestions !== null}
-              onSubmit={onSubmitEditWithAI}
-              onClose={onCloseEditWithAIPrompt}
-              value={editWithAIPrompt}
-              hasOutput={result !== null}
-            />
-          ) : (
-            <div
-              className={clsx('print:hidden px-3 pb-3', {
-                hidden: isCodeHidden,
-              })}
-            >
-              <div className="flex justify-between text-xs">
-                <div className="flex items-center">{queryStatusText}</div>
-                <div className="flex items-center gap-x-2">
-                  {!props.isPublicMode &&
-                    aiSuggestions === null &&
-                    props.isEditable &&
-                    !isAIFixing &&
-                    headerSelectValue !== 'duckdb' && (
-                      <button
-                        onClick={onSchemaExplorer}
-                        className={clsx(
-                          !props.isEditable
-                            ? 'cursor-not-allowed bg-gray-200'
-                            : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                          'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
-                        )}
-                      >
-                        <BookOpenIcon className="w-3 h-3" />
-                        <span>Schema</span>
-                      </button>
-                    )}
-
-                  {!props.isPublicMode &&
-                    aiSuggestions === null &&
-                    props.isEditable &&
-                    !isAIFixing && (
-                      <button
-                        disabled={!props.isEditable}
-                        onClick={onToggleEditWithAIPromptOpen}
-                        className={clsx(
-                          !props.isEditable || !hasOaiKey
-                            ? 'cursor-not-allowed bg-gray-200'
-                            : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                          'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
-                        )}
-                      >
-                        <SparklesIcon className="w-3 h-3" />
-
-                        <span>Edit with AI</span>
-                        <div
-                          className={clsx(
-                            'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
-                            hasOaiKey ? 'w-28' : 'w-40'
-                          )}
-                        >
-                          <span>
-                            {hasOaiKey
-                              ? 'Open AI edit form'
-                              : 'Missing OpenAI API key'}
-                          </span>
-                          <span className="inline-flex gap-x-1 items-center text-gray-400">
-                            {hasOaiKey ? (
-                              <>
-                                <span>⌘</span>
-                                <span>+</span>
-                                <span>e</span>
-                              </>
-                            ) : (
-                              <span>
-                                Admins can add an OpenAI key in settings.
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </button>
-                    )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        {result && (
-          <SQLResult
-            page={page}
-            result={result}
-            isPublic={false}
-            documentId={props.document.id}
-            workspaceId={props.document.workspaceId}
-            blockId={blockId}
-            dataframeName={dataframeName?.value ?? ''}
-            isResultHidden={isResultHidden ?? false}
-            toggleResultHidden={toggleResultHidden}
-            isFixingWithAI={isAIFixing}
-            onFixWithAI={onFixWithAI}
-            dashboardMode={props.dashboardMode}
-            canFixWithAI={hasOaiKey}
-            sort={sort}
-            onChangeSort={onChangeSort}
-            onChangePage={onChangePage}
-            loadingPage={loadingPage}
-          />
-        )}
-      </div>
-      <div
-        className={clsx(
-          'absolute h-full transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1',
-          isEditorFocused || statusIsDisabled ? 'opacity-100' : 'opacity-0',
-          !props.isEditable ? 'hidden' : 'block'
-        )}
-      >
-        <button
-          onClick={onRunAbort}
-          disabled={status._tag !== 'idle' && status._tag !== 'running'}
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                status._tag !== 'idle' && status._tag !== 'running',
-              'bg-red-200':
-                status._tag === 'running' && envStatus === 'Running',
-              'bg-yellow-300':
-                status._tag === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status._tag === 'idle',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-        >
-          {status._tag !== 'idle' ? (
-            <div>
-              {status._tag === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
-              )}
-              <SQLExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status._tag === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-              />
-            </div>
-          ) : props.dataSources.size > 0 || headerSelectValue === 'duckdb' ? (
-            <RunQueryTooltip />
-          ) : (
-            <MissingDataSourceTooltip />
-          )}
-        </button>
-        {((result && !isResultHidden) || !isCodeHidden) && (
-          <ToChartButton
-            workspaceId={props.document.workspaceId}
-            layout={props.layout}
-            block={props.block}
-            blocks={props.blocks}
-          />
-        )}
-
-        <HiddenInPublishedButton
-          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-          hasMultipleTabs={props.hasMultipleTabs}
-        />
-
-        {((result && !isResultHidden) || !isCodeHidden) && (
-          <SaveReusableComponentButton
-            isComponent={blockId === component?.blockId}
-            onSave={onSaveReusableComponent}
-            disabled={!props.isEditable || isComponentInstance}
-            isComponentInstance={isComponentInstance}
-          />
-        )}
-
-        {((result && !isResultHidden) || !isCodeHidden) &&
-          dataSource?.config.type === 'athena' && (
-            <SQLQueryConfigurationButton
-              dataSource={dataSource}
-              value={configuration}
-              onChange={onChangeConfiguration}
-              disabled={!props.isEditable}
-            />
-          )}
-      </div>
-    </div>
-  )
-}
-
-type ToChartButtonProps = {
-  workspaceId: string
-  layout: Y.Array<YBlockGroup>
-  block: Y.XmlElement<SQLBlock>
-  blocks: Y.Map<YBlock>
-}
-const ToChartButton = (props: ToChartButtonProps) => {
-  const flags = useFeatureFlags(props.workspaceId)
-
-  const onAdd = useCallback(() => {
+  const flags = useFeatureFlags(props.document.workspaceId)
+  const isVisualizationButtonDisabled =
+    props.block.getAttribute('result')?.type !== 'success'
+  const onAddVisualization = useCallback(() => {
     const blockId = props.block.getAttribute('id')
 
     const blockGroup = props.layout.toArray().find((blockGroup) => {
@@ -911,54 +543,501 @@ const ToChartButton = (props: ToChartButtonProps) => {
       block,
       'after'
     )
-  }, [props.block, props.layout, flags, props.blocks])
+  }, [props.layout, props.blocks, props.block, flags])
 
-  const isDisabled = props.block.getAttribute('result')?.type !== 'success'
+  const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
+
+  const isEditorFocused = editorState.cursorBlockId === blockId
+
+  const runTooltipContent = useMemo(() => {
+    if (status._tag !== 'idle') {
+      switch (status._tag) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to save your query as a dataframe so you can use it in Python blocks.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else if (props.dataSources.size > 0 || headerSelectValue === 'duckdb') {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Run query</span>
+            <span className="inline-flex gap-x-1 items-center text-gray-400">
+              <span>⌘</span>
+              <span>+</span>
+              <span>Enter</span>
+            </span>
+          </div>
+        ),
+      }
+    } else {
+      return {
+        title: 'No data sources',
+        message: 'Please add a data source to run this query.',
+      }
+    }
+  }, [
+    status,
+    envStatus,
+    envLoading,
+    execution,
+    props.dataSources.size,
+    headerSelectValue,
+  ])
+
+  const codeEditor = useRef<CodeEditorRef>(null)
+
+  const onAddVariable = useCallback(() => {
+    const snippet = `{{ your_var_name }}`
+    codeEditor.current?.insert(
+      snippet,
+      { from: 3, to: snippet.length - 3 },
+      (p) => (p === 0 ? 'end' : p)
+    )
+  }, [codeEditor])
+
+  if (props.dashboardMode !== 'none') {
+    if (!result) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          {status._tag !== 'idle' ? (
+            <LargeSpinner color="#b8f229" />
+          ) : (
+            <div className="text-gray-500">No query results</div>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <SQLResult
+        page={page}
+        result={result}
+        isPublic={props.isPublicMode}
+        documentId={props.document.id}
+        workspaceId={props.document.workspaceId}
+        blockId={blockId}
+        dataframeName={dataframeName?.value ?? ''}
+        isResultHidden={isResultHidden ?? false}
+        toggleResultHidden={toggleResultHidden}
+        isFixingWithAI={isAIFixing}
+        onFixWithAI={onFixWithAI}
+        dashboardMode={props.dashboardMode}
+        canFixWithAI={hasOaiKey}
+        sort={sort}
+        isAddVisualizationDisabled={isVisualizationButtonDisabled}
+        onAddVisualization={onAddVisualization}
+        onChangeSort={onChangeSort}
+        onChangePage={onChangePage}
+        loadingPage={loadingPage}
+      />
+    )
+  }
 
   return (
-    <button
-      onClick={onAdd}
-      className="rounded-sm border border-gray-200 h-6 min-w-6 flex items-center justify-center relative group hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-200"
-      disabled={isDisabled}
+    <div
+      className="relative group/block"
+      onClick={onClickWithin}
+      data-block-id={blockId}
     >
-      <ChartBarIcon className="w-3 h-3 text-gray-400 group-hover:text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 max-w-40">
-        <span>Create visualization</span>
-        <span className="inline-flex items-center text-gray-400">
-          {isDisabled
-            ? 'Run a successful query before creating a visualization.'
-            : "Create graphs based on this query's results."}
-        </span>
-      </div>
-    </button>
-  )
-}
+      <div
+        className={clsx(
+          'rounded-md border',
+          props.isBlockHiddenInPublished && 'border-dashed',
+          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+          {
+            'border-ceramic-400 shadow-sm':
+              isEditorFocused && editorState.mode === 'insert',
+            'border-blue-400 shadow-sm':
+              isEditorFocused && editorState.mode === 'normal',
+            'border-gray-200': !isEditorFocused,
+          }
+        )}
+      >
+        <div
+          className={clsx(
+            'rounded-t-md',
+            statusIsDisabled ? 'bg-gray-100' : 'bg-white',
+            props.hasMultipleTabs ? 'rounded-tl-none' : '',
+            !(isResultHidden || !result) &&
+              !isCodeHidden &&
+              'border-b border-gray-200',
+            (isResultHidden || !result) && !isCodeHidden && 'rounded-b-md',
+            (isResultHidden || !result) && isCodeHidden && 'rounded-b-md'
+          )}
+        >
+          <div
+            className={clsx(
+              'bg-gray-50 rounded-t-md',
+              props.hasMultipleTabs ? 'rounded-tl-none' : '',
+              isCodeHidden && (isResultHidden || !result) ? 'rounded-b-md' : ''
+            )}
+            ref={(d) => {
+              props.dragPreview?.(d)
+            }}
+          >
+            <div
+              className={clsx(
+                'flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 rounded-t-md',
+                !isCodeHidden && 'divide-x divide-gray-200',
+                props.hasMultipleTabs ? 'rounded-tl-none' : '',
+                isCodeHidden && (isResultHidden || !result)
+                  ? 'rounded-b-md'
+                  : 'border-b border-gray-200'
+              )}
+            >
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <CircleStackIcon className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={clsx(
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                  )}
+                  placeholder="SQL (click to add a title)"
+                  value={title}
+                  onChange={onChangeTitle}
+                  disabled={!props.isEditable}
+                />
+              </div>
+              <div
+                className={clsx(
+                  'print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200',
+                  {
+                    hidden: isCodeHidden,
+                  }
+                )}
+              >
+                <DataframeNameInput
+                  disabled={!props.isEditable || statusIsDisabled}
+                  block={props.block}
+                  environmentStartedAt={environmentStartedAt}
+                  userId={props.userId}
+                  executionQueue={props.executionQueue}
+                />
+                <HeaderSelect
+                  hidden={props.isPublicMode}
+                  value={headerSelectValue ?? ''}
+                  options={dataSourcesOptions}
+                  onChange={onChangeDataSource}
+                  disabled={!props.isEditable || statusIsDisabled}
+                  onAdd={
+                    props.dataSources.size === 0 ? onAddDataSource : undefined
+                  }
+                  onAddLabel={
+                    props.dataSources.size === 0 ? 'New data source' : undefined
+                  }
+                />
+              </div>
 
-const MissingDataSourceTooltip = () => {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
-        <span>No data sources.</span>
-        <span className="inline-flex items-center text-gray-400">
-          Add a data source to run queries.
-        </span>
-      </div>
-    </div>
-  )
-}
+              <div
+                className={clsx(
+                  'print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap pr-3',
+                  {
+                    hidden: !isCodeHidden && dataframeName?.value,
+                  }
+                )}
+              >
+                <CopyToClipboard
+                  text={dataframeName?.value ?? ''}
+                  onCopy={() => setCopied(true)}
+                >
+                  <code className="bg-primary-500/20 text-primary-700 px-1.5 py-0.5 font-mono rounded-md relative group cursor-pointer">
+                    {copied ? 'Copied!' : dataframeName?.value}
 
-const RunQueryTooltip = () => {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
-        <span>Run query</span>
-        <span className="inline-flex gap-x-1 items-center text-gray-400">
-          <span>⌘</span>
-          <span>+</span>
-          <span>Enter</span>
-        </span>
+                    <div className="font-sans pointer-events-none absolute -top-2 right-0 -translate-y-full opacity-0 transition-opacity scale-0 group-hover:scale-100 group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 w-56 whitespace-normal z-20">
+                      <span className="text-gray-400 text-center">
+                        Use this variable name to reference the results as a
+                        Pandas dataframe in further Python blocks.{' '}
+                        <span className="underline">Click to copy</span>.
+                      </span>
+                    </div>
+                  </code>
+                </CopyToClipboard>
+              </div>
+            </div>
+          </div>
+          <div className={clsx((isResultHidden || !result) && 'rounded-b-md')}>
+            <div
+              className={clsx(
+                'print:hidden',
+                isCodeHidden ? 'invisible h-0 overflow-hidden' : 'py-5'
+              )}
+            >
+              <div>
+                <CodeEditor
+                  ref={codeEditor}
+                  workspaceId={props.document.workspaceId}
+                  documentId={props.document.id}
+                  blockId={blockId}
+                  source={source}
+                  language="sql"
+                  readOnly={!props.isEditable || statusIsDisabled}
+                  onEditWithAI={onToggleEditWithAIPromptOpen}
+                  onRun={onRun}
+                  onInsertBlock={props.insertBelow}
+                  diff={aiSuggestions ?? undefined}
+                  dataSourceId={dataSourceId}
+                  disabled={statusIsDisabled}
+                  onSelectionChanged={onSQLSelectionChanged}
+                />
+              </div>
+            </div>
+            <ApproveDiffButons
+              visible={diffButtonsVisible}
+              canTry={status._tag === 'idle'}
+              onTry={onTry}
+              onAccept={onAcceptAISuggestion}
+              onReject={onRejectAISuggestion}
+            />
+            {isSQLBlockEditWithAIPromptOpen(props.block) &&
+            !props.isPublicMode ? (
+              <EditWithAIForm
+                loading={isAIEditing}
+                disabled={isAIEditing || aiSuggestions !== null}
+                onSubmit={onSubmitEditWithAI}
+                onClose={onCloseEditWithAIPrompt}
+                value={editWithAIPrompt}
+                hasOutput={result !== null}
+              />
+            ) : (
+              <div
+                className={clsx('print:hidden px-3 pb-3', {
+                  hidden: isCodeHidden,
+                  'rounded-b-md': isResultHidden || !result,
+                })}
+              >
+                <div className="flex justify-between text-xs">
+                  <div className="flex items-center">{queryStatusText}</div>
+                  <div className="flex items-center gap-x-2">
+                    {!props.isPublicMode &&
+                      aiSuggestions === null &&
+                      props.isEditable &&
+                      !isAIFixing &&
+                      headerSelectValue !== 'duckdb' && (
+                        <button
+                          onClick={onSchemaExplorer}
+                          className={clsx(
+                            !props.isEditable
+                              ? 'cursor-not-allowed bg-gray-200'
+                              : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
+                          )}
+                        >
+                          <BookOpenIcon className="w-3 h-3" />
+                          <span>Schema</span>
+                        </button>
+                      )}
+
+                    {!props.isPublicMode &&
+                      props.isEditable &&
+                      aiSuggestions === null && (
+                        <TooltipV2<HTMLButtonElement>
+                          title="Add a variable"
+                          message="Interpolate Python variables into this query"
+                          active={true}
+                          className="w-48"
+                        >
+                          {(ref) => (
+                            <button
+                              ref={ref}
+                              disabled={!props.isEditable}
+                              className={clsx(
+                                !props.isEditable || !hasOaiKey
+                                  ? 'cursor-not-allowed bg-gray-200'
+                                  : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
+                              )}
+                              onClick={onAddVariable}
+                            >
+                              <VariableIcon className="w-3 h-3" />
+                              <span>Variable</span>
+                            </button>
+                          )}
+                        </TooltipV2>
+                      )}
+                    {!props.isPublicMode &&
+                      aiSuggestions === null &&
+                      props.isEditable &&
+                      !isAIFixing && (
+                        <TooltipV2<HTMLButtonElement>
+                          content={(ref, pos) => (
+                            <div
+                              ref={ref}
+                              className={clsx(
+                                'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
+                                hasOaiKey ? 'w-32' : 'w-40'
+                              )}
+                              style={pos}
+                            >
+                              <span className="text-center">
+                                {hasOaiKey
+                                  ? 'Open AI edit form'
+                                  : 'Missing OpenAI API key'}
+                              </span>
+                              <span className="inline-flex gap-x-1 items-center text-gray-400">
+                                {hasOaiKey ? (
+                                  <>
+                                    <span>⌘</span>
+                                    <span>+</span>
+                                    <span>e</span>
+                                  </>
+                                ) : (
+                                  <span>
+                                    Admins can add an OpenAI key in settings.
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          active={true}
+                        >
+                          {(ref) => (
+                            <button
+                              ref={ref}
+                              disabled={!props.isEditable}
+                              onClick={onToggleEditWithAIPromptOpen}
+                              className={clsx(
+                                !props.isEditable || !hasOaiKey
+                                  ? 'cursor-not-allowed bg-gray-200'
+                                  : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
+                              )}
+                            >
+                              <SparklesIcon className="w-3 h-3" />
+                              <span>Edit with AI</span>
+                            </button>
+                          )}
+                        </TooltipV2>
+                      )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        {result && (
+          <SQLResult
+            page={page}
+            result={result}
+            isPublic={false}
+            documentId={props.document.id}
+            workspaceId={props.document.workspaceId}
+            blockId={blockId}
+            dataframeName={dataframeName?.value ?? ''}
+            isResultHidden={isResultHidden ?? false}
+            toggleResultHidden={toggleResultHidden}
+            isFixingWithAI={isAIFixing}
+            onFixWithAI={onFixWithAI}
+            dashboardMode={props.dashboardMode}
+            canFixWithAI={hasOaiKey}
+            sort={sort}
+            isAddVisualizationDisabled={isVisualizationButtonDisabled}
+            onAddVisualization={onAddVisualization}
+            onChangeSort={onChangeSort}
+            onChangePage={onChangePage}
+            loadingPage={loadingPage}
+          />
+        )}
+      </div>
+      <div
+        className={clsx(
+          'absolute h-full transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1',
+          isEditorFocused || statusIsDisabled ? 'opacity-100' : 'opacity-0',
+          !props.isEditable ? 'hidden' : 'block'
+        )}
+      >
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
+          {(ref) => (
+            <button
+              ref={ref}
+              onClick={onRunAbort}
+              disabled={status._tag !== 'idle' && status._tag !== 'running'}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    (status._tag !== 'idle' && status._tag !== 'running') ||
+                    headerSelectValue === null,
+                  'bg-red-200':
+                    status._tag === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status._tag === 'running' && envStatus !== 'Running',
+                  'bg-primary-200':
+                    status._tag === 'idle' && headerSelectValue !== null,
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+              )}
+            >
+              {status._tag !== 'idle' ? (
+                <div>
+                  {status._tag === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
+          )}
+        </TooltipV2>
+
+        <HiddenInPublishedButton
+          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+          hasMultipleTabs={props.hasMultipleTabs}
+          isCodeHidden={isCodeHidden}
+          onToggleIsCodeHidden={toggleCodeHidden}
+          isOutputHidden={isResultHidden}
+          onToggleIsOutputHidden={toggleResultHidden}
+        />
+
+        {((result && !isResultHidden) || !isCodeHidden) && (
+          <SaveReusableComponentButton
+            isComponent={blockId === component?.blockId}
+            onSave={onSaveReusableComponent}
+            disabled={!props.isEditable || isComponentInstance}
+            isComponentInstance={isComponentInstance}
+          />
+        )}
+
+        {((result && !isResultHidden) || !isCodeHidden) &&
+          dataSource?.config.type === 'athena' && (
+            <SQLQueryConfigurationButton
+              dataSource={dataSource}
+              value={configuration}
+              onChange={onChangeConfiguration}
+              disabled={!props.isEditable}
+            />
+          )}
       </div>
     </div>
   )

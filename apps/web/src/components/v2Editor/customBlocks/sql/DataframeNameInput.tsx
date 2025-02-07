@@ -121,22 +121,22 @@ function DataframeNameInput(props: Props) {
   }
 
   return (
-    <div className="relative min-w-[124px]">
+    <div className="relative min-w-[148px] h-full group">
       <input
         type="text"
         className={clsx(
           dataframeName.error
-            ? 'ring-red-200 focus:ring-red-200'
-            : 'ring-gray-200 focus:ring-gray-400',
-          'pl-2 pr-6 block w-full rounded-md border-0 text-gray-500 ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-6 py-0 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed bg-transparent'
+            ? 'bg-red-50 group-hover:bg-red-100'
+            : 'bg-transparent group-hover:bg-gray-100/50',
+          'pl-2.5 pr-8 block w-full border-0 text-gray-500 ring-0 focus:ring-0 placeholder:text-gray-400 text-xs disabled:cursor-not-allowed disabled:cursor-not-allowed h-full focus:!bg-white font-mono font-medium'
         )}
-        placeholder="Dataframe name"
+        placeholder="DataFrame name"
         value={dataframeName.newValue}
         onChange={onChange}
         disabled={props.disabled || status._tag !== 'idle'}
         onBlur={onBlur}
       />
-      <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 group">
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2.5 group">
         {dataframeName.error ? (
           <>
             <button
@@ -165,7 +165,7 @@ function DataframeNameInput(props: Props) {
             <div className="font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity scale-0 group-hover:scale-100 group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 w-72">
               <span className="inline-flex gap-x-1 items-center text-gray-400 text-center">
                 Use this variable name to reference the results as a Pandas
-                dataframe in further Python blocks.
+                DataFrame in further Python blocks.
               </span>
             </div>
           </>

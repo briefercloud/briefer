@@ -12,7 +12,7 @@ function useFullScreenDocument(documentId: string): UseFullScreenDocument {
   const { data: user } = useSession({ redirectToLogin: true })
   const [isFullScreen, setIsFullScreen] = useLocalStorage(
     `briefer-user-${user?.id}-doc-${documentId}-fullscreen`,
-    false
+    true
   )
 
   const toggle = useCallback(() => {

@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid'
 import * as Y from 'yjs'
-import React, { useCallback } from 'react'
+import React, { RefObject, useCallback } from 'react'
 import { ChevronDoubleRightIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { Transition, Dialog } from '@headlessui/react'
 import Spin from './Spin'
-import { Tooltip } from './Tooltips'
+import { Tooltip, TooltipV2 } from './Tooltips'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import { SaveIcon } from 'lucide-react'
@@ -238,24 +238,25 @@ export function SaveReusableComponentButton(
   return (
     <>
       <div className="relative">
-        <Tooltip
-          position="top"
+        <TooltipV2<HTMLButtonElement>
           message={
             props.isComponentInstance
               ? "You can't save this component because it's an instance of an existing component."
               : 'Save this block as a reusable component to add to other pages.'
           }
-          tooltipClassname="w-36"
-          active
+          active={true}
         >
-          <button
-            className="rounded-sm h-6 min-w-6 flex items-center justify-center border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
-            onClick={onSave}
-            disabled={props.disabled || props.isComponentInstance}
-          >
-            <SaveIcon strokeWidth={2} className="w-3 h-3" />
-          </button>
-        </Tooltip>
+          {(ref) => (
+            <button
+              className="rounded-sm h-6 min-w-6 flex items-center justify-center border border-gray-200 text-gray-400 hover:bg-gray-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-300"
+              onClick={onSave}
+              disabled={props.disabled || props.isComponentInstance}
+              ref={ref}
+            >
+              <SaveIcon strokeWidth={2} className="w-3 h-3" />
+            </button>
+          )}
+        </TooltipV2>
       </div>
       <SaveConfirmationModal
         isOpen={isConfirmationModalOpen}

@@ -53,6 +53,8 @@ import {
   isRunnableBlock,
   ExecutionQueue,
   AITasks,
+  getClosestDataframe,
+  getBlockFlatPosition,
 } from '@briefer/editor'
 import EnvBar from '../EnvBar'
 import PlusButton from './PlusButton'
@@ -64,7 +66,7 @@ import VisualizationBlock from './customBlocks/visualization'
 import { DataFrame, ElementType } from '@briefer/types'
 import {
   Bars3CenterLeftIcon,
-  ChartBarIcon,
+  ChartPieIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CircleStackIcon,
@@ -100,6 +102,16 @@ import useEditorAwareness, {
 } from '@/hooks/useEditorAwareness'
 import { SQLExtensionProvider } from './CodeEditor/sql'
 import VisualizationV2Block from './customBlocks/visualizationV2'
+import useSideBar from '@/hooks/useSideBar'
+import { createPortal } from 'react-dom'
+import { Transition } from '@headlessui/react'
+import {
+  BarsArrowDownIcon,
+  FolderIcon,
+  MinusCircleIcon,
+  PlayIcon,
+} from '@heroicons/react/24/outline'
+import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -191,7 +203,7 @@ export function getTabIcon(
       return CommandLineSmallIcon
     case BlockType.Visualization:
     case BlockType.VisualizationV2:
-      return ChartBarIcon
+      return ChartPieIcon
     case BlockType.Input:
       return PencilSquareIcon
     case BlockType.DropdownInput:
@@ -229,6 +241,10 @@ interface TabProps {
   isFirst?: boolean
   isDraggable: boolean
   executionQueue: ExecutionQueue
+  onRun: (blockId: string) => void
+  onRunOnwards: (blockId: string) => void
+  onDuplicateTab: (blockId: string) => void
+  onDeleteTab: (blockId: string) => void
 }
 function Tab(props: TabProps) {
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -334,58 +350,158 @@ function Tab(props: TabProps) {
 
   const Icon = getTabIcon(props.tabRef.type)
 
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+  } | null>(null)
+  const onRightClick = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const onRun = useCallback(() => {
+    props.onRun(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onRun])
+
+  const onRunOnwards = useCallback(() => {
+    props.onRunOnwards(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onRunOnwards])
+
+  const onDuplicateTab = useCallback(() => {
+    props.onDuplicateTab(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onDuplicateTab])
+
+  const onDeleteTab = useCallback(() => {
+    props.onDeleteTab(props.tabRef.blockId)
+    setContextMenu(null)
+  }, [props.onDeleteTab])
+
+  const contextMenuRef = useRef<HTMLDivElement>(null)
+  useOnClickOutside(
+    () => setContextMenu(null),
+    contextMenuRef,
+    contextMenu !== null
+  )
+
   return (
-    <div
-      ref={(d) => {
-        drop(d)
-      }}
-      className="h-full flex text-xs"
-    >
-      {draggingSide === 'left' && isOver && canDrop && (
-        <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
-      )}
-      <button
-        key={props.tabRef.blockId}
-        ref={buttonRef}
-        onClick={() => props.onSwitchActiveTab(props.tabRef.blockId)}
-        className={clsx(
-          'flex gap-x-2 items-center border-l border-r border-t border-gray-200 px-2.5 py-1.5 rounded-t-sm whitespace-nowrap',
-          props.tabRef.isCurrent
-            ? 'bg-white text-gray-950'
-            : 'bg-gray-50 text-gray-400',
-          isDragging ? 'opacity-0' : '',
-          !props.isFirst ? '-ml-[1px]' : ''
-        )}
+    <>
+      <div
+        ref={(d) => {
+          drop(d)
+        }}
+        className="h-full flex text-xs"
       >
-        <div className="flex items-center gap-x-1">
-          <Icon
-            className={clsx(
-              'h-3 w-3',
-              props.tabRef.isCurrent ? 'text-gray-600' : 'text-gray-300'
-            )}
+        {draggingSide === 'left' && isOver && canDrop && (
+          <div
+            className={`bg-ceramic-100`}
+            style={{ width: `${dragSize}px` }}
           />
-          {props.tabRef.title || getPrettyTitle(props.tabRef.type)}{' '}
-          {props.tabRef.isHiddenInPublished && (
-            <span
-              className={clsx(
-                'pl-0.5 text-[10px]',
-                props.tabRef.isCurrent ? 'text-gray-400' : 'text-gray-300'
-              )}
-            >
-              hidden
-            </span>
+        )}
+        <button
+          key={props.tabRef.blockId}
+          ref={buttonRef}
+          onClick={() => props.onSwitchActiveTab(props.tabRef.blockId)}
+          className={clsx(
+            'flex gap-x-2 items-center border-l border-r border-t border-gray-200 px-2.5 py-1.5 rounded-t-sm whitespace-nowrap',
+            props.tabRef.isCurrent
+              ? 'bg-white text-gray-950'
+              : 'bg-gray-50 text-gray-400 hover:bg-gray-100',
+            isDragging ? 'opacity-0' : '',
+            !props.isFirst ? '-ml-[1px]' : ''
           )}
-        </div>
-        <ExecIndicator
-          tabRef={props.tabRef}
-          blocks={props.blocks}
-          executionQueue={props.executionQueue}
-        />
-      </button>
-      {draggingSide === 'right' && isOver && canDrop && (
-        <div className={`bg-ceramic-100`} style={{ width: `${dragSize}px` }} />
+          onContextMenu={onRightClick}
+        >
+          <div className="flex items-center gap-x-1">
+            <Icon
+              className={clsx(
+                'h-3 w-3',
+                props.tabRef.isCurrent ? 'text-gray-600' : 'text-gray-300'
+              )}
+            />
+            {props.tabRef.title || getPrettyTitle(props.tabRef.type)}{' '}
+            {props.tabRef.isHiddenInPublished && (
+              <span
+                className={clsx(
+                  'pl-0.5 text-[10px]',
+                  props.tabRef.isCurrent ? 'text-gray-400' : 'text-gray-300'
+                )}
+              >
+                hidden
+              </span>
+            )}
+          </div>
+          <ExecIndicator
+            tabRef={props.tabRef}
+            blocks={props.blocks}
+            executionQueue={props.executionQueue}
+          />
+        </button>
+        {draggingSide === 'right' && isOver && canDrop && (
+          <div
+            className={`bg-ceramic-100`}
+            style={{ width: `${dragSize}px` }}
+          />
+        )}
+      </div>
+      {createPortal(
+        <Transition
+          as="div"
+          className="absolute z-30"
+          enter="transition-opacity duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition-opacity duration-300"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+          style={{ left: contextMenu?.x, top: contextMenu?.y }}
+          show={contextMenu !== null}
+          ref={contextMenuRef}
+        >
+          <div className="rounded-md bg-white shadow-[0_4px_12px_#CFCFCF] ring-1 ring-gray-100 focus:outline-none font-sans divide-y divide-gray-200 flex flex-col text-xs text-gray-600">
+            <div className="flex flex-col divide-y divide-gray-200">
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onRun}
+                >
+                  <PlayIcon className="h-4 w-4" />
+                  <span>Run tab</span>
+                </button>
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onRunOnwards}
+                >
+                  <BarsArrowDownIcon className="h-4 w-4" />
+                  <span>Run onwards</span>
+                </button>
+              </div>
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onDuplicateTab}
+                >
+                  <FolderIcon className="h-4 w-4" />
+                  <span>Duplicate tab</span>
+                </button>
+              </div>
+              <div className="py-0.5 px-0.5">
+                <button
+                  className="hover:bg-gray-100 w-full px-2 py-1.5 rounded-md text-left flex gap-x-2 items-center whitespace-nowrap"
+                  onClick={onDeleteTab}
+                >
+                  <MinusCircleIcon className="h-4 w-4" />
+                  <span>Delete tab</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </Transition>,
+        document.body
       )}
-    </div>
+    </>
   )
 }
 
@@ -421,6 +537,7 @@ const DraggableTabbedBlock = (props: {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }) => {
   const { state: layout } = useYDocState<Y.Array<YBlockGroup>>(
     props.yDoc,
@@ -632,6 +749,7 @@ file`
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ))
   }, [
@@ -701,6 +819,59 @@ file`
     props.onRemoveBlock(props.id, currentBlockId)
   }, [currentBlockId, props.id, props.onRemoveBlock])
 
+  const onDeleteTab = useCallback(
+    (blockId: string) => {
+      props.onRemoveBlock(props.id, blockId)
+    },
+    [props.id, props.onRemoveBlock]
+  )
+
+  const onRunTab = useCallback(
+    (blockId: string) => {
+      const block = blocks.value.get(blockId)
+      if (!block) {
+        return
+      }
+
+      const metadata =
+        props.executionQueue.getExecutionQueueMetadataForBlock(block)
+      if (!metadata) {
+        return
+      }
+
+      props.executionQueue.enqueueBlock(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        metadata
+      )
+    },
+    [blocks, props.executionQueue, props.userId, environmentStartedAt]
+  )
+
+  const onRunOnwardsTab = useCallback(
+    (blockId: string) => {
+      const block = blocks.value.get(blockId)
+      if (!block) {
+        return
+      }
+
+      const metadata =
+        props.executionQueue.getExecutionQueueMetadataForBlock(block)
+      if (!metadata) {
+        return
+      }
+
+      props.executionQueue.enqueueBlockOnwards(
+        blockId,
+        props.userId,
+        environmentStartedAt,
+        metadata
+      )
+    },
+    [blocks, props.executionQueue, props.userId, environmentStartedAt]
+  )
+
   const runAllTabs = useCallback(() => {
     props.executionQueue.enqueueBlockGroup(props.yDoc, props.id, props.userId)
   }, [props.executionQueue, props.yDoc, props.id])
@@ -761,6 +932,13 @@ file`
     props.onDuplicateBlock(props.id, currentBlockId)
   }, [currentBlockId, props.id, props.onDuplicateBlock])
 
+  const onDuplicateTab = useCallback(
+    (blockId: string) => {
+      props.onDuplicateBlock(props.id, blockId)
+    },
+    [props.id, props.onDuplicateBlock]
+  )
+
   const onRemoveBlockGroup = useCallback(() => {
     props.onRemoveBlockGroup(props.id)
   }, [props.id, props.onRemoveBlockGroup])
@@ -804,6 +982,8 @@ file`
     })
   }, [tabRefs, blocks])
 
+  const [isSideBarOpen] = useSideBar()
+
   return (
     <div className="flex group/wrapper gap-x-1 relative">
       <div
@@ -830,6 +1010,7 @@ file`
           onDeleteBlock={onRemoveBlockGroup}
           targetRef={popupContainerRef}
           onHideAllTabs={onHideAllTabs}
+          menuPosition={isSideBarOpen ? 'left' : 'right'}
         />
       </div>
       <div className="flex-grow max-w-full">
@@ -858,6 +1039,10 @@ file`
                   isDraggable={hasMultipleTabs && !props.isApp}
                   blocks={blocks.value}
                   executionQueue={props.executionQueue}
+                  onRun={onRunTab}
+                  onRunOnwards={onRunOnwardsTab}
+                  onDuplicateTab={onDuplicateTab}
+                  onDeleteTab={onDeleteTab}
                 />
               ))}
               {isScrollable && !isScrolledAllTheWayRight && (
@@ -872,8 +1057,7 @@ file`
             {!props.isApp && (
               <NewTabButton
                 workspaceId={props.document.workspaceId}
-                layout={layout.value}
-                blocks={blocks.value}
+                yDoc={props.yDoc}
                 blockGroupId={props.id}
                 lastBlockId={tabRefs[tabRefs.length - 1].blockId}
                 dataSources={props.dataSources}
@@ -955,6 +1139,7 @@ const V2EditorRow = (props: {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }) => {
   const isLast = props.index === props.totalBlocks - 1
   return (
@@ -993,6 +1178,7 @@ const V2EditorRow = (props: {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
       <div className={clsx(isLast ? 'pt-2' : '')}>
         <Dropzone
@@ -1109,13 +1295,16 @@ const Editor = (props: Props) => {
             break
           case BlockType.VisualizationV2:
           case BlockType.Visualization:
+          case BlockType.PivotTable: {
+            const dataframe = getClosestDataframe(props.yDoc, index)
             newBlockId = addBlockGroup(
               layout.value,
               blocks.value,
-              { type, dataframeName: null },
+              { type, dataframeName: dataframe?.name ?? null },
               index
             )
             break
+          }
           case BlockType.DashboardHeader:
             break
           default:
@@ -1289,15 +1478,27 @@ const Editor = (props: Props) => {
             break
           case BlockType.VisualizationV2:
           case BlockType.Visualization:
+          case BlockType.PivotTable: {
+            const blockPos = getBlockFlatPosition(
+              blockId,
+              layout.value,
+              blocks.value
+            )
+            const dataframe = getClosestDataframe(
+              props.yDoc,
+              Math.max(position === 'before' ? blockPos - 1 : blockPos + 1, 0)
+            )
+
             addGroupedBlock(
               layout.value,
               blocks.value,
               blockGroupId,
               blockId,
-              { type, dataframeName: null },
+              { type, dataframeName: dataframe?.name ?? null },
               position
             )
             break
+          }
           case BlockType.DashboardHeader:
             break
           default:
@@ -1434,6 +1635,7 @@ const Editor = (props: Props) => {
           userId={props.userId}
           executionQueue={props.executionQueue}
           aiTasks={props.aiTasks}
+          isFullScreen={props.isFullScreen}
         />
       )
     })
@@ -1607,6 +1809,7 @@ interface TabRefProps {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  isFullScreen: boolean
 }
 function TabRef(props: TabRefProps) {
   const [editorState] = useEditorAwareness()
@@ -1651,6 +1854,7 @@ function TabRef(props: TabRefProps) {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onPython: (block) => (
@@ -1672,6 +1876,7 @@ function TabRef(props: TabRefProps) {
         userId={props.userId}
         executionQueue={props.executionQueue}
         aiTasks={props.aiTasks}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onVisualization: (block) => (
@@ -1694,6 +1899,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onVisualizationV2: (block) => (
@@ -1716,6 +1922,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onInput: (block) => (
@@ -1808,6 +2015,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
     onPivotTable: (block) => (
@@ -1829,6 +2037,7 @@ function TabRef(props: TabRefProps) {
         isCursorInserting={isCursorInserting}
         userId={props.userId}
         executionQueue={props.executionQueue}
+        isFullScreen={props.isFullScreen}
       />
     ),
   })

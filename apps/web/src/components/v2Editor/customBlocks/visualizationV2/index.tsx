@@ -1,6 +1,11 @@
 import { v4 as uuidv4 } from 'uuid'
 
-import { ArrowPathIcon, ClockIcon, StopIcon } from '@heroicons/react/20/solid'
+import {
+  ChartPieIcon,
+  ClockIcon,
+  StopIcon,
+  PlayIcon,
+} from '@heroicons/react/20/solid'
 import * as Y from 'yjs'
 import {
   type VisualizationV2Block,
@@ -16,7 +21,14 @@ import {
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { FunnelIcon } from '@heroicons/react/24/outline'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  CSSProperties,
+  RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
 import FilterSelector from './FilterSelector'
@@ -39,7 +51,6 @@ import VisualizationViewV2 from './VisualizationView'
 import { ConnectDragPreview } from 'react-dnd'
 import { equals, head, omit } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { VisualizationExecTooltip } from '../../ExecTooltip'
 import useFullScreenDocument from '@/hooks/useFullScreenDocument'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
@@ -47,6 +58,7 @@ import { downloadFile } from '@/utils/file'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { useYMemo } from '@/hooks/useYMemo'
 import { getAggFunction } from './YAxisPicker'
+import { TooltipV2 } from '@/components/Tooltips'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -110,6 +122,7 @@ interface Props {
   isCursorInserting: boolean
   executionQueue: ExecutionQueue
   userId: string | null
+  isFullScreen: boolean
 }
 function VisualizationBlockV2(props: Props) {
   const attrs = useYMemo(
@@ -191,6 +204,20 @@ function VisualizationBlockV2(props: Props) {
     props.userId,
     environmentStartedAt,
   ])
+
+  useEffect(() => {
+    if (
+      attrs.output ||
+      (attrs.error && attrs.error !== 'dataframe-not-set') ||
+      status !== 'idle'
+    ) {
+      return
+    }
+
+    if (attrs.input.dataframeName) {
+      onRun()
+    }
+  }, [attrs.output, attrs.input.dataframeName, onRun])
 
   const onChangeDataframe = useCallback(
     (dataframeName: string) => {
@@ -529,7 +556,7 @@ function VisualizationBlockV2(props: Props) {
     }
   }, [isDirty, props.block, onRun])
 
-  const [isFullscreen] = useFullScreenDocument(props.document.id)
+  const [isFullScreen] = useFullScreenDocument(props.document.id)
 
   const onChangeYAxes = useCallback(
     (yAxes: YAxisV2[]) => {
@@ -541,28 +568,6 @@ function VisualizationBlockV2(props: Props) {
   const hasAValidYAxis = attrs.input.yAxes.some((yAxis) =>
     yAxis.series.some((s) => s.column !== null)
   )
-
-  // TODO
-  // useEffect(() => {
-  //   if (status === 'running' || status === 'run-requested') {
-  //     // 30 seconds timeout
-  //     const timeout = setTimeout(() => {
-  //       const status = props.block.getAttribute('status')
-  //       if (status === 'running') {
-  //         props.block.setAttribute('status', 'run-requested')
-  //       } else if (status === 'run-requested') {
-  //         props.block.setAttribute('status', 'idle')
-  //         requestAnimationFrame(() => {
-  //           props.block.setAttribute('status', 'run-requested')
-  //         })
-  //       }
-  //     }, 1000 * 30)
-
-  //     return () => {
-  //       clearTimeout(timeout)
-  //     }
-  //   }
-  // }, [props.block, status])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(attrs.id)
@@ -614,6 +619,53 @@ function VisualizationBlockV2(props: Props) {
     [props.block, attrs.input.yAxes]
   )
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before rendering the visualization.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Refresh</span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   if (props.isDashboard) {
     return (
       <VisualizationViewV2
@@ -627,7 +679,7 @@ function VisualizationBlockV2(props: Props) {
         onNewSQL={onNewSQL}
         result={attrs.output?.result ?? null}
         controlsHidden={attrs.controlsHidden}
-        isFullscreen={isFullscreen}
+        isFullScreen={isFullScreen}
         renderer={props.renderer}
         isHidden={attrs.controlsHidden}
         onToggleHidden={onToggleHidden}
@@ -640,44 +692,55 @@ function VisualizationBlockV2(props: Props) {
 
   return (
     <div
+      className="relative group/block"
       onClick={onClickWithin}
-      className={clsx(
-        'relative group/block bg-white printable-block h-full rounded-md border',
-        props.isBlockHiddenInPublished && 'border-dashed',
-        props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
-        props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
-      )}
       data-block-id={attrs.id}
     >
-      <div className="h-full">
-        <div className="py-3">
+      <div
+        className={clsx(
+          'rounded-md border',
+          props.isBlockHiddenInPublished && 'border-dashed',
+          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+
+          props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
+        )}
+      >
+        <div
+          className={clsx(
+            'rounded-md',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
+          )}
+        >
           <div
-            className="flex items-center justify-between px-3 pr-3 gap-x-2 h-[1.6rem] font-sans"
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
             ref={(d) => {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex gap-x-4 h-full w-full">
-              <input
-                type="text"
-                disabled={!props.isEditable}
-                className={clsx(
-                  'font-sans bg-transparent pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 disabled:ring-0 hover:ring-1 focus:ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs h-full'
-                )}
-                placeholder="Visualization"
-                value={attrs.title}
-                onChange={onChangeTitle}
-              />
-              <div className="print:hidden flex gap-x-2 min-h-3 text-xs">
+            <div className="flex items-center justify-between px-3 pr-0 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <ChartPieIcon className="h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={clsx(
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                  )}
+                  placeholder="Visualization (click to add a title)"
+                  value={attrs.title}
+                  onChange={onChangeTitle}
+                  disabled={!props.isEditable}
+                />
+              </div>
+              <div className="print:hidden flex items-center gap-x-0 group-focus/block:opacity-100 h-full divide-x divide-gray-200">
                 <button
                   className={clsx(
-                    'font-sans flex items-center gap-x-1.5 text-gray-400 h-6 px-3 border border-gray-200 rounded-md whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed',
+                    'font-sans text-xs flex justify-center items-center gap-x-1.5 text-gray-400 px-2.5 whitespace-nowrap disabled:bg-white hover:bg-gray-100 disabled:cursor-not-allowed h-full min-w-[124px]',
                     props.isPublicMode ? 'hidden' : 'inline-block'
                   )}
                   onClick={onAddFilter}
                   disabled={!props.isEditable}
                 >
-                  <FunnelIcon className="h-3 w-3" />
+                  <FunnelIcon className="h-4 w-4 text-gray-400" />
                   <span>Add filter</span>
                 </button>
                 <HeaderSelect
@@ -695,7 +758,7 @@ function VisualizationBlockV2(props: Props) {
 
         <div
           className={clsx(
-            'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-t border-gray-200',
+            'p-2 flex flex-wrap items-center gap-2 min-h[3rem] border-b border-gray-200',
             {
               hidden: attrs.input.filters.length === 0,
             }
@@ -720,7 +783,7 @@ function VisualizationBlockV2(props: Props) {
             />
           ))}
         </div>
-        <div className="h-[564px] border-t border-gray-200 flex items-center">
+        <div className="h-[580px] flex items-center">
           <VisualizationControlsV2
             isHidden={attrs.controlsHidden || !props.isEditable}
             dataframe={dataframe}
@@ -760,7 +823,7 @@ function VisualizationBlockV2(props: Props) {
             onNewSQL={onNewSQL}
             result={attrs.output?.result ?? null}
             controlsHidden={attrs.controlsHidden}
-            isFullscreen={isFullscreen}
+            isFullScreen={isFullScreen}
             renderer={props.renderer}
             isHidden={attrs.controlsHidden}
             onToggleHidden={onToggleHidden}
@@ -769,73 +832,64 @@ function VisualizationBlockV2(props: Props) {
             isEditable={props.isEditable}
           />
         </div>
-      </div>
-
-      <div
-        className={clsx(
-          'absolute transition-opacity opacity-0 group-hover/block:opacity-100 right-0 translate-x-full pl-1.5 top-0 flex flex-col gap-y-1',
-          viewLoading ? 'opacity-100' : 'opacity-0',
-          {
-            hidden: !props.isEditable,
-          }
-        )}
-      >
-        <button
+        <div
           className={clsx(
+            'absolute transition-opacity opacity-0 group-hover/block:opacity-100 right-0 translate-x-full pl-1.5 top-0 flex flex-col gap-y-1',
+            viewLoading ? 'opacity-100' : 'opacity-0',
             {
-              'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+              hidden: !props.isEditable,
+            }
           )}
-          onClick={onRunAbort}
-          disabled={
-            !dataframe ||
-            (!attrs.input.xAxis &&
-              attrs.input.chartType !== 'number' &&
-              attrs.input.chartType !== 'trend') ||
-            (!hasAValidYAxis && attrs.input.chartType !== 'histogram') ||
-            !props.isEditable ||
-            (status !== 'idle' && status !== 'running')
-          }
         >
-          {status !== 'idle' ? (
-            <div>
-              {status === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
-              )}
-              <VisualizationExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-              />
-            </div>
-          ) : (
-            <RunVisualizationTooltip />
-          )}
-        </button>
-        <HiddenInPublishedButton
-          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-          hasMultipleTabs={props.hasMultipleTabs}
-        />
-      </div>
-    </div>
-  )
-}
-
-function RunVisualizationTooltip() {
-  return (
-    <div>
-      <ArrowPathIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
-        <span>Refresh</span>
+          <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
+            {(ref) => (
+              <button
+                ref={ref}
+                className={clsx(
+                  {
+                    'bg-gray-200 cursor-not-allowed':
+                      status !== 'idle' && status !== 'running',
+                    'bg-red-200':
+                      status === 'running' && envStatus === 'Running',
+                    'bg-yellow-300':
+                      status === 'running' && envStatus !== 'Running',
+                    'bg-primary-200': status === 'idle',
+                  },
+                  'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+                )}
+                onClick={onRunAbort}
+                disabled={
+                  !dataframe ||
+                  (!attrs.input.xAxis &&
+                    attrs.input.chartType !== 'number' &&
+                    attrs.input.chartType !== 'trend') ||
+                  (!hasAValidYAxis && attrs.input.chartType !== 'histogram') ||
+                  !props.isEditable ||
+                  (status !== 'idle' && status !== 'running')
+                }
+              >
+                {status !== 'idle' ? (
+                  <div>
+                    {status === 'enqueued' ? (
+                      <ClockIcon className="w-3 h-3 text-gray-500" />
+                    ) : (
+                      <StopIcon className="w-3 h-3 text-gray-500" />
+                    )}
+                  </div>
+                ) : (
+                  <PlayIcon className="w-3 h-3 text-gray-500" />
+                )}
+              </button>
+            )}
+          </TooltipV2>
+          <HiddenInPublishedButton
+            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={false}
+            isOutputHidden={false}
+          />
+        </div>
       </div>
     </div>
   )

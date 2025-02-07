@@ -43,7 +43,6 @@ export type AddBlockGroupBlock =
         | BlockType.DateInput
         | BlockType.FileUpload
         | BlockType.Writeback
-        | BlockType.PivotTable
     }
   | {
       type: BlockType.Python
@@ -56,7 +55,10 @@ export type AddBlockGroupBlock =
       source?: string
     }
   | {
-      type: BlockType.Visualization | BlockType.VisualizationV2
+      type:
+        | BlockType.Visualization
+        | BlockType.VisualizationV2
+        | BlockType.PivotTable
       dataframeName: string | null
     }
   | { type: BlockType.DashboardHeader; content: string }
@@ -112,7 +114,7 @@ const createBlock = (block: AddBlockGroupBlock, yBlockDefs: Y.Map<YBlock>) => {
       yBlock = makeWritebackBlock(blockId)
       break
     case BlockType.PivotTable:
-      yBlock = makePivotTableBlock(blockId, yBlockDefs)
+      yBlock = makePivotTableBlock(blockId, yBlockDefs, block.dataframeName)
       break
   }
 

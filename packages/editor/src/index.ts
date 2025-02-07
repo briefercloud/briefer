@@ -13,7 +13,7 @@ import {
   getPythonSource,
   getSQLAttributes,
 } from './blocks/index.js'
-import { YBlockGroup } from './operations/blockGroup.js'
+import { getTabsFromBlockGroup, YBlockGroup } from './operations/blockGroup.js'
 import { DataFrame } from '@briefer/types'
 import diff from 'fast-diff'
 import {
@@ -28,6 +28,7 @@ import {
   getVisualizationV2Attributes,
   VisualizationV2Block,
 } from './blocks/visualization-v2.js'
+import { ascend, descend, head, sortBy, sortWith } from 'ramda'
 
 export * from './operations/index.js'
 export * from './blocks/index.js'
@@ -67,6 +68,41 @@ export function getLayout(doc: Y.Doc) {
 
 export function getDataframes(doc: Y.Doc) {
   return doc.getMap<DataFrame>('dataframes')
+}
+
+export function getClosestDataframe(doc: Y.Doc, pos: number): DataFrame | null {
+  const dfs = Array.from(getDataframes(doc).values()).reverse() // reverse to put newer dataframes first
+  const blocks = getBlocks(doc)
+  const layout = getLayout(doc)
+  const blocksOrder = layout
+    .toArray()
+    .flatMap((g) => getTabsFromBlockGroup(g, blocks))
+    .map((t) => t.blockId)
+
+  let diffs = dfs.map((df) => {
+    const dfPos = df.blockId ? blocksOrder.indexOf(df.blockId) : -1
+    if (dfPos === -1) {
+      return {
+        diff: Number.MAX_SAFE_INTEGER,
+        df,
+      }
+    }
+
+    return {
+      diff: dfPos - pos,
+      df,
+    }
+  })
+  diffs = sortWith(
+    [
+      ascend((d) => (d.diff < 0 ? -1 : 1)),
+      ascend((d) => Math.abs(d.diff)),
+      descend((d) => d.df.updatedAt ?? Infinity),
+    ],
+    diffs
+  )
+
+  return head(diffs)?.df ?? null
 }
 
 export function getDashboard(doc: Y.Doc) {

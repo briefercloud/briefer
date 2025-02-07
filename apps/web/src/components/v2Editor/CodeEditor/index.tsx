@@ -1,5 +1,11 @@
 import * as Y from 'yjs'
-import { useCallback, useEffect, useRef } from 'react'
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+} from 'react'
 import {
   Annotation,
   ChangeSpec,
@@ -210,6 +216,18 @@ const createWatchSelectionPlugin = (
     }
   )
 
+export interface CodeEditorRef {
+  insert: (
+    snippet: string,
+    selection: { from: number; to: number } | 'all',
+    pos:
+      | 'start'
+      | 'end'
+      | number
+      | ((current: number) => 'start' | 'end' | number)
+  ) => void
+}
+
 interface Props {
   workspaceId: string
   documentId: string
@@ -225,7 +243,10 @@ interface Props {
   disabled: boolean
   onSelectionChanged?: (selectedCode: string | null) => void
 }
-export function CodeEditor(props: Props) {
+const CodeEditor = forwardRef<CodeEditorRef, Props>(function CodeEditor(
+  props,
+  ref
+) {
   const [editorState, editorAPI] = useEditorAwareness()
   const sql = useSQLExtension(props.workspaceId, props.dataSourceId ?? null)
   const python = usePythonExtension(props.documentId, props.blockId)
@@ -567,5 +588,120 @@ export function CodeEditor(props: Props) {
     []
   )
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      insert(snippet, selection, pos) {
+        if (viewRef.current) {
+          const currSelection = viewRef.current.state.selection.main
+
+          let from = 0
+          let to = currSelection.to
+          if (pos === 'start') {
+            from = 0
+            to = from
+          } else if (pos === 'end') {
+            from = viewRef.current.state.doc.length
+            to = from
+          } else if (typeof pos === 'number') {
+            from = Math.min(pos, Math.max(0, viewRef.current.state.doc.length))
+          } else {
+            const result = pos(currSelection.from)
+            if (result === 'start') {
+              from = 0
+              to = from
+            } else if (result === 'end') {
+              from = viewRef.current.state.doc.length
+              to = from
+            } else {
+              from = Math.min(
+                result,
+                Math.max(0, viewRef.current.state.doc.length)
+              )
+            }
+          }
+
+          viewRef.current.dispatch({
+            changes: [
+              {
+                from,
+                to,
+                insert: snippet,
+              },
+            ],
+            selection:
+              selection === 'all'
+                ? {
+                    anchor: from,
+                    head: from + snippet.length,
+                  }
+                : {
+                    anchor: from + selection.from,
+                    head: from + selection.to,
+                  },
+          })
+
+          viewRef.current.focus()
+        } else if (mergeRef.current) {
+          const currSelection = mergeRef.current.view.b.state.selection.main
+
+          let from = 0
+          let to = 0
+          if (pos === 'start') {
+            from = 0
+            to = from
+          } else if (pos === 'end') {
+            from = mergeRef.current.view.b.state.doc.length
+            to = from
+          } else if (typeof pos === 'number') {
+            from = Math.min(
+              pos,
+              Math.max(0, mergeRef.current.view.b.state.doc.length)
+            )
+          } else {
+            const result = pos(currSelection.from)
+            if (result === 'start') {
+              from = 0
+              to = from
+            } else if (result === 'end') {
+              from = mergeRef.current.view.b.state.doc.length
+              to = from
+            } else {
+              from = Math.min(
+                result,
+                Math.max(0, mergeRef.current.view.b.state.doc.length)
+              )
+            }
+          }
+
+          mergeRef.current.view.b.dispatch({
+            changes: [
+              {
+                from,
+                to,
+                insert: snippet,
+              },
+            ],
+            selection:
+              selection === 'all'
+                ? {
+                    anchor: from,
+                    head: from + snippet.length,
+                  }
+                : {
+                    anchor: from + selection.from,
+                    head: from + selection.to,
+                  },
+          })
+
+          mergeRef.current.view.b.focus()
+        }
+      },
+    }),
+    [viewRef, mergeRef]
+  )
+
   return <div onClick={onClick} ref={editorRef}></div>
-}
+})
+
+export default CodeEditor

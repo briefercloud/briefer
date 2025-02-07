@@ -27,7 +27,7 @@ import {
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { useCallback, useEffect, useMemo } from 'react'
+import { CSSProperties, RefObject, useCallback, useMemo } from 'react'
 import {
   ExecutingPythonText,
   LoadingEnvText,
@@ -36,7 +36,6 @@ import {
 import { ConnectDragPreview } from 'react-dnd'
 import ApproveDiffButons from '../../ApproveDiffButtons'
 import EditWithAIForm from '../../EditWithAIForm'
-import { PythonExecTooltip } from '../../ExecTooltip'
 import { PythonOutputs } from './PythonOutput'
 import ScrollBar from '@/components/ScrollBar'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
@@ -45,11 +44,13 @@ import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
-import { CodeEditor } from '../../CodeEditor'
+import CodeEditor from '../../CodeEditor'
 import { exhaustiveCheck } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
+import { CommandLineIcon } from '@heroicons/react/24/solid'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   document: ApiDocument
@@ -67,6 +68,7 @@ interface Props {
   executionQueue: ExecutionQueue
   aiTasks: AITasks
   userId: string | null
+  isFullScreen: boolean
 }
 function PythonBlock(props: Props) {
   const properties = useProperties()
@@ -330,6 +332,58 @@ function PythonBlock(props: Props) {
     props.document.title,
   ])
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before executing python code.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Run code</span>
+            <span className="inline-flex gap-x-1 items-center text-gray-400">
+              <span>⌘</span>
+              <span>+</span>
+              <span>Enter</span>
+            </span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   if (props.dashboardPlace) {
     return (
       <PythonOutputs
@@ -369,33 +423,40 @@ function PythonBlock(props: Props) {
         )}
       >
         <div
-          className={clsx('rounded-md', { 'bg-gray-100': statusIsDisabled })}
+          className={clsx(
+            'rounded-md',
+            statusIsDisabled ? 'bg-gray-100' : 'bg-white',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
+          )}
         >
           <div
-            className="py-3"
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
             ref={(d) => {
               props.dragPreview?.(d)
             }}
           >
-            <div className="flex items-center justify-between px-3 pr-3 gap-x-4 h-[1.6rem] font-sans">
-              <div className="select-none text-gray-300 text-xs flex items-center h-full w-full">
-                <button
-                  className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
-                  onClick={toggleCodeHidden}
-                >
-                  {isCodeHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                </button>
+            <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <CommandLineIcon className="h-4 w-4 text-gray-400" />
                 <input
                   type="text"
                   className={clsx(
-                    'font-sans bg-transparent pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 hover:ring-1 focus:ring-1 ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs disabled:ring-0 h-full'
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
                   )}
-                  placeholder="Python"
+                  placeholder="Python (click to add a title)"
                   value={title}
                   disabled={!props.isEditable}
                   onChange={onChangeTitle}
                 />
               </div>
+
+              {results.some((r) => r.type === 'error') && (
+                <div className="print:hidden flex items-center gap-x-1 text-[10px] text-gray-400 whitespace-nowrap">
+                  <code className="bg-red-50 text-red-700 px-1.5 py-0.5 font-mono rounded-md relative">
+                    contain errors
+                  </code>
+                </div>
+              )}
             </div>
           </div>
           <div
@@ -448,44 +509,55 @@ function PythonBlock(props: Props) {
                   !props.isPublicMode &&
                   props.isEditable &&
                   !isAIFixing && (
-                    <button
-                      disabled={!props.isEditable}
-                      onClick={onToggleEditWithAIPromptOpen}
-                      className={clsx(
-                        !props.isEditable || !hasOaiKey
-                          ? 'cursor-not-allowed bg-gray-200'
-                          : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                        'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-400 group relative font-sans'
-                      )}
-                    >
-                      <SparklesIcon className="w-3 h-3" />
-                      <span>Edit with AI</span>
-                      <div
-                        className={clsx(
-                          'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
-                          hasOaiKey ? 'w-28' : 'w-40'
-                        )}
-                      >
-                        <span>
-                          {hasOaiKey
-                            ? 'Open AI edit form'
-                            : 'Missing OpenAI API key'}
-                        </span>
-                        <span className="inline-flex gap-x-1 items-center text-gray-400">
-                          {hasOaiKey ? (
-                            <>
-                              <span>⌘</span>
-                              <span>+</span>
-                              <span>e</span>
-                            </>
-                          ) : (
-                            <span>
-                              Admins can add an OpenAI key in settings.
-                            </span>
+                    <TooltipV2<HTMLButtonElement>
+                      content={(ref, pos) => (
+                        <div
+                          ref={ref}
+                          className={clsx(
+                            'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
+                            hasOaiKey ? 'w-32' : 'w-40'
                           )}
-                        </span>
-                      </div>
-                    </button>
+                          style={pos}
+                        >
+                          <span className="text-center">
+                            {hasOaiKey
+                              ? 'Open AI edit form'
+                              : 'Missing OpenAI API key'}
+                          </span>
+                          <span className="inline-flex gap-x-1 items-center text-gray-400">
+                            {hasOaiKey ? (
+                              <>
+                                <span>⌘</span>
+                                <span>+</span>
+                                <span>e</span>
+                              </>
+                            ) : (
+                              <span>
+                                Admins can add an OpenAI key in settings.
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      )}
+                      active={true}
+                    >
+                      {(ref) => (
+                        <button
+                          ref={ref}
+                          disabled={!props.isEditable}
+                          onClick={onToggleEditWithAIPromptOpen}
+                          className={clsx(
+                            !props.isEditable || !hasOaiKey
+                              ? 'cursor-not-allowed bg-gray-200'
+                              : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-1 text-gray-500 group relative font-sans'
+                          )}
+                        >
+                          <SparklesIcon className="w-3 h-3" />
+                          <span>Edit with AI</span>
+                        </button>
+                      )}
+                    </TooltipV2>
                   )}
               </div>
             </div>
@@ -494,31 +566,11 @@ function PythonBlock(props: Props) {
 
         <div
           className={clsx('p-3 text-xs border-t border-gray-200', {
-            hidden: results.length === 0,
+            hidden: isResultHidden || results.length === 0,
           })}
         >
-          <div className="print:hidden flex text-gray-300 items-center gap-x-1">
-            <button
-              className="h-4 w-4 hover:text-gray-400"
-              onClick={toggleResultHidden}
-            >
-              {isResultHidden ? <ChevronRightIcon /> : <ChevronDownIcon />}
-            </button>
-            <div className="flex justify-between items-center w-full">
-              <span className="font-sans">
-                {isResultHidden ? 'Output collapsed' : 'Output'}
-              </span>
-              {results.some((r) => r.type === 'error') && (
-                <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10">
-                  contains errors
-                </span>
-              )}
-            </div>
-          </div>
-
           <ScrollBar
             className={clsx('overflow-auto ph-no-capture', {
-              hidden: isResultHidden,
               'px-0.5 pt-3.5 pb-2': !props.isPDF,
             })}
           >
@@ -543,65 +595,55 @@ function PythonBlock(props: Props) {
           !props.isEditable ? 'hidden' : 'block'
         )}
       >
-        <button
-          onClick={onRunAbort}
-          disabled={status !== 'idle' && status !== 'running'}
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                status !== 'idle' && status !== 'running',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200': status === 'idle',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-        >
-          {status !== 'idle' ? (
-            <div>
-              {status === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
+          {(ref) => (
+            <button
+              ref={ref}
+              onClick={onRunAbort}
+              disabled={status !== 'idle' && status !== 'running'}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    status !== 'idle' && status !== 'running',
+                  'bg-red-200': status === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status === 'running' && envStatus !== 'Running',
+                  'bg-primary-200': status === 'idle',
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <PythonExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={status === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-              />
-            </div>
-          ) : (
-            <RunPythonTooltip />
+            >
+              {status !== 'idle' ? (
+                <div>
+                  {status === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
+          isCodeHidden={isCodeHidden ?? false}
+          onToggleIsCodeHidden={toggleCodeHidden}
+          isOutputHidden={isResultHidden ?? false}
+          onToggleIsOutputHidden={toggleResultHidden}
         />
-        <SaveReusableComponentButton
-          isComponent={blockId === component?.blockId}
-          onSave={onSaveReusableComponent}
-          disabled={!props.isEditable || isComponentInstance}
-          isComponentInstance={isComponentInstance}
-        />
-      </div>
-    </div>
-  )
-}
-
-function RunPythonTooltip() {
-  return (
-    <div>
-      <PlayIcon className="w-3 h-3 text-gray-500" />
-      <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
-        <span>Run code</span>
-        <span className="inline-flex gap-x-1 items-center text-gray-400">
-          <span>⌘</span>
-          <span>+</span>
-          <span>Enter</span>
-        </span>
+        {!isCodeHidden && (
+          <SaveReusableComponentButton
+            isComponent={blockId === component?.blockId}
+            onSave={onSaveReusableComponent}
+            disabled={!props.isEditable || isComponentInstance}
+            isComponentInstance={isComponentInstance}
+          />
+        )}
       </div>
     </div>
   )

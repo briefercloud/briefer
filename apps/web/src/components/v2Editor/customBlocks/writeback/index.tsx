@@ -8,6 +8,7 @@ import {
   type WritebackBlock,
 } from '@briefer/editor'
 import {
+  ArrowUpTrayIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ClockIcon,
@@ -15,7 +16,7 @@ import {
   StopIcon,
 } from '@heroicons/react/20/solid'
 import clsx from 'clsx'
-import { useCallback, useMemo } from 'react'
+import { CSSProperties, RefObject, useCallback, useMemo } from 'react'
 import { ConnectDragPreview } from 'react-dnd'
 import * as Y from 'yjs'
 import WritebackControls from './WritebackControls'
@@ -23,12 +24,12 @@ import { DataFrame } from '@briefer/types'
 import WritebackResult from './WritebackResult'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { WritebackExecTooltip } from '../../ExecTooltip'
 import { XCircleIcon } from 'lucide-react'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { TooltipV2 } from '@/components/Tooltips'
 
 interface Props {
   workspaceId: string
@@ -44,6 +45,7 @@ interface Props {
   isCursorInserting: boolean
   userId: string | null
   executionQueue: ExecutionQueue
+  isFullScreen: boolean
 }
 function WritebackBlock(props: Props) {
   const {
@@ -159,6 +161,53 @@ function WritebackBlock(props: Props) {
     [props.dataSources]
   )
 
+  const runTooltipContent = useMemo(() => {
+    if (status !== 'idle') {
+      switch (status) {
+        case 'enqueued':
+          return {
+            title: 'This block is enqueud',
+            message: 'It will run once the previous blocks finish executing.',
+          }
+        case 'running': {
+          if (envStatus !== 'Running' && !envLoading) {
+            return {
+              title: 'Your environment is starting',
+              message:
+                'Please hang tight. We need to start your environment before executing writeback.',
+            }
+          }
+
+          if (execution?.batch.isRunAll() ?? false) {
+            return {
+              title: 'This block is running.',
+              message:
+                'When running entire documents, you cannot stop individual blocks.',
+            }
+          }
+        }
+        case 'unknown':
+        case 'aborting':
+        case 'completed':
+          return null
+      }
+    } else {
+      return {
+        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+          <div
+            className={clsx(
+              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
+            )}
+            ref={ref}
+            style={pos}
+          >
+            <span>Refresh</span>
+          </div>
+        ),
+      }
+    }
+  }, [status, envStatus, envLoading, execution])
+
   return (
     <div
       className="relative group/block"
@@ -168,50 +217,48 @@ function WritebackBlock(props: Props) {
       <div
         className={clsx(
           'rounded-md border',
-          'bg-white',
-          props.hasMultipleTabs ? 'roudned-tl-none' : 'roudned-tl-md',
+          props.isBlockHiddenInPublished && 'border-dashed',
+          props.hasMultipleTabs ? 'rounded-tl-none' : 'rounded-tl-md',
+
           props.isCursorWithin ? 'border-blue-400 shadow-sm' : 'border-gray-200'
         )}
       >
         <div
-          className="py-3"
-          ref={(d) => {
-            props.dragPreview?.(d)
-          }}
+          className={clsx(
+            'rounded-md',
+            props.hasMultipleTabs ? 'rounded-tl-none' : ''
+          )}
         >
-          <div className="flex items-center justify-between px-3 pr-3 gap-x-4 font-sans h-[1.6rem]">
-            <div className="select-none text-gray-300 text-xs flex items-center w-full h-full">
-              <button
-                className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm mr-0.5"
-                onClick={toggleCollapsed}
-              >
-                {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-              </button>
-              <input
-                type="text"
-                className={clsx(
-                  'font-sans pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-500 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset h-full py-0 text-xs disabled:ring-0 h-full bg-transparent'
-                )}
-                placeholder="Writeback"
-                value={title}
-                onChange={onChangeTitle}
-                disabled={!props.isEditable}
-              />
-              {isCollapsed &&
-                (resultStatus === 'success' ? (
-                  <CheckCircleIcon className="w-4 h-4 text-green-600" />
-                ) : (
-                  <XCircleIcon className="w-4 h-4 text-red-500" />
-                ))}
+          <div
+            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
+            ref={(d) => {
+              props.dragPreview?.(d)
+            }}
+          >
+            <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12 divide-x divide-gray-200">
+              <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
+                <ArrowUpTrayIcon className="w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  className={clsx(
+                    'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
+                  )}
+                  placeholder="Writeback (click to add a title)"
+                  value={title}
+                  onChange={onChangeTitle}
+                  disabled={!props.isEditable}
+                />
+                {isCollapsed &&
+                  (resultStatus === 'success' ? (
+                    <CheckCircleIcon className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircleIcon className="w-4 h-4 text-red-500" />
+                  ))}
+              </div>
             </div>
           </div>
         </div>
-        <div
-          className={clsx(
-            'flex',
-            isCollapsed ? 'h-0 overflow-hidden' : 'border-t border-gray-200'
-          )}
-        >
+        <div className={clsx('flex', isCollapsed && 'h-0 overflow-hidden')}>
           <div
             className={clsx(
               'w-1/3 border-r border-gray-200 h-[372px] overflow-y-auto',
@@ -243,52 +290,58 @@ function WritebackBlock(props: Props) {
             />
           </div>
         </div>
+        {/*here*/}
       </div>
-      <div className="absolute transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1">
-        <button
-          onClick={onRunAbort}
-          disabled={status !== 'idle' && status !== 'running'}
-          className={clsx(
-            {
-              'bg-gray-200 cursor-not-allowed':
-                status === 'enqueued' || status === 'aborting',
-              'bg-red-200': status === 'running' && envStatus === 'Running',
-              'bg-yellow-300': status === 'running' && envStatus !== 'Running',
-              'bg-primary-200':
-                status === 'idle' ||
-                status === 'completed' ||
-                status === 'unknown',
-            },
-            'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
-          )}
-        >
-          {status !== 'idle' ? (
-            <div>
-              {execStatus === 'enqueued' ? (
-                <ClockIcon className="w-3 h-3 text-gray-500" />
-              ) : (
-                <StopIcon className="w-3 h-3 text-gray-500" />
+      <div
+        className={clsx(
+          'absolute h-full transition-opacity opacity-0 group-hover/block:opacity-100 pl-1.5 right-0 top-0 translate-x-full flex flex-col gap-y-1 z-20',
+          props.isCursorWithin || statusIsDisabled
+            ? 'opacity-100'
+            : 'opacity-0',
+          !props.isEditable ? 'hidden' : 'block'
+        )}
+      >
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
+          {(ref) => (
+            <button
+              ref={ref}
+              onClick={onRunAbort}
+              disabled={status !== 'idle' && status !== 'running'}
+              className={clsx(
+                {
+                  'bg-gray-200 cursor-not-allowed':
+                    status === 'enqueued' || status === 'aborting',
+                  'bg-red-200': status === 'running' && envStatus === 'Running',
+                  'bg-yellow-300':
+                    status === 'running' && envStatus !== 'Running',
+                  'bg-primary-200':
+                    status === 'idle' ||
+                    status === 'completed' ||
+                    status === 'unknown',
+                },
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
               )}
-              <WritebackExecTooltip
-                envStatus={envStatus}
-                envLoading={envLoading}
-                execStatus={execStatus === 'enqueued' ? 'enqueued' : 'running'}
-                runningAll={execution?.batch.isRunAll() ?? false}
-              />
-            </div>
-          ) : (
-            <div>
-              <PlayIcon className="w-3 h-3 text-gray-500" />
-              <div className="font-sans pointer-events-none absolute -top-1 left-1/2 -translate-y-full -translate-x-1/2 w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1">
-                <span>Run writeback</span>
-              </div>
-            </div>
+            >
+              {status !== 'idle' ? (
+                <div>
+                  {execStatus === 'enqueued' ? (
+                    <ClockIcon className="w-3 h-3 text-gray-500" />
+                  ) : (
+                    <StopIcon className="w-3 h-3 text-gray-500" />
+                  )}
+                </div>
+              ) : (
+                <PlayIcon className="w-3 h-3 text-gray-500" />
+              )}
+            </button>
           )}
-        </button>
+        </TooltipV2>
         <HiddenInPublishedButton
           isBlockHiddenInPublished={props.isBlockHiddenInPublished}
           onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
           hasMultipleTabs={props.hasMultipleTabs}
+          isCodeHidden={false}
+          isOutputHidden={false}
         />
       </div>
     </div>

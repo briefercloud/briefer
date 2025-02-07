@@ -35,7 +35,7 @@ interface Props {
   dataframe: DataFrame | null
   onNewSQL: () => void
   controlsHidden: boolean
-  isFullscreen: boolean
+  isFullScreen: boolean
   renderer?: 'canvas' | 'svg'
   isHidden: boolean
   onToggleHidden: () => void
@@ -45,7 +45,7 @@ interface Props {
 }
 function VisualizationView(props: Props) {
   const [isSideBarOpen] = useSideBar()
-  const key = `${isSideBarOpen}${props.controlsHidden.toString()}${props.isFullscreen.toString()}`
+  const key = `${isSideBarOpen}${props.controlsHidden.toString()}${props.isFullScreen.toString()}`
 
   return (
     <div
