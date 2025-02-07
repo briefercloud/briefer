@@ -923,7 +923,7 @@ function SQLBlock(props: Props) {
           !props.isEditable ? 'hidden' : 'block'
         )}
       >
-        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
           {(ref) => (
             <button
               ref={ref}

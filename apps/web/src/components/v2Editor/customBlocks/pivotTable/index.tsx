@@ -548,7 +548,7 @@ function PivotTableBlock(props: Props) {
           }
         )}
       >
-        <TooltipV2<HTMLButtonElement> {...runTooltipContent}>
+        <TooltipV2<HTMLButtonElement> {...runTooltipContent} active={true}>
           {(ref) => (
             <button
               ref={ref}

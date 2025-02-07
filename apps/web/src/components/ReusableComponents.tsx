@@ -244,6 +244,7 @@ export function SaveReusableComponentButton(
               ? "You can't save this component because it's an instance of an existing component."
               : 'Save this block as a reusable component to add to other pages.'
           }
+          active={true}
         >
           {(ref) => (
             <button
