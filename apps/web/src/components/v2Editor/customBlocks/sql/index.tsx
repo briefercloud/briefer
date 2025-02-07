@@ -12,6 +12,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import * as Y from 'yjs'
@@ -60,7 +61,7 @@ import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
 import { SaveReusableComponentButton } from '@/components/ReusableComponents'
 import { useReusableComponents } from '@/hooks/useReusableComponents'
-import { CodeEditor } from '../../CodeEditor'
+import CodeEditor, { CodeEditorRef } from '../../CodeEditor'
 import SQLQueryConfigurationButton from './SQLQueryConfigurationButton'
 import {
   exhaustiveCheck,
@@ -611,6 +612,17 @@ function SQLBlock(props: Props) {
     headerSelectValue,
   ])
 
+  const codeEditor = useRef<CodeEditorRef>(null)
+
+  const onAddVariable = useCallback(() => {
+    const snippet = `{{ your_var_name }}`
+    codeEditor.current?.insert(
+      snippet,
+      { from: 3, to: snippet.length - 3 },
+      (p) => (p === 0 ? 'end' : p)
+    )
+  }, [codeEditor])
+
   if (props.dashboardMode !== 'none') {
     if (!result) {
       return (
@@ -780,6 +792,7 @@ function SQLBlock(props: Props) {
             >
               <div>
                 <CodeEditor
+                  ref={codeEditor}
                   workspaceId={props.document.workspaceId}
                   documentId={props.document.id}
                   blockId={blockId}
@@ -843,48 +856,85 @@ function SQLBlock(props: Props) {
                       )}
 
                     {!props.isPublicMode &&
+                      props.isEditable &&
+                      aiSuggestions === null && (
+                        <TooltipV2<HTMLButtonElement>
+                          title="Add a variable"
+                          message="Interpolate Python variables into this query"
+                          active={true}
+                          className="w-48"
+                        >
+                          {(ref) => (
+                            <button
+                              ref={ref}
+                              disabled={!props.isEditable}
+                              className={clsx(
+                                !props.isEditable || !hasOaiKey
+                                  ? 'cursor-not-allowed bg-gray-200'
+                                  : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
+                              )}
+                              onClick={onAddVariable}
+                            >
+                              <SparklesIcon className="w-3 h-3" />
+                              <span>Variable</span>
+                            </button>
+                          )}
+                        </TooltipV2>
+                      )}
+                    {!props.isPublicMode &&
                       aiSuggestions === null &&
                       props.isEditable &&
                       !isAIFixing && (
-                        <button
-                          disabled={!props.isEditable}
-                          onClick={onToggleEditWithAIPromptOpen}
-                          className={clsx(
-                            !props.isEditable || !hasOaiKey
-                              ? 'cursor-not-allowed bg-gray-200'
-                              : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
-                            'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
-                          )}
-                        >
-                          <SparklesIcon className="w-3 h-3" />
-
-                          <span>Edit with AI</span>
-                          <div
-                            className={clsx(
-                              'font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
-                              hasOaiKey ? 'w-28' : 'w-40'
-                            )}
-                          >
-                            <span>
-                              {hasOaiKey
-                                ? 'Open AI edit form'
-                                : 'Missing OpenAI API key'}
-                            </span>
-                            <span className="inline-flex gap-x-1 items-center text-gray-400">
-                              {hasOaiKey ? (
-                                <>
-                                  <span>⌘</span>
-                                  <span>+</span>
-                                  <span>e</span>
-                                </>
-                              ) : (
-                                <span>
-                                  Admins can add an OpenAI key in settings.
-                                </span>
+                        <TooltipV2<HTMLButtonElement>
+                          content={(ref, pos) => (
+                            <div
+                              ref={ref}
+                              className={clsx(
+                                'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
+                                hasOaiKey ? 'w-32' : 'w-40'
                               )}
-                            </span>
-                          </div>
-                        </button>
+                              style={pos}
+                            >
+                              <span className="text-center">
+                                {hasOaiKey
+                                  ? 'Open AI edit form'
+                                  : 'Missing OpenAI API key'}
+                              </span>
+                              <span className="inline-flex gap-x-1 items-center text-gray-400">
+                                {hasOaiKey ? (
+                                  <>
+                                    <span>⌘</span>
+                                    <span>+</span>
+                                    <span>e</span>
+                                  </>
+                                ) : (
+                                  <span>
+                                    Admins can add an OpenAI key in settings.
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          )}
+                          active={true}
+                        >
+                          {(ref) => (
+                            <button
+                              ref={ref}
+                              disabled={!props.isEditable}
+                              onClick={onToggleEditWithAIPromptOpen}
+                              className={clsx(
+                                !props.isEditable || !hasOaiKey
+                                  ? 'cursor-not-allowed bg-gray-200'
+                                  : 'cusor-pointer hover:bg-gray-50 hover:text-gray-700',
+                                'flex items-center border rounded-sm border-gray-200 px-2 py-1 gap-x-2 text-gray-500 group relative font-sans'
+                              )}
+                            >
+                              <SparklesIcon className="w-3 h-3" />
+                              <span>Edit with AI</span>
+                            </button>
+                          )}
+                        </TooltipV2>
                       )}
                   </div>
                 </div>

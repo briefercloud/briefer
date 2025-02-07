@@ -1,7 +1,7 @@
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import { computeTooltipPosition } from '@/utils/dom'
 import clsx from 'clsx'
-import { CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
+import { CSSProperties, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export const Tooltip = ({
@@ -118,6 +118,7 @@ interface TooltipV2Props<T extends HTMLElement> {
   referenceRef?: React.RefObject<T>
   children: (ref: React.RefObject<T>) => React.ReactNode
   active: boolean
+  className?: string
 }
 export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
   const parentRef = useRef<HTMLDivElement>(null)
@@ -125,7 +126,7 @@ export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
   const _referenceRef = useRef<T>(null)
   const referenceRef = props.referenceRef ?? _referenceRef
   const [pos, setPos] = useState<CSSProperties>(
-    computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 4)
+    computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 6)
   )
   useEffect(() => {
     if (!parentRef.current || !props.active) {
@@ -134,7 +135,7 @@ export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
 
     const cb = () => {
       setPos(
-        computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 4)
+        computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 6)
       )
     }
 
@@ -160,7 +161,10 @@ export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
         ) : props.title || props.message ? (
           <div
             ref={tooltipRef}
-            className="font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-[4000] w-36"
+            className={clsx(
+              'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-[4000] w-36',
+              props.className
+            )}
             style={pos}
           >
             <>
