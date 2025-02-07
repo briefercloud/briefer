@@ -236,6 +236,7 @@ function GridElement(props: Props) {
             block={block}
             isEditing={isEditingBlock}
             onFinishedEditing={() => setIsEditingBlock(false)}
+            dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
           />
         ),
         onFileUpload: () => null,

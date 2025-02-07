@@ -2,15 +2,14 @@ import * as Y from 'yjs'
 import { DashboardHeaderBlock } from '@briefer/editor'
 import clsx from 'clsx'
 import { useCallback, useEffect, useRef } from 'react'
-import usePreviousEffect from '@/hooks/usePreviousEffect'
 
 interface Props {
   block: Y.XmlElement<DashboardHeaderBlock>
   isEditing: boolean
   onFinishedEditing: () => void
+  dashboardMode: 'editing' | 'live'
 }
-
-const DashboardHeader = (props: Props) => {
+function DashboardHeader(props: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const onEdit = useCallback(() => {
@@ -29,7 +28,7 @@ const DashboardHeader = (props: Props) => {
   }, [onEdit, props.onFinishedEditing])
 
   let content = props.block.getAttribute('content')
-  if (!props.isEditing && !content) {
+  if (props.dashboardMode === 'live' && !content) {
     content = ''
   } else if (!content) {
     content = 'Click the pencil to edit'
