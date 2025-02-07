@@ -271,6 +271,9 @@ function BrieferResult(props: {
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
         nameGap: 40,
+        axisLabel: {
+          hideOverlap: true,
+        },
       })),
       yAxis: props.result.yAxis.map((axis) => ({
         ...axis,
