@@ -62,7 +62,7 @@ function VisualizationViewV2(props: Props) {
       key={key}
       className={clsx(
         !props.controlsHidden && !props.isDashboard && 'w-2/3',
-        'flex-grow h-full flex items-center justify-center relative pt-3'
+        'flex-grow h-full flex items-center justify-center relative'
       )}
     >
       {props.result ? (
@@ -245,6 +245,13 @@ function BrieferResult(props: {
   const option: echarts.EChartsOption = useMemo(
     () => ({
       ...props.result,
+      legend: {
+        ...props.result.legend,
+        top: '2%',
+        left: 'center',
+        right: '3%',
+        type: 'scroll',
+      },
       grid: {
         ...props.result.grid,
         left: '2%',
