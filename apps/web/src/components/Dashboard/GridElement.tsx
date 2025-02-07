@@ -272,9 +272,14 @@ function GridElement(props: Props) {
       : ScrollBar
 
   return (
-    <div className="relative group h-full">
+    <div className="relative group h-full cursor-move">
       {props.block ? (
-        <WrapperElement className="w-full h-full rounded-md overflow-hidden flex flex-col">
+        <WrapperElement
+          className={clsx(
+            'w-full h-full rounded-md overflow-hidden flex flex-col',
+            props.isEditingDashboard && 'pointer-events-none'
+          )}
+        >
           {hasTitle && titleContent && (
             <h2 className="text-gray-700 font-medium text-left text-sm truncate min-h-6 px-3.5 py-2.5">
               {titleContent}
@@ -291,7 +296,6 @@ function GridElement(props: Props) {
 
       {props.isEditingDashboard && (
         <>
-          <div className="absolute top-0 right-0 bottom-2 left-0 z-10 bg-white opacity-0 hover:cursor-grab" />
           <div
             className={clsx(
               'absolute -top-3 right-3 bg-white opacity-0 group-hover:opacity-100 z-20 border p-1 rounded-md shadow-sm flex gap-x-2 items-center',

@@ -53,9 +53,9 @@ const BREAKPOINT_EDIT_COLS: Record<keyof typeof BREAKPOINTS, number> = {
 const BREAKPOINT_COLS: Record<keyof typeof BREAKPOINTS, number> = {
   lg: 24,
   md: 24,
-  sm: 15,
-  xs: 9,
-  xxs: 6,
+  sm: 24,
+  xs: 24,
+  xxs: 24,
 }
 
 function generateBackground(cellSize: number, gridWidth: number): string {
@@ -311,7 +311,7 @@ function DashboardViewInner(props: InnerProps) {
       isDraggable={props.isEditing}
       isDroppable={props.isEditing}
       isResizable={props.isEditing}
-      resizeHandles={['se', 'sw']}
+      resizeHandles={['se']}
       onDrop={onDrop}
       onDropDragOver={onDropDragOver}
       style={props.isEditing ? style : {}}

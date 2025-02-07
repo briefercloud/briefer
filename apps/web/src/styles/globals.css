@@ -311,3 +311,20 @@ body {
     display: none !important;
   }
 }
+
+.react-resizable-handle {
+  width: 32px !important;
+  height: 32px !important;
+  background-image: none !important;
+  cursor: nwse-resize !important;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  width: 12px !important;
+  height: 12px !important;
+  border-right: 2px solid rgba(156, 163, 175, 0.6) !important;
+  border-bottom: 2px solid rgba(156, 163, 175, 0.6) !important;
+  border-bottom-right-radius: 2px !important;
+  right: 6px !important;
+  bottom: 6px !important;
+}
