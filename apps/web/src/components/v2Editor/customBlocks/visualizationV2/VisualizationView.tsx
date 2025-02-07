@@ -242,22 +242,32 @@ function BrieferResult(props: {
   }, [container.current])
 
   // @ts-ignore
-  const option: echarts.EChartsOption = useMemo(
-    () => ({
+  const option: echarts.EChartsOption = useMemo(() => {
+    const grid: echarts.EChartsOption['grid'] = {
+      ...props.result.grid,
+      left: props.isDashboard ? '28px' : '36px',
+      right: props.isDashboard ? '28px' : '36px',
+      bottom: props.isDashboard ? '28px' : '56px',
+    }
+
+    if (!props.isDashboard) {
+      grid['top'] = '92px'
+    }
+
+    return {
       ...props.result,
       legend: {
         ...props.result.legend,
-        top: '2%',
-        left: 'center',
-        right: '3%',
+        padding: props.isDashboard ? [4, 28, 0, 8] : [28, 28, 0, 28],
         type: 'scroll',
+        icon: 'circle',
+        textStyle: {
+          padding: [0, 0, 0, -6],
+          fontWeight: 'bold',
+          color: '#6b7280',
+        },
       },
-      grid: {
-        ...props.result.grid,
-        left: '2%',
-        right: '2%',
-        bottom: props.isDashboard ? '2%' : '10%',
-      },
+      grid,
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
         nameGap: 40,
@@ -275,9 +285,8 @@ function BrieferResult(props: {
           return value
         },
       },
-    }),
-    [props.result, size]
-  )
+    }
+  }, [props.result, size])
 
   if (!size) {
     return <div className="w-full h-full" ref={measureDiv} />
