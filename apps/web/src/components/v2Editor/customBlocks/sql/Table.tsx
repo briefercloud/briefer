@@ -66,7 +66,7 @@ function Table(props: Props) {
                   className="px-2 py-2 text-gray-500 whitespace-nowrap font-normal border-b"
                 >
                   <button
-                    className="flex space-x-1 items-center w-full justify-between"
+                    className="flex space-x-2 items-center w-full justify-between"
                     onClick={onChangeSort(column.name.toString())}
                   >
                     <div className="flex items-center space-x-1">
