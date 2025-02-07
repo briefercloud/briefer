@@ -225,7 +225,7 @@ def _briefer_create_visualization(df, options):
                     df = df[df[column_name].isnull()]
                 elif operator == 'isNotNull':
                     df = df[df[column_name].notnull()]
-            elif pd.api.types.is_string_dtype(df[column_name]) or pd.api.types.is_categorical_dtype(df[column_name]) or pd.api.types.is_object_dtype(df[column_name]):
+            elif pd.api.types.is_string_dtype(df[column_name]) or isinstance(df[column_name].dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(df[column_name]):
                 if operator == 'eq':
                     df = df[df[column_name] == value]
                 elif operator == 'ne':
