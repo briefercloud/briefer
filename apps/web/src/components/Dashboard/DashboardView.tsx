@@ -32,11 +32,8 @@ export const MARGIN = 6
 export const COLS_COUNT = 24
 
 const BREAKPOINTS = {
-  lg: 1024,
-  md: 768,
-  sm: 640,
-  xs: 480,
-  xxs: 0,
+  lg: 800,
+  sm: 0,
 }
 
 // When editing, the breakpoints should be the same
@@ -44,29 +41,27 @@ const BREAKPOINTS = {
 // the sidebar
 const BREAKPOINT_EDIT_COLS: Record<keyof typeof BREAKPOINTS, number> = {
   lg: 24,
-  md: 24,
   sm: 24,
-  xs: 24,
-  xxs: 24,
 }
 
 const BREAKPOINT_COLS: Record<keyof typeof BREAKPOINTS, number> = {
   lg: 24,
-  md: 24,
-  sm: 24,
-  xs: 24,
-  xxs: 24,
+  sm: 1,
 }
 
-function generateBackground(cellSize: number, gridWidth: number): string {
+function generateBackground(
+  cellWidth: number,
+  cellHeight: number,
+  gridWidth: number
+): string {
   const rects = range(0, COLS_COUNT).map((i) => {
-    const x = i * (cellSize + MARGIN) + MARGIN
-    return `<rect stroke="#f2f1f3" stroke-width="2" fill="none" x="${x}" y="${MARGIN}" width="${cellSize}" height="${cellSize}" />`
+    const x = i * (cellWidth + MARGIN) + MARGIN
+    return `<rect stroke="#f2f1f3" stroke-width="2" fill="none" x="${x}" y="${MARGIN}" width="${cellWidth}" height="${cellHeight}" />`
   })
 
   const svg = [
     `<svg xmlns="http://www.w3.org/2000/svg"  width="${gridWidth}" height="${
-      cellSize + MARGIN
+      cellHeight + MARGIN
     }">`,
     ...rects,
     `</svg>`,
@@ -81,7 +76,7 @@ export function getMins(t: BlockType): { minW: number; minH: number } {
     case BlockType.Visualization:
     case BlockType.VisualizationV2:
     case BlockType.PivotTable:
-      return { minW: 3, minH: 2 }
+      return { minW: 3, minH: 3 }
     case BlockType.Python:
     case BlockType.Input:
     case BlockType.DropdownInput:
@@ -159,8 +154,8 @@ function DashboardViewInner(props: InnerProps) {
   )
 
   const onLayoutChange = useCallback(
-    (layout: GridLayout.Layout[]) => {
-      mergeGridLayoutIntoYDashboard(dashboard.value, layout)
+    (_layout: GridLayout.Layout[], allLayouts: GridLayout.Layouts) => {
+      mergeGridLayoutIntoYDashboard(dashboard.value, allLayouts.lg)
     },
     [dashboard]
   )
@@ -242,10 +237,12 @@ function DashboardViewInner(props: InnerProps) {
     []
   )
 
-  const cellSize = useMemo(() => {
+  const { cellWidth, cellHeight } = useMemo(() => {
     const marginWidth = MARGIN * (colsCount + 1)
-    const cellSize = (props.width - marginWidth) / colsCount
-    return cellSize
+    const cellWidth = (props.width - marginWidth) / colsCount
+    const cellHeight = Math.max(50, cellWidth)
+
+    return { cellWidth, cellHeight }
   }, [props.width, colsCount])
 
   const onDrop = useCallback(
@@ -272,9 +269,9 @@ function DashboardViewInner(props: InnerProps) {
   const style = useMemo(
     () => ({
       minHeight: Math.max(1280, props.height ?? 0 + 280),
-      background: generateBackground(cellSize, props.width),
+      background: generateBackground(cellWidth, cellHeight, props.width),
     }),
-    [cellSize, props.width, props.height]
+    [cellWidth, props.width, props.height]
   )
 
   const onDropDragOver = useCallback(
@@ -284,23 +281,23 @@ function DashboardViewInner(props: InnerProps) {
       if (props.draggingBlock) {
         const mins = getDefaults(props.draggingBlock.type)
         size.w = Math.max(
-          Math.ceil(props.draggingBlock.width / cellSize),
+          Math.ceil(props.draggingBlock.width / cellWidth),
           mins.minW
         )
         size.h = Math.max(
-          Math.ceil(props.draggingBlock.height / cellSize),
+          Math.ceil(props.draggingBlock.height / cellHeight),
           mins.minH
         )
       }
 
       return size
     },
-    [cellSize, props.draggingBlock]
+    [cellWidth, props.draggingBlock]
   )
 
   return (
     <GridLayout.Responsive
-      rowHeight={cellSize}
+      rowHeight={cellHeight}
       width={props.width}
       layouts={{ lg: layout }}
       margin={[MARGIN, MARGIN]}
