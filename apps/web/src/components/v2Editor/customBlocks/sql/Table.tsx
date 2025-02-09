@@ -88,7 +88,7 @@ function Table(props: Props) {
             })}
           </tr>
         </thead>
-        <tbody className="bg-white overflow-y-scroll max-h-[500px]">
+        <tbody className="bg-white overflow-y-scroll">
           {props.rows.map((row, rowIndex) => (
             <tr key={rowIndex} className="divide-x">
               {props.columns.map((column, cellIndex) => {

@@ -103,6 +103,8 @@ export function updateBlockFromComponent(
       isFileDataSource: compAttrs.isFileDataSource,
       configuration: clone(compAttrs.configuration),
       page: compAttrs.page,
+      dashboardPage: compAttrs.dashboardPage,
+      dashboardPageSize: compAttrs.dashboardPageSize,
       sort: clone(compAttrs.sort),
     }
     for (const [key, value] of Object.entries(nextAttrs)) {

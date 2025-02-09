@@ -19,6 +19,7 @@ export async function makeSQLAlchemyQuery(
   databaseUrl: string,
   dataSourceType:
     | 'mysql'
+    | 'sqlserver'
     | 'oracle'
     | 'psql'
     | 'redshift'
@@ -28,6 +29,7 @@ export async function makeSQLAlchemyQuery(
   jobId: string,
   query: string,
   queryId: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const renderedQuery = await renderJinja(workspaceId, sessionId, query)
@@ -130,6 +132,9 @@ def briefer_make_sqlalchemy_query():
                     chunks = pd.read_sql_query(text(${JSON.stringify(
                       renderedQuery
                     )}), con=conn, chunksize=100000)
+                    page_size = ${resultOptions.pageSize}
+                    dashboard_page_size = ${resultOptions.dashboardPageSize}
+                    actual_page_size = max(page_size, dashboard_page_size)
                     rows = None
                     columns = None
                     last_emitted_at = 0
@@ -146,7 +151,7 @@ def briefer_make_sqlalchemy_query():
                         chunk = rename_duplicates(chunk)
                         df = convert_df(pd.concat([df, chunk], ignore_index=True))
                         if rows is None:
-                            rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
+                            rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format="iso"))
 
                             # convert all values to string to make sure we preserve the python values
                             # when displaying this data in the browser
@@ -183,16 +188,21 @@ def briefer_make_sqlalchemy_query():
                         now = time.time()
                         if now - last_emitted_at > 1:
                             result = {
-                                "version": 2,
+                                "version": 3,
 
                                 "type": "success",
                                 "columns": columns,
-                                "rows": rows,
+                                "rows": rows[:page_size],
                                 "count": count,
 
                                 "page": 0,
-                                "pageSize": 50,
-                                "pageCount": int(len(df) // 50 + 1),
+                                "pageSize": page_size,
+                                "pageCount": int(len(df) // page_size + 1),
+
+                                "dashboardPage": 0,
+                                "dashboardPageSize": dashboard_page_size,
+                                "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
+                                "dashboardRows": rows[:dashboard_page_size],
                             }
                             print(json.dumps(result, ensure_ascii=False, default=str))
                             last_emitted_at = now
@@ -244,16 +254,20 @@ def briefer_make_sqlalchemy_query():
                         return
 
                     result = {
-                        "version": 2,
+                        "version": 3,
 
                         "type": "success",
                         "columns": columns,
-                        "rows": rows,
+                        "rows": rows[:page_size],
                         "count": count,
 
                         "page": 0,
                         "pageSize": 50,
-                        "pageCount": int(len(df) // 50 + 1),
+                        "pageCount": int(len(df) // page_size + 1),
+
+                        "dashboardPage": 0,
+                        "dashboardPageSize": dashboard_page_size,
+                        "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
 
                         "queryDurationMs": duration_ms,
                     }

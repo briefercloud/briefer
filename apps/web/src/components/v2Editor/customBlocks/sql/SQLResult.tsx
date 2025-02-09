@@ -11,7 +11,7 @@ import {
   TableSort,
 } from '@briefer/types'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import Table from './Table'
 import LargeSpinner from '@/components/LargeSpinner'
 import {
@@ -20,7 +20,8 @@ import {
   SparklesIcon,
 } from '@heroicons/react/20/solid'
 import { ArrowDownTrayIcon, ChartPieIcon } from '@heroicons/react/24/solid'
-import { Tooltip } from '@/components/Tooltips'
+import { Tooltip, TooltipV2 } from '@/components/Tooltips'
+import debounce from 'lodash.debounce'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -40,6 +41,7 @@ interface Props {
   workspaceId: string
   result: RunQueryResult
   page: number
+  dashboardPage: number
   loadingPage: boolean
   dataframeName: string
   isPublic: boolean
@@ -54,6 +56,7 @@ interface Props {
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
   onChangePage: (page: number) => void
+  onChangeDashboardPageSize: (size: number) => void
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -62,6 +65,7 @@ function SQLResult(props: Props) {
         <SQLSuccess
           result={props.result}
           page={props.page}
+          dashboardPage={props.dashboardPage}
           isPublic={props.isPublic}
           documentId={props.documentId}
           workspaceId={props.workspaceId}
@@ -76,6 +80,7 @@ function SQLResult(props: Props) {
           onChangePage={props.onChangePage}
           isAddVisualizationDisabled={props.isAddVisualizationDisabled}
           onAddVisualization={props.onAddVisualization}
+          onChangeDashboardPageSize={props.onChangeDashboardPageSize}
         />
       )
     case 'abort-error':
@@ -109,6 +114,7 @@ interface SQLSuccessProps {
   documentId: string
   workspaceId: string
   page: number
+  dashboardPage: number
   loadingPage: boolean
   result: SuccessRunQueryResult
   onChangePage: (page: number) => void
@@ -121,6 +127,7 @@ interface SQLSuccessProps {
   isAddVisualizationDisabled: boolean
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
+  onChangeDashboardPageSize: (size: number) => void
 }
 function SQLSuccess(props: SQLSuccessProps) {
   const result = useMemo(
@@ -128,19 +135,25 @@ function SQLSuccess(props: SQLSuccessProps) {
     [props.result]
   )
 
+  const page = props.dashboardMode !== 'none' ? props.dashboardPage : props.page
+  const pageCount =
+    props.dashboardMode !== 'none'
+      ? result.dashboardPageCount
+      : result.pageCount
+
   const prevPage = useCallback(() => {
-    props.onChangePage(Math.max(0, result.page - 1))
-  }, [props.onChangePage, result.page])
+    props.onChangePage(Math.max(0, page - 1))
+  }, [props.onChangePage, page])
 
   const nextPage = useCallback(() => {
-    props.onChangePage(Math.min(result.page + 1, result.pageCount - 1))
-  }, [props.onChangePage, result.page])
+    props.onChangePage(Math.min(page + 1, pageCount - 1))
+  }, [props.onChangePage, page, pageCount])
 
   const setPage = useCallback(
-    (page: number) => {
-      props.onChangePage(Math.max(0, Math.min(page, result.pageCount - 1)))
+    (newPage: number) => {
+      props.onChangePage(Math.max(0, Math.min(newPage, pageCount - 1)))
     },
-    [props.onChangePage, result.pageCount]
+    [props.onChangePage, pageCount]
   )
 
   const [csvRes, getCSV] = useCSV(props.workspaceId, props.documentId)
@@ -170,24 +183,64 @@ function SQLSuccess(props: SQLSuccessProps) {
     }
   }, [csvRes, props.dataframeName])
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (props.dashboardMode === 'none' || !containerRef.current) {
+      return
+    }
+
+    const tableHeaderSize = 33
+    const footerSize = 42
+    const tableRowSize = 29
+
+    const container = containerRef.current
+    const cb = debounce(() => {
+      const height = container.clientHeight
+      const maxPageSize = Math.floor(
+        (height - tableHeaderSize - footerSize) / tableRowSize
+      )
+
+      console.log(maxPageSize, result.dashboardPageSize)
+
+      if (maxPageSize !== result.dashboardPageSize) {
+        props.onChangeDashboardPageSize(maxPageSize)
+      }
+    }, 500)
+
+    cb()
+
+    const observer = new ResizeObserver(cb)
+    console.log(container)
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [
+    props.dashboardMode,
+    containerRef,
+    result.dashboardPageSize,
+    props.onChangeDashboardPageSize,
+  ])
+
   return (
-    <div className="relative w-full h-full">
+    <div
+      className="relative w-full h-full flex flex-col justify-between"
+      ref={containerRef}
+    >
       {props.loadingPage && (
         <div className="absolute top-0 left-0 bottom-8 right-0 bg-white opacity-50 z-10 flex items-center justify-center">
           <LargeSpinner color="#deff80" />
         </div>
       )}
       {(!props.isResultHidden || props.dashboardMode !== 'none') && (
-        <div
-          className={clsx(
-            props.dashboardMode !== 'none'
-              ? 'h-[calc(100%-2rem)] rounded-b-md'
-              : 'h-full border-b',
-            'max-w-full ph-no-capture bg-white font-sans'
-          )}
-        >
+        <div className="max-w-full ph-no-capture bg-white font-sans border-b">
           <Table
-            rows={result.rows}
+            rows={
+              props.dashboardMode !== 'none'
+                ? result.dashboardRows
+                : result.rows
+            }
             columns={props.result.columns}
             isDashboard={props.dashboardMode !== 'none'}
             sort={props.sort}
@@ -205,8 +258,8 @@ function SQLSuccess(props: SQLSuccessProps) {
           </div>
           <div className="flex-1 flex justify-center">
             <PageButtons
-              currentPage={props.page}
-              totalPages={result.pageCount}
+              currentPage={page}
+              totalPages={pageCount}
               prevPage={prevPage}
               nextPage={nextPage}
               setPage={setPage}
@@ -242,14 +295,13 @@ function SQLSuccess(props: SQLSuccessProps) {
                 </Tooltip>
               )}
 
-            <div className="flex items-center">
-              <Tooltip
-                title="Download as CSV"
-                className="flex h-full items-center"
-                tooltipClassname="w-32"
-                active={props.dashboardMode !== 'editing'}
-              >
+            <TooltipV2<HTMLButtonElement>
+              title="Download as CSV"
+              active={props.dashboardMode !== 'editing'}
+            >
+              {(ref) => (
                 <button
+                  ref={ref}
                   disabled={csvRes.loading}
                   className={clsx(
                     csvRes.loading
@@ -268,8 +320,8 @@ function SQLSuccess(props: SQLSuccessProps) {
                     </>
                   )}
                 </button>
-              </Tooltip>
-            </div>
+              )}
+            </TooltipV2>
           </div>
         </div>
       )}

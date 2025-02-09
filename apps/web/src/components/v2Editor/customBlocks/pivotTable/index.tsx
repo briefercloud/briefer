@@ -396,13 +396,10 @@ function PivotTableBlock(props: Props) {
       }
     } else {
       return {
-        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+        content: (ref: RefObject<HTMLDivElement>) => (
           <div
-            className={clsx(
-              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
-            )}
+            className="font-sans pointer-events-none w-max bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1"
             ref={ref}
-            style={pos}
           >
             <span>Refresh</span>
           </div>

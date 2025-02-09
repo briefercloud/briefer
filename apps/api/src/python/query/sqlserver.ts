@@ -11,6 +11,7 @@ export async function makeSQLServerQuery(
   datasource: MySQLDataSource,
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const databaseUrl = await getDatabaseURL(
@@ -26,10 +27,11 @@ export async function makeSQLServerQuery(
     sessionId,
     dataframeName,
     databaseUrl,
-    'mysql',
+    'sqlserver',
     jobId,
     query,
     queryId,
+    resultOptions,
     onProgress
   )
 }

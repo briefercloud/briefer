@@ -333,33 +333,89 @@ export const SuccessRunQueryResultV2 = z.object({
 })
 export type SuccessRunQueryResultV2 = z.infer<typeof SuccessRunQueryResultV2>
 
+export const SuccessRunQueryResultV3 = z.object({
+  version: z.literal(3),
+
+  type: z.literal('success'),
+  columns: z.array(DataFrameColumn),
+  rows: z.array(z.record(z.string(), Json)),
+  count: z.number(),
+
+  // page is 0-indexed
+  page: z.number(),
+  pageSize: z.number(),
+  pageCount: z.number(),
+
+  dashboardPage: z.number(),
+  dashboardPageSize: z.number(),
+  dashboardPageCount: z.number(),
+  dashboardRows: z.array(z.record(z.string(), Json)),
+
+  queryDurationMs: z.number().optional(),
+})
+export type SuccessRunQueryResultV3 = z.infer<typeof SuccessRunQueryResultV3>
+
 export const SuccessRunQueryResult = z.union([
   SuccessRunQueryResultV1,
   SuccessRunQueryResultV2,
+  SuccessRunQueryResultV3,
 ])
 export type SuccessRunQueryResult = z.infer<typeof SuccessRunQueryResult>
 
 export function migrateSuccessSQLResult(
   current: SuccessRunQueryResult
-): SuccessRunQueryResultV2 {
-  if ('version' in current) {
-    switch (current.version) {
-      case 2:
-        return current
+): SuccessRunQueryResultV3 {
+  if (!('version' in current)) {
+    const v2: SuccessRunQueryResultV2 = {
+      version: 2,
+      type: 'success',
+      columns: current.columns,
+      rows: current.rows,
+      count: current.count,
+      page: 0,
+      pageSize: 50,
+      pageCount: 1,
+      queryDurationMs: current.durationMs,
     }
+
+    return migrateSuccessSQLResult(v2)
   }
 
-  const pageSize = 50
-  return {
-    version: 2,
-    type: 'success',
-    columns: current.columns,
-    rows: current.rows.slice(0, pageSize),
-    count: current.count,
-    page: 0,
-    pageSize,
-    pageCount: current.count > 0 ? Math.ceil(current.count / pageSize) : 1,
-    queryDurationMs: current.durationMs,
+  switch (current.version) {
+    case 2: {
+      const pageSize = 50
+      const dashboardPageSize = 6
+      const dashboardPageCount =
+        current.count > 0 ? Math.ceil(current.count / dashboardPageSize) : 1
+
+      const page = current.page
+      // compute equivalent dashboardPage, pageSize for v2 is always 50
+      let dashboardPage = Math.floor((page * pageSize) / dashboardPageSize)
+      const dashboardRows = current.rows.slice(
+        dashboardPage * dashboardPageSize,
+        (dashboardPage + 1) * dashboardPageSize
+      )
+      if (dashboardRows.length === 0) {
+        dashboardPage = 0
+      }
+
+      return {
+        version: 3,
+        type: 'success',
+        columns: current.columns,
+        rows: current.rows.slice(0, pageSize),
+        count: current.count,
+        page,
+        pageSize: current.pageSize,
+        pageCount: current.pageCount,
+        dashboardPage,
+        dashboardPageCount,
+        dashboardPageSize,
+        dashboardRows,
+      }
+    }
+    case 3:
+      return current
   }
 }
 

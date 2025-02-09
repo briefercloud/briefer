@@ -16,6 +16,7 @@ export async function makeOracleQuery(
   datasource: OracleDataSource,
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const databaseUrl = await getDatabaseURL(
@@ -35,6 +36,7 @@ export async function makeOracleQuery(
     jobId,
     query,
     queryId,
+    resultOptions,
     onProgress
   )
 }

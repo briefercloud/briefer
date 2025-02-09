@@ -73,6 +73,7 @@ function generateBackground(
 export function getMins(t: BlockType): { minW: number; minH: number } {
   switch (t) {
     case BlockType.SQL:
+      return { minW: 5, minH: 3 }
     case BlockType.Visualization:
     case BlockType.VisualizationV2:
     case BlockType.PivotTable:
