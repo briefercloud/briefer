@@ -52,7 +52,7 @@ function Table(props: Props) {
       )}
     >
       <table
-        className="!w-full text-xs text-left table-auto border-spacing-0 border-separate font-mono"
+        className="!w-full text-xs text-left table-auto border-spacing-0 border-separate font-sans"
         contentEditable={false}
       >
         <thead className="bg-gray-50 sticky top-0">
