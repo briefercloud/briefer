@@ -17,6 +17,7 @@ export async function makeAthenaQuery(
   datasource: AthenaDataSource,
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void,
   configuration: SQLQueryConfiguration | null
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
@@ -86,6 +87,10 @@ def briefer_make_athena_query():
     from datetime import datetime
     from datetime import date
     from urllib.parse import urlparse
+
+    page_size = ${resultOptions.pageSize}
+    dashboard_page_size = ${resultOptions.dashboardPageSize}
+    actual_page_size = max(page_size, dashboard_page_size)
 
     def get_columns_result(columns):
         json_columns = []
@@ -283,17 +288,23 @@ def briefer_make_athena_query():
 
         df, columns = to_pandas(data)
 
+        rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format="iso"))
+
         result = {
-            "version": 2,
+            "version": 3,
 
             "type": "success",
-            "rows": json.loads(df.head(50).to_json(orient='records', date_format="iso")),
+            "rows": rows[:page_size],
             "count": len(df),
             "columns": get_columns_result(columns),
 
             "page": 0,
-            "pageSize": 50,
-            "pageCount": int(len(df) // 50 + 1),
+            "pageSize": page_size,
+            "pageCount": int(len(df) // page_size + 1),
+
+            "dashboardPage": 0,
+            "dashboardPageSize": dashboard_page_size,
+            "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
         }
         print(json.dumps(result, ensure_ascii=False, default=str))
 
@@ -369,17 +380,23 @@ def briefer_make_athena_query():
                 print(json.dumps(result, ensure_ascii=False, default=str))
                 return
 
+            rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format="iso"))
             result = {
-                "version": 2,
+                "version": 3,
 
                 "type": "success",
                 "columns": get_columns_result(columns),
-                "rows": json.loads(df.head(50).to_json(orient='records', date_format="iso")),
+                "rows": rows[:page_size],
                 "count": len(df),
 
                 "page": 0,
-                "pageSize": 50,
-                "pageCount": int(len(df) // 50 + 1),
+                "pageSize": page_size,
+                "pageCount": int(len(df) // page_size + 1),
+
+                "dashboardPage": 0,
+                "dashboardPageSize": dashboard_page_size,
+                "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
+                "dashboardRows": rows[:dashboard_page_size],
 
                 "queryDurationMs": query_status.get("QueryExecution", {}).get("Statistics", {}).get("TotalExecutionTimeInMillis", None),
             }

@@ -37,6 +37,7 @@ export async function makeSQLQuery(
   datasource: DataSource | 'duckdb',
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void,
   configuration: SQLQueryConfiguration | null
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
@@ -47,6 +48,7 @@ export async function makeSQLQuery(
       queryId,
       dataframeName,
       sql,
+      resultOptions,
       onProgress
     )
   }
@@ -64,6 +66,7 @@ export async function makeSQLQuery(
         datasource.type,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -76,6 +79,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -88,6 +92,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress,
         configuration
       )
@@ -101,6 +106,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -113,6 +119,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -125,6 +132,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -138,6 +146,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -150,6 +159,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -162,6 +172,7 @@ export async function makeSQLQuery(
         datasource.data,
         encryptionKey,
         sql,
+        resultOptions,
         onProgress
       )
       break
@@ -356,8 +367,12 @@ export async function readDataframePage(
   sessionId: string,
   queryId: string,
   dataframeName: string,
-  page: number,
-  pageSize: number,
+  pageOptions: {
+    page: number
+    pageSize: number
+    dashboardPage: number
+    dashboardPageSize: number
+  },
   sort: TableSort | null
 ): Promise<ReadDataFramePageResult> {
   const code = `import json
@@ -372,8 +387,15 @@ if not ("${dataframeName}" in globals()):
       print(json.dumps({"type": "not-found"}))
 
 if "${dataframeName}" in globals():
-    start = ${page * pageSize}
-    end = (${page} + 1) * ${pageSize}
+    start = ${pageOptions.page * pageOptions.pageSize}
+    end = (${pageOptions.page} + 1) * ${pageOptions.pageSize}
+
+    dashboard_start = ${
+      pageOptions.dashboardPage * pageOptions.dashboardPageSize
+    }
+    dashboard_end = (${pageOptions.dashboardPage} + 1) * ${
+    pageOptions.dashboardPageSize
+  }
 
     df = ${dataframeName}
     if sort_config:
@@ -387,6 +409,7 @@ if "${dataframeName}" in globals():
                 pass
 
     rows = json.loads(df.iloc[start:end].to_json(orient="records", date_format="iso"))
+    dashboard_rows = json.loads(df.iloc[dashboard_start:dashboard_end].to_json(orient="records", date_format="iso"))
 
     # convert all values to string to make sure we preserve the python values
     # when displaying this data in the browser
@@ -396,15 +419,22 @@ if "${dataframeName}" in globals():
 
     columns = [{"name": col, "type": dtype.name} for col, dtype in ${dataframeName}.dtypes.items()]
     result = {
-      "version": 2,
+      "version": 3,
       "type": "success",
       "rows": rows,
       "count": len(${dataframeName}),
       "columns": columns,
 
-      "page": ${page},
-      "pageSize": ${pageSize},
-      "pageCount": int(len(${dataframeName}) / ${pageSize} + 1),
+      "page": ${pageOptions.page},
+      "pageSize": ${pageOptions.pageSize},
+      "pageCount": int(len(${dataframeName}) / ${pageOptions.pageSize} + 1),
+
+      "dashboardPage": ${pageOptions.dashboardPage},
+      "dashboardPageSize": ${pageOptions.dashboardPageSize},
+      "dashboardPageCount": int(len(${dataframeName}) / ${
+    pageOptions.dashboardPageSize
+  } + 1),
+      "dashboardRows": dashboard_rows,
     }
     print(json.dumps(result))`
 

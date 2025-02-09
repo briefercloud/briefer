@@ -1,7 +1,8 @@
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import { computeTooltipPosition } from '@/utils/dom'
+import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
-import { CSSProperties, useEffect, useRef, useState } from 'react'
+import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 export const Tooltip = ({
@@ -111,10 +112,7 @@ export function PortalTooltip(props: PortalTooltipProps) {
 interface TooltipV2Props<T extends HTMLElement> {
   title?: string
   message?: string
-  content?: (
-    tooltipRef: React.RefObject<HTMLDivElement>,
-    pos: CSSProperties
-  ) => React.ReactNode
+  content?: (tooltipRef: React.RefObject<HTMLDivElement>) => React.ReactNode
   referenceRef?: React.RefObject<T>
   children: (ref: React.RefObject<T>) => React.ReactNode
   active: boolean
@@ -126,16 +124,30 @@ export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
   const _referenceRef = useRef<T>(null)
   const referenceRef = props.referenceRef ?? _referenceRef
   const [pos, setPos] = useState<CSSProperties>(
-    computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 6)
+    computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 6, true)
   )
+  const [hovering, setHovering] = useState(false)
+  const onEnter = useCallback(() => {
+    setHovering(true)
+  }, [])
+  const onLeave = useCallback(() => {
+    setHovering(false)
+  }, [])
   useEffect(() => {
-    if (!parentRef.current || !props.active) {
+    if (!parentRef.current || !props.active || !hovering) {
       return
     }
 
     const cb = () => {
       setPos(
-        computeTooltipPosition(parentRef, referenceRef, tooltipRef, 'top', 6)
+        computeTooltipPosition(
+          parentRef,
+          referenceRef,
+          tooltipRef,
+          'top',
+          6,
+          true
+        )
       )
     }
 
@@ -150,34 +162,50 @@ export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
     return () => {
       mut.disconnect()
     }
-  }, [parentRef, referenceRef, tooltipRef, props.active])
+  }, [parentRef, referenceRef, tooltipRef, props.active, hovering])
 
   return (
-    <div className="group relative" ref={parentRef}>
+    <div ref={parentRef} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       {props.children(referenceRef)}
-      {props.active ? (
-        props.content ? (
-          props.content(tooltipRef, pos)
-        ) : props.title || props.message ? (
-          <div
-            ref={tooltipRef}
-            className={clsx(
-              'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-[4000] w-36',
-              props.className
-            )}
+      {props.active &&
+        hovering &&
+        createPortal(
+          <Transition
             style={pos}
+            className="absolute z-[2000] rounded-md"
+            enter="transition ease-out duration-100"
+            enterFrom="transform opacity-0 scale-95"
+            enterTo="transform opacity-100 scale-100"
+            leave="transition ease-in duration-75"
+            leaveFrom="transform opacity-100 scale-100"
+            leaveTo="transform opacity-0 scale-95"
+            show={true}
           >
-            <>
-              {props.title && (
-                <span className="text-center">{props.title}</span>
-              )}
-              <span className="inline-flex items-center justify-center text-gray-400 text-center">
-                {props.message}
-              </span>
-            </>
-          </div>
-        ) : null
-      ) : null}
+            {props.content ? (
+              props.content(tooltipRef)
+            ) : props.title || props.message ? (
+              <div
+                ref={tooltipRef}
+                className={clsx(
+                  'font-sans pointer-events-none bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 w-36',
+                  props.className
+                )}
+              >
+                <>
+                  {props.title && (
+                    <span className="text-center">{props.title}</span>
+                  )}
+                  {props.message && (
+                    <span className="inline-flex items-center justify-center text-gray-400 text-center">
+                      {props.message}
+                    </span>
+                  )}
+                </>
+              </div>
+            ) : null}
+          </Transition>,
+          document.body
+        )}
     </div>
   )
 }

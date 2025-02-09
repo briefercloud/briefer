@@ -8,6 +8,7 @@ export async function makeDuckDBQuery(
   queryId: string,
   dataframeName: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const renderedQuery = await renderJinja(workspaceId, sessionId, sql)
@@ -35,6 +36,9 @@ def _briefer_make_duckdb_query():
     csv_file_path = f'{dump_file_base}.csv'
     os.makedirs('/home/jupyteruser/.briefer', exist_ok=True)
 
+    page_size = ${resultOptions.pageSize}
+    dashboard_page_size = ${resultOptions.dashboardPageSize}
+
     try:
         # install and load spacial
         duckdb.install_extension("spatial")
@@ -42,7 +46,7 @@ def _briefer_make_duckdb_query():
         query = duckdb.query(${JSON.stringify(renderedQuery)})
         if query == None:
             result = {
-                "version": 2,
+                "version": 3,
 
                 "type": "success",
                 "columns": [],
@@ -50,14 +54,20 @@ def _briefer_make_duckdb_query():
                 "count": 0,
 
                 "page": 0,
-                "pageSize": 50,
+                "pageSize": page_size,
                 "pageCount": 1,
+
+                "dashboardPage": 0,
+                "dashboardPageSize": dashboard_page_size,
+                "dashboardPageCount": 1,
+                "dashboardRows": [],
             }
             print(json.dumps(result, ensure_ascii=False, default=str))
             return
 
         df = query.df()
-        rows = json.loads(df.head(50).to_json(orient='records', date_format='iso'))
+        actual_page_size = max(page_size, dashboard_page_size)
+        rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format='iso'))
 
         # convert all values to string to make sure we preserve the python values
         # when displaying this data in the browser
@@ -81,16 +91,21 @@ def _briefer_make_duckdb_query():
                 except:
                     pass
         result = {
-            "version": 2,
+            "version": 3,
 
             "type": "success",
             "columns": columns,
-            "rows": rows,
+            "rows": rows[:page_size],
             "count": len(df),
 
             "page": 0,
-            "pageSize": 50,
-            "pageCount": int(len(df) // 50 + 1),
+            "pageSize": page_size,
+            "pageCount": int(len(df) // page_size + 1),
+
+            "dashboardPage": 0,
+            "dashboardPageSize": dashboard_page_size,
+            "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
+            "dashboardRows": rows[:dashboard_page_size],
         }
         print(json.dumps(result, ensure_ascii=False, default=str))
         df.to_parquet(parquet_file_path, compression='gzip', index=False)
