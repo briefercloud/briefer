@@ -22,6 +22,7 @@ import {
 import { ArrowDownTrayIcon, ChartPieIcon } from '@heroicons/react/24/solid'
 import { Tooltip, TooltipV2 } from '@/components/Tooltips'
 import debounce from 'lodash.debounce'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -49,7 +50,7 @@ interface Props {
   toggleResultHidden: () => void
   isFixingWithAI: boolean
   onFixWithAI: () => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   canFixWithAI: boolean
   sort: TableSort | null
   isAddVisualizationDisabled: boolean
@@ -57,6 +58,7 @@ interface Props {
   onChangeSort: (sort: TableSort | null) => void
   onChangePage: (page: number) => void
   onChangeDashboardPageSize: (size: number) => void
+  hasTitle: boolean
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -81,6 +83,7 @@ function SQLResult(props: Props) {
           isAddVisualizationDisabled={props.isAddVisualizationDisabled}
           onAddVisualization={props.onAddVisualization}
           onChangeDashboardPageSize={props.onChangeDashboardPageSize}
+          hasTitle={props.hasTitle}
         />
       )
     case 'abort-error':
@@ -122,12 +125,13 @@ interface SQLSuccessProps {
   dataframeName: string
   isResultHidden: boolean
   toggleResultHidden: () => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   sort: TableSort | null
   isAddVisualizationDisabled: boolean
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
   onChangeDashboardPageSize: (size: number) => void
+  hasTitle: boolean
 }
 function SQLSuccess(props: SQLSuccessProps) {
   const result = useMemo(
@@ -135,9 +139,12 @@ function SQLSuccess(props: SQLSuccessProps) {
     [props.result]
   )
 
-  const page = props.dashboardMode !== 'none' ? props.dashboardPage : props.page
+  const page =
+    props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)
+      ? props.dashboardPage
+      : props.page
   const pageCount =
-    props.dashboardMode !== 'none'
+    props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)
       ? result.dashboardPageCount
       : result.pageCount
 
@@ -185,7 +192,11 @@ function SQLSuccess(props: SQLSuccessProps) {
 
   const containerRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (props.dashboardMode === 'none' || !containerRef.current) {
+    if (
+      !props.dashboardMode ||
+      dashboardModeHasControls(props.dashboardMode) ||
+      !containerRef.current
+    ) {
       return
     }
 
@@ -200,8 +211,6 @@ function SQLSuccess(props: SQLSuccessProps) {
         (height - tableHeaderSize - footerSize) / tableRowSize
       )
 
-      console.log(maxPageSize, result.dashboardPageSize)
-
       if (maxPageSize !== result.dashboardPageSize) {
         props.onChangeDashboardPageSize(maxPageSize)
       }
@@ -210,7 +219,6 @@ function SQLSuccess(props: SQLSuccessProps) {
     cb()
 
     const observer = new ResizeObserver(cb)
-    console.log(container)
     observer.observe(container)
 
     return () => {
@@ -223,9 +231,30 @@ function SQLSuccess(props: SQLSuccessProps) {
     props.onChangeDashboardPageSize,
   ])
 
+  let tableHasTopBorder = false
+  if (props.dashboardMode) {
+    if (
+      props.dashboardMode._tag === 'live' ||
+      (props.dashboardMode._tag === 'editing' &&
+        props.dashboardMode.position === 'dashboard' &&
+        props.hasTitle)
+    ) {
+      tableHasTopBorder = true
+    } else if (props.dashboardMode.position === 'sidebar') {
+      tableHasTopBorder = true
+    }
+  }
+
+  const hasHorizontalBorder =
+    props.dashboardMode?._tag === 'editing' &&
+    props.dashboardMode.position === 'sidebar'
+
   return (
     <div
-      className="relative w-full h-full flex flex-col justify-between"
+      className={clsx(
+        'relative w-full h-full flex flex-col justify-between',
+        hasHorizontalBorder && 'border-x border-gray-200 rounded-md'
+      )}
       ref={containerRef}
     >
       {props.loadingPage && (
@@ -233,24 +262,45 @@ function SQLSuccess(props: SQLSuccessProps) {
           <LargeSpinner color="#deff80" />
         </div>
       )}
-      {(!props.isResultHidden || props.dashboardMode !== 'none') && (
-        <div className="max-w-full ph-no-capture bg-white font-sans border-b">
+      {(!props.isResultHidden || props.dashboardMode) && (
+        <div
+          className={clsx(
+            'max-w-full ph-no-capture bg-white font-sans',
+            tableHasTopBorder && 'rounded-md',
+            (!props.dashboardMode ||
+              dashboardModeHasControls(props.dashboardMode)) &&
+              'border-b'
+          )}
+        >
           <Table
             rows={
-              props.dashboardMode !== 'none'
+              props.dashboardMode &&
+              !dashboardModeHasControls(props.dashboardMode)
                 ? result.dashboardRows
                 : result.rows
             }
             columns={props.result.columns}
-            isDashboard={props.dashboardMode !== 'none'}
+            isDashboard={
+              props.dashboardMode !== null &&
+              !dashboardModeHasControls(props.dashboardMode)
+            }
             sort={props.sort}
             onChangeSort={props.onChangeSort}
+            hasTopBorder={tableHasTopBorder}
           />
         </div>
       )}
 
-      {props.isResultHidden && props.dashboardMode === 'none' ? null : (
-        <div className="flex w-full items-center justify-between border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400">
+      {props.isResultHidden && !props.dashboardMode ? null : (
+        <div
+          className={clsx(
+            'flex w-full items-center justify-between border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400',
+            props.dashboardMode &&
+              (props.dashboardMode._tag === 'live' ||
+                props.dashboardMode.position !== 'expanded') &&
+              'border-t'
+          )}
+        >
           <div className="flex-1">
             {result.count} {result.count === 1 ? 'row' : 'rows'}
             {typeof result.queryDurationMs === 'number' &&
@@ -273,31 +323,34 @@ function SQLSuccess(props: SQLSuccessProps) {
               props.isPublic ? 'hidden' : 'block'
             )}
           >
-            {props.dashboardMode === 'none' &&
-              !props.isAddVisualizationDisabled && (
-                <Tooltip
-                  title="Visualize results"
-                  message="Create a new tab with a visualization of this data."
-                  className="flex h-full items-center"
-                  tooltipClassname="w-40"
-                  active
+            {!props.dashboardMode && !props.isAddVisualizationDisabled && (
+              <Tooltip
+                title="Visualize results"
+                message="Create a new tab with a visualization of this data."
+                className="flex h-full items-center"
+                tooltipClassname="w-40"
+                active
+              >
+                <button
+                  className={clsx(
+                    'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
+                  )}
+                  disabled={props.isAddVisualizationDisabled}
+                  onClick={props.onAddVisualization}
                 >
-                  <button
-                    className={clsx(
-                      'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
-                    )}
-                    disabled={props.isAddVisualizationDisabled}
-                    onClick={props.onAddVisualization}
-                  >
-                    <ChartPieIcon className="w-3 h-3" />
-                    <span>Visualize</span>
-                  </button>
-                </Tooltip>
-              )}
+                  <ChartPieIcon className="w-3 h-3" />
+                  <span>Visualize</span>
+                </button>
+              </Tooltip>
+            )}
 
             <TooltipV2<HTMLButtonElement>
               title="Download as CSV"
-              active={props.dashboardMode !== 'editing'}
+              active={
+                !props.dashboardMode ||
+                (props.dashboardMode._tag === 'editing' &&
+                  props.dashboardMode.position === 'expanded')
+              }
             >
               {(ref) => (
                 <button
@@ -347,13 +400,13 @@ function SQLSyntaxError(props: {
   isFixingWithAI: boolean
   onFixWithAI?: () => void
   canFixWithAI: boolean
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isResultHidden: boolean
   toggleResultHidden: () => void
 }) {
   return (
     <div className="text-xs">
-      {props.dashboardMode === 'none' && (
+      {!props.dashboardMode && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
             <button
@@ -381,9 +434,7 @@ function SQLSyntaxError(props: {
       <div
         className={clsx(
           'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && props.dashboardMode === 'none'
-            ? 'hidden'
-            : 'block'
+          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
         )}
       >
         <div className="flex border border-red-300 p-4 gap-x-3 word-wrap">
@@ -435,13 +486,13 @@ function SQLSyntaxError(props: {
 
 function SQLPythonError(props: {
   result: PythonErrorRunQueryResult
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isResultHidden: boolean
   toggleResultHidden: () => void
 }) {
   return (
     <div className="text-xs">
-      {props.dashboardMode === 'none' && (
+      {!props.dashboardMode && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
             <button
@@ -469,9 +520,7 @@ function SQLPythonError(props: {
       <div
         className={clsx(
           'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && props.dashboardMode === 'none'
-            ? 'hidden'
-            : 'block'
+          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
         )}
       >
         <div className="flex border border-red-300 p-4 gap-x-3 text-xs overflow-hidden word-wrap">

@@ -19,6 +19,7 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
+import { DashboardMode } from '@/components/Dashboard'
 
 function errorMessage(
   error: InputBlock['variable']['error'],
@@ -63,7 +64,7 @@ interface Props {
   belongsToMultiTabGroup: boolean
   isEditable: boolean
   isApp: boolean
-  isDashboard: boolean
+  dashboardMode: DashboardMode | null
   isCursorWithin: boolean
   isCursorInserting: boolean
   userId: string | null
@@ -219,7 +220,7 @@ function InputBlock(props: Props) {
       data-block-id={blockId}
     >
       <div
-        className={!props.isDashboard ? 'w-1/2' : ''}
+        className={!props.dashboardMode ? 'w-1/2' : ''}
         ref={(d) => {
           if (props.dragPreview) {
             props.dragPreview(d)

@@ -1828,7 +1828,7 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         belongsToMultiTabGroup={props.hasMultipleTabs}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        isDashboard={false}
+        dashboardMode={null}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
       />
@@ -1843,7 +1843,7 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         dataSources={props.dataSources}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        dashboardMode="none"
+        dashboardMode={null}
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
         onToggleIsBlockHiddenInPublished={
@@ -1866,7 +1866,7 @@ function TabRef(props: TabRefProps) {
         document={props.document}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
         isPDF={props.isPDF}
-        dashboardPlace={null}
+        dashboardMode={null}
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
         onToggleIsBlockHiddenInPublished={
@@ -1912,7 +1912,7 @@ function TabRef(props: TabRefProps) {
         blocks={props.blocks}
         dataframes={props.dataframes}
         dragPreview={props.hasMultipleTabs ? null : props.dragPreview}
-        isDashboard={false}
+        dashboardMode={null}
         hasMultipleTabs={props.hasMultipleTabs}
         isBlockHiddenInPublished={props.tab.isHiddenInPublished}
         onToggleIsBlockHiddenInPublished={
@@ -1933,7 +1933,7 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        isDashboard={false}
+        dashboardMode={null}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
@@ -1950,7 +1950,7 @@ function TabRef(props: TabRefProps) {
         isEditable={props.isEditable}
         isApp={props.isApp}
         dataframes={props.dataframes}
-        isDashboard={false}
+        dashboardMode={null}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
@@ -1966,7 +1966,7 @@ function TabRef(props: TabRefProps) {
         belongsToMultiTabGroup={props.hasMultipleTabs}
         isEditable={props.isEditable}
         isApp={props.isApp}
-        isDashboard={false}
+        dashboardMode={null}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}
@@ -2032,7 +2032,7 @@ function TabRef(props: TabRefProps) {
         onToggleIsBlockHiddenInPublished={
           props.onToggleIsBlockHiddenInPublished
         }
-        dashboardMode="none"
+        dashboardMode={null}
         isCursorWithin={isCursorWithin}
         isCursorInserting={isCursorInserting}
         userId={props.userId}

@@ -22,7 +22,7 @@ import PythonBlock from '../v2Editor/customBlocks/python'
 import { ApiDocument } from '@briefer/database'
 import SQLBlock from '../v2Editor/customBlocks/sql'
 import VisualizationBlock from '../v2Editor/customBlocks/visualization'
-import { DataFrame } from '@briefer/types'
+import { DataFrame, exhaustiveCheck } from '@briefer/types'
 import { useYDocState } from '@/hooks/useYDoc'
 import RichTextBlock from '../v2Editor/customBlocks/richText'
 import InputBlock from '../v2Editor/customBlocks/input'
@@ -51,6 +51,8 @@ interface Props {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onToggleSchemaExplorer: (dataSourceId?: string | null) => void
+  onExpand: (block: YBlock) => void
 }
 function DashboardControls(props: Props) {
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
@@ -178,43 +180,46 @@ function DashboardControls(props: Props) {
   }
 
   return (
-    <div className="absolute 2xl:relative top-0 bottom-0 right-0 w-[400px] font-sans">
-      <button
-        className="absolute z-10 top-12 transform rounded-full border border-gray-300 text-gray-400 bg-white hover:bg-ceramic-200 hover:border-ceramic-200 hover:text-ceramic-400 w-6 h-6 flex justify-center items-center left-0 -translate-x-1/2"
-        onClick={onClose}
-      >
-        <ChevronDoubleRightIcon className="w-3 h-3" />
-      </button>
+    <>
+      <div className="absolute 2xl:relative top-0 bottom-0 right-0 w-[400px] font-sans">
+        <button
+          className="absolute z-10 top-12 transform rounded-full border border-gray-300 text-gray-400 bg-white hover:bg-ceramic-200 hover:border-ceramic-200 hover:text-ceramic-400 w-6 h-6 flex justify-center items-center left-0 -translate-x-1/2"
+          onClick={onClose}
+        >
+          <ChevronDoubleRightIcon className="w-3 h-3" />
+        </button>
 
-      <div className="bg-white border-l border-gray-200 overflow-y-auto relative h-full pt-6 pb-20 px-4 flex flex-col space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="font-syne text-lg font-medium text-gray-900">
-            Blocks
-          </h2>
-          <button
-            className="flex items-center rounded-sm px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-2"
-            onClick={addHeading}
-          >
-            <Heading1Icon strokeWidth={1} className="w-4 h-4" />
-            <span>Add heading</span>
-          </button>
+        <div className="bg-white border-l border-gray-200 overflow-y-auto relative h-full pt-6 pb-20 px-4 flex flex-col space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-syne text-lg font-medium text-gray-900">
+              Blocks
+            </h2>
+            <button
+              className="flex items-center rounded-sm px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-2"
+              onClick={addHeading}
+            >
+              <Heading1Icon strokeWidth={1} className="w-4 h-4" />
+              <span>Add heading</span>
+            </button>
+          </div>
+          <ScrollBar className="overflow-auto">
+            <BlocksList
+              document={props.document}
+              list={blocksList}
+              dataSources={props.dataSources}
+              dataframes={dataframes.value}
+              blocks={blocks.value}
+              layout={layout.value}
+              onDragStart={props.onDragStart}
+              userId={props.userId}
+              executionQueue={props.executionQueue}
+              aiTasks={props.aiTasks}
+              onExpand={props.onExpand}
+            />
+          </ScrollBar>
         </div>
-        <ScrollBar className="overflow-auto">
-          <BlocksList
-            document={props.document}
-            list={blocksList}
-            dataSources={props.dataSources}
-            dataframes={dataframes.value}
-            blocks={blocks.value}
-            layout={layout.value}
-            onDragStart={props.onDragStart}
-            userId={props.userId}
-            executionQueue={props.executionQueue}
-            aiTasks={props.aiTasks}
-          />
-        </ScrollBar>
       </div>
-    </div>
+    </>
   )
 }
 
@@ -229,10 +234,11 @@ interface BlocksListProps {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 }
 function BlocksList(props: BlocksListProps) {
   return (
-    <div className="flex flex-col space-y-3">
+    <div className="flex flex-col space-y-6">
       {props.list.map((block) => {
         const { id } = getBaseAttributes(block)
         return (
@@ -248,6 +254,7 @@ function BlocksList(props: BlocksListProps) {
             userId={props.userId}
             executionQueue={props.executionQueue}
             aiTasks={props.aiTasks}
+            onExpand={props.onExpand}
           />
         )
       })}
@@ -266,6 +273,7 @@ interface BlockListItemProps {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 }
 function BlockListItem(props: BlockListItemProps) {
   const { id, type } = getBaseAttributes(props.block)
@@ -308,7 +316,7 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             dragPreview={null}
-            isDashboard={false}
+            dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
             isCursorWithin={false}
             isCursorInserting={false}
           />
@@ -323,7 +331,7 @@ function BlockListItem(props: BlockListItemProps) {
               dataSources={props.dataSources}
               isEditable={false}
               dragPreview={null}
-              dashboardMode="editing"
+              dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
               isPublicMode={false}
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
@@ -345,7 +353,7 @@ function BlockListItem(props: BlockListItemProps) {
             isEditable={false}
             dragPreview={null}
             isPDF={false}
-            dashboardPlace="controls"
+            dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
             isPublicMode={false}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
@@ -390,7 +398,7 @@ function BlockListItem(props: BlockListItemProps) {
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
-              isDashboard={true}
+              dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
               isPublicMode={false}
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
@@ -411,7 +419,7 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
-            isDashboard={true}
+            dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
@@ -427,7 +435,7 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
-            isDashboard={true}
+            dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
             dataframes={props.dataframes}
             isCursorWithin={false}
             isCursorInserting={false}
@@ -446,7 +454,7 @@ function BlockListItem(props: BlockListItemProps) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             isApp={true}
-            isDashboard={true}
+            dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
@@ -463,7 +471,7 @@ function BlockListItem(props: BlockListItemProps) {
               dragPreview={null}
               isEditable={false}
               onAddGroupedBlock={() => {}}
-              dashboardMode="editing"
+              dashboardMode={{ _tag: 'editing', position: 'sidebar' }}
               hasMultipleTabs={false}
               isBlockHiddenInPublished={false}
               onToggleIsBlockHiddenInPublished={() => {}}
@@ -490,16 +498,39 @@ function BlockListItem(props: BlockListItemProps) {
 
   const blockTitle = props.block.getAttribute('title')
 
+  const onPointerUp = useCallback(() => {
+    switch (type) {
+      case BlockType.Visualization:
+      case BlockType.VisualizationV2:
+      case BlockType.SQL:
+      case BlockType.Input:
+      case BlockType.DropdownInput:
+      case BlockType.DateInput:
+      case BlockType.PivotTable:
+      case BlockType.Python:
+      case BlockType.RichText:
+      case BlockType.Writeback:
+        props.onExpand(props.block)
+        break
+      case BlockType.FileUpload:
+      case BlockType.DashboardHeader:
+        return
+      default:
+        exhaustiveCheck(type)
+    }
+  }, [props.onExpand, props.block, type])
+
   return (
     <div
       key={id}
-      className="border border-gray-200 hover:border-ceramic-200 rounded-md bg-white relative p-2 overflow-x-hidden"
+      className="border border-gray-300 hover:border-ceramic-200 rounded-md bg-white relative p-2 overflow-x-hidden"
       draggable={true}
       onDragStart={onDragStart}
       unselectable="on"
+      onPointerUp={onPointerUp}
     >
-      <div className="flex flex-col gap-y-3">
-        <span className="text-gray-400 text-xs font-medium">
+      <div className="flex flex-col gap-y-6">
+        <span className="text-gray-400 text-md font-medium">
           {blockTitle || 'Untitled'}
         </span>
         <ScaleChild
@@ -515,7 +546,11 @@ function BlockListItem(props: BlockListItemProps) {
       </div>
 
       {/* add a transparent div to prevent any interaction with the block */}
-      <div className="absolute top-0 bottom-0 left-0 right-0 z-10 hover:bg-ceramic-100 hover:opacity-50 hover:cursor-grab" />
+      <div className="absolute top-0 bottom-0 left-0 right-0 z-10 group hover:bg-ceramic-100/50 hover:cursor-grab">
+        <div className="flex items-center justify-center text-center text-ceramic-600 w-full h-full text-md invisible group-hover:visible font-medium">
+          drag to dashboard or click to expand
+        </div>
+      </div>
     </div>
   )
 }

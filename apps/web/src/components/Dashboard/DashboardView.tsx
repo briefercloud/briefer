@@ -21,6 +21,7 @@ import {
   removeDashboardBlock,
   ExecutionQueue,
   AITasks,
+  YBlock,
 } from '@briefer/editor'
 import GridElement from './GridElement'
 import Title from '../v2Editor/Title'
@@ -211,6 +212,7 @@ function DashboardViewInner(props: InnerProps) {
                 userId={props.userId}
                 executionQueue={props.executionQueue}
                 aiTasks={props.aiTasks}
+                onExpand={props.onExpand}
               />
             </WrapperCard>
           </div>
@@ -332,6 +334,7 @@ interface Props {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 }
 export default function DashboardView(props: Props) {
   return (

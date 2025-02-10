@@ -26,6 +26,7 @@ import ReactDOM from 'react-dom'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
+import { DashboardMode } from '@/components/Dashboard'
 
 function errorMessage(
   error: DropdownInputBlock['variable']['error'],
@@ -71,7 +72,7 @@ interface Props {
   belongsToMultiTabGroup: boolean
   isEditable: boolean
   isApp: boolean
-  isDashboard: boolean
+  dashboardMode: DashboardMode | null
   dataframes: Y.Map<DataFrame>
   isCursorWithin: boolean
   isCursorInserting: boolean
@@ -255,7 +256,7 @@ function DropdownInputBlock(props: Props) {
       data-block-id={blockId}
     >
       <div
-        className={!props.isDashboard ? 'w-1/2' : ''}
+        className={!props.dashboardMode ? 'w-1/2' : ''}
         ref={(d) => {
           if (props.dragPreview) {
             props.dragPreview(d)
@@ -389,7 +390,7 @@ function DropdownInputBlock(props: Props) {
                   }}
                   onKeyDown={unfocusOnEscape}
                   className={
-                    'absolute mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm z-10'
+                    'absolute mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm z-40'
                   }
                 >
                   {filteredOptions.map((option) => (

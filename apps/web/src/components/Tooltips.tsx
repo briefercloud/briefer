@@ -109,7 +109,7 @@ export function PortalTooltip(props: PortalTooltipProps) {
   )
 }
 
-interface TooltipV2Props<T extends HTMLElement> {
+interface TooltipV2Props<T extends Element> {
   title?: string
   message?: string
   content?: (tooltipRef: React.RefObject<HTMLDivElement>) => React.ReactNode
@@ -118,7 +118,7 @@ interface TooltipV2Props<T extends HTMLElement> {
   active: boolean
   className?: string
 }
-export function TooltipV2<T extends HTMLElement>(props: TooltipV2Props<T>) {
+export function TooltipV2<T extends Element>(props: TooltipV2Props<T>) {
   const parentRef = useRef<HTMLDivElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const _referenceRef = useRef<T>(null)

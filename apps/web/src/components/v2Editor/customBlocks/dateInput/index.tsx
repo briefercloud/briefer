@@ -3,7 +3,6 @@ import { ConnectDragPreview } from 'react-dnd'
 import {
   ExecutionQueue,
   YBlock,
-  YBlockGroup,
   getDateInputAttributes,
   getDateInputBlockExecStatus,
   isExecutionStatusLoading,
@@ -23,6 +22,7 @@ import DateSettings from './DateSettings'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
+import { DashboardMode } from '@/components/Dashboard'
 
 function invalidVariableErrorMessage(
   status: 'invalid-variable' | 'invalid-variable-and-value' | 'unexpected-error'
@@ -55,7 +55,7 @@ interface Props {
   belongsToMultiTabGroup: boolean
   isEditable: boolean
   isApp: boolean
-  isDashboard: boolean
+  dashboardMode: DashboardMode | null
   isCursorWithin: boolean
   isCursorInserting: boolean
   workspaceId: string
@@ -149,7 +149,7 @@ function DateInput(props: Props) {
       data-block-id={blockId}
     >
       <div
-        className={!props.isDashboard ? 'w-1/2' : ''}
+        className={!props.dashboardMode ? 'w-1/2' : ''}
         ref={(d) => {
           if (props.dragPreview) {
             props.dragPreview(d)

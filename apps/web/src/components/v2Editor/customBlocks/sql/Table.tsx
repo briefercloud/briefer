@@ -24,6 +24,7 @@ interface Props {
   isDashboard: boolean
   sort: TableSort | null
   onChangeSort: (sort: TableSort | null) => void
+  hasTopBorder: boolean
 }
 function Table(props: Props) {
   const onChangeSort = (column: string) => () => {
@@ -48,7 +49,8 @@ function Table(props: Props) {
     <ScrollBar
       className={clsx(
         props.isDashboard ? 'h-full' : 'max-h-[290px]',
-        'overflow-auto ph-no-capture'
+        'overflow-auto ph-no-capture',
+        props.hasTopBorder && 'rounded-t-md'
       )}
     >
       <table
@@ -63,7 +65,10 @@ function Table(props: Props) {
                 <th
                   key={index}
                   scope="col"
-                  className="p-2 text-gray-500 whitespace-nowrap font-normal border-b hover:bg-gray-100 cursor-pointer"
+                  className={clsx(
+                    'p-2 text-gray-500 whitespace-nowrap font-medium border-b hover:bg-gray-100 cursor-pointer',
+                    props.hasTopBorder && 'border-t'
+                  )}
                   onClick={onChangeSort(column.name.toString())}
                 >
                   <div className="flex space-x-2 items-center w-full justify-between">
@@ -98,7 +103,7 @@ function Table(props: Props) {
                   <td
                     key={cellIndex}
                     className={clsx(
-                      rowIndex === props.rows.length - 1
+                      rowIndex === props.rows.length - 1 && !props.isDashboard
                         ? 'border-b-0'
                         : 'border-b',
                       'px-2 py-1.5 text-gray-900 whitespace-nowrap border-gray-200 '

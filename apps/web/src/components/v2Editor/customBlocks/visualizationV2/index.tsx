@@ -59,6 +59,7 @@ import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { useYMemo } from '@/hooks/useYMemo'
 import { getAggFunction } from './YAxisPicker'
 import { TooltipV2 } from '@/components/Tooltips'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 function didChangeFilters(
   oldFilters: VisualizationFilter[],
@@ -113,7 +114,7 @@ interface Props {
     blockType: BlockType,
     position: 'before' | 'after'
   ) => void
-  isDashboard: boolean
+  dashboardMode: DashboardMode | null
   renderer?: 'canvas' | 'svg'
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
@@ -663,7 +664,7 @@ function VisualizationBlockV2(props: Props) {
     }
   }, [status, envStatus, envLoading, execution])
 
-  if (props.isDashboard) {
+  if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     return (
       <VisualizationViewV2
         title={attrs.title}
@@ -681,7 +682,7 @@ function VisualizationBlockV2(props: Props) {
         isHidden={attrs.controlsHidden}
         onToggleHidden={onToggleHidden}
         onExportToPNG={onExportToPNG}
-        isDashboard={props.isDashboard}
+        hasControls={dashboardModeHasControls(props.dashboardMode)}
         isEditable={props.isEditable}
       />
     )
@@ -825,7 +826,7 @@ function VisualizationBlockV2(props: Props) {
             isHidden={attrs.controlsHidden}
             onToggleHidden={onToggleHidden}
             onExportToPNG={onExportToPNG}
-            isDashboard={props.isDashboard}
+            hasControls={true}
             isEditable={props.isEditable}
           />
         </div>
@@ -879,13 +880,17 @@ function VisualizationBlockV2(props: Props) {
               </button>
             )}
           </TooltipV2>
-          <HiddenInPublishedButton
-            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-            hasMultipleTabs={props.hasMultipleTabs}
-            isCodeHidden={false}
-            isOutputHidden={false}
-          />
+          {!props.dashboardMode && (
+            <HiddenInPublishedButton
+              isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+              onToggleIsBlockHiddenInPublished={
+                onToggleIsBlockHiddenInPublished
+              }
+              hasMultipleTabs={props.hasMultipleTabs}
+              isCodeHidden={false}
+              isOutputHidden={false}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -40,9 +40,9 @@ export function computeMenuPosition(
 }
 
 export function computeTooltipPosition(
-  commonParent: RefObject<HTMLElement>,
-  reference: RefObject<HTMLElement>,
-  tooltip: RefObject<HTMLElement>,
+  commonParent: RefObject<Element>,
+  reference: RefObject<Element>,
+  tooltip: RefObject<Element>,
   tooltipPosition: 'top',
   padding: number,
   isPortal: boolean

@@ -8,7 +8,6 @@ import {
 } from '@heroicons/react/20/solid'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import {
-  CSSProperties,
   RefObject,
   useCallback,
   useEffect,
@@ -75,6 +74,7 @@ import { useAITasks } from '@/hooks/useAITasks'
 import useFeatureFlags from '@/hooks/useFeatureFlags'
 import { CircleStackIcon } from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -85,7 +85,7 @@ interface Props {
   isEditable: boolean
   isPublicMode: boolean
   dragPreview: ConnectDragPreview | null
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
@@ -489,7 +489,10 @@ function SQLBlock(props: Props) {
   const onChangePage = useCallback(
     (page: number) => {
       const run = () => {
-        if (props.dashboardMode !== 'none') {
+        if (
+          props.dashboardMode &&
+          !dashboardModeHasControls(props.dashboardMode)
+        ) {
           props.block.setAttribute('dashboardPage', page)
         } else {
           props.block.setAttribute('page', page)
@@ -649,7 +652,7 @@ function SQLBlock(props: Props) {
     [props.block, props.userId, environmentStartedAt]
   )
 
-  if (props.dashboardMode !== 'none') {
+  if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     if (!result) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -685,6 +688,7 @@ function SQLBlock(props: Props) {
         onChangePage={onChangePage}
         onChangeDashboardPageSize={onChangeDashboardPageSize}
         loadingPage={loadingPage}
+        hasTitle={title.trim() !== ''}
       />
     )
   }
@@ -992,6 +996,7 @@ function SQLBlock(props: Props) {
             onChangePage={onChangePage}
             loadingPage={loadingPage}
             onChangeDashboardPageSize={onChangeDashboardPageSize}
+            hasTitle={title.trim() !== ''}
           />
         )}
       </div>
@@ -1038,24 +1043,27 @@ function SQLBlock(props: Props) {
           )}
         </TooltipV2>
 
-        <HiddenInPublishedButton
-          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-          hasMultipleTabs={props.hasMultipleTabs}
-          isCodeHidden={isCodeHidden}
-          onToggleIsCodeHidden={toggleCodeHidden}
-          isOutputHidden={isResultHidden}
-          onToggleIsOutputHidden={toggleResultHidden}
-        />
-
-        {((result && !isResultHidden) || !isCodeHidden) && (
-          <SaveReusableComponentButton
-            isComponent={blockId === component?.blockId}
-            onSave={onSaveReusableComponent}
-            disabled={!props.isEditable || isComponentInstance}
-            isComponentInstance={isComponentInstance}
+        {!props.dashboardMode && (
+          <HiddenInPublishedButton
+            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={isCodeHidden}
+            onToggleIsCodeHidden={toggleCodeHidden}
+            isOutputHidden={isResultHidden}
+            onToggleIsOutputHidden={toggleResultHidden}
           />
         )}
+
+        {((result && !isResultHidden) || !isCodeHidden) &&
+          !props.dashboardMode && (
+            <SaveReusableComponentButton
+              isComponent={blockId === component?.blockId}
+              onSave={onSaveReusableComponent}
+              disabled={!props.isEditable || isComponentInstance}
+              isComponentInstance={isComponentInstance}
+            />
+          )}
 
         {((result && !isResultHidden) || !isCodeHidden) &&
           dataSource?.config.type === 'athena' && (

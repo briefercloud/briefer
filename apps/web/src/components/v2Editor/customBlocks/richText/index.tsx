@@ -20,6 +20,7 @@ import ImageExtension from './ImageExtension'
 
 import 'katex/dist/katex.min.css'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
+import { DashboardMode } from '@/components/Dashboard'
 
 const useBlockEditor = ({
   content,
@@ -130,7 +131,7 @@ interface Props {
   belongsToMultiTabGroup: boolean
   isEditable: boolean
   dragPreview: ConnectDragPreview | null
-  isDashboard: boolean
+  dashboardMode: DashboardMode | null
   isCursorWithin: boolean
   isCursorInserting: boolean
 }
@@ -179,6 +180,20 @@ const RichTextBlock = (props: Props) => {
     }
   }, [editor, id, editorAPI.insert, editorAPI.blur])
 
+  const ringColor =
+    editor?.isFocused && !props.belongsToMultiTabGroup && props.isEditable
+      ? 'ring-1 ring-ceramic-400'
+      : !editor?.isFocused &&
+        !props.belongsToMultiTabGroup &&
+        props.isEditable &&
+        props.isCursorWithin &&
+        !props.isCursorInserting
+      ? 'ring-1 ring-blue-400'
+      : props.dashboardMode?._tag === 'editing' &&
+        props.dashboardMode.position === 'expanded'
+      ? 'ring-1 ring-gray-200'
+      : ''
+
   return (
     <div
       data-testid={`RichTextBlock-${id}`}
@@ -187,19 +202,8 @@ const RichTextBlock = (props: Props) => {
       }}
       className={clsx(
         'ring-outline ring-offset-4',
-        props.isDashboard ? 'px-4 py-3 h-full overflow-y-auto' : '',
-        {
-          'ring-1 ring-ceramic-400':
-            editor?.isFocused &&
-            !props.belongsToMultiTabGroup &&
-            props.isEditable,
-          'ring-1 ring-blue-400':
-            !editor?.isFocused &&
-            !props.belongsToMultiTabGroup &&
-            props.isEditable &&
-            props.isCursorWithin &&
-            !props.isCursorInserting,
-        },
+        props.dashboardMode ? 'px-4 py-3 h-full overflow-y-auto' : '',
+        ringColor,
         {
           'rounded-tl-none rounded-sm border border-gray-200 p-2':
             props.belongsToMultiTabGroup,
