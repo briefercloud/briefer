@@ -3,7 +3,6 @@ import prisma, {
   DataSource,
   DataSourceSchema as DBDataSourceSchema,
   decrypt,
-  getWorkspaceById,
   getWorkspaceWithSecrets,
 } from '@briefer/database'
 import { IOServer } from '../websocket/index.js'
@@ -209,7 +208,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
+        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
     },
   })
 
@@ -222,6 +221,7 @@ async function v2ToV3(
             name: tableName,
             columns: table.columns,
             dataSourceSchemaId: dbSchema.id,
+            embeddingModel: '',
           }
         })
       }),
@@ -548,26 +548,24 @@ async function _refreshDataSourceStructure(
     defaultSchema = newDefaultSchema || schema
     tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
-      let embedding: number[] | null = null
-      if (openAiApiKey) {
-        let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
-        for (const c of table.columns) {
-          ddl += `  ${c.name} ${c.type}\n`
-        }
-        try {
-          embedding = await createEmbedding(ddl, openAiApiKey)
-        } catch (err) {
-          logger().error(
-            {
-              err,
-              dataSourceId: dataSource.config.data.id,
-              dataSourceType: dataSource.config.type,
-              schemaName: schema,
-              tableName,
-            },
-            'Failed to create embedding'
-          )
-        }
+      let embeddingResult: { embedding: number[]; model: string } | null = null
+      let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
+      for (const c of table.columns) {
+        ddl += `  ${c.name} ${c.type}\n`
+      }
+      try {
+        embeddingResult = await createEmbedding(ddl, openAiApiKey)
+      } catch (err) {
+        logger().error(
+          {
+            err,
+            dataSourceId: dataSource.config.data.id,
+            dataSourceType: dataSource.config.type,
+            schemaName: schema,
+            tableName,
+          },
+          'Failed to create embedding'
+        )
       }
 
       await prisma().dataSourceSchema.update({
@@ -588,15 +586,16 @@ async function _refreshDataSourceStructure(
           name: tableName,
           columns: table.columns,
           dataSourceSchemaId: dataSource.structure.id,
+          embeddingModel: '',
         },
         update: {
           columns: table.columns,
         },
       })
 
-      if (embedding) {
+      if (embeddingResult) {
         await prisma()
-          .$queryRaw`UPDATE "DataSourceSchemaTable" SET embedding = ${embedding} WHERE id = ${dbSchemaTable.id}::uuid`
+          .$queryRaw`UPDATE "DataSourceSchemaTable" SET embedding = ${embeddingResult.embedding}, "embeddingModel" = ${embeddingResult.model} WHERE id = ${dbSchemaTable.id}::uuid`
       }
 
       broadcastDataSource(socketServer, dataSource)

@@ -371,6 +371,7 @@ model DataSourceSchemaTable {
   columns            Json
   dataSourceSchemaId String @db.Uuid
   embedding          Unsupported("vector")?
+  embeddingModel     String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

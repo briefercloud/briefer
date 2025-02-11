@@ -10,6 +10,7 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.744.0",
     "@briefer/database": "*",
     "@briefer/editor": "*",
     "@briefer/types": "*",
