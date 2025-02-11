@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SquaresPlusIcon } from '@heroicons/react/24/solid'
 import { BookUpIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
@@ -429,6 +429,24 @@ function DashboardContent(
     },
     [setLatestBlockId]
   )
+
+  useEffect(() => {
+    if (!expanded) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setExpanded(null)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [expanded])
 
   return (
     <>
