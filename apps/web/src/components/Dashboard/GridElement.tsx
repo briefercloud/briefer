@@ -72,10 +72,10 @@ function GridElement(props: Props) {
   const originalTitle = props.block?.getAttribute('title') ?? ''
   const titleContent = originalTitle || 'Untitled'
 
-  let hasTitle = blockType && !NO_TITLE_BLOCKS.includes(blockType)
-  if (blockType === BlockType.SQL && originalTitle.trim() === '') {
-    hasTitle = false
-  }
+  const hasTitle =
+    blockType &&
+    !NO_TITLE_BLOCKS.includes(blockType) &&
+    originalTitle.trim() !== ''
 
   const renderItem = useCallback(
     (block: YBlock, item: GridLayout.Layout) =>
