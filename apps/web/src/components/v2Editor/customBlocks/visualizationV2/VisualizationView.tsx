@@ -268,6 +268,7 @@ function BrieferResult(props: {
           fontWeight: 'bold',
           color: '#6b7280',
         },
+        left: !props.hasControls ? 18 : 'center',
       },
       grid,
       xAxis: props.result.xAxis.map((axis) => ({
