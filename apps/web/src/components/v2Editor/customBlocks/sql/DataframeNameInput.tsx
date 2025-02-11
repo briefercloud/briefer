@@ -8,6 +8,7 @@ import { useCallback } from 'react'
 import clsx from 'clsx'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
+import { TooltipV2 } from '@/components/Tooltips'
 
 function queryNameErrorMessage(
   err: SQLBlock['dataframeName']['error']
@@ -156,19 +157,19 @@ function DataframeNameInput(props: Props) {
             </div>
           </>
         ) : (
-          <>
-            <QuestionMarkCircleIcon
-              className="h-4 w-4 text-gray-300"
-              aria-hidden="true"
-            />
-
-            <div className="font-sans pointer-events-none absolute -top-2 left-1/2 -translate-y-full -translate-x-1/2 opacity-0 transition-opacity scale-0 group-hover:scale-100 group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1 w-72">
-              <span className="inline-flex gap-x-1 items-center text-gray-400 text-center">
-                Use this variable name to reference the results as a Pandas
-                DataFrame in further Python blocks.
-              </span>
-            </div>
-          </>
+          <TooltipV2<SVGSVGElement>
+            message="Use this variable name to reference the results as a Pandas DataFrame in further Python blocks."
+            active={true}
+            className="w-44"
+          >
+            {(ref) => (
+              <QuestionMarkCircleIcon
+                className="h-4 w-4 text-gray-300"
+                aria-hidden="true"
+                ref={ref}
+              />
+            )}
+          </TooltipV2>
         )}
       </div>
     </div>

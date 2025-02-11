@@ -40,11 +40,12 @@ export function computeMenuPosition(
 }
 
 export function computeTooltipPosition(
-  commonParent: RefObject<HTMLElement>,
-  reference: RefObject<HTMLElement>,
-  tooltip: RefObject<HTMLElement>,
+  commonParent: RefObject<Element>,
+  reference: RefObject<Element>,
+  tooltip: RefObject<Element>,
   tooltipPosition: 'top',
-  padding: number
+  padding: number,
+  isPortal: boolean
 ): CSSProperties {
   if (!reference.current || !tooltip.current || !commonParent.current) {
     // render tooltip offscreen
@@ -61,18 +62,18 @@ export function computeTooltipPosition(
 
   // make rects relative to commonRect
   const referenceRect = {
-    top: origReferenceRect.top - commonRect.top,
-    right: origReferenceRect.right - commonRect.left,
-    bottom: origReferenceRect.bottom - commonRect.top,
-    left: origReferenceRect.left - commonRect.left,
+    top: origReferenceRect.top - (isPortal ? 0 : commonRect.top),
+    right: origReferenceRect.right - (isPortal ? 0 : commonRect.left),
+    bottom: origReferenceRect.bottom - (isPortal ? 0 : commonRect.top),
+    left: origReferenceRect.left - (isPortal ? 0 : commonRect.left),
     width: origReferenceRect.width,
     height: origReferenceRect.height,
   }
   const tooltipRect = {
-    top: origTooltipRect.top - commonRect.top,
-    right: origTooltipRect.right - commonRect.left,
-    bottom: origTooltipRect.bottom - commonRect.top,
-    left: origTooltipRect.left - commonRect.left,
+    top: origTooltipRect.top - (isPortal ? 0 : commonRect.top),
+    right: origTooltipRect.right - (isPortal ? 0 : commonRect.left),
+    bottom: origTooltipRect.bottom - (isPortal ? 0 : commonRect.top),
+    left: origTooltipRect.left - (isPortal ? 0 : commonRect.left),
     width: origTooltipRect.width,
     height: origTooltipRect.height,
   }
@@ -87,7 +88,8 @@ export function computeTooltipPosition(
       // if tooltip is out of screen, move it to the left so that its right
       // edge is aligned with the right edge of referenceRect
       const safeMargin = 36
-      const rightEdgeInScreen = commonRect.left + left + tooltipRect.width
+      const rightEdgeInScreen =
+        (isPortal ? 0 : commonRect.left) + left + tooltipRect.width
 
       if (rightEdgeInScreen + safeMargin > window.innerWidth) {
         left = referenceRect.right - tooltipRect.width

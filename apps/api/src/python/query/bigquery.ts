@@ -14,6 +14,7 @@ export async function makeBigQueryQuery(
   datasource: BigQueryDataSource,
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const credentials = await getCredentials(datasource, encryptionKey)
@@ -128,6 +129,10 @@ def _briefer_make_bq_query():
     print(json.dumps({"type": "log", "message": "Creating flag file"}))
     open(flag_file_path, "a").close()
 
+    page_size = ${resultOptions.pageSize}
+    dashboard_page_size = ${resultOptions.dashboardPageSize}
+    actual_page_size = max(page_size, dashboard_page_size)
+
     try:
         print(json.dumps({"type": "log", "message": "Running query"}))
 
@@ -145,7 +150,7 @@ def _briefer_make_bq_query():
         print(json.dumps({"type": "log", "message": f"rows count {query_result.total_rows}"}))
         if query_result.total_rows == 0:
             result = {
-                "version": 2,
+                "version": 3,
 
                 "type": "success",
                 "columns": [],
@@ -153,8 +158,13 @@ def _briefer_make_bq_query():
                 "count": 0,
 
                 "page": 0,
-                "pageSize": 50,
+                "pageSize": page_size,
                 "pageCount": 1,
+
+                "dashboardPage": 0,
+                "dashboardPageSize": dashboard_page_size,
+                "dashboardPageCount": 1,
+                "dashboardRows": [],
             }
             df = query_result.to_dataframe()
             convert_columns(df, columns_by_type)
@@ -182,10 +192,10 @@ def _briefer_make_bq_query():
             rows_count += len(chunk)
             chunks.append(chunk)
 
-            if len(initial_rows) < 50:
+            if len(initial_rows) < actual_page_size:
                 df = pd.concat(chunks, ignore_index=True)
                 convert_columns(df, columns_by_type)
-                initial_rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
+                initial_rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format="iso"))
 
                 # convert all values to string to make sure we preserve the python values
                 # when displaying this data in the browser
@@ -199,16 +209,21 @@ def _briefer_make_bq_query():
             now = time.time()
             if now - last_emitted_at > 1:
                 result = {
-                    "version": 2,
+                    "version": 3,
 
                     "type": "success",
                     "columns": columns,
-                    "rows": initial_rows,
+                    "rows": initial_rows[:page_size],
                     "count": rows_count,
 
                     "page": 0,
-                    "pageSize": 50,
-                    "pageCount": int(rows_count // 50 + 1),
+                    "pageSize": page_size,
+                    "pageCount": int(rows_count // page_size + 1),
+
+                    "dashboardPage": 0,
+                    "dashboardPageSize": dashboard_page_size,
+                    "dashboardPageCount": int(rows_count // dashboard_page_size + 1),
+                    "dashboardRows": initial_rows[:dashboard_page_size],
                 }
                 print(json.dumps({"type": "log", "message": f"Emitting {rows_count} rows"}))
                 print(json.dumps(result, default=str))
@@ -225,8 +240,8 @@ def _briefer_make_bq_query():
             print(json.dumps(result, default=str))
             return None
 
-        if len(initial_rows) < 50:
-            initial_rows = json.loads(df.head(50).to_json(orient='records', date_format="iso"))
+        if len(initial_rows) < actual_page_size:
+            initial_rows = json.loads(df.head(actual_page_size).to_json(orient='records', date_format="iso"))
 
             # convert all values to string to make sure we preserve the python values
             # when displaying this data in the browser
@@ -236,16 +251,21 @@ def _briefer_make_bq_query():
 
         columns = get_columns(df)
         result = {
-            "version": 2,
+            "version": 3,
 
             "type": "success",
             "columns": columns,
-            "rows": initial_rows,
+            "rows": initial_rows[:page_size],
             "count": rows_count,
 
             "page": 0,
-            "pageSize": 50,
-            "pageCount": int(rows_count // 50 + 1),
+            "pageSize": page_size,
+            "pageCount": int(rows_count // page_size + 1),
+
+            "dashboardPage": 0,
+            "dashboardPageSize": dashboard_page_size,
+            "dashboardPageCount": int(rows_count // dashboard_page_size + 1),
+            "dashboardRows": initial_rows[:dashboard_page_size],
         }
 
         df = pd.concat(chunks, ignore_index=True)

@@ -21,6 +21,7 @@ import {
   removeDashboardBlock,
   ExecutionQueue,
   AITasks,
+  YBlock,
 } from '@briefer/editor'
 import GridElement from './GridElement'
 import Title from '../v2Editor/Title'
@@ -73,6 +74,7 @@ function generateBackground(
 export function getMins(t: BlockType): { minW: number; minH: number } {
   switch (t) {
     case BlockType.SQL:
+      return { minW: 5, minH: 3 }
     case BlockType.Visualization:
     case BlockType.VisualizationV2:
     case BlockType.PivotTable:
@@ -179,7 +181,7 @@ function DashboardViewInner(props: InnerProps) {
         const dashItem = getDashboardItem(dashboard.value, item.i)
 
         const block = dashItem
-          ? blocks.value.get(dashItem.blockId) ?? null
+          ? (blocks.value.get(dashItem.blockId) ?? null)
           : null
 
         const type = block?.getAttribute('type')
@@ -210,6 +212,7 @@ function DashboardViewInner(props: InnerProps) {
                 userId={props.userId}
                 executionQueue={props.executionQueue}
                 aiTasks={props.aiTasks}
+                onExpand={props.onExpand}
               />
             </WrapperCard>
           </div>
@@ -308,7 +311,7 @@ function DashboardViewInner(props: InnerProps) {
       isDraggable={props.isEditing}
       isDroppable={props.isEditing}
       isResizable={props.isEditing}
-      resizeHandles={['se']}
+      resizeHandles={['sw', 'se']}
       onDrop={onDrop}
       onDropDragOver={onDropDragOver}
       style={props.isEditing ? style : {}}
@@ -331,6 +334,7 @@ interface Props {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 }
 export default function DashboardView(props: Props) {
   return (

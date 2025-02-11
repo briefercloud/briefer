@@ -316,7 +316,14 @@ body {
   width: 32px !important;
   height: 32px !important;
   background-image: none !important;
+}
+
+.react-resizable-handle-se {
   cursor: nwse-resize !important;
+}
+
+.react-resizable-handle-sw {
+  cursor: nesw-resize !important;
 }
 
 .react-grid-item > .react-resizable-handle::after {

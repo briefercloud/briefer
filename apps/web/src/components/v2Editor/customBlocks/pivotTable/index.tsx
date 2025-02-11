@@ -16,14 +16,7 @@ import {
   type PivotTableBlock,
 } from '@briefer/editor'
 import clsx from 'clsx'
-import {
-  CSSProperties,
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { RefObject, useCallback, useEffect, useMemo, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import PivotTableControls from './PivotTableControls'
 import PivotTableView from './PivotTableView'
@@ -36,6 +29,7 @@ import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { TableCellsIcon } from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 interface Props {
   workspaceId: string
@@ -52,7 +46,7 @@ interface Props {
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isCursorWithin: boolean
   isCursorInserting: boolean
   userId: string | null
@@ -396,13 +390,10 @@ function PivotTableBlock(props: Props) {
       }
     } else {
       return {
-        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+        content: (ref: RefObject<HTMLDivElement>) => (
           <div
-            className={clsx(
-              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
-            )}
+            className="font-sans pointer-events-none w-max bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1"
             ref={ref}
-            style={pos}
           >
             <span>Refresh</span>
           </div>
@@ -411,7 +402,7 @@ function PivotTableBlock(props: Props) {
     }
   }, [status, envStatus, envLoading, execution])
 
-  if (props.dashboardMode !== 'none') {
+  if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     if (!attrs.result) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -594,13 +585,15 @@ function PivotTableBlock(props: Props) {
             </button>
           )}
         </TooltipV2>
-        <HiddenInPublishedButton
-          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-          hasMultipleTabs={props.hasMultipleTabs}
-          isCodeHidden={false}
-          isOutputHidden={false}
-        />
+        {!props.dashboardMode && (
+          <HiddenInPublishedButton
+            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={false}
+            isOutputHidden={false}
+          />
+        )}
       </div>
     </div>
   )

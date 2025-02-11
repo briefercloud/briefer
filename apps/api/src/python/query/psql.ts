@@ -21,6 +21,7 @@ export async function makePSQLQuery(
   type: 'psql' | 'redshift',
   encryptionKey: string,
   sql: string,
+  resultOptions: { pageSize: number; dashboardPageSize: number },
   onProgress: (result: SuccessRunQueryResult) => void
 ): Promise<[Promise<RunQueryResult>, () => Promise<void>]> {
   const databaseUrl = await getDatabaseURL(
@@ -40,6 +41,7 @@ export async function makePSQLQuery(
     jobId,
     query,
     queryId,
+    resultOptions,
     onProgress
   )
 }

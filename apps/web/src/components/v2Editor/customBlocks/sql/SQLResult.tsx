@@ -11,7 +11,7 @@ import {
   TableSort,
 } from '@briefer/types'
 import clsx from 'clsx'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import Table from './Table'
 import LargeSpinner from '@/components/LargeSpinner'
 import {
@@ -20,7 +20,9 @@ import {
   SparklesIcon,
 } from '@heroicons/react/20/solid'
 import { ArrowDownTrayIcon, ChartPieIcon } from '@heroicons/react/24/solid'
-import { Tooltip } from '@/components/Tooltips'
+import { Tooltip, TooltipV2 } from '@/components/Tooltips'
+import debounce from 'lodash.debounce'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -40,6 +42,7 @@ interface Props {
   workspaceId: string
   result: RunQueryResult
   page: number
+  dashboardPage: number
   loadingPage: boolean
   dataframeName: string
   isPublic: boolean
@@ -47,13 +50,15 @@ interface Props {
   toggleResultHidden: () => void
   isFixingWithAI: boolean
   onFixWithAI: () => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   canFixWithAI: boolean
   sort: TableSort | null
   isAddVisualizationDisabled: boolean
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
   onChangePage: (page: number) => void
+  onChangeDashboardPageSize: (size: number) => void
+  hasTitle: boolean
 }
 function SQLResult(props: Props) {
   switch (props.result.type) {
@@ -62,6 +67,7 @@ function SQLResult(props: Props) {
         <SQLSuccess
           result={props.result}
           page={props.page}
+          dashboardPage={props.dashboardPage}
           isPublic={props.isPublic}
           documentId={props.documentId}
           workspaceId={props.workspaceId}
@@ -76,6 +82,8 @@ function SQLResult(props: Props) {
           onChangePage={props.onChangePage}
           isAddVisualizationDisabled={props.isAddVisualizationDisabled}
           onAddVisualization={props.onAddVisualization}
+          onChangeDashboardPageSize={props.onChangeDashboardPageSize}
+          hasTitle={props.hasTitle}
         />
       )
     case 'abort-error':
@@ -109,6 +117,7 @@ interface SQLSuccessProps {
   documentId: string
   workspaceId: string
   page: number
+  dashboardPage: number
   loadingPage: boolean
   result: SuccessRunQueryResult
   onChangePage: (page: number) => void
@@ -116,11 +125,13 @@ interface SQLSuccessProps {
   dataframeName: string
   isResultHidden: boolean
   toggleResultHidden: () => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   sort: TableSort | null
   isAddVisualizationDisabled: boolean
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
+  onChangeDashboardPageSize: (size: number) => void
+  hasTitle: boolean
 }
 function SQLSuccess(props: SQLSuccessProps) {
   const result = useMemo(
@@ -128,19 +139,28 @@ function SQLSuccess(props: SQLSuccessProps) {
     [props.result]
   )
 
+  const page =
+    props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)
+      ? props.dashboardPage
+      : props.page
+  const pageCount =
+    props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)
+      ? result.dashboardPageCount
+      : result.pageCount
+
   const prevPage = useCallback(() => {
-    props.onChangePage(Math.max(0, result.page - 1))
-  }, [props.onChangePage, result.page])
+    props.onChangePage(Math.max(0, page - 1))
+  }, [props.onChangePage, page])
 
   const nextPage = useCallback(() => {
-    props.onChangePage(Math.min(result.page + 1, result.pageCount - 1))
-  }, [props.onChangePage, result.page])
+    props.onChangePage(Math.min(page + 1, pageCount - 1))
+  }, [props.onChangePage, page, pageCount])
 
   const setPage = useCallback(
-    (page: number) => {
-      props.onChangePage(Math.max(0, Math.min(page, result.pageCount - 1)))
+    (newPage: number) => {
+      props.onChangePage(Math.max(0, Math.min(newPage, pageCount - 1)))
     },
-    [props.onChangePage, result.pageCount]
+    [props.onChangePage, pageCount]
   )
 
   const [csvRes, getCSV] = useCSV(props.workspaceId, props.documentId)
@@ -170,34 +190,117 @@ function SQLSuccess(props: SQLSuccessProps) {
     }
   }, [csvRes, props.dataframeName])
 
+  const containerRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (
+      !props.dashboardMode ||
+      dashboardModeHasControls(props.dashboardMode) ||
+      !containerRef.current
+    ) {
+      return
+    }
+
+    const tableHeaderSize = 33
+    const footerSize = 42
+    const tableRowSize = 29
+
+    const container = containerRef.current
+    const cb = debounce(() => {
+      const height = container.clientHeight
+      const maxPageSize = Math.floor(
+        (height - tableHeaderSize - footerSize) / tableRowSize
+      )
+
+      if (maxPageSize !== result.dashboardPageSize) {
+        props.onChangeDashboardPageSize(maxPageSize)
+      }
+    }, 500)
+
+    cb()
+
+    const observer = new ResizeObserver(cb)
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [
+    props.dashboardMode,
+    containerRef,
+    result.dashboardPageSize,
+    props.onChangeDashboardPageSize,
+  ])
+
+  let tableHasTopBorder = false
+  if (props.dashboardMode) {
+    if (
+      props.dashboardMode._tag === 'live' ||
+      (props.dashboardMode._tag === 'editing' &&
+        props.dashboardMode.position === 'dashboard' &&
+        props.hasTitle)
+    ) {
+      tableHasTopBorder = true
+    } else if (props.dashboardMode.position === 'sidebar') {
+      tableHasTopBorder = true
+    }
+  }
+
+  const hasHorizontalBorder =
+    props.dashboardMode?._tag === 'editing' &&
+    props.dashboardMode.position === 'sidebar'
+
   return (
-    <div className="relative w-full h-full">
+    <div
+      className={clsx(
+        'relative w-full h-full flex flex-col justify-between',
+        hasHorizontalBorder && 'border-x border-gray-200 rounded-md'
+      )}
+      ref={containerRef}
+    >
       {props.loadingPage && (
         <div className="absolute top-0 left-0 bottom-8 right-0 bg-white opacity-50 z-10 flex items-center justify-center">
           <LargeSpinner color="#deff80" />
         </div>
       )}
-      {(!props.isResultHidden || props.dashboardMode !== 'none') && (
+      {(!props.isResultHidden || props.dashboardMode) && (
         <div
           className={clsx(
-            props.dashboardMode !== 'none'
-              ? 'h-[calc(100%-2rem)] rounded-b-md'
-              : 'h-full border-b',
-            'max-w-full ph-no-capture bg-white font-sans'
+            'max-w-full ph-no-capture bg-white font-sans',
+            tableHasTopBorder && 'rounded-md',
+            (!props.dashboardMode ||
+              dashboardModeHasControls(props.dashboardMode)) &&
+              'border-b'
           )}
         >
           <Table
-            rows={result.rows}
+            rows={
+              props.dashboardMode &&
+              !dashboardModeHasControls(props.dashboardMode)
+                ? result.dashboardRows
+                : result.rows
+            }
             columns={props.result.columns}
-            isDashboard={props.dashboardMode !== 'none'}
+            isDashboard={
+              props.dashboardMode !== null &&
+              !dashboardModeHasControls(props.dashboardMode)
+            }
             sort={props.sort}
             onChangeSort={props.onChangeSort}
+            hasTopBorder={tableHasTopBorder}
           />
         </div>
       )}
 
-      {props.isResultHidden && props.dashboardMode === 'none' ? null : (
-        <div className="flex w-full items-center justify-between border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400">
+      {props.isResultHidden && !props.dashboardMode ? null : (
+        <div
+          className={clsx(
+            'flex w-full items-center justify-between border-gray-200 px-3 h-[42px] bg-gray-50 text-xs rounded-b-md text-gray-400',
+            props.dashboardMode &&
+              (props.dashboardMode._tag === 'live' ||
+                props.dashboardMode.position !== 'expanded') &&
+              'border-t'
+          )}
+        >
           <div className="flex-1">
             {result.count} {result.count === 1 ? 'row' : 'rows'}
             {typeof result.queryDurationMs === 'number' &&
@@ -205,8 +308,8 @@ function SQLSuccess(props: SQLSuccessProps) {
           </div>
           <div className="flex-1 flex justify-center">
             <PageButtons
-              currentPage={props.page}
-              totalPages={result.pageCount}
+              currentPage={page}
+              totalPages={pageCount}
               prevPage={prevPage}
               nextPage={nextPage}
               setPage={setPage}
@@ -220,36 +323,38 @@ function SQLSuccess(props: SQLSuccessProps) {
               props.isPublic ? 'hidden' : 'block'
             )}
           >
-            {props.dashboardMode === 'none' &&
-              !props.isAddVisualizationDisabled && (
-                <Tooltip
-                  title="Visualize results"
-                  message="Create a new tab with a visualization of this data."
-                  className="flex h-full items-center"
-                  tooltipClassname="w-40"
-                  active
-                >
-                  <button
-                    className={clsx(
-                      'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
-                    )}
-                    disabled={props.isAddVisualizationDisabled}
-                    onClick={props.onAddVisualization}
-                  >
-                    <ChartPieIcon className="w-3 h-3" />
-                    <span>Visualize</span>
-                  </button>
-                </Tooltip>
-              )}
-
-            <div className="flex items-center">
+            {!props.dashboardMode && !props.isAddVisualizationDisabled && (
               <Tooltip
-                title="Download as CSV"
+                title="Visualize results"
+                message="Create a new tab with a visualization of this data."
                 className="flex h-full items-center"
-                tooltipClassname="w-32"
-                active={props.dashboardMode !== 'editing'}
+                tooltipClassname="w-40"
+                active
               >
                 <button
+                  className={clsx(
+                    'flex items-center bg-white hover:bg-gray-100 border border-gray-300 py-0.5 px-2 rounded-sm text-gray-500 flex items-center gap-x-1 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed h-full'
+                  )}
+                  disabled={props.isAddVisualizationDisabled}
+                  onClick={props.onAddVisualization}
+                >
+                  <ChartPieIcon className="w-3 h-3" />
+                  <span>Visualize</span>
+                </button>
+              </Tooltip>
+            )}
+
+            <TooltipV2<HTMLButtonElement>
+              title="Download as CSV"
+              active={
+                !props.dashboardMode ||
+                (props.dashboardMode._tag === 'editing' &&
+                  props.dashboardMode.position === 'expanded')
+              }
+            >
+              {(ref) => (
+                <button
+                  ref={ref}
                   disabled={csvRes.loading}
                   className={clsx(
                     csvRes.loading
@@ -268,8 +373,8 @@ function SQLSuccess(props: SQLSuccessProps) {
                     </>
                   )}
                 </button>
-              </Tooltip>
-            </div>
+              )}
+            </TooltipV2>
           </div>
         </div>
       )}
@@ -295,13 +400,13 @@ function SQLSyntaxError(props: {
   isFixingWithAI: boolean
   onFixWithAI?: () => void
   canFixWithAI: boolean
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isResultHidden: boolean
   toggleResultHidden: () => void
 }) {
   return (
     <div className="text-xs">
-      {props.dashboardMode === 'none' && (
+      {!props.dashboardMode && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
             <button
@@ -329,9 +434,7 @@ function SQLSyntaxError(props: {
       <div
         className={clsx(
           'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && props.dashboardMode === 'none'
-            ? 'hidden'
-            : 'block'
+          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
         )}
       >
         <div className="flex border border-red-300 p-4 gap-x-3 word-wrap">
@@ -383,13 +486,13 @@ function SQLSyntaxError(props: {
 
 function SQLPythonError(props: {
   result: PythonErrorRunQueryResult
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isResultHidden: boolean
   toggleResultHidden: () => void
 }) {
   return (
     <div className="text-xs">
-      {props.dashboardMode === 'none' && (
+      {!props.dashboardMode && (
         <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
           <div className="flex gap-x-1.5 items-center">
             <button
@@ -417,9 +520,7 @@ function SQLPythonError(props: {
       <div
         className={clsx(
           'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && props.dashboardMode === 'none'
-            ? 'hidden'
-            : 'block'
+          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
         )}
       >
         <div className="flex border border-red-300 p-4 gap-x-3 text-xs overflow-hidden word-wrap">

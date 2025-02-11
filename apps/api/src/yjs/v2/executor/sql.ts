@@ -107,6 +107,7 @@ export class SQLExecutor implements ISQLExecutor {
         dataSourceId,
         dataframeName,
         isFileDataSource,
+        dashboardPageSize,
       } = getSQLAttributes(block, this.blocks)
 
       if ((!dataSourceId && !isFileDataSource) || !dataframeName) {
@@ -162,6 +163,7 @@ export class SQLExecutor implements ISQLExecutor {
           datasource ?? 'duckdb',
           this.dataSourcesEncryptionKey,
           actualSource,
+          { pageSize: 50, dashboardPageSize },
           (result) => {
             block.setAttribute('result', result)
           },
@@ -302,8 +304,12 @@ export class SQLExecutor implements ISQLExecutor {
         this.sessionId,
         attrs.id,
         attrs.dataframeName.value,
-        attrs.page,
-        50,
+        {
+          page: attrs.page,
+          pageSize: 50,
+          dashboardPage: attrs.dashboardPage,
+          dashboardPageSize: attrs.dashboardPageSize,
+        },
         attrs.sort
       )
 

@@ -10,6 +10,7 @@ import clsx from 'clsx'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import PivotTable from './PivotTable'
 import PageButtons from '@/components/PageButtons'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 interface Props {
   pivotRows: PivotTableBlock['rows']
@@ -27,7 +28,7 @@ interface Props {
   onNewSQL: () => void
   controlsHidden: boolean
   onToggleControlsHidden: () => void
-  dashboardMode: 'live' | 'editing' | 'none'
+  dashboardMode: DashboardMode | null
   isEditable: boolean
   sort: PivotTableSort | null
   onSort: (sort: PivotTableSort | null) => void
@@ -36,7 +37,9 @@ function PivotTableView(props: Props) {
   return (
     <div
       className={clsx(
-        !props.controlsHidden && props.dashboardMode === 'none'
+        !props.controlsHidden &&
+          (!props.dashboardMode ||
+            dashboardModeHasControls(props.dashboardMode))
           ? 'w-2/3'
           : 'w-full',
         'flex-grow h-full flex relative'
@@ -115,21 +118,23 @@ function PivotTableView(props: Props) {
         </div>
       )}
 
-      {props.dashboardMode === 'none' && props.isEditable && (
-        <button
-          className={clsx(
-            'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-2 hover:bg-gray-50 z-10',
-            props.controlsHidden ? 'left-0 rounded-bl-md' : '-left-[1px]'
-          )}
-          onClick={props.onToggleControlsHidden}
-        >
-          {props.controlsHidden ? (
-            <ChevronDoubleRightIcon className="h-4 w-4 text-gray-400" />
-          ) : (
-            <ChevronDoubleLeftIcon className="h-4 w-4 text-gray-400" />
-          )}
-        </button>
-      )}
+      {(!props.dashboardMode ||
+        dashboardModeHasControls(props.dashboardMode)) &&
+        props.isEditable && (
+          <button
+            className={clsx(
+              'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-2 hover:bg-gray-50 z-10',
+              props.controlsHidden ? 'left-0 rounded-bl-md' : '-left-[1px]'
+            )}
+            onClick={props.onToggleControlsHidden}
+          >
+            {props.controlsHidden ? (
+              <ChevronDoubleRightIcon className="h-4 w-4 text-gray-400" />
+            ) : (
+              <ChevronDoubleLeftIcon className="h-4 w-4 text-gray-400" />
+            )}
+          </button>
+        )}
     </div>
   )
 }

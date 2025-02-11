@@ -1,6 +1,4 @@
 import {
-  ChevronDownIcon,
-  ChevronRightIcon,
   ClockIcon,
   PlayIcon,
   StopIcon,
@@ -27,7 +25,7 @@ import {
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { CSSProperties, RefObject, useCallback, useMemo } from 'react'
+import { RefObject, useCallback, useMemo } from 'react'
 import {
   ExecutingPythonText,
   LoadingEnvText,
@@ -51,6 +49,7 @@ import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import { CommandLineIcon } from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
+import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
 interface Props {
   document: ApiDocument
@@ -60,7 +59,7 @@ interface Props {
   dragPreview: ConnectDragPreview | null
   isPublicMode: boolean
   isPDF: boolean
-  dashboardPlace: 'controls' | 'view' | null
+  dashboardMode: DashboardMode | null
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
@@ -364,13 +363,10 @@ function PythonBlock(props: Props) {
       }
     } else {
       return {
-        content: (ref: RefObject<HTMLDivElement>, pos: CSSProperties) => (
+        content: (ref: RefObject<HTMLDivElement>) => (
           <div
-            className={clsx(
-              'font-sans pointer-events-none absolute w-max opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1'
-            )}
+            className="font-sans pointer-events-none w-max bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col gap-y-1"
             ref={ref}
-            style={pos}
           >
             <span>Run code</span>
             <span className="inline-flex gap-x-1 items-center text-gray-400">
@@ -384,7 +380,7 @@ function PythonBlock(props: Props) {
     }
   }, [status, envStatus, envLoading, execution])
 
-  if (props.dashboardPlace) {
+  if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     return (
       <PythonOutputs
         className="flex flex-col h-full ph-no-capture"
@@ -392,8 +388,14 @@ function PythonBlock(props: Props) {
         isFixWithAILoading={isAIFixing}
         onFixWithAI={onFixWithAI}
         isPDF={props.isPDF}
-        isDashboardView={props.dashboardPlace === 'view'}
-        lazyRender={props.dashboardPlace === 'controls'}
+        isDashboardView={
+          props.dashboardMode._tag === 'live' ||
+          props.dashboardMode.position === 'dashboard'
+        }
+        lazyRender={
+          props.dashboardMode._tag === 'editing' &&
+          props.dashboardMode.position === 'sidebar'
+        }
         canFixWithAI={hasOaiKey}
         blockId={blockId}
       />
@@ -510,14 +512,13 @@ function PythonBlock(props: Props) {
                   props.isEditable &&
                   !isAIFixing && (
                     <TooltipV2<HTMLButtonElement>
-                      content={(ref, pos) => (
+                      content={(ref) => (
                         <div
                           ref={ref}
                           className={clsx(
                             'font-sans pointer-events-none absolute opacity-0 transition-opacity group-hover:opacity-100 bg-hunter-950 text-white text-xs p-2 rounded-md flex flex-col items-center justify-center gap-y-1 z-30',
                             hasOaiKey ? 'w-32' : 'w-40'
                           )}
-                          style={pos}
                         >
                           <span className="text-center">
                             {hasOaiKey
@@ -627,16 +628,18 @@ function PythonBlock(props: Props) {
             </button>
           )}
         </TooltipV2>
-        <HiddenInPublishedButton
-          isBlockHiddenInPublished={props.isBlockHiddenInPublished}
-          onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
-          hasMultipleTabs={props.hasMultipleTabs}
-          isCodeHidden={isCodeHidden ?? false}
-          onToggleIsCodeHidden={toggleCodeHidden}
-          isOutputHidden={isResultHidden ?? false}
-          onToggleIsOutputHidden={toggleResultHidden}
-        />
-        {!isCodeHidden && (
+        {!props.dashboardMode && (
+          <HiddenInPublishedButton
+            isBlockHiddenInPublished={props.isBlockHiddenInPublished}
+            onToggleIsBlockHiddenInPublished={onToggleIsBlockHiddenInPublished}
+            hasMultipleTabs={props.hasMultipleTabs}
+            isCodeHidden={isCodeHidden ?? false}
+            onToggleIsCodeHidden={toggleCodeHidden}
+            isOutputHidden={isResultHidden ?? false}
+            onToggleIsOutputHidden={toggleResultHidden}
+          />
+        )}
+        {(!isCodeHidden || props.dashboardMode) && (
           <SaveReusableComponentButton
             isComponent={blockId === component?.blockId}
             onSave={onSaveReusableComponent}

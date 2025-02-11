@@ -49,7 +49,7 @@ interface Props {
   isHidden: boolean
   onToggleHidden: () => void
   onExportToPNG?: () => void
-  isDashboard: boolean
+  hasControls: boolean
   isEditable: boolean
 }
 function VisualizationViewV2(props: Props) {
@@ -61,7 +61,7 @@ function VisualizationViewV2(props: Props) {
       // we use key to force re-render when controlsHidden changes
       key={key}
       className={clsx(
-        !props.controlsHidden && !props.isDashboard && 'w-2/3',
+        !props.controlsHidden && props.hasControls && 'w-2/3',
         'flex-grow h-full flex items-center justify-center relative'
       )}
     >
@@ -72,14 +72,14 @@ function VisualizationViewV2(props: Props) {
             result={props.result}
             renderer={props.renderer}
             input={props.input}
-            isDashboard={props.isDashboard}
+            hasControls={props.hasControls}
           />
           {props.loading && (
             <div className="absolute top-0 left-0 h-full w-full flex flex-col items-center justify-center bg-ceramic-50/60 ">
               <LargeSpinner color="#b8f229" />
             </div>
           )}
-          {!props.tooManyDataPointsHidden && !props.isDashboard && (
+          {!props.tooManyDataPointsHidden && !props.hasControls && (
             <div className="absolute top-0 left-0 right-0 bg-yellow-50 p-2">
               <div className="flex items-center justify-center gap-x-2">
                 <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500" />
@@ -148,7 +148,7 @@ function VisualizationViewV2(props: Props) {
           )}
         </div>
       )}
-      {!props.isDashboard && props.isEditable && (
+      {props.hasControls && props.isEditable && (
         <button
           className={clsx(
             'absolute bottom-0 bg-white rounded-tr-md border-t border-r border-gray-200 p-2 hover:bg-gray-50 z-10',
@@ -163,7 +163,7 @@ function VisualizationViewV2(props: Props) {
           )}
         </button>
       )}
-      {!props.isDashboard &&
+      {props.hasControls &&
         props.input.chartType !== 'number' &&
         props.input.chartType !== 'trend' && (
           <button
@@ -180,7 +180,7 @@ function VisualizationViewV2(props: Props) {
 function BrieferResult(props: {
   title: string
   input: VisualizationV2BlockInput
-  isDashboard: boolean
+  hasControls: boolean
   result: VisualizationV2BlockOutputResult
   renderer?: 'canvas' | 'svg'
 }) {
@@ -245,12 +245,12 @@ function BrieferResult(props: {
   const option: echarts.EChartsOption = useMemo(() => {
     const grid: echarts.EChartsOption['grid'] = {
       ...props.result.grid,
-      left: props.isDashboard ? '28px' : '36px',
-      right: props.isDashboard ? '28px' : '36px',
-      bottom: props.isDashboard ? '28px' : '56px',
+      left: props.hasControls ? '36px' : '28px',
+      right: props.hasControls ? '36' : '28px',
+      bottom: props.hasControls ? '56' : '28px',
     }
 
-    if (!props.isDashboard) {
+    if (props.hasControls) {
       grid['top'] = '92px'
     }
 
@@ -258,9 +258,9 @@ function BrieferResult(props: {
       ...props.result,
       legend: {
         ...props.result.legend,
-        padding: props.isDashboard
-          ? [props.title ? 4 : 20, 28, 0, 8]
-          : [28, 28, 0, 28],
+        padding: props.hasControls
+          ? [28, 28, 0, 28]
+          : [props.title ? 4 : 20, 28, 0, 8],
         type: 'scroll',
         icon: 'circle',
         textStyle: {
@@ -268,6 +268,7 @@ function BrieferResult(props: {
           fontWeight: 'bold',
           color: '#6b7280',
         },
+        left: !props.hasControls ? 18 : 'center',
       },
       grid,
       xAxis: props.result.xAxis.map((axis) => ({
@@ -306,7 +307,6 @@ function BrieferResult(props: {
           input={props.input}
           result={props.result}
           size={size}
-          isDashboard={props.isDashboard}
         />
       </div>
     )
@@ -362,7 +362,6 @@ function BigNumberVisualization(props: {
   chartType: 'number' | 'trend'
   result: VisualizationV2BlockOutputResult
   size: { width: number; height: number }
-  isDashboard: boolean
 }) {
   const { size } = props
 

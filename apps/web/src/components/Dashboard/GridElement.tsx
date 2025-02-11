@@ -21,7 +21,6 @@ import PythonBlock from '../v2Editor/customBlocks/python'
 import InputBlock from '../v2Editor/customBlocks/input'
 import DropdownInputBlock from '../v2Editor/customBlocks/dropdownInput'
 import { APIDataSources } from '@/hooks/useDatasources'
-import ScrollBar from '../ScrollBar'
 import clsx from 'clsx'
 import DashboardHeader from '../v2Editor/customBlocks/dashboardHeader'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
@@ -40,6 +39,7 @@ interface Props {
   userId: string | null
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 }
 
 const NO_TITLE_BLOCKS = [
@@ -47,22 +47,35 @@ const NO_TITLE_BLOCKS = [
   BlockType.DropdownInput,
   BlockType.FileUpload,
   BlockType.RichText,
+  BlockType.DashboardHeader,
 ]
 
 function GridElement(props: Props) {
-  const { state: layout } = useYDocState(props.yDoc, getLayout)
   const { state: blocks } = useYDocState(props.yDoc, getBlocks)
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
   const { state: yLayout } = useYDocState(props.yDoc, getLayout)
 
+  const [isEditingHeader, setIsEditingHeader] = useState(false)
+
   // set editing when adding a new block to the dashboard
   useEffect(() => {
     if (props.latestBlockId === props.block?.getAttribute('id')) {
-      setIsEditingBlock(true)
+      setIsEditingHeader(true)
     }
   }, [props.latestBlockId, props.block?.getAttribute('id')])
 
-  const [isEditingBlock, setIsEditingBlock] = useState(false)
+  const onDelete = useCallback(() => {
+    props.onDelete(props.item.i)
+  }, [props.onDelete, props.item.i])
+
+  const blockType = props.block?.getAttribute('type')
+  const originalTitle = props.block?.getAttribute('title') ?? ''
+  const titleContent = originalTitle || 'Untitled'
+
+  const hasTitle =
+    blockType &&
+    !NO_TITLE_BLOCKS.includes(blockType) &&
+    originalTitle.trim() !== ''
 
   const renderItem = useCallback(
     (block: YBlock, item: GridLayout.Layout) =>
@@ -73,7 +86,11 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={false}
             dragPreview={null}
-            isDashboard={true}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isCursorWithin={false}
             isCursorInserting={false}
           />
@@ -88,7 +105,11 @@ function GridElement(props: Props) {
             isEditable={false}
             dragPreview={null}
             isPublicMode={false}
-            dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
@@ -109,7 +130,11 @@ function GridElement(props: Props) {
             isEditable={false}
             dragPreview={null}
             isPDF={false}
-            dashboardPlace="view"
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isPublicMode={false}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
@@ -150,7 +175,11 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            isDashboard={true}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isPublicMode={false}
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
@@ -171,7 +200,11 @@ function GridElement(props: Props) {
             dragPreview={null}
             isEditable={false}
             onAddGroupedBlock={() => {}}
-            dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             hasMultipleTabs={false}
             isBlockHiddenInPublished={false}
             onToggleIsBlockHiddenInPublished={() => {}}
@@ -190,7 +223,11 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            isDashboard={true}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
@@ -207,7 +244,11 @@ function GridElement(props: Props) {
             isEditable={!props.isEditingDashboard}
             isApp={true}
             dataframes={dataframes.value}
-            isDashboard={true}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
@@ -223,7 +264,11 @@ function GridElement(props: Props) {
             belongsToMultiTabGroup={false}
             isEditable={!props.isEditingDashboard}
             isApp={true}
-            isDashboard={true}
+            dashboardMode={
+              props.isEditingDashboard
+                ? { _tag: 'editing', position: 'dashboard' }
+                : { _tag: 'live' }
+            }
             isCursorWithin={false}
             isCursorInserting={false}
             userId={props.userId}
@@ -234,8 +279,8 @@ function GridElement(props: Props) {
         onDashboardHeader: (block) => (
           <DashboardHeader
             block={block}
-            isEditing={isEditingBlock}
-            onFinishedEditing={() => setIsEditingBlock(false)}
+            isEditing={isEditingHeader}
+            onFinishedEditing={() => setIsEditingHeader(false)}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
           />
         ),
@@ -249,44 +294,27 @@ function GridElement(props: Props) {
       blocks,
       yLayout,
       props.isEditingDashboard,
-      isEditingBlock,
+      isEditingHeader,
       props.userId,
       props.executionQueue,
     ]
   )
 
-  const onDelete = useCallback(() => {
-    props.onDelete(props.item.i)
-  }, [props.onDelete, props.item.i])
-
-  const blockType = props.block?.getAttribute('type')
-  const hasTitle = blockType && !NO_TITLE_BLOCKS.includes(blockType)
-  const titleContent = props.block?.getAttribute('title')
-
-  const canEdit = blockType && blockType === BlockType.DashboardHeader
-  const showEdit = canEdit && !isEditingBlock
-
-  const WrapperElement =
-    props.block?.getAttribute('type') === BlockType.Visualization ||
-    props.block?.getAttribute('type') === BlockType.VisualizationV2
-      ? 'div'
-      : ScrollBar
-
   return (
     <div
       className={clsx(
         'relative group h-full',
-        props.isEditingDashboard && 'cursor-move'
+        props.isEditingDashboard && 'cursor-grab'
       )}
     >
       {props.block ? (
-        <WrapperElement
+        <div
           className={clsx(
             'w-full h-full rounded-md overflow-hidden flex flex-col',
             props.isEditingDashboard && 'pointer-events-none'
           )}
         >
-          {hasTitle && titleContent && (
+          {hasTitle && (
             <h2 className="text-gray-700 font-medium text-left text-sm truncate min-h-6 px-3.5 py-2.5">
               {titleContent}
             </h2>
@@ -295,7 +323,7 @@ function GridElement(props: Props) {
           <div className="h-full overflow-hidden">
             {renderItem(props.block, props.item)}
           </div>
-        </WrapperElement>
+        </div>
       ) : (
         <div className="bg-gray-200 overflow-hidden">{props.item.i}</div>
       )}
@@ -304,22 +332,25 @@ function GridElement(props: Props) {
         <>
           <div
             className={clsx(
-              'absolute -top-3 right-3 bg-white opacity-0 group-hover:opacity-100 z-20 border p-1 rounded-md shadow-sm flex gap-x-2 items-center',
-              showEdit ? 'px-2' : ''
+              'absolute -top-3 right-3 opacity-0 bg-white group-hover:opacity-100 z-20 border border-gray-200 py-1 rounded-md shadow-sm flex gap-x-3.5 items-center px-3.5'
             )}
             onMouseDown={(e) => e.stopPropagation()}
           >
-            {showEdit && (
-              <button
-                className="flex items-center jutify-center cursor-pointer text-gray-500 hover:text-primary-600 h-4 w-4 text-xs"
-                onClick={() => setIsEditingBlock(!isEditingBlock)}
-              >
-                <PencilIcon />
-              </button>
-            )}
+            <button
+              className="flex items-center jutify-center cursor-pointer text-gray-500 hover:text-primary-600 h-4 w-4 text-xs bg-white"
+              onClick={() => {
+                if (blockType === BlockType.DashboardHeader) {
+                  setIsEditingHeader(!isEditingHeader)
+                } else if (props.block) {
+                  props.onExpand(props.block)
+                }
+              }}
+            >
+              <PencilIcon />
+            </button>
 
             <button
-              className="flex items-center jutify-center cursor-pointer text-gray-500 hover:text-red-600 h-4 w-4 text-xs"
+              className="flex items-center jutify-center cursor-pointer text-gray-500 hover:text-red-600 h-4 w-4 text-xs bg-white"
               onClick={onDelete}
             >
               <TrashIcon />
