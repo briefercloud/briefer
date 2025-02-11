@@ -181,7 +181,7 @@ function DashboardViewInner(props: InnerProps) {
         const dashItem = getDashboardItem(dashboard.value, item.i)
 
         const block = dashItem
-          ? blocks.value.get(dashItem.blockId) ?? null
+          ? (blocks.value.get(dashItem.blockId) ?? null)
           : null
 
         const type = block?.getAttribute('type')
@@ -311,7 +311,7 @@ function DashboardViewInner(props: InnerProps) {
       isDraggable={props.isEditing}
       isDroppable={props.isEditing}
       isResizable={props.isEditing}
-      resizeHandles={['se']}
+      resizeHandles={['sw', 'se']}
       onDrop={onDrop}
       onDropDragOver={onDropDragOver}
       style={props.isEditing ? style : {}}

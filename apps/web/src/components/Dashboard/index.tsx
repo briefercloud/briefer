@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { SquaresPlusIcon } from '@heroicons/react/24/solid'
-import { BookUpIcon } from 'lucide-react'
+import { BookUpIcon, XIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
 
 import Layout from '@/components/Layout'
@@ -482,7 +482,7 @@ function DashboardContent(
       </div>
       {createPortal(
         <Transition
-          className="fixed inset-0 z-[20] flex items-center justify-center py-8"
+          className="fixed inset-0 z-20 flex items-center justify-center py-8"
           enter="transition ease-out duration-100"
           enterFrom="transform opacity-0 scale-95"
           enterTo="transform opacity-100 scale-100"
@@ -497,8 +497,9 @@ function DashboardContent(
               onClick={() => setExpanded(null)} // Close when clicking on backdrop
             />
           ) : null}
+
           {expanded ? (
-            <ScrollBar className="relative z-[2001] bg-white px-16 py-12 rounded-xl shadow-md overflow-y-scroll max-h-[90vh] min-w-[940px] 2xl:w-[1280px] 3xl:w-[1536px]">
+            <ScrollBar className="bg-white px-16 py-12 rounded-xl shadow-md max-h-[90vh] min-w-[940px] 2xl:w-[1280px] 3xl:w-[1536px]">
               {switchBlockType(expanded, {
                 onVisualization: (block) => (
                   <VisualizationBlock
@@ -680,3 +681,15 @@ function DashboardContent(
     </>
   )
 }
+
+/*
+              <button
+                onClick={() => setExpanded(null)}
+                className="absolute top-2 right-2 text-gray-400 hover:text-gray-500 bg-white rounded-full border border-gray-300 translate-x-1/3 -translate-y-1/3 z-30 p-1 group "
+              >
+                <XIcon
+                  strokeWidth={3}
+                  className="text-gray-500 h-3 w-3 group-hover:text-red-700"
+                />
+              </button>
+              */
