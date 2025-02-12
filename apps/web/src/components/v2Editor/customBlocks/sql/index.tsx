@@ -145,6 +145,7 @@ function SQLBlock(props: Props) {
     isFileDataSource,
     componentId,
     sort,
+    dashboardPageSize,
   } = getSQLAttributes(props.block, props.blocks)
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
@@ -689,6 +690,7 @@ function SQLBlock(props: Props) {
         onChangeDashboardPageSize={onChangeDashboardPageSize}
         loadingPage={loadingPage}
         hasTitle={title.trim() !== ''}
+        dashboardPageSize={dashboardPageSize}
       />
     )
   }
@@ -997,6 +999,7 @@ function SQLBlock(props: Props) {
             loadingPage={loadingPage}
             onChangeDashboardPageSize={onChangeDashboardPageSize}
             hasTitle={title.trim() !== ''}
+            dashboardPageSize={dashboardPageSize}
           />
         )}
       </div>

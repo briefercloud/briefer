@@ -57,6 +57,7 @@ interface Props {
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
   onChangePage: (page: number) => void
+  dashboardPageSize: number
   onChangeDashboardPageSize: (size: number) => void
   hasTitle: boolean
 }
@@ -82,6 +83,7 @@ function SQLResult(props: Props) {
           onChangePage={props.onChangePage}
           isAddVisualizationDisabled={props.isAddVisualizationDisabled}
           onAddVisualization={props.onAddVisualization}
+          dashboardPageSize={props.dashboardPageSize}
           onChangeDashboardPageSize={props.onChangeDashboardPageSize}
           hasTitle={props.hasTitle}
         />
@@ -130,6 +132,7 @@ interface SQLSuccessProps {
   isAddVisualizationDisabled: boolean
   onAddVisualization: () => void
   onChangeSort: (sort: TableSort | null) => void
+  dashboardPageSize: number
   onChangeDashboardPageSize: (size: number) => void
   hasTitle: boolean
 }
@@ -211,7 +214,10 @@ function SQLSuccess(props: SQLSuccessProps) {
         (height - tableHeaderSize - footerSize) / tableRowSize
       )
 
-      if (maxPageSize !== result.dashboardPageSize) {
+      if (
+        maxPageSize !== result.dashboardPageSize &&
+        maxPageSize !== props.dashboardPageSize
+      ) {
         props.onChangeDashboardPageSize(maxPageSize)
       }
     }, 500)
@@ -228,6 +234,7 @@ function SQLSuccess(props: SQLSuccessProps) {
     props.dashboardMode,
     containerRef,
     result.dashboardPageSize,
+    props.dashboardPageSize,
     props.onChangeDashboardPageSize,
   ])
 
