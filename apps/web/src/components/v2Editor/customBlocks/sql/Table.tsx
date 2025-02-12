@@ -58,7 +58,7 @@ function Table(props: Props) {
         contentEditable={false}
       >
         <thead className="bg-gray-50 sticky top-0">
-          <tr className="divide-x">
+          <tr className="divide-x h-10">
             {props.columns.map((column, index) => {
               const Icon = getColumnTypeIcon(column.type)
               return (
