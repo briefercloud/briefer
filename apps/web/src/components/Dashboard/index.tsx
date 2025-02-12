@@ -5,7 +5,7 @@ import { BookUpIcon, XIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
 
 import Layout from '@/components/Layout'
-import { useLastUpdatedAt, useYDoc } from '@/hooks/useYDoc'
+import { useLastUpdatedAt, useYDoc, useYDocState } from '@/hooks/useYDoc'
 import { ApiDocument, UserWorkspaceRole } from '@briefer/database'
 import DashboardView from './DashboardView'
 import DashboardControls from './DashboardControls'
@@ -415,9 +415,9 @@ function DashboardContent(
   const [draggingBlock, setDraggingBlock] = useState<DraggingBlock | null>(null)
   const [latestBlockId, setLatestBlockId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<YBlock | null>(null)
-  const blocks = getBlocks(props.yDoc)
-  const layout = getLayout(props.yDoc)
-  const dataframes = getDataframes(props.yDoc)
+  const { state: blocks } = useYDocState(props.yDoc, getBlocks)
+  const { state: layout } = useYDocState(props.yDoc, getLayout)
+  const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
 
   const onDragStart = useCallback((draggingBlock: DraggingBlock) => {
     setDraggingBlock(draggingBlock)
@@ -504,9 +504,9 @@ function DashboardContent(
                 onVisualization: (block) => (
                   <VisualizationBlock
                     document={props.document}
-                    dataframes={dataframes}
+                    dataframes={dataframes.value}
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     dragPreview={null}
                     isEditable={true}
                     onAddGroupedBlock={() => {}}
@@ -525,9 +525,9 @@ function DashboardContent(
                 onVisualizationV2: (block) => (
                   <VisualizationV2Block
                     document={props.document}
-                    dataframes={dataframes}
+                    dataframes={dataframes.value}
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     dragPreview={null}
                     isEditable={true}
                     onAddGroupedBlock={() => {}}
@@ -557,8 +557,8 @@ function DashboardContent(
                 onSQL: (block) => (
                   <SQLBlock
                     block={block}
-                    blocks={blocks}
-                    layout={layout}
+                    blocks={blocks.value}
+                    layout={layout.value}
                     document={props.document}
                     dataSources={dataSources}
                     isEditable={true}
@@ -580,7 +580,7 @@ function DashboardContent(
                   <PythonBlock
                     document={props.document}
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     isEditable={true}
                     dragPreview={null}
                     isPDF={false}
@@ -598,7 +598,7 @@ function DashboardContent(
                 onInput: (block) => (
                   <InputBlock
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     dragPreview={null}
                     belongsToMultiTabGroup={false}
                     isEditable={true}
@@ -614,13 +614,13 @@ function DashboardContent(
                 onDropdownInput: (block) => (
                   <DropdownInputBlock
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     dragPreview={null}
                     belongsToMultiTabGroup={false}
                     isEditable={true}
                     isApp={false}
                     dashboardMode={{ _tag: 'editing', position: 'expanded' }}
-                    dataframes={dataframes}
+                    dataframes={dataframes.value}
                     isCursorWithin={false}
                     isCursorInserting={false}
                     userId={props.user.id}
@@ -631,7 +631,7 @@ function DashboardContent(
                 onDateInput: (block) => (
                   <DateInputBlock
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     workspaceId={props.document.workspaceId}
                     dragPreview={null}
                     belongsToMultiTabGroup={false}
@@ -655,9 +655,9 @@ function DashboardContent(
                 onPivotTable: (block) => (
                   <PivotTableBlock
                     workspaceId={props.document.workspaceId}
-                    dataframes={dataframes}
+                    dataframes={dataframes.value}
                     block={block}
-                    blocks={blocks}
+                    blocks={blocks.value}
                     dragPreview={null}
                     isEditable={true}
                     onAddGroupedBlock={() => {}}
