@@ -490,6 +490,8 @@ export class WSSharedDocV2 {
   }
 
   private async reset(newYDoc: Y.Doc, newClock: number, newByteLength: number) {
+    await Promise.all([this.executor.stop(), this.aiExecutor.stop()])
+
     this.ydoc.off('update', this.updateHandler)
     this.ydoc.destroy()
 
@@ -497,8 +499,6 @@ export class WSSharedDocV2 {
     await this.persistUpdatesQueue.onIdle()
 
     this.awareness.destroy()
-
-    await Promise.all([this.executor.stop(), this.aiExecutor.stop()])
 
     this.ydoc = newYDoc
     this.clock = newClock
