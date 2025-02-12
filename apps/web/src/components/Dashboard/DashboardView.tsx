@@ -127,6 +127,7 @@ interface InnerProps {
   isEditing: boolean
   executionQueue: ExecutionQueue
   aiTasks: AITasks
+  onExpand: (block: YBlock) => void
 
   // We use this to trigger actions when a new block is added
   latestBlockId: string | null
