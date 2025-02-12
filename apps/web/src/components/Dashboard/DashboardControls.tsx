@@ -31,16 +31,57 @@ import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import {
   ChevronDoubleRightIcon,
   ChevronDoubleLeftIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { DraggingBlock } from '.'
 import { APIDataSources } from '@/hooks/useDatasources'
 import ScaleChild from '../ScaleChild'
-import ScrollBar from '../ScrollBar'
 import { Heading1Icon } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { getDefaults } from './DashboardView'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
 import VisualizationV2Block from '../v2Editor/customBlocks/visualizationV2'
+import MultiSelect from '../MultiSelect'
+import clsx from 'clsx'
+import SimpleBar from 'simplebar-react'
+function getTypesLabel(t: BlockType) {
+  switch (t) {
+    case BlockType.VisualizationV2:
+    case BlockType.Visualization:
+      return 'Visualization'
+    case BlockType.Python:
+      return 'Python'
+    case BlockType.SQL:
+      return 'SQL (Table)'
+    case BlockType.PivotTable:
+      return 'Pivot Table'
+    case BlockType.Input:
+      return 'Text Input'
+    case BlockType.DateInput:
+      return 'Date Input'
+    case BlockType.DropdownInput:
+      return 'Dropdown Input'
+    case BlockType.RichText:
+      return 'Rich Text'
+    case BlockType.FileUpload:
+      return 'File Upload'
+    case BlockType.DashboardHeader:
+      return 'Dashboard Header'
+    case BlockType.Writeback:
+      return 'Writeback'
+  }
+}
+
+const typeOptions = [
+  BlockType.VisualizationV2,
+  BlockType.Python,
+  BlockType.SQL,
+  BlockType.PivotTable,
+  BlockType.Input,
+  BlockType.DateInput,
+  BlockType.DropdownInput,
+  BlockType.RichText,
+]
 
 interface Props {
   document: ApiDocument
@@ -59,6 +100,17 @@ function DashboardControls(props: Props) {
   const { state: blocks } = useYDocState(props.yDoc, getBlocks)
   const { state: layout } = useYDocState(props.yDoc, getLayout)
   const { state: dashboard } = useYDocState(props.yDoc, getDashboard)
+  const [search, setSearch] = useState('')
+  const [types, setTypes] = useState<BlockType[]>([])
+  const onToggleType = useCallback((t: BlockType) => {
+    setTypes((types) => {
+      if (types.includes(t)) {
+        return types.filter((type) => type !== t)
+      }
+
+      return [...types, t]
+    })
+  }, [])
 
   const blocksInDashboard = useMemo(
     () =>
@@ -148,10 +200,33 @@ function DashboardControls(props: Props) {
               })
             }) ?? []
 
-          return groupBlocks.filter((block): block is YBlock => block !== null)
+          return groupBlocks.filter((block): block is YBlock => {
+            if (block === null) {
+              return false
+            }
+
+            const attrs = getBaseAttributes(block)
+            if (types.length > 0) {
+              const type =
+                attrs.type === BlockType.Visualization
+                  ? BlockType.VisualizationV2
+                  : attrs.type
+              if (!types.includes(type)) {
+                return false
+              }
+            }
+
+            const s = search.trim()
+            if (s === '') {
+              return true
+            }
+
+            const title = attrs.title.trim()
+            return title.toLowerCase().includes(s.toLowerCase())
+          })
         })
         .flat(),
-    [blocks, layout, blocksInDashboard]
+    [blocks, layout, blocksInDashboard, search, types]
   )
 
   const [open, setOpen] = useState(true)
@@ -181,7 +256,7 @@ function DashboardControls(props: Props) {
 
   return (
     <>
-      <div className="absolute 2xl:relative top-0 bottom-0 right-0 w-[400px] font-sans">
+      <div className="absolute 2xl:relative top-0 bottom-0 right-0 w-[400px] font-sans bg-red-500 h-[calc(100%-47px)]">
         <button
           className="absolute z-10 top-12 transform rounded-full border border-gray-300 text-gray-400 bg-white hover:bg-ceramic-200 hover:border-ceramic-200 hover:text-ceramic-400 w-6 h-6 flex justify-center items-center left-0 -translate-x-1/2"
           onClick={onClose}
@@ -189,20 +264,32 @@ function DashboardControls(props: Props) {
           <ChevronDoubleRightIcon className="w-3 h-3" />
         </button>
 
-        <div className="bg-white border-l border-gray-200 overflow-y-auto relative h-full pt-6 pb-20 px-4 flex flex-col space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-syne text-lg font-medium text-gray-900">
+        <div className="bg-white border-l border-gray-200 overflow-y-auto relative h-full flex flex-col justify-between">
+          <div className="bg-gray-100 border-b border-gray-200 py-6 px-4">
+            <h2 className="font-syne text-lg font-medium text-gray-900 pb-4">
               Blocks
             </h2>
-            <button
-              className="flex items-center rounded-sm px-3 py-2 text-sm text-gray-500 hover:bg-gray-100 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-2"
-              onClick={addHeading}
-            >
-              <Heading1Icon strokeWidth={1} className="w-4 h-4" />
-              <span>Add heading</span>
-            </button>
+            <div className="flex flex-col space-y-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Find block by title"
+                  className="block w-full rounded-md border-0 pl-8 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 text-xs h-[38px]"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <MagnifyingGlassIcon className="absolute top-1 left-2 w-4 h-4 text-gray-400 translate-y-1/2" />
+              </div>
+              <MultiSelect<BlockType>
+                value={types}
+                getLabel={getTypesLabel}
+                placeholder="Types"
+                options={typeOptions}
+                onToggle={onToggleType}
+              />
+            </div>
           </div>
-          <ScrollBar className="overflow-auto">
+          <SimpleBar className="px-3 h-full overflow-y-auto no-scroll">
             <BlocksList
               document={props.document}
               list={blocksList}
@@ -216,7 +303,16 @@ function DashboardControls(props: Props) {
               aiTasks={props.aiTasks}
               onExpand={props.onExpand}
             />
-          </ScrollBar>
+          </SimpleBar>
+          <div className="bg-gray-100 p-4 border-t border-gray-200">
+            <button
+              className="flex items-center rounded-sm px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 border border-gray-200 disabled:cursor-not-allowed disabled:opacity-50 gap-x-2 w-full bg-white"
+              onClick={addHeading}
+            >
+              <Heading1Icon strokeWidth={1} className="w-4 h-4" />
+              <span>Add heading</span>
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -237,29 +333,26 @@ interface BlocksListProps {
   onExpand: (block: YBlock) => void
 }
 function BlocksList(props: BlocksListProps) {
-  return (
-    <div className="flex flex-col space-y-6">
-      {props.list.map((block) => {
-        const { id } = getBaseAttributes(block)
-        return (
-          <BlockListItem
-            key={id}
-            document={props.document}
-            dataSources={props.dataSources}
-            dataframes={props.dataframes}
-            block={block}
-            blocks={props.blocks}
-            layout={props.layout}
-            onDragStart={props.onDragStart}
-            userId={props.userId}
-            executionQueue={props.executionQueue}
-            aiTasks={props.aiTasks}
-            onExpand={props.onExpand}
-          />
-        )
-      })}
-    </div>
-  )
+  return props.list.map((block, i) => {
+    const { id } = getBaseAttributes(block)
+    return (
+      <BlockListItem
+        className={clsx('mt-6', i === props.list.length - 1 && 'mb-6')}
+        key={id}
+        document={props.document}
+        dataSources={props.dataSources}
+        dataframes={props.dataframes}
+        block={block}
+        blocks={props.blocks}
+        layout={props.layout}
+        onDragStart={props.onDragStart}
+        userId={props.userId}
+        executionQueue={props.executionQueue}
+        aiTasks={props.aiTasks}
+        onExpand={props.onExpand}
+      />
+    )
+  })
 }
 
 interface BlockListItemProps {
@@ -274,6 +367,7 @@ interface BlockListItemProps {
   executionQueue: ExecutionQueue
   aiTasks: AITasks
   onExpand: (block: YBlock) => void
+  className?: string
 }
 function BlockListItem(props: BlockListItemProps) {
   const { id, type } = getBaseAttributes(props.block)
@@ -523,7 +617,10 @@ function BlockListItem(props: BlockListItemProps) {
   return (
     <div
       key={id}
-      className="border border-gray-300 hover:border-ceramic-200 rounded-md bg-white relative p-2 overflow-x-hidden"
+      className={clsx(
+        'border border-gray-300 hover:border-ceramic-200 rounded-md bg-white relative p-2 overflow-x-hidden',
+        props.className
+      )}
       draggable={true}
       onDragStart={onDragStart}
       unselectable="on"
