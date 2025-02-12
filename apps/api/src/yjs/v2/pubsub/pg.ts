@@ -127,16 +127,33 @@ export async function startPubSubPayloadCleanup() {
   let currentCleanup = Promise.resolve()
 
   const cleanup = async () => {
-    logger().trace('Cleaning up pubsub payloads')
     try {
-      const result = await prisma().pubSubPayload.deleteMany({
-        where: {
-          createdAt: {
-            lte: new Date(Date.now() - PUB_SUB_PAYLOAD_TTL),
+      logger().trace('Cleaning up pubsub payloads')
+      let deletedCount = 0
+      const lte = new Date(Date.now() - PUB_SUB_PAYLOAD_TTL)
+      while (true) {
+        const oldPayloads = await prisma().pubSubPayload.findMany({
+          where: {
+            createdAt: {
+              lte,
+            },
           },
-        },
-      })
-      logger().trace({ count: result.count }, 'Cleaned up pubsub payloads')
+          select: { id: true },
+          take: 1000,
+        })
+        const { count } = await prisma().pubSubPayload.deleteMany({
+          where: {
+            id: {
+              in: oldPayloads.map((p) => p.id),
+            },
+          },
+        })
+        deletedCount += count
+        if (count === 0) {
+          break
+        }
+      }
+      logger().trace({ count: deletedCount }, 'Cleaned up pubsub payloads')
     } catch (err) {
       logger().error({ err }, 'Failed to clean up pubsub payloads')
     }
