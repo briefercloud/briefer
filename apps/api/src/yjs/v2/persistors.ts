@@ -788,11 +788,25 @@ export class AppPersistor implements Persistor {
 
     return equals(
       omit(
-        ['source', 'editWithAIPrompt', 'sort', 'dashboardPageSize'],
+        [
+          'source',
+          'editWithAIPrompt',
+          'sort',
+          'dashboardPageSize',
+          'dashboardPage',
+          'page',
+        ],
         prevAttributes
       ),
       omit(
-        ['source', 'editWithAIPrompt', 'sort', 'dashboardPageSize'],
+        [
+          'source',
+          'editWithAIPrompt',
+          'sort',
+          'dashboardPageSize',
+          'dashboardPage',
+          'page',
+        ],
         nextAttributes
       )
     )
