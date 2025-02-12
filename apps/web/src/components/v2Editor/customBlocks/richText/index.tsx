@@ -1,3 +1,4 @@
+import Youtube from '@tiptap/extension-youtube'
 import * as Y from 'yjs'
 import { EditorContent, Extension, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -83,6 +84,9 @@ const useBlockEditor = ({
               return true
             },
           }),
+        }),
+        Youtube.configure({
+          inline: true,
         }),
       ],
       onUpdate({ editor }) {
@@ -184,15 +188,15 @@ const RichTextBlock = (props: Props) => {
     editor?.isFocused && !props.belongsToMultiTabGroup && props.isEditable
       ? 'ring-1 ring-ceramic-400'
       : !editor?.isFocused &&
-        !props.belongsToMultiTabGroup &&
-        props.isEditable &&
-        props.isCursorWithin &&
-        !props.isCursorInserting
-      ? 'ring-1 ring-blue-400'
-      : props.dashboardMode?._tag === 'editing' &&
-        props.dashboardMode.position === 'expanded'
-      ? 'ring-1 ring-gray-200'
-      : ''
+          !props.belongsToMultiTabGroup &&
+          props.isEditable &&
+          props.isCursorWithin &&
+          !props.isCursorInserting
+        ? 'ring-1 ring-blue-400'
+        : props.dashboardMode?._tag === 'editing' &&
+            props.dashboardMode.position === 'expanded'
+          ? 'ring-1 ring-gray-200'
+          : ''
 
   return (
     <div

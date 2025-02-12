@@ -335,3 +335,7 @@ body {
   right: 6px !important;
   bottom: 6px !important;
 }
+
+div[data-youtube-video] > iframe {
+  border-radius: 0.5rem;
+}
