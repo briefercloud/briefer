@@ -193,8 +193,12 @@ export default function Layout({
       }
 
       const id = uuidv4()
-      createDocument({ id, parentId, version: 2 })
-      router.push(`/workspaces/${workspaceId}/documents/${id}`)
+      try {
+        await createDocument({ id, parentId, version: 2 })
+        router.push(`/workspaces/${workspaceId}/documents/${id}`)
+      } catch (err) {
+        console.error(err)
+      }
     },
     [documentsState, createDocument, router, workspaceId]
   )
