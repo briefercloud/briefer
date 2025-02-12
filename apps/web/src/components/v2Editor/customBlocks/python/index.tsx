@@ -216,8 +216,12 @@ function PythonBlock(props: Props) {
     envStatus,
   ])
 
-  const isCodeHidden = props.block.getAttribute('isCodeHidden')
-  const isResultHidden = props.block.getAttribute('isResultHidden')
+  const isCodeHidden =
+    props.block.getAttribute('isCodeHidden') &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+  const isResultHidden =
+    props.block.getAttribute('isResultHidden') &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
 
   const { title } = getBaseAttributes(props.block)
   const onChangeTitle = useCallback(
@@ -432,7 +436,12 @@ function PythonBlock(props: Props) {
           )}
         >
           <div
-            className="border-b border-gray-200 bg-gray-50 rounded-t-md"
+            className={clsx(
+              'bg-gray-50 rounded-t-md',
+              isCodeHidden && isResultHidden
+                ? 'rounded-b-md'
+                : 'border-b border-gray-200'
+            )}
             ref={(d) => {
               props.dragPreview?.(d)
             }}

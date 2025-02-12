@@ -137,8 +137,8 @@ function SQLBlock(props: Props) {
     result,
     page,
     dashboardPage,
-    isCodeHidden,
-    isResultHidden,
+    isCodeHidden: isCodeHiddenProp,
+    isResultHidden: isResultHiddenProp,
     editWithAIPrompt,
     aiSuggestions,
     dataSourceId,
@@ -147,6 +147,13 @@ function SQLBlock(props: Props) {
     sort,
     dashboardPageSize,
   } = getSQLAttributes(props.block, props.blocks)
+
+  const isCodeHidden =
+    isCodeHiddenProp &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+  const isResultHidden =
+    isResultHiddenProp &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
     props.document.workspaceId
