@@ -11,7 +11,7 @@ export function isInside(
 export function computeMenuPosition(
   referenceObject: RefObject<HTMLElement>,
   containerObject: RefObject<HTMLElement>,
-  menuPosition: 'left' | 'right',
+  menuPosition: 'left' | 'right' | 'bottom',
   padding: number
 ): CSSProperties {
   if (!referenceObject.current || !containerObject.current) {
@@ -35,6 +35,11 @@ export function computeMenuPosition(
       return {
         top: referenceRect.top,
         left: referenceRect.left + referenceRect.width + 6,
+      }
+    case 'bottom':
+      return {
+        top: referenceRect.top + referenceRect.height + padding,
+        left: referenceRect.left,
       }
   }
 }

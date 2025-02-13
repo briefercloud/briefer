@@ -24,7 +24,7 @@ interface Props {
   isDashboard: boolean
   sort: TableSort | null
   onChangeSort: (sort: TableSort | null) => void
-  hasTopBorder: boolean
+  topBorder: 'rounded' | 'square' | null
 }
 function Table(props: Props) {
   const onChangeSort = (column: string) => () => {
@@ -50,7 +50,7 @@ function Table(props: Props) {
       className={clsx(
         props.isDashboard ? 'h-full' : 'max-h-[290px]',
         'overflow-auto ph-no-capture',
-        props.hasTopBorder && 'rounded-t-md'
+        props.topBorder === 'rounded' && 'rounded-t-md'
       )}
     >
       <table
@@ -58,7 +58,7 @@ function Table(props: Props) {
         contentEditable={false}
       >
         <thead className="bg-gray-50 sticky top-0">
-          <tr className="divide-x">
+          <tr className="divide-x h-10">
             {props.columns.map((column, index) => {
               const Icon = getColumnTypeIcon(column.type)
               return (
@@ -67,7 +67,7 @@ function Table(props: Props) {
                   scope="col"
                   className={clsx(
                     'p-2 text-gray-500 whitespace-nowrap font-medium border-b hover:bg-gray-100 cursor-pointer',
-                    props.hasTopBorder && 'border-t'
+                    props.topBorder && 'border-t'
                   )}
                   onClick={onChangeSort(column.name.toString())}
                 >
