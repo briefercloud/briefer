@@ -238,17 +238,16 @@ function SQLSuccess(props: SQLSuccessProps) {
     props.onChangeDashboardPageSize,
   ])
 
-  let tableHasTopBorder = false
+  let tableTopBorder: 'rounded' | 'square' | null = null
   if (props.dashboardMode) {
     if (
       props.dashboardMode._tag === 'live' ||
       (props.dashboardMode._tag === 'editing' &&
-        props.dashboardMode.position === 'dashboard' &&
-        props.hasTitle)
+        props.dashboardMode.position === 'dashboard')
     ) {
-      tableHasTopBorder = true
+      tableTopBorder = props.hasTitle ? 'square' : 'rounded'
     } else if (props.dashboardMode.position === 'sidebar') {
-      tableHasTopBorder = true
+      tableTopBorder = 'rounded'
     }
   }
 
@@ -273,7 +272,7 @@ function SQLSuccess(props: SQLSuccessProps) {
         <div
           className={clsx(
             'max-w-full ph-no-capture bg-white font-sans',
-            tableHasTopBorder && 'rounded-md',
+            tableTopBorder === 'rounded' && 'rounded-md',
             (!props.dashboardMode ||
               dashboardModeHasControls(props.dashboardMode)) &&
               'border-b'
@@ -293,7 +292,7 @@ function SQLSuccess(props: SQLSuccessProps) {
             }
             sort={props.sort}
             onChangeSort={props.onChangeSort}
-            hasTopBorder={tableHasTopBorder}
+            topBorder={tableTopBorder}
           />
         </div>
       )}
