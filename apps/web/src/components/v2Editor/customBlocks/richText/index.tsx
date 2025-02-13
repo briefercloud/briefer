@@ -188,15 +188,15 @@ const RichTextBlock = (props: Props) => {
     editor?.isFocused && !props.belongsToMultiTabGroup && props.isEditable
       ? 'ring-1 ring-ceramic-400'
       : !editor?.isFocused &&
-          !props.belongsToMultiTabGroup &&
-          props.isEditable &&
-          props.isCursorWithin &&
-          !props.isCursorInserting
-        ? 'ring-1 ring-blue-400'
-        : props.dashboardMode?._tag === 'editing' &&
-            props.dashboardMode.position === 'expanded'
-          ? 'ring-1 ring-gray-200'
-          : ''
+        !props.belongsToMultiTabGroup &&
+        props.isEditable &&
+        props.isCursorWithin &&
+        !props.isCursorInserting
+      ? 'ring-1 ring-blue-400'
+      : props.dashboardMode?._tag === 'editing' &&
+        props.dashboardMode.position === 'expanded'
+      ? 'ring-1 ring-gray-200'
+      : ''
 
   return (
     <div

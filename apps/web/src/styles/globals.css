@@ -336,6 +336,13 @@ body {
   bottom: 6px !important;
 }
 
+div[data-youtube-video] {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+  padding-bottom: 64px;
+}
+
 div[data-youtube-video] > iframe {
   border-radius: 0.5rem;
 }
