@@ -6991,10 +6991,10 @@ ecdsa-sig-formatter@1.0.11, ecdsa-sig-formatter@^1.0.11:
   dependencies:
     safe-buffer "^5.0.1"
 
-echarts@^5.6.0:
-  version "5.6.0"
-  resolved "https://registry.yarnpkg.com/echarts/-/echarts-5.6.0.tgz#2377874dca9fb50f104051c3553544752da3c9d6"
-  integrity sha512-oTbVTsXfKuEhxftHqL5xprgLoc0k7uScAwtryCgWF6hPYFLRwOUHiFmHGCBKP5NPFNkDVopOieyUqYGH8Fa3kA==
+echarts-unofficial-v6@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/echarts-unofficial-v6/-/echarts-unofficial-v6-6.0.0.tgz#0ea750eb6a78606ea358082c6ccfa32e5b095191"
+  integrity sha512-d44EQZE/IYfnZ8OzGm8GOkDihsBXUNRPwD0UaK/s/GuSVA3eBDJWtJqY7gfo8ObH5x1OPyDTtUVvUs3+BGiNJQ==
   dependencies:
     tslib "2.3.0"
     zrender "5.6.1"

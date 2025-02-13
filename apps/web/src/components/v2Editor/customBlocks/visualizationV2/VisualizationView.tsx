@@ -1,4 +1,4 @@
-import * as echarts from 'echarts'
+import * as echarts from 'echarts-unofficial-v6'
 import { fontFamily as twFontFamiliy } from 'tailwindcss/defaultTheme'
 import { format as d3Format } from 'd3-format'
 import {
@@ -273,14 +273,12 @@ function BrieferResult(props: {
       grid,
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
-        nameGap: 40,
         axisLabel: {
           hideOverlap: true,
         },
       })),
       yAxis: props.result.yAxis.map((axis) => ({
         ...axis,
-        nameGap: 50,
       })),
       tooltip: {
         ...props.result.tooltip,
