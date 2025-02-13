@@ -613,6 +613,11 @@ def _briefer_create_visualization(
                 df = df[df[column_name].isnull()]
             elif operator == 'isNotNull':
                 df = df[df[column_name].notnull()]
+        elif pd.api.types.is_bool_dtype(df[column_name]):
+            if operator == 'isTrue':
+                df = df[df[column_name]]
+            elif operator == 'isFalse':
+                df = df[~df[column_name]]
         elif pd.api.types.is_datetime64_any_dtype(df[column_name]):
             # Convert both DataFrame column and value to UTC safely
             df_column_utc, value_utc = _briefer_convert_to_utc_safe(df[column_name], pd.to_datetime(value))
