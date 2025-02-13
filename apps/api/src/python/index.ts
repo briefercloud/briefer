@@ -83,7 +83,12 @@ export async function executeCode(
 
       if (executing) {
         const { kernel } = await getSession(workspaceId, sessionId)
-        await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel)
+        await waitForKernelToBecomeIdle(
+          workspaceId,
+          sessionId,
+          kernel,
+          'abortion'
+        )
         return
       }
     },
@@ -108,7 +113,7 @@ async function innerExecuteCode(
 
   const { kernel } = await getSession(workspaceId, sessionId)
 
-  await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel)
+  await waitForKernelToBecomeIdle(workspaceId, sessionId, kernel, 'execution')
 
   const future = kernel.requestExecute({
     code,
@@ -583,7 +588,8 @@ export async function disposeAll(workspaceId: string) {
 async function waitForKernelToBecomeIdle(
   workspaceId: string,
   sessionId: string,
-  kernel: services.Kernel.IKernelConnection
+  kernel: services.Kernel.IKernelConnection,
+  reason: 'execution' | 'abortion'
 ) {
   const startTime = Date.now()
 
@@ -604,6 +610,7 @@ async function waitForKernelToBecomeIdle(
           workspaceId,
           sessionId,
           kernelStatus: kernel.status,
+          reason,
         },
         'Spent more than 1 minute attempting to make the kernel be idle. Crashing.'
       )
@@ -618,6 +625,7 @@ async function waitForKernelToBecomeIdle(
           workspaceId,
           sessionId,
           kernelStatus: kernel.status,
+          reason,
         },
         'Spent more than 10 seconds trying to interrupt a non idle kernel. Restarting kernel instead.'
       )
@@ -633,8 +641,11 @@ async function waitForKernelToBecomeIdle(
         workspaceId,
         sessionId,
         kernelStatus: kernel.status,
+        reason,
       },
-      'Found non idle kernel before attempting to execute code. Interrupting first.'
+      reason === 'abortion'
+        ? 'Interrupting kernel because of abortion'
+        : 'Found non idle kernel before attempting to execute code. Interrupting first.'
     )
     await kernel.interrupt()
     await new Promise((resolve) => setTimeout(resolve, 500))
