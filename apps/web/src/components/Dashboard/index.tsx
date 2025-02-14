@@ -1,7 +1,7 @@
 import * as Y from 'yjs'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SquaresPlusIcon } from '@heroicons/react/24/solid'
-import { BookUpIcon, XIcon } from 'lucide-react'
+import { BookUpIcon } from 'lucide-react'
 import { EyeIcon } from '@heroicons/react/24/outline'
 
 import Layout from '@/components/Layout'
@@ -52,6 +52,7 @@ import InputBlock from '../v2Editor/customBlocks/input'
 import DropdownInputBlock from '../v2Editor/customBlocks/dropdownInput'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
+import SimpleBar from 'simplebar-react'
 
 export type DashboardMode =
   | {
@@ -450,9 +451,9 @@ function DashboardContent(
 
   return (
     <>
-      <div className="flex h-full">
+      <div className="flex h-[calc(100%-47px)]">
         <DashboardView
-          className="flex-1"
+          className="flex-grow h-full"
           document={props.document}
           dataSources={dataSources}
           yDoc={props.yDoc}
@@ -681,15 +682,3 @@ function DashboardContent(
     </>
   )
 }
-
-/*
-              <button
-                onClick={() => setExpanded(null)}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-500 bg-white rounded-full border border-gray-300 translate-x-1/3 -translate-y-1/3 z-30 p-1 group "
-              >
-                <XIcon
-                  strokeWidth={3}
-                  className="text-gray-500 h-3 w-3 group-hover:text-red-700"
-                />
-              </button>
-              */

@@ -27,7 +27,7 @@ import GridElement from './GridElement'
 import Title from '../v2Editor/Title'
 import { DraggingBlock } from '.'
 import { APIDataSources } from '@/hooks/useDatasources'
-import ScrollBar from '../ScrollBar'
+import SimpleBar from 'simplebar-react'
 
 export const MARGIN = 6
 export const COLS_COUNT = 24
@@ -118,7 +118,6 @@ export function getDefaults(t: BlockType): { minW: number; minH: number } {
 
 interface InnerProps {
   width: number
-  height: number | null
   yDoc: Y.Doc
   dataSources: APIDataSources
   document: ApiDocument
@@ -182,7 +181,7 @@ function DashboardViewInner(props: InnerProps) {
         const dashItem = getDashboardItem(dashboard.value, item.i)
 
         const block = dashItem
-          ? (blocks.value.get(dashItem.blockId) ?? null)
+          ? blocks.value.get(dashItem.blockId) ?? null
           : null
 
         const type = block?.getAttribute('type')
@@ -272,10 +271,10 @@ function DashboardViewInner(props: InnerProps) {
 
   const style = useMemo(
     () => ({
-      minHeight: Math.max(1280, props.height ?? 0 + 280),
+      minHeight: 1280,
       background: generateBackground(cellWidth, cellHeight, props.width),
     }),
-    [cellWidth, props.width, props.height]
+    [cellWidth, props.width]
   )
 
   const onDropDragOver = useCallback(
@@ -329,7 +328,6 @@ interface Props {
   document: ApiDocument
   draggingBlock: DraggingBlock | null
   isEditing: boolean
-  noBottomPadding?: boolean
   latestBlockId: string | null
   userRole: string
   userId: string | null
@@ -339,12 +337,12 @@ interface Props {
 }
 export default function DashboardView(props: Props) {
   return (
-    <ScrollBar
+    <SimpleBar
       id="dashboard-wrapper"
       data-dashboard-ready="true"
-      className={clsx('px-8 overflow-y-auto font-sans', props.className)}
+      className={clsx('px-8 py-6 font-sans', props.className)}
     >
-      <div className="pt-6 pb-8 px-1">
+      <div className="pb-8 px-1">
         <Title
           style="font-weight: bold; font-size: 2.5rem;"
           content={props.yDoc.getXmlFragment('title')}
@@ -353,22 +351,15 @@ export default function DashboardView(props: Props) {
           isPDF={false}
         />
       </div>
-      <SizeMe monitorHeight>
+      <SizeMe monitorWidth>
         {({ size }) => {
           if (!size.width) {
             return <div />
           }
 
-          return (
-            <DashboardViewInner
-              {...props}
-              width={size.width}
-              height={size.height}
-            />
-          )
+          return <DashboardViewInner {...props} width={size.width} />
         }}
       </SizeMe>
-      {!props.noBottomPadding && <div className="pb-72 w-full" />}
-    </ScrollBar>
+    </SimpleBar>
   )
 }
