@@ -268,6 +268,7 @@ def briefer_make_sqlalchemy_query():
                         "dashboardPage": 0,
                         "dashboardPageSize": dashboard_page_size,
                         "dashboardPageCount": int(len(df) // dashboard_page_size + 1),
+                        "dashboardRows": rows[:dashboard_page_size],
 
                         "queryDurationMs": duration_ms,
                     }

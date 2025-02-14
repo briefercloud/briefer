@@ -280,10 +280,10 @@ function SQLSuccess(props: SQLSuccessProps) {
         >
           <Table
             rows={
-              props.dashboardMode &&
+              (props.dashboardMode &&
               !dashboardModeHasControls(props.dashboardMode)
                 ? result.dashboardRows
-                : result.rows
+                : result.rows) ?? []
             }
             columns={props.result.columns}
             isDashboard={
