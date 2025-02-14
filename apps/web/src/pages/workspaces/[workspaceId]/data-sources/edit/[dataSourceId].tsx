@@ -31,6 +31,32 @@ import DatabricksSQLForm, {
 } from '@/components/forms/databrickssql'
 import ScrollBar from '@/components/ScrollBar'
 import { useSession } from '@/hooks/useAuth'
+import { DataSource } from '@briefer/database'
+
+function getDataSourceName(type: DataSource['type']): string {
+  switch (type) {
+    case 'psql':
+      return 'PostgreSQL'
+    case 'redshift':
+      return 'Redshift'
+    case 'athena':
+      return 'Athena'
+    case 'oracle':
+      return 'Oracle'
+    case 'bigquery':
+      return 'BigQuery'
+    case 'mysql':
+      return 'MySQL'
+    case 'sqlserver':
+      return 'SQL Server'
+    case 'trino':
+      return 'Trino'
+    case 'snowflake':
+      return 'Snowflake'
+    case 'databrickssql':
+      return 'Databricks SQL'
+  }
+}
 
 export default function EditDataSourcePostgresSQLPage() {
   const router = useRouter()
@@ -83,7 +109,7 @@ export default function EditDataSourcePostgresSQLPage() {
     },
     {
       name: `Edit ${
-        data ? (data.config.type === 'psql' ? 'PostgreSQL' : 'BigQuery') : ''
+        data ? getDataSourceName(data.config.type) : ''
       } data source`,
       icon: PlusCircleIcon,
       href: '#',

@@ -91,7 +91,9 @@ export default function FileUploadInput<T extends FieldValues>(
                 <span>{props.label}</span>
               </label>
             </div>
-            {props.subLabel && <p className="text-sm pl-1">{props.subLabel}</p>}
+            {props.subLabel && (
+              <p className="text-sm pl-1 text-gray-500">{props.subLabel}</p>
+            )}
             <FormError msg={controller.fieldState.error?.message} />
           </>
         )}

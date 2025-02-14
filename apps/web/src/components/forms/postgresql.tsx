@@ -40,7 +40,7 @@ export default function PostgreSQLForm({
   const { register, handleSubmit, formState, reset, control } =
     useForm<PostgreSQLDataSourceFormValues>({
       mode: 'onChange',
-      defaultValues: { readOnly: true },
+      defaultValues: { readOnly: true, notes: '' },
     })
 
   useEffect(() => {
@@ -243,13 +243,11 @@ export default function PostgreSQLForm({
                 htmlFor="cert"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                SSL Cert
+                SSL Cert <span className="pl-1 text-gray-500">(optional)</span>
               </label>
               <FileUploadInput
                 label={
-                  isEditing
-                    ? 'Upload a new SSL cert, leave empty if not needed'
-                    : 'Upload a SSL cert, leave empty if not needed'
+                  isEditing ? 'Upload a new SSL cert' : 'Upload a SSL cert'
                 }
                 subLabel={
                   isEditing
@@ -261,49 +259,28 @@ export default function PostgreSQLForm({
               />
             </div>
 
-            <div className="col-span-full">
+            <div className="col-span-full pt-8">
               <label
                 htmlFor="additionalInfo"
                 className="block text-sm font-medium leading-6 text-gray-900"
               >
-                Additional info
+                AI Additional Context{' '}
+                <span className="pl-1 text-gray-500">(optional)</span>
               </label>
               <FileUploadInput
                 label={
                   isEditing
-                    ? 'Upload a new file with additional information about the schema of the database.'
-                    : 'Upload a file with additional information about the schema of the database.'
+                    ? 'Upload a new file with additional context for the AI assistant'
+                    : 'Upload a file with additional context for the AI assistant'
                 }
                 subLabel={
                   isEditing
-                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
-                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                    ? 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions - leave empty to keep the current one'
+                    : 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions'
                 }
                 control={control}
                 {...register('additionalInfo')}
               />
-            </div>
-
-            <div className="col-span-full">
-              <label
-                htmlFor="notes"
-                className="block text-sm font-medium leading-6 text-gray-900"
-              >
-                Notes
-              </label>
-              <div className="mt-2">
-                <textarea
-                  {...register('notes', { required: false })}
-                  name="notes"
-                  rows={3}
-                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
-                  defaultValue={''}
-                />
-              </div>
-              <p className="mt-3 text-sm leading-6 text-gray-600">
-                Add any notes about this database you may want others to be
-                aware of.
-              </p>
             </div>
           </div>
         </div>
