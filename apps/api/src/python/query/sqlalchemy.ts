@@ -445,30 +445,41 @@ def get_columns(engine, inspector, table_name, schema_name):
     if ${JSON.stringify(ds.type)} == "redshift":
         with engine.connect() as conn:
             result = []
+            exceptions = []
+
             try:
-                columns = conn.execute(text("SELECT pg_get_cols(:table)"), {"table": f"{schema_name}.{table_name}"}).fetchall()
+                # Query schema for all tables (internal and external)
+                columns_query = """
+                    SELECT column_name, data_type
+                    FROM svv_columns
+                    WHERE table_schema = :schema
+                      AND table_name = :table
+                    ORDER BY ordinal_position
+                """
+                columns = conn.execute(
+                    text(columns_query),
+                    {"schema": schema_name, "table": table_name}
+                ).fetchall()
+
+                for column in columns:
+                    try:
+                        result.append({
+                            "name": column[0],
+                            "type": column[1]
+                        })
+                    except Exception as e:
+                        print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
+                        exceptions.append(e)
+                        continue
+
+                if not result and exceptions:
+                    raise BrieferAggregateException(exceptions)
+
+                return result
+
             except Exception as e:
                 conn.execute(text("ROLLBACK"))
                 raise e
-
-            exceptions = []
-            for row in columns:
-                try:
-                    csv_reader = csv.reader([row[0].strip("()")])
-                    column = next(csv_reader)
-                    result.append({
-                        "name": column[2],
-                        "type": column[3]
-                    })
-                except Exception as e:
-                    print(json.dumps({"log": f"Failed to parse column: {str(e)}"}))
-                    exceptions.append(e)
-                    continue
-
-            if len(result) == 0 and len(exceptions) > 0:
-                raise BrieferAggregateException(exceptions)
-
-            return result
 
     return inspector.get_columns(table_name, schema=schema_name)
 
