@@ -6,12 +6,20 @@ import { useForm } from 'react-hook-form'
 import FormError from './formError'
 import { GATEWAY_IP } from '@/utils/info'
 import Spin from '../Spin'
+import FileUploadInput from './FileUploadInput'
+import { readFile } from '@/utils/file'
 
 export type DatabricksSQLDataSourceInput = DatabricksSQLDataSource & {
   token: string
+  additionalInfo?: string
 }
 
-type DatabricksSQLDataSourceFormValues = DatabricksSQLDataSourceInput
+type DatabricksSQLDataSourceFormValues = Omit<
+  DatabricksSQLDataSourceInput,
+  'additionalInfo'
+> & {
+  additionalInfo: File
+}
 
 type DatabricksSQLFormProps = {
   onSubmit: (values: DatabricksSQLDataSourceInput) => Promise<void>
@@ -26,7 +34,7 @@ export default function DatabricksSQLForm({
 }: DatabricksSQLFormProps) {
   const isEditing = Boolean(databricksSQLDataSource)
 
-  const { register, handleSubmit, formState, reset } =
+  const { register, handleSubmit, formState, reset, control } =
     useForm<DatabricksSQLDataSourceFormValues>({
       mode: 'onChange',
     })
@@ -38,7 +46,16 @@ export default function DatabricksSQLForm({
   }, [databricksSQLDataSource, reset])
 
   const onSubmitHandler = handleSubmit(async (data) => {
-    await onSubmit(data)
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
+    await onSubmit({
+      ...data,
+      additionalInfo: additionalInfoContent,
+    })
   })
 
   return (
@@ -193,6 +210,28 @@ export default function DatabricksSQLForm({
                   className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
                 />
               </div>
+            </div>
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
             <div className="col-span-full">
               <label

@@ -12,14 +12,16 @@ import Spin from '../Spin'
 export type PostgreSQLDataSourceInput = PostgreSQLDataSource & {
   password: string
   cert?: string
+  additionalInfo?: string
 }
 
 type PostgreSQLDataSourceFormValues = Omit<
   PostgreSQLDataSourceInput,
-  'cert'
+  'cert' | 'additionalInfo'
 > & {
   password: string
   cert: File
+  additionalInfo: File
 }
 
 type PostgreSQLFormProps = {
@@ -54,9 +56,16 @@ export default function PostgreSQLForm({
       certContent = await readFile(certFile, 'hex')
     }
 
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
     await onSubmit({
       ...data,
       cert: certContent,
+      additionalInfo: additionalInfoContent,
     })
   })
 
@@ -249,6 +258,29 @@ export default function PostgreSQLForm({
                 }
                 control={control}
                 {...register('cert')}
+              />
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
               />
             </div>
 

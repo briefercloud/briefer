@@ -137,35 +137,47 @@ async function retrieveTableInfoForQuestion(
   openAiApiKey: string | null
 ): Promise<string | null> {
   if (!structure) {
-    return tableInfoFromStructure(datasource, structure)
+    return null
   }
 
   const questionEmbeddingResult = await createEmbedding(question, openAiApiKey)
-  if (!questionEmbeddingResult) {
-    return tableInfoFromStructure(datasource, structure)
+  let tableInfo: string
+  if (questionEmbeddingResult) {
+    const raw = await prisma()
+      .$queryRaw`SELECT t.id, t.embedding <=> ${questionEmbeddingResult.embedding}::vector AS distance FROM "DataSourceSchemaTable" t INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId" WHERE s.id = ${structure.id}::uuid AND t."embeddingModel" = ${questionEmbeddingResult.model} ORDER BY distance LIMIT 30`
+
+    const result = z.array(z.object({ id: uuidSchema })).parse(raw)
+
+    const tables = await prisma().dataSourceSchemaTable.findMany({
+      where: {
+        id: { in: result.map((r) => r.id) },
+      },
+    })
+
+    tableInfo = ''
+    for (const table of tables) {
+      tableInfo += `${table.schema}.${table.name}\n`
+      const columns = z
+        .array(z.object({ name: z.string(), type: z.string() }))
+        .parse(table.columns)
+      for (const column of columns) {
+        tableInfo += `${column.name} ${column.type}\n`
+      }
+      tableInfo += '\n'
+    }
+  } else {
+    tableInfo = await tableInfoFromStructure(datasource, structure)
   }
 
-  const raw = await prisma()
-    .$queryRaw`SELECT t.id, t.embedding <=> ${questionEmbeddingResult.embedding}::vector AS distance FROM "DataSourceSchemaTable" t INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId" WHERE s.id = ${structure.id}::uuid AND t."embeddingModel" = ${questionEmbeddingResult.model} ORDER BY distance LIMIT 30`
-
-  const result = z.array(z.object({ id: uuidSchema })).parse(raw)
-
-  const tables = await prisma().dataSourceSchemaTable.findMany({
-    where: {
-      id: { in: result.map((r) => r.id) },
-    },
+  const schema = await prisma().dataSourceSchema.findUnique({
+    where: { id: structure.id },
+    select: { additionalInfo: true },
   })
-
-  let tableInfo = ''
-  for (const table of tables) {
-    tableInfo += `${table.schema}.${table.name}\n`
-    const columns = z
-      .array(z.object({ name: z.string(), type: z.string() }))
-      .parse(table.columns)
-    for (const column of columns) {
-      tableInfo += `${column.name} ${column.type}\n`
+  if (schema?.additionalInfo) {
+    const additionalInfo = schema.additionalInfo.trim()
+    if (additionalInfo !== '') {
+      tableInfo += `\nAdditional information:\n${schema.additionalInfo}`
     }
-    tableInfo += '\n'
   }
 
   return tableInfo.trim()
@@ -173,12 +185,8 @@ async function retrieveTableInfoForQuestion(
 
 async function tableInfoFromStructure(
   config: DataSource,
-  structure: DataSourceStructureStateV3 | null
-): Promise<string | null> {
-  if (!structure) {
-    return null
-  }
-
+  structure: DataSourceStructureStateV3
+): Promise<string> {
   let result = ''
   for await (const schemaTable of listSchemaTables([{ config, structure }])) {
     result += `${schemaTable.schemaName}.${schemaTable.tableName}\n`

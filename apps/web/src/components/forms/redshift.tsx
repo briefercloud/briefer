@@ -7,9 +7,19 @@ import Toggle from '../Toggle'
 import FormError from './formError'
 import { GATEWAY_IP } from '@/utils/info'
 import Spin from '../Spin'
+import { readFile } from '@/utils/file'
+import FileUploadInput from './FileUploadInput'
 
 export type RedshiftDataSourceInput = RedshiftDataSource & {
   password: string
+  additionalInfo?: string
+}
+
+type RedshiftDataSourceFormValues = Omit<
+  RedshiftDataSourceInput,
+  'additionalInfo'
+> & {
+  additionalInfo: File
 }
 
 type RedshiftFormProps = {
@@ -26,7 +36,7 @@ export default function RedshiftForm({
   const isEditing = Boolean(redshiftDataSource)
 
   const { register, handleSubmit, formState, reset, control } =
-    useForm<RedshiftDataSourceInput>({
+    useForm<RedshiftDataSourceFormValues>({
       mode: 'onChange',
       defaultValues: { readOnly: true },
     })
@@ -37,7 +47,18 @@ export default function RedshiftForm({
     }
   }, [redshiftDataSource, reset])
 
-  const onSubmitHandler = handleSubmit((data) => onSubmit(data))
+  const onSubmitHandler = handleSubmit(async (data) => {
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
+    onSubmit({
+      ...data,
+      additionalInfo: additionalInfoContent,
+    })
+  })
 
   return (
     <form className="px-4 sm:p-6 lg:p-12" onSubmit={onSubmitHandler} noValidate>
@@ -214,6 +235,29 @@ export default function RedshiftForm({
                 )}
                 <FormError msg={formState.errors.password?.message} />
               </div>
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
 
             <div className="col-span-full">

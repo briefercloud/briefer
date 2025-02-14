@@ -351,6 +351,7 @@ model DataSourceSchema {
   updatedAt DateTime @default(now()) @updatedAt
 
   dataSourceSchemaTables DataSourceSchemaTable[]
+  additionalInfo         String?
 
   postgresDataSource      PostgreSQLDataSource?
   mySQLDataSource         MySQLDataSource?

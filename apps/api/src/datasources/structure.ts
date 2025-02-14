@@ -208,7 +208,7 @@ async function v2ToV3(
       failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
       error: 'error' in v2 ? v2.error : undefined,
       defaultSchema:
-        'structure' in v2 ? (v2.structure?.defaultSchema ?? null) : null,
+        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
     },
   })
 
@@ -473,22 +473,32 @@ function isExpired(state: DataSourceStructureStateV3): boolean {
 export async function fetchDataSourceStructure(
   socketServer: IOServer,
   dsConfig: DataSource,
-  { forceRefresh }: { forceRefresh: boolean }
+  {
+    forceRefresh,
+    additionalInfo,
+  }: { forceRefresh: boolean; additionalInfo?: string | null }
 ): Promise<DataSourceStructureStateV3> {
-  const currentStructure = await fetchDataSourceStructureFromCache(
+  let structure = await fetchDataSourceStructureFromCache(
     dsConfig.data.id,
     dsConfig.type
   )
 
-  if (
-    currentStructure !== null &&
-    !isExpired(currentStructure) &&
-    !forceRefresh
-  ) {
-    return currentStructure
+  if (structure === null || isExpired(structure) || forceRefresh) {
+    structure = await refreshDataSourceStructure(
+      socketServer,
+      dsConfig,
+      structure
+    )
   }
 
-  return refreshDataSourceStructure(socketServer, dsConfig, currentStructure)
+  if (additionalInfo !== undefined) {
+    await prisma().dataSourceSchema.update({
+      where: { id: structure.id },
+      data: { additionalInfo },
+    })
+  }
+
+  return structure
 }
 
 export type OnTable = (

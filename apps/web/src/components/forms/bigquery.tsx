@@ -28,6 +28,7 @@ async function validateServiceAccountJson(file: File) {
 
 export type BigQueryDataSourceInput = BigQueryDataSource & {
   serviceAccountKey: string
+  additionalInfo?: string
 }
 
 export type BigQueryDataSourceFormValues = Omit<
@@ -35,6 +36,7 @@ export type BigQueryDataSourceFormValues = Omit<
   'serviceAccountKey'
 > & {
   serviceAccountKey: File
+  additionalInfo: File
 }
 
 type BigQueryFormProps = {
@@ -72,10 +74,17 @@ export default function BigQueryForm({
           void err
         }
 
+        const additionalInfoFile = data.additionalInfo
+        let additionalInfoContent = undefined as string | undefined
+        if (additionalInfoFile) {
+          additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+        }
+
         await onSubmit({
           ...data,
           name: data.name,
           serviceAccountKey: fileContent,
+          additionalInfo: additionalInfoContent,
           projectId,
           notes: data.notes,
         })
@@ -152,6 +161,28 @@ export default function BigQueryForm({
                   Leave empty to keep previous service account
                 </span>
               )}
+            </div>
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
 
             <div className="col-span-full">

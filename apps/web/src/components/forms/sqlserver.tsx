@@ -12,11 +12,13 @@ import Spin from '../Spin'
 export type SQLServerDataSourceInput = SQLServerDataSource & {
   password: string
   cert?: string
+  additionalInfo?: string
 }
 
 type SQLServerDataSourceFormValues = Omit<SQLServerDataSourceInput, 'cert'> & {
   password: string
   cert: File
+  additionalInfo: File
 }
 
 type SQLServerFormProps = {
@@ -51,9 +53,16 @@ export default function SQLServerForm({
       certContent = await readFile(certFile, 'hex')
     }
 
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
     await onSubmit({
       ...data,
       cert: certContent,
+      additionalInfo: additionalInfoContent,
     })
   })
 
@@ -65,8 +74,8 @@ export default function SQLServerForm({
             {SQLServerDataSource ? 'Edit' : 'New'} SQLServer data source
           </h2>
           <p className="mt-1 text-sm leading-6 text-gray-500">
-            {SQLServerDataSource ? 'Edit' : 'Add'} a SQLServer database for Briefer to
-            pull data from. Our fixed IP address is{' '}
+            {SQLServerDataSource ? 'Edit' : 'Add'} a SQLServer database for
+            Briefer to pull data from. Our fixed IP address is{' '}
             <code className="bg-gray-100 px-1 py-0.5 rounded-md text-red-500 text-xs">
               {GATEWAY_IP()}
             </code>
@@ -246,6 +255,29 @@ export default function SQLServerForm({
                 }
                 control={control}
                 {...register('cert')}
+              />
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
               />
             </div>
 

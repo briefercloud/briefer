@@ -6,13 +6,20 @@ import { GATEWAY_IP } from '@/utils/info'
 
 import FormError from './formError'
 import Spin from '../Spin'
+import { readFile } from '@/utils/file'
+import FileUploadInput from './FileUploadInput'
 
 export type OracleDataSourceInput = OracleDataSource & {
   password: string
+  additionalInfo?: string
 }
 
-type OracleDataSourceFormValues = OracleDataSourceInput & {
+type OracleDataSourceFormValues = Omit<
+  OracleDataSourceInput,
+  'additionalInfo'
+> & {
   password: string
+  additionalInfo: File
 }
 
 type OracleFormProps = {
@@ -28,7 +35,7 @@ export default function OracleForm({
 }: OracleFormProps) {
   const isEditing = Boolean(oracleDataSource)
 
-  const { register, handleSubmit, formState, reset } =
+  const { register, handleSubmit, formState, reset, control } =
     useForm<OracleDataSourceFormValues>({
       mode: 'onChange',
     })
@@ -39,7 +46,18 @@ export default function OracleForm({
     }
   }, [oracleDataSource, reset])
 
-  const onSubmitHandler = handleSubmit(onSubmit)
+  const onSubmitHandler = handleSubmit(async (data) => {
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
+    onSubmit({
+      ...data,
+      additionalInfo: additionalInfoContent,
+    })
+  })
 
   return (
     <form className="px-4 sm:p-6 lg:p-12" onSubmit={onSubmitHandler} noValidate>
@@ -242,6 +260,29 @@ export default function OracleForm({
                 )}
                 <FormError msg={formState.errors.password?.message} />
               </div>
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
 
             <div className="col-span-full">

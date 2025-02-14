@@ -6,11 +6,19 @@ import { GATEWAY_IP } from '@/utils/info'
 
 import FormError from './formError'
 import Spin from '../Spin'
+import FileUploadInput from './FileUploadInput'
+import { readFile } from '@/utils/file'
 
 export type AthenaDataSourceInput = AthenaDataSource & {
   accessKeyId: string
   secretAccessKeyId: string
+  additionalInfo?: string
 }
+
+type AthenaDataSourceFormValues = Omit<
+  AthenaDataSourceInput,
+  'additionalInfo'
+> & { additionalInfo: File }
 
 type AthenaFormProps = {
   onSubmit: (values: AthenaDataSourceInput) => Promise<void>
@@ -25,8 +33,8 @@ export default function AthenaForm({
 }: AthenaFormProps) {
   const isEditing = Boolean(athenaDataSource)
 
-  const { register, handleSubmit, formState, reset } =
-    useForm<AthenaDataSourceInput>({
+  const { register, handleSubmit, formState, reset, control } =
+    useForm<AthenaDataSourceFormValues>({
       mode: 'onChange',
     })
 
@@ -36,7 +44,18 @@ export default function AthenaForm({
     }
   }, [athenaDataSource, reset])
 
-  const onSubmitHandler = handleSubmit((data) => onSubmit(data))
+  const onSubmitHandler = handleSubmit(async (data) => {
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
+    onSubmit({
+      ...data,
+      additionalInfo: additionalInfoContent,
+    })
+  })
 
   return (
     <form className="px-4 sm:p-6 lg:p-12" onSubmit={onSubmitHandler} noValidate>
@@ -186,6 +205,29 @@ export default function AthenaForm({
                 )}
                 <FormError msg={formState.errors.accessKeyId?.message} />
               </div>
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
 
             <div className="col-span-full">

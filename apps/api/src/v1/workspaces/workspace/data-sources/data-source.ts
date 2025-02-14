@@ -1,3 +1,4 @@
+import { omit } from 'ramda'
 import { Router } from 'express'
 import prisma, {
   deleteBigQueryDataSource,
@@ -64,6 +65,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         notes: z.string(),
         readOnly: z.boolean(),
         cert: z.string().optional(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -78,6 +80,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         password: z.string(),
         notes: z.string(),
         cert: z.string().optional(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -88,6 +91,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         projectId: z.string(),
         serviceAccountKey: z.string(),
         notes: z.string(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -100,6 +104,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         secretAccessKeyId: z.string(),
         s3OutputPath: z.string(),
         notes: z.string(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -115,6 +120,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         username: z.string().min(1),
         password: z.string(),
         notes: z.string(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -129,6 +135,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         password: z.string(),
         notes: z.string(),
         readOnly: z.boolean(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -143,6 +150,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         database: z.string().min(1),
         region: z.string().optional(),
         notes: z.string(),
+        additionalInfo: z.string().optional(),
       }),
     }),
     z.object({
@@ -156,6 +164,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
         catalog: z.string(),
         schema: z.string(),
         notes: z.string(),
+        additionalInfo: z.string().optional(),
       }),
     }),
   ])
@@ -198,7 +207,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'psql': {
         await updatePSQLDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -210,7 +219,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'mysql': {
         await updateMySQLDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -222,7 +231,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'sqlserver': {
         await updateSQLServerDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -234,7 +243,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'redshift': {
         await updateRedshiftDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -246,7 +255,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'bigquery': {
         await updateBigQueryDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             projectId:
               data.data.projectId === '' ? undefined : data.data.projectId,
@@ -262,7 +271,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'athena': {
         await updateAthenaDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             accessKeyId:
               data.data.accessKeyId === '' ? undefined : data.data.accessKeyId,
@@ -285,7 +294,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
 
         await updateOracleDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -297,7 +306,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'trino': {
         await updateTrinoDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -309,7 +318,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'snowflake': {
         await updateSnowflakeDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             password:
               data.data.password === '' ? undefined : data.data.password,
@@ -321,7 +330,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
       case 'databrickssql': {
         await updateDatabricksSQLDataSource(
           {
-            ...data.data,
+            ...omit(['additionalInfo'], data.data),
             id: dataSourceId,
             token: data.data.token === '' ? undefined : data.data.token,
           },
@@ -347,6 +356,7 @@ const dataSourceRouter = (socketServer: IOServer) => {
 
     const structure = await fetchDataSourceStructure(socketServer, ds, {
       forceRefresh: true,
+      additionalInfo: data.data.additionalInfo,
     })
 
     const result = await ping(req.session.user, socketServer, {

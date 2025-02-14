@@ -28,6 +28,7 @@ import { IOServer } from '../../../../websocket/index.js'
 import { advanceTutorial } from '../../../../tutorials.js'
 import { broadcastTutorialStepStates } from '../../../../websocket/workspace/tutorial.js'
 import * as posthog from '../../../../events/posthog.js'
+import { omit } from 'ramda'
 
 const dataSourcePayload = z.union([
   z.object({
@@ -42,6 +43,7 @@ const dataSourcePayload = z.union([
       notes: z.string(),
       readOnly: z.boolean(),
       cert: z.string().optional(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -55,6 +57,7 @@ const dataSourcePayload = z.union([
       password: z.string().min(1),
       notes: z.string(),
       cert: z.string().optional(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -64,6 +67,7 @@ const dataSourcePayload = z.union([
       projectId: z.string().min(1),
       serviceAccountKey: z.string().min(1),
       notes: z.string(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -75,6 +79,7 @@ const dataSourcePayload = z.union([
       secretAccessKeyId: z.string().min(1),
       s3OutputPath: z.string().min(1),
       notes: z.string(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -89,6 +94,7 @@ const dataSourcePayload = z.union([
       username: z.string().min(1),
       password: z.string().min(1),
       notes: z.string(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -102,6 +108,7 @@ const dataSourcePayload = z.union([
       password: z.string(),
       notes: z.string(),
       readOnly: z.boolean(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -116,6 +123,7 @@ const dataSourcePayload = z.union([
       region: z.string().min(1),
       host: z.string().optional(),
       notes: z.string(),
+      additionalInfo: z.string().optional(),
     }),
   }),
   z.object({
@@ -128,6 +136,7 @@ const dataSourcePayload = z.union([
       catalog: z.string(),
       schema: z.string(),
       notes: z.string(),
+      additionalInfo: z.string().optional(),
     }),
   }),
 ])
@@ -162,7 +171,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
         switch (data.type) {
           case 'psql': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
@@ -179,7 +188,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'redshift': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
@@ -196,7 +205,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'mysql': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               cert: data.data.cert ?? null,
               connStatus: 'offline' as const,
@@ -230,7 +239,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'bigquery': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -266,7 +275,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'oracle': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -302,7 +311,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'snowflake': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               region: data.data.region,
               connStatus: 'offline' as const,
@@ -320,7 +329,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
           }
           case 'databrickssql': {
             const payload = {
-              ...data.data,
+              ...omit(['additionalInfo'], data.data),
               workspaceId,
               connStatus: 'offline' as const,
               connError: JSON.stringify(neverPingedError),
@@ -388,6 +397,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
 
       await fetchDataSourceStructure(socketServer, datasource.config, {
         forceRefresh: true,
+        additionalInfo: data.data.additionalInfo,
       })
 
       res.status(201).json(datasource)

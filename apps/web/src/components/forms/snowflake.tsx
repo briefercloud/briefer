@@ -6,12 +6,20 @@ import { useForm } from 'react-hook-form'
 import FormError from './formError'
 import { GATEWAY_IP } from '@/utils/info'
 import Spin from '../Spin'
+import { readFile } from '@/utils/file'
+import FileUploadInput from './FileUploadInput'
 
 export type SnowflakeDataSourceInput = SnowflakeDataSource & {
   password: string
+  additionalInfo?: string
 }
 
-type SnowflakeDataSourceFormValues = SnowflakeDataSourceInput
+type SnowflakeDataSourceFormValues = Omit<
+  SnowflakeDataSourceInput,
+  'additionalInfo'
+> & {
+  additionalInfo: File
+}
 
 type SnowflakeFormProps = {
   onSubmit: (values: SnowflakeDataSourceInput) => Promise<void>
@@ -26,7 +34,7 @@ export default function SnowflakeForm({
 }: SnowflakeFormProps) {
   const isEditing = Boolean(snowflakeDataSource)
 
-  const { register, handleSubmit, formState, reset } =
+  const { register, handleSubmit, formState, reset, control } =
     useForm<SnowflakeDataSourceFormValues>({
       mode: 'onChange',
     })
@@ -38,7 +46,16 @@ export default function SnowflakeForm({
   }, [snowflakeDataSource, reset])
 
   const onSubmitHandler = handleSubmit(async (data) => {
-    await onSubmit(data)
+    const additionalInfoFile = data.additionalInfo
+    let additionalInfoContent = undefined as string | undefined
+    if (additionalInfoFile) {
+      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
+    }
+
+    onSubmit({
+      ...data,
+      additionalInfo: additionalInfoContent,
+    })
   })
 
   return (
@@ -234,6 +251,29 @@ export default function SnowflakeForm({
                 )}
                 <FormError msg={formState.errors.password?.message} />
               </div>
+            </div>
+
+            <div className="col-span-full">
+              <label
+                htmlFor="additionalInfo"
+                className="block text-sm font-medium leading-6 text-gray-900"
+              >
+                Additional info
+              </label>
+              <FileUploadInput
+                label={
+                  isEditing
+                    ? 'Upload a new file with additional information about the schema of the database.'
+                    : 'Upload a file with additional information about the schema of the database.'
+                }
+                subLabel={
+                  isEditing
+                    ? 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions. Leave empty to keep the current one.'
+                    : 'This file should contain details about your tables and columns. It will be used to improve the AI query suggestions.'
+                }
+                control={control}
+                {...register('additionalInfo')}
+              />
             </div>
 
             <div className="col-span-full">
