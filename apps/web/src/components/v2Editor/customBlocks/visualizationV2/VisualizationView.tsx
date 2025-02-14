@@ -276,6 +276,9 @@ function BrieferResult(props: {
         axisLabel: {
           hideOverlap: true,
         },
+        splitLine: {
+          show: false,
+        },
       })),
       yAxis: props.result.yAxis.map((axis) => ({
         ...axis,
