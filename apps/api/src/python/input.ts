@@ -19,12 +19,25 @@ export async function setDateTimeVariable(
   workspaceId: string,
   sessionId: string,
   variable: string,
-  value: DateInputValue
+  value: DateInputValue,
+  dateType: 'date' | 'datetime'
 ) {
   let error: Error | null = null
-  const code = `import pytz
+  const datetimeCode = `import pytz
 from datetime import datetime
 ${variable} = pytz.timezone('${value.timezone}').localize(datetime(${value.year}, ${value.month}, ${value.day}, ${value.hours}, ${value.minutes}, ${value.seconds}))`
+
+  const dateCode = `from datetime import date
+${variable} = date(${value.year}, ${value.month}, ${value.day})`
+
+  const code: string = (() => {
+    switch (dateType) {
+      case 'date':
+        return dateCode
+      case 'datetime':
+        return datetimeCode
+    }
+  })()
 
   await executeCode(
     workspaceId,

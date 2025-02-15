@@ -42,6 +42,7 @@ export class DateInputExecutor implements IDateInputExecutor {
       id: blockId,
       variable,
       value,
+      dateType,
     } = getDateInputAttributes(block, this.blocks)
 
     const dfNameRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/
@@ -68,7 +69,8 @@ export class DateInputExecutor implements IDateInputExecutor {
         this.workspaceId,
         this.sessionId,
         variable,
-        value
+        value,
+        dateType
       )
       logger().trace(
         {
