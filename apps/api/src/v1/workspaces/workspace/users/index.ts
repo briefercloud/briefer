@@ -83,7 +83,7 @@ const usersRouter = (socketServer: IOServer) => {
       )
       broadcastTutorialStepStates(socketServer, workspaceId, 'onboarding')
 
-      if (tutorialState?.prevStep) {
+      if (tutorialState.prevStep && tutorialState.didAdvance) {
         posthog.captureOnboardingStep(
           req.session.user.id,
           workspaceId,

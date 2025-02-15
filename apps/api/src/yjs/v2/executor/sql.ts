@@ -264,13 +264,16 @@ export class SQLExecutor implements ISQLExecutor {
         'sql block executed'
       )
 
-      await this.effects.advanceTutorial(
+      const tutorialState = await this.effects.advanceTutorial(
         this.workspaceId,
         'onboarding',
         'runQuery'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
-      events.advanceOnboarding('runQuery')
+
+      if (tutorialState.didAdvance) {
+        events.advanceOnboarding('runQuery')
+      }
     } catch (err) {
       logger().error(
         {

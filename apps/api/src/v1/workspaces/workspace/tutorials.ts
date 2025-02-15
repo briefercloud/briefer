@@ -64,12 +64,14 @@ export default function tutorialsRouter(socketServer: IOServer) {
 
       res.json(tutorialState.currentState)
       broadcastTutorialStepStates(socketServer, workspaceId, tutorialType)
-      posthog.captureOnboardingStep(
-        req.session.user.id,
-        workspaceId,
-        tutorialState.prevStep,
-        true
-      )
+      if (tutorialState.didAdvance) {
+        posthog.captureOnboardingStep(
+          req.session.user.id,
+          workspaceId,
+          tutorialState.prevStep,
+          true
+        )
+      }
     } catch (err) {
       logger().error(
         { err, workspaceId, tutorialType },

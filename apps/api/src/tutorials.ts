@@ -73,6 +73,7 @@ export const advanceTutorial = async (
 ): Promise<{
   prevStep: OnboardingTutorialStep | null
   currentState: TutorialState | null
+  didAdvance: boolean
 }> => {
   const tutorial = await prisma().onboardingTutorial.findUnique({
     where: {
@@ -85,7 +86,7 @@ export const advanceTutorial = async (
       { workspaceId, tutorialType },
       'Trying to advance tutorial that does not exist'
     )
-    return { prevStep: null, currentState: null }
+    return { prevStep: null, currentState: null, didAdvance: false }
   }
 
   if (
@@ -104,6 +105,7 @@ export const advanceTutorial = async (
           tutorial.isComplete
         ),
       },
+      didAdvance: false,
     }
   }
 
@@ -133,6 +135,7 @@ export const advanceTutorial = async (
           true
         ),
       },
+      didAdvance: true,
     }
   }
 
@@ -141,7 +144,7 @@ export const advanceTutorial = async (
       { workspaceId, tutorialType },
       'Trying to advance tutorial to a step that does not exist'
     )
-    return { prevStep: null, currentState: null }
+    return { prevStep: null, currentState: null, didAdvance: false }
   }
 
   await prisma().onboardingTutorial.update({
@@ -165,6 +168,7 @@ export const advanceTutorial = async (
         tutorial.isComplete
       ),
     },
+    didAdvance: true,
   }
 }
 

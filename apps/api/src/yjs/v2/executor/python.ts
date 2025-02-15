@@ -120,13 +120,16 @@ export class PythonExecutor implements IPythonExecutor {
       )
       executionItem.setCompleted(errored ? 'error' : 'success')
 
-      await this.effects.advanceTutorial(
+      const tutorialState = await this.effects.advanceTutorial(
         this.workspaceId,
         'onboarding',
         'runPython'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
-      events.advanceOnboarding('runPython')
+
+      if (tutorialState.didAdvance) {
+        events.advanceOnboarding('runPython')
+      }
     } catch (err) {
       logger().error(
         {

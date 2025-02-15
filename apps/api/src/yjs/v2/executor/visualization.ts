@@ -208,13 +208,15 @@ export class VisualizationExecutor implements IVisualizationExecutor {
         'visualization block run completed'
       )
 
-      await this.effects.advanceTutorial(
+      const tutorialState = await this.effects.advanceTutorial(
         this.workspaceId,
         'onboarding',
         'createVisualization'
       )
       this.effects.broadcastTutorialStepStates(this.workspaceId, 'onboarding')
-      events.advanceOnboarding('createVisualization')
+      if (tutorialState.didAdvance) {
+        events.advanceOnboarding('createVisualization')
+      }
     } catch (err) {
       logger().error(
         {
