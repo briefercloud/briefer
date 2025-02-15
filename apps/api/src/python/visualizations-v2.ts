@@ -5,7 +5,6 @@ import {
   PythonErrorOutput,
   jsonString,
   VisualizationFilter,
-  isInvalidVisualizationFilter,
   isUnfinishedVisualizationFilter,
 } from '@briefer/types'
 import { executeCode, PythonExecutionError } from './index.js'
@@ -494,6 +493,24 @@ def _briefer_create_visualization(df, options):
                         serie["labelLayout"] = {"hideOverlap": options["dataLabels"]["frequency"] == "some"}
 
                     data["series"].append(serie)
+
+                if chart_type != "scatter" and options["xAxis"] and series["groupBy"]:
+                    # fill missing x values with 0
+                    all_x_values = set()
+                    for dataset in data["dataset"]:
+                        for row in dataset["source"]:
+                            all_x_values.add(row[options["xAxis"]["name"]])
+                    for dataset in data["dataset"]:
+                        all_x_values_in_dataset = set([row[options["xAxis"]["name"]] for row in dataset["source"]])
+                        missing_x_values = all_x_values - all_x_values_in_dataset
+                        for x_value in missing_x_values:
+                            dataset["source"].append({options["xAxis"]["name"]: x_value, y_name: 0})
+                        if options["xAxisSort"] == "ascending":
+                            dataset["source"] = sorted(dataset["source"], key=lambda x: x[options["xAxis"]["name"]])
+                        else:
+                            dataset["source"] = sorted(dataset["source"], key=lambda x: x[options["xAxis"]["name"]], reverse=True)
+
+
 
     output = json.dumps({
         "type": "result",

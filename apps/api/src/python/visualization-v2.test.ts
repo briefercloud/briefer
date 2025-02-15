@@ -293,6 +293,10 @@ df = pd.DataFrame({
                 'series-1': 21 / febTotal,
                 datetime: '2021-02-01 00:00:00',
               },
+              {
+                'series-1': 0,
+                datetime: '2021-03-01 00:00:00',
+              },
             ],
           },
           {
@@ -301,6 +305,14 @@ df = pd.DataFrame({
               {
                 'series-1': 13 / janTotal,
                 datetime: '2021-01-01 00:00:00',
+              },
+              {
+                'series-1': 0,
+                datetime: '2021-02-01 00:00:00',
+              },
+              {
+                'series-1': 0,
+                datetime: '2021-03-01 00:00:00',
               },
             ],
           },
@@ -770,6 +782,10 @@ df = pd.DataFrame({
                 'series-1': febNotAppleTotal,
                 datetime: '2021-02-01 00:00:00',
               },
+              {
+                'series-1': 0,
+                datetime: '2021-03-01 00:00:00',
+              },
             ],
           },
           {
@@ -840,5 +856,127 @@ df = pd.DataFrame({
         ],
       },
     })
+  })
+
+  it('should fill missing values of a group for particular x-axis with 0', async () => {
+    await (
+      await pythonRunner.runPython('workspaceId', 'sessionId', code, () => {}, {
+        storeHistory: true,
+      })
+    ).promise
+
+    const input: VisualizationV2BlockInput = {
+      dataframeName: 'df',
+      chartType: 'stackedColumn',
+      xAxis: datetimeDFColumn,
+      xAxisName: null,
+      xAxisSort: 'ascending',
+      xAxisGroupFunction: 'month',
+      yAxes: [
+        {
+          id: 'yAxis-1',
+          name: null,
+          series: [
+            {
+              id: 'series-1',
+              chartType: null,
+              column: amountDFColumn,
+              aggregateFunction: 'sum',
+              groupBy: fruitDFColumn,
+              name: null,
+              color: null,
+              groups: null,
+            },
+          ],
+        },
+      ],
+      histogramFormat: 'count',
+      histogramBin: { type: 'auto' },
+      filters: [],
+      dataLabels: {
+        show: false,
+        frequency: 'all',
+      },
+    }
+
+    const result = await (
+      await createVisualizationV2(
+        'workspaceId',
+        'sessionId',
+        df,
+        input,
+        manager,
+        pythonRunner.runPython
+      )
+    ).promise
+
+    const janAppleTotal = 11
+    const janBananaTotal = 12
+    const janPineappleTotal = 13
+    const febAppleTotal = 22
+    const febBananaTotal = 21
+    const febPineappleTotal = 0
+    const marAppleTotal = 33
+    const marBananaTotal = 0
+    const marPineappleTotal = 0
+
+    expect(result.success).toBe(true)
+    if (!result.success) {
+      return
+    }
+
+    expect(result.data.dataset).toEqual([
+      {
+        dimensions: ['datetime', 'series-1'],
+        source: [
+          {
+            'series-1': janAppleTotal,
+            datetime: '2021-01-01 00:00:00',
+          },
+          {
+            'series-1': febAppleTotal,
+            datetime: '2021-02-01 00:00:00',
+          },
+          {
+            'series-1': marAppleTotal,
+            datetime: '2021-03-01 00:00:00',
+          },
+        ],
+      },
+      {
+        dimensions: ['datetime', 'series-1'],
+        source: [
+          {
+            'series-1': janBananaTotal,
+            datetime: '2021-01-01 00:00:00',
+          },
+          {
+            'series-1': febBananaTotal,
+            datetime: '2021-02-01 00:00:00',
+          },
+          {
+            'series-1': marBananaTotal,
+            datetime: '2021-03-01 00:00:00',
+          },
+        ],
+      },
+      {
+        dimensions: ['datetime', 'series-1'],
+        source: [
+          {
+            'series-1': janPineappleTotal,
+            datetime: '2021-01-01 00:00:00',
+          },
+          {
+            'series-1': febPineappleTotal,
+            datetime: '2021-02-01 00:00:00',
+          },
+          {
+            'series-1': marPineappleTotal,
+            datetime: '2021-03-01 00:00:00',
+          },
+        ],
+      },
+    ])
   })
 })
