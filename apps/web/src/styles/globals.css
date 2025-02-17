@@ -346,3 +346,13 @@ div[data-youtube-video] {
 div[data-youtube-video] > iframe {
   border-radius: 0.5rem;
 }
+
+div[data-block-type='DASHBOARD_HEADER'] > .react-resizable-handle-sw::after {
+  right: 14px !important;
+  bottom: 6px !important;
+}
+
+div[data-block-type='DASHBOARD_HEADER'] > .react-resizable-handle-se::after {
+  right: 6px !important;
+  bottom: 14px !important;
+}

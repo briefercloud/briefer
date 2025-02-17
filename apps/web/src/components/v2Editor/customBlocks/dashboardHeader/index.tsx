@@ -8,6 +8,7 @@ interface Props {
   isEditing: boolean
   onFinishedEditing: () => void
   dashboardMode: 'editing' | 'live'
+  onStartEditing: () => void
 }
 function DashboardHeader(props: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -28,19 +29,44 @@ function DashboardHeader(props: Props) {
   }, [onEdit, props.onFinishedEditing])
 
   let content = props.block.getAttribute('content')
+  const hasContent = content !== ''
   if (props.dashboardMode === 'live' && !content) {
     content = ''
   } else if (!content) {
-    content = 'Click the pencil to edit'
+    content = 'Heading'
   }
+
+  const onClickH1 = useCallback(
+    (e: React.MouseEvent) => {
+      console.log('onClickH1')
+      if (props.dashboardMode === 'live') {
+        return
+      }
+
+      e.stopPropagation()
+      e.preventDefault()
+      props.onStartEditing()
+    },
+    [props.dashboardMode, props.onStartEditing]
+  )
+
+  const stopPropagation = useCallback(
+    (e: React.MouseEvent) => {
+      if (props.dashboardMode === 'live') {
+        return
+      }
+
+      e.stopPropagation()
+    },
+    [props.dashboardMode]
+  )
 
   return (
     <div
       className={clsx(
-        'h-[calc(100%-4px)] flex items-center px-1 rounded-md',
-        props.isEditing
-          ? 'bg-primary-200/20 outline outline-primary-400 outline-offset-[-1px]'
-          : 'bg-dashboard-gray'
+        'h-[calc(100%-4px)] flex items-center rounded-md',
+        props.isEditing ? 'border-ceramic-200/70' : '',
+        props.dashboardMode === 'editing' && 'border-2'
       )}
     >
       {props.isEditing ? (
@@ -54,17 +80,21 @@ function DashboardHeader(props: Props) {
           }}
           type="text"
           value={props.block.getAttribute('content')}
-          placeholder="Title"
-          className="block w-full rounded-md border-0 p-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 text-2xl font-semibold leading-6 bg-transparent"
+          placeholder="Heading"
+          className="block w-full rounded-md border-0 text-gray-900 placeholder:text-gray-400 focus:ring-0 text-2xl font-semibold leading-6 bg-transparent pl-3 py-0.5"
           onChange={(e) => props.block.setAttribute('content', e.target.value)}
           onBlur={endEditing}
+          onMouseDown={stopPropagation}
         />
       ) : (
         <h1
           className={clsx(
-            'text-2xl font-semibold font-medium text-left text-3l truncate min-h-6 pt-0.5',
-            content !== '' ? 'text-gray-900' : 'text-gray-400'
+            'text-2xl font-semibold font-medium text-left truncate min-h-6 pl-3 w-full',
+            hasContent ? 'text-gray-900' : 'text-gray-400',
+            props.dashboardMode !== 'live' && 'hover:cursor-text'
           )}
+          onClick={onClickH1}
+          onMouseDown={stopPropagation}
         >
           {content}
         </h1>

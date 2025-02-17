@@ -198,7 +198,7 @@ function DashboardViewInner(props: InnerProps) {
         const WrapperCard = hasTransparentCard ? TransparentCard : WhiteCard
 
         return (
-          <div key={item.i}>
+          <div key={item.i} data-block-type={type}>
             <WrapperCard>
               <GridElement
                 block={block}

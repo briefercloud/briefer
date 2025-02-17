@@ -282,6 +282,7 @@ function GridElement(props: Props) {
             isEditing={isEditingHeader}
             onFinishedEditing={() => setIsEditingHeader(false)}
             dashboardMode={props.isEditingDashboard ? 'editing' : 'live'}
+            onStartEditing={() => setIsEditingHeader(true)}
           />
         ),
         onFileUpload: () => null,
@@ -311,7 +312,9 @@ function GridElement(props: Props) {
         <div
           className={clsx(
             'w-full h-full rounded-md overflow-hidden flex flex-col',
-            props.isEditingDashboard && 'pointer-events-none'
+            props.isEditingDashboard &&
+              blockType !== BlockType.DashboardHeader &&
+              'pointer-events-none'
           )}
         >
           {hasTitle && (
