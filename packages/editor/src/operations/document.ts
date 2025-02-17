@@ -527,7 +527,8 @@ export const addGroupedBlock = (
 export const duplicateBlockGroup = (
   yLayout: Y.Array<YBlockGroup>,
   yBlocks: Y.Map<YBlock>,
-  blockGroupId: string
+  blockGroupId: string,
+  newVariableName: boolean
 ) => {
   const blockGroupIndex = yLayout
     .toArray()
@@ -564,7 +565,9 @@ export const duplicateBlockGroup = (
       newCurrent.setAttribute('id', newBlockId)
     }
 
-    const newBlock = duplicateBlock(newBlockId, oldBlock, yBlocks, false)
+    const newBlock = duplicateBlock(newBlockId, oldBlock, yBlocks, false, {
+      newVariableName,
+    })
     yBlocks.set(newBlockId, newBlock)
 
     const newTab = tab.clone()

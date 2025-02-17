@@ -955,7 +955,7 @@ describe('duplicateBlockGroup', () => {
     const blockGroup1Id = ids[0]!
     const tab1Id = getCurrentTabId(yLayout, blockGroup1Id, yBlocks, false)!
 
-    duplicateBlockGroup(yLayout, yBlocks, blockGroup1Id)
+    duplicateBlockGroup(yLayout, yBlocks, blockGroup1Id, false)
 
     const newIds = yLayout.map((bg) => bg.getAttribute('id'))
     expect(newIds).toHaveLength(2)

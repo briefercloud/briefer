@@ -66,7 +66,7 @@ export const makeSQLBlock = (
     type: BlockType.SQL,
     title: '',
     source: new Y.Text(opts?.source ?? ''),
-    dataframeName: getDataframeName(blocks),
+    dataframeName: getDataframeName(blocks, 'query_1'),
     dataSourceId: opts?.dataSourceId ?? null,
     isFileDataSource: opts?.isFileDataSource ?? false,
     result: null,
@@ -104,7 +104,7 @@ export function getSQLAttributes(
     dataframeName: getAttributeOr(
       block,
       'dataframeName',
-      getDataframeName(blocks)
+      getDataframeName(blocks, 'query_1')
     ),
     dataSourceId: getAttributeOr(block, 'dataSourceId', null),
     isFileDataSource: getAttributeOr(block, 'isFileDataSource', false),
@@ -138,6 +138,7 @@ export function duplicateSQLBlock(
     datasourceMap?: Map<string, string>
     componentId?: string
     noState?: boolean
+    newVariableName?: boolean
   }
 ): Y.XmlElement<SQLBlock> {
   const prevAttributes = getSQLAttributes(block, blocks)
@@ -175,6 +176,15 @@ export function duplicateSQLBlock(
     sort: clone(prevAttributes.sort),
   }
 
+  if (options?.newVariableName) {
+    const name = getDataframeName(
+      blocks,
+      `${nextAttributes.dataframeName.value}`
+    )
+    nextAttributes.dataframeName.value = name.value
+    nextAttributes.dataframeName.newValue = name.newValue
+  }
+
   const yBlock = new Y.XmlElement<SQLBlock>('block')
   for (const [key, value] of Object.entries(nextAttributes)) {
     // @ts-ignore
@@ -184,20 +194,30 @@ export function duplicateSQLBlock(
   return yBlock
 }
 
-function getDataframeName(blocks: Y.Map<YBlock>): DataframeName {
+function getDataframeName(
+  blocks: Y.Map<YBlock>,
+  prefix: string
+): DataframeName {
   const sqlBlocks = Array.from(blocks.values()).filter(isSQLBlock)
   const names = new Set(
     sqlBlocks.map((block) => block.getAttribute('dataframeName')?.value)
   )
 
-  let i = 1
-  while (names.has(`query_${i}`)) {
+  const lastPartStr = prefix.split('_').pop()
+  const lastPart = lastPartStr ? parseInt(lastPartStr) : 0
+  let i = Number.isNaN(lastPart) ? 1 : lastPart
+  if (!Number.isNaN(lastPart)) {
+    // remove last _{i} part from prefix
+    prefix = prefix.split('_').slice(0, -1).join('_')
+  }
+
+  while (names.has(`${prefix}_${i}`)) {
     i++
   }
 
   return {
-    value: `query_${i}`,
-    newValue: `query_${i}`,
+    value: `${prefix}_${i}`,
+    newValue: `${prefix}_${i}`,
   }
 }
 

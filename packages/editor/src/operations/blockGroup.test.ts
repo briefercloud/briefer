@@ -893,7 +893,7 @@ describe('duplicateTab', () => {
     expect(thirdTabId).toBeTruthy()
 
     switchActiveTab(yLayout, blockGroupId, secondTabId!)
-    duplicateTab(yLayout, yBlocks, blockGroupId, secondTabId!)
+    duplicateTab(yLayout, yBlocks, blockGroupId, secondTabId!, false)
 
     const tabs = getTabsFromBlockGroupId(yLayout, yBlocks, blockGroupId)
     expect(tabs).toHaveLength(4)

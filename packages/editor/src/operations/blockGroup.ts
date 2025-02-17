@@ -494,7 +494,8 @@ export const duplicateTab = (
   yLayout: Y.Array<YBlockGroup>,
   yBlocks: Y.Map<YBlock>,
   blockGroupId: string,
-  tabId: string
+  tabId: string,
+  newVariableName: boolean
 ) => {
   const blockGroup = yLayout
     .toArray()
@@ -524,7 +525,9 @@ export const duplicateTab = (
   }
 
   const newId = uuidv4()
-  const newBlock = duplicateBlock(newId, oldBlock, yBlocks, false)
+  const newBlock = duplicateBlock(newId, oldBlock, yBlocks, false, {
+    newVariableName,
+  })
   yBlocks.set(newId, newBlock)
 
   const newTabRef = oldTabRef.clone()

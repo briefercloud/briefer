@@ -292,6 +292,7 @@ export function duplicateBlock(
     datasourceMap?: Map<string, string>
     componentId?: string
     noState?: boolean
+    newVariableName?: boolean
   }
 ): YBlock {
   return switchBlockType<YBlock>(block, {

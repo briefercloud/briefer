@@ -1568,7 +1568,7 @@ const Editor = (props: Props) => {
   const onDuplicateBlockGroup = useCallback(
     (blockGroupId: string) => {
       props.yDoc.transact(() => {
-        duplicateBlockGroup(layout.value, blocks.value, blockGroupId)
+        duplicateBlockGroup(layout.value, blocks.value, blockGroupId, true)
       })
     },
     [layout, blocks]
@@ -1577,7 +1577,7 @@ const Editor = (props: Props) => {
   const onDuplicateBlock = useCallback(
     (blockGroupId: string, blockId: string) => {
       props.yDoc.transact(() => {
-        duplicateTab(layout.value, blocks.value, blockGroupId, blockId)
+        duplicateTab(layout.value, blocks.value, blockGroupId, blockId, true)
       })
     },
     [layout, blocks]
