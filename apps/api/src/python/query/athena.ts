@@ -168,8 +168,16 @@ def briefer_make_athena_query():
 
     def to_pandas(athena_data):
         columns = []
+        col_counts = {}  # Dictionary to track the count of column names
         for col in athena_data["ResultSet"]["ResultSetMetadata"]["ColumnInfo"]:
-            columns.append({"name": col["Label"], "type": col["Type"], "np_type": convert_type(col["Type"])})
+            col_name = col["Label"]
+            if col_name in col_counts:
+                col_counts[col_name] += 1
+                col_name = f"{col_name}.{col_counts[col_name]}"
+            else:
+                col_counts[col_name] = 0
+
+            columns.append({"name": col_name, "type": col["Type"], "np_type": convert_type(col["Type"])})
 
         rows = athena_data["ResultSet"]["Rows"]
         data = []
