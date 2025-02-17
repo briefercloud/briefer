@@ -53,6 +53,7 @@ import DropdownInputBlock from '../v2Editor/customBlocks/dropdownInput'
 import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
 import SimpleBar from 'simplebar-react'
+import clsx from 'clsx'
 
 export type DashboardMode =
   | {
@@ -449,11 +450,22 @@ function DashboardContent(
     }
   }, [expanded])
 
+  const [isControlsOpen, setIsControlsOpen] = useState(false)
+  const onOpenControls = useCallback(() => {
+    setIsControlsOpen(true)
+  }, [])
+  const onCloseControls = useCallback(() => {
+    setIsControlsOpen(false)
+  }, [])
+
   return (
     <>
       <div className="flex h-[calc(100%-47px)]">
         <DashboardView
-          className="flex-grow h-full"
+          className={clsx(
+            'flex-grow h-full',
+            props.isEditing && isControlsOpen && 'w-[calc(100%-400px)]'
+          )}
           document={props.document}
           dataSources={dataSources}
           yDoc={props.yDoc}
@@ -478,6 +490,9 @@ function DashboardContent(
             aiTasks={props.aiTasks}
             onToggleSchemaExplorer={props.onToggleSchemaExplorer}
             onExpand={setExpanded}
+            isOpen={isControlsOpen}
+            onOpen={onOpenControls}
+            onClose={onCloseControls}
           />
         )}
       </div>

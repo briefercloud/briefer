@@ -103,8 +103,6 @@ function getTypeIcon(t: BlockType): JSX.Element {
   }
 }
 
-;<ChartPieIcon className="w-4 h-4 text-gray-500" />
-
 const typeOptions = [
   BlockType.VisualizationV2,
   BlockType.Python,
@@ -124,6 +122,9 @@ interface Props {
   aiTasks: AITasks
   onToggleSchemaExplorer: (dataSourceId?: string | null) => void
   onExpand: (block: YBlock) => void
+  isOpen: boolean
+  onOpen: () => void
+  onClose: () => void
 }
 function DashboardControls(props: Props) {
   const { state: dataframes } = useYDocState(props.yDoc, getDataframes)
@@ -290,20 +291,11 @@ function DashboardControls(props: Props) {
     [blocks, layout, blocksInDashboard, search, types]
   )
 
-  const [open, setOpen] = useState(true)
-  const onOpen = useCallback(() => {
-    setOpen(true)
-  }, [])
-
-  const onClose = useCallback(() => {
-    setOpen(false)
-  }, [])
-
-  if (!open) {
+  if (!props.isOpen) {
     return (
       <div className="pt-3 fixed right-0">
         <button
-          onClick={onOpen}
+          onClick={props.onOpen}
           className="bg-white flex items-center rounded-l-sm px-3 py-1 text-sm text-gray-500 hover:bg-gray-100 border border-r-0 border-gray-200 group max-w-11 hover:max-w-32 overflow-hidden transition-mw group duration-500"
         >
           <ChevronDoubleLeftIcon className="min-w-3 min-h-3" />
@@ -320,7 +312,7 @@ function DashboardControls(props: Props) {
       <div className="relative w-[400px] font-sans h-full">
         <button
           className="absolute z-10 top-12 transform rounded-full border border-gray-300 text-gray-400 bg-white hover:bg-ceramic-200 hover:border-ceramic-200 hover:text-ceramic-400 w-6 h-6 flex justify-center items-center left-0 -translate-x-1/2"
-          onClick={onClose}
+          onClick={props.onClose}
         >
           <ChevronDoubleRightIcon className="w-3 h-3" />
         </button>
