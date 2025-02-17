@@ -17,6 +17,9 @@ spec:
         app.kubernetes.io/name: briefer
         app.kubernetes.io/component: jupyter
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: jupyter
         image: '{{ .Values.jupyter.image.repository }}/{{ .Values.jupyter.image.name }}:{{ .Values.jupyter.image.tag }}'
