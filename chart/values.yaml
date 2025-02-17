@@ -8,7 +8,7 @@ ai:
   image:
     repository: docker.io
     name: briefercloud/briefer-ai
-    tag: v0.0.105
+    tag: v0.0.106
     pullPolicy: Always
 
   resources:
@@ -47,7 +47,7 @@ web:
   image:
     repository: docker.io
     name: briefercloud/briefer-web
-    tag: v0.0.105
+    tag: v0.0.106
     pullPolicy: Always
 
   # optional
@@ -81,7 +81,7 @@ api:
   image:
     repository: docker.io
     name: briefercloud/briefer-api
-    tag: v0.0.105
+    tag: v0.0.106
     pullPolicy: Always
 
   resources:
@@ -148,7 +148,7 @@ jupyter:
   image:
     repository: docker.io
     name: briefercloud/briefer-jupyter
-    tag: v0.0.105
+    tag: v0.0.106
     pullPolicy: Always
 
   # tolerations:
