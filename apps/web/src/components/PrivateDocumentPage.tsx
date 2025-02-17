@@ -34,6 +34,7 @@ import ReusableComponents from './ReusableComponents'
 import PageSettingsPanel from './PageSettingsPanel'
 import { AITasks, ExecutionQueue } from '@briefer/editor'
 import { SessionUser } from '@/hooks/useAuth'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 // this is needed because this component only works with the browser
 const V2Editor = dynamic(() => import('@/components/v2Editor'), {
@@ -200,7 +201,7 @@ function PrivateDocumentPageInner(
     props.user.id,
   ])
 
-  const { yDoc, provider, syncing, isDirty } = useYDoc(
+  const { yDoc, provider, syncing, isDirty, undo, redo } = useYDoc(
     props.document.workspaceId,
     props.document.id,
     props.isApp,
@@ -210,6 +211,9 @@ function PrivateDocumentPageInner(
     true,
     null
   )
+
+  useHotkeys('mod+z', undo)
+  useHotkeys('mod+shift+z', redo)
 
   const executionQueue = useMemo(
     () =>

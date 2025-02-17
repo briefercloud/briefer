@@ -54,6 +54,7 @@ import DateInputBlock from '../v2Editor/customBlocks/dateInput'
 import PivotTableBlock from '../v2Editor/customBlocks/pivotTable'
 import SimpleBar from 'simplebar-react'
 import clsx from 'clsx'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 export type DashboardMode =
   | {
@@ -101,7 +102,7 @@ export default function Dashboard(props: Props) {
     props.user,
   ])
 
-  const { yDoc, syncing, isDirty } = useYDoc(
+  const { yDoc, syncing, isDirty, undo, redo } = useYDoc(
     props.document.workspaceId,
     props.document.id,
     !props.isEditing,
@@ -111,6 +112,9 @@ export default function Dashboard(props: Props) {
     true,
     null
   )
+
+  useHotkeys('mod+z', undo)
+  useHotkeys('mod+shift+z', redo)
 
   const executionQueue = useMemo(
     () =>

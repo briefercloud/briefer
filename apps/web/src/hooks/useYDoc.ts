@@ -1,10 +1,12 @@
 import * as Y from 'yjs'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import useResettableState from './useResettableState'
 import { getDocId, useProvider } from './useYProvider'
 import {
   getBlocks,
+  getDashboard,
   getLastUpdatedAt,
+  getLayout,
   getMetadata,
   isDirty,
   setDirty,
@@ -255,11 +257,27 @@ export function useYDoc(
     }
   }, [yDoc, removeComponentInstance])
 
+  const undoManager = useMemo(
+    () =>
+      new Y.UndoManager([getLayout(yDoc), getBlocks(yDoc), getDashboard(yDoc)]),
+    [yDoc]
+  )
+
+  const undo = useCallback(() => {
+    undoManager.undo()
+  }, [undoManager])
+
+  const redo = useCallback(() => {
+    undoManager.redo()
+  }, [undoManager])
+
   return {
     yDoc,
     provider,
     syncing: (syncing || restoring) && !cached,
     isDirty: metadata.state.value.getAttribute('isDirty') ?? false,
+    undo,
+    redo,
   }
 }
 
