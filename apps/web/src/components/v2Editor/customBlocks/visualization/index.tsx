@@ -15,14 +15,7 @@ import {
 } from '@briefer/editor'
 import { ApiDocument } from '@briefer/database'
 import { ChartPieIcon } from '@heroicons/react/24/solid'
-import {
-  CSSProperties,
-  RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { RefObject, useCallback, useEffect, useMemo, useState } from 'react'
 import HeaderSelect from '@/components/HeaderSelect'
 import clsx from 'clsx'
 import FilterSelector from './FilterSelector'
@@ -288,6 +281,8 @@ function VisualizationBlock(props: Props) {
   const onRunAbort = useCallback(() => {
     switch (status) {
       case 'enqueued':
+        execution?.batch.removeItem(blockId)
+        break
       case 'running':
         execution?.item.setAborting()
         break
@@ -301,7 +296,7 @@ function VisualizationBlock(props: Props) {
       default:
         exhaustiveCheck(status)
     }
-  }, [status, execution, onRun])
+  }, [status, execution, onRun, blockId])
 
   const onAddFilter = useCallback(() => {
     const newFilter: VisualizationFilter = {
@@ -577,6 +572,13 @@ function VisualizationBlock(props: Props) {
   }, [blockId, editorAPI.insert])
 
   const viewLoading = isExecutionStatusLoading(status)
+  const isRunButtonDisabled =
+    status === 'aborting' ||
+    execution?.batch.isRunAll() ||
+    !dataframe ||
+    (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
+    (!hasAValidYAxis && chartType !== 'histogram') ||
+    !props.isEditable
 
   const runTooltipContent = useMemo(() => {
     if (status !== 'idle') {
@@ -584,7 +586,9 @@ function VisualizationBlock(props: Props) {
         case 'enqueued':
           return {
             title: 'This block is enqueud',
-            message: 'It will run once the previous blocks finish executing.',
+            message: isRunButtonDisabled
+              ? 'When running entire documents, you cannot remove individual blocks from the queue.'
+              : 'It will run once the previous blocks finish executing. Click to remove it from the queue.',
           }
         case 'running': {
           if (envStatus !== 'Running' && !envLoading) {
@@ -801,23 +805,18 @@ function VisualizationBlock(props: Props) {
               ref={ref}
               className={clsx(
                 {
-                  'bg-gray-200 cursor-not-allowed':
-                    status !== 'idle' && status !== 'running',
+                  'bg-gray-200': isRunButtonDisabled,
                   'bg-red-200': status === 'running' && envStatus === 'Running',
                   'bg-yellow-300':
-                    status === 'running' && envStatus !== 'Running',
-                  'bg-primary-200': status === 'idle',
+                    !isRunButtonDisabled &&
+                    (status === 'enqueued' ||
+                      (status === 'running' && envStatus !== 'Running')),
+                  'bg-primary-200': !isRunButtonDisabled && status === 'idle',
                 },
-                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group disabled:cursor-not-allowed'
               )}
               onClick={onRunAbort}
-              disabled={
-                !dataframe ||
-                (!xAxis && chartType !== 'number' && chartType !== 'trend') ||
-                (!hasAValidYAxis && chartType !== 'histogram') ||
-                !props.isEditable ||
-                (status !== 'idle' && status !== 'running')
-              }
+              disabled={isRunButtonDisabled}
             >
               {status !== 'idle' ? (
                 <div>

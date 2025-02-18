@@ -310,10 +310,18 @@ function PivotTableBlock(props: Props) {
   const onRunAbort = useCallback(() => {
     if (execution || pageExecution) {
       if (execution) {
-        execution.item.setAborting()
+        if (execution.item.getStatus()._tag === 'enqueued') {
+          execution.batch.removeItem(attrs.id)
+        } else {
+          execution.item.setAborting()
+        }
       }
       if (pageExecution) {
-        pageExecution.item.setAborting()
+        if (pageExecution.item.getStatus()._tag === 'enqueued') {
+          pageExecution.batch.removeItem(attrs.id)
+        } else {
+          pageExecution.item.setAborting()
+        }
       }
     } else {
       props.executionQueue.enqueueBlock(
@@ -332,6 +340,7 @@ function PivotTableBlock(props: Props) {
     props.block,
     props.userId,
     environmentStartedAt,
+    attrs.id,
   ])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
@@ -358,13 +367,18 @@ function PivotTableBlock(props: Props) {
     editorAPI.insert(attrs.id, { scrollIntoView: false })
   }, [attrs.id, editorAPI.insert])
 
+  const isRunButtonDisabled =
+    status === 'aborting' || execution?.batch.isRunAll()
+
   const runTooltipContent = useMemo(() => {
     if (status !== 'idle') {
       switch (status) {
         case 'enqueued':
           return {
             title: 'This block is enqueud',
-            message: 'It will run once the previous blocks finish executing.',
+            message: isRunButtonDisabled
+              ? 'When running entire documents, you cannot remove individual blocks from the queue.'
+              : 'It will run once the previous blocks finish executing. Click to remove it from the queue.',
           }
         case 'running': {
           if (envStatus !== 'Running' && !envLoading) {
@@ -400,7 +414,7 @@ function PivotTableBlock(props: Props) {
         ),
       }
     }
-  }, [status, envStatus, envLoading, execution])
+  }, [status, envStatus, envLoading, execution, isRunButtonDisabled])
 
   if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     if (!attrs.result) {
@@ -545,31 +559,18 @@ function PivotTableBlock(props: Props) {
               ref={ref}
               className={clsx(
                 {
-                  'bg-gray-200 cursor-not-allowed':
-                    execStatus !== 'idle' &&
-                    execStatus !== 'running' &&
-                    execStatus !== 'completed' &&
-                    execStatus !== 'unknown',
-                  'bg-red-200':
-                    execStatus === 'running' && envStatus === 'Running',
+                  'bg-gray-200': isRunButtonDisabled || !dataframe,
+                  'bg-red-200': status === 'running' && envStatus === 'Running',
                   'bg-yellow-300':
-                    execStatus === 'running' && envStatus !== 'Running',
-                  'bg-primary-200':
-                    execStatus === 'idle' ||
-                    execStatus === 'completed' ||
-                    execStatus === 'unknown',
+                    !isRunButtonDisabled &&
+                    (status === 'enqueued' ||
+                      (status === 'running' && envStatus !== 'Running')),
+                  'bg-primary-200': !isRunButtonDisabled && status === 'idle',
                 },
-                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group disabled:cursor-not-allowed'
               )}
               onClick={onRunAbort}
-              disabled={
-                !dataframe ||
-                !isEditable ||
-                (execStatus !== 'idle' &&
-                  execStatus !== 'running' &&
-                  execStatus !== 'completed' &&
-                  execStatus !== 'unknown')
-              }
+              disabled={!dataframe || isRunButtonDisabled}
             >
               {isExecutionStatusLoading(execStatus) ? (
                 <div>

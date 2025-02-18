@@ -175,6 +175,25 @@ export class ExecutionQueueBatch {
     return status
   }
 
+  public removeItem(blockId: string) {
+    const queue = this.batch.getAttribute('queue')
+    if (!queue) {
+      return
+    }
+
+    let index = -1
+    for (let i = 0; i < queue.length; i++) {
+      if (queue.get(i)?.getAttribute('blockId') === blockId) {
+        index = i
+        break
+      }
+    }
+
+    if (index !== -1) {
+      queue.delete(index)
+    }
+  }
+
   public static fromYjs(doc: YExecutionQueueBatch): ExecutionQueueBatch {
     return new ExecutionQueueBatch(doc)
   }

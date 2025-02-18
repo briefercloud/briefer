@@ -597,6 +597,11 @@ export async function createVisualizationV2(
         case 'html':
           break
         case 'error':
+          if (output.ename === 'KeyboardInterrupt') {
+            result = { success: false, reason: 'aborted' }
+            break
+          }
+
           pythonErrors.push(output)
           break
         case 'stdio':

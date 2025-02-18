@@ -147,6 +147,8 @@ function PythonBlock(props: Props) {
   const onRunAbort = useCallback(() => {
     switch (status) {
       case 'enqueued':
+        execution?.batch.removeItem(blockId)
+        break
       case 'running':
         execution?.item.setAborting()
         break
@@ -160,7 +162,7 @@ function PythonBlock(props: Props) {
       default:
         exhaustiveCheck(status)
     }
-  }, [status, execution, onRun])
+  }, [status, execution, onRun, blockId])
 
   const statusIsDisabled = isExecutionStatusLoading(status)
 
@@ -335,13 +337,19 @@ function PythonBlock(props: Props) {
     props.document.title,
   ])
 
+  const isEditorFocused = editorState.cursorBlockId === blockId
+  const isRunButtonDisabled =
+    status === 'aborting' || execution?.batch.isRunAll()
+
   const runTooltipContent = useMemo(() => {
     if (status !== 'idle') {
       switch (status) {
         case 'enqueued':
           return {
             title: 'This block is enqueud',
-            message: 'It will run once the previous blocks finish executing.',
+            message: isRunButtonDisabled
+              ? 'When running entire documents, you cannot remove individual blocks from the queue.'
+              : 'It will run once the previous blocks finish executing. Click to remove it from the queue.',
           }
         case 'running': {
           if (envStatus !== 'Running' && !envLoading) {
@@ -382,7 +390,7 @@ function PythonBlock(props: Props) {
         ),
       }
     }
-  }, [status, envStatus, envLoading, execution])
+  }, [status, envStatus, envLoading, execution, isRunButtonDisabled])
 
   if (props.dashboardMode && !dashboardModeHasControls(props.dashboardMode)) {
     return (
@@ -405,8 +413,6 @@ function PythonBlock(props: Props) {
       />
     )
   }
-
-  const isEditorFocused = editorState.cursorBlockId === blockId
 
   return (
     <div
@@ -610,17 +616,18 @@ function PythonBlock(props: Props) {
             <button
               ref={ref}
               onClick={onRunAbort}
-              disabled={status !== 'idle' && status !== 'running'}
+              disabled={isRunButtonDisabled}
               className={clsx(
                 {
-                  'bg-gray-200 cursor-not-allowed':
-                    status !== 'idle' && status !== 'running',
+                  'bg-gray-200': isRunButtonDisabled,
                   'bg-red-200': status === 'running' && envStatus === 'Running',
                   'bg-yellow-300':
-                    status === 'running' && envStatus !== 'Running',
-                  'bg-primary-200': status === 'idle',
+                    !isRunButtonDisabled &&
+                    (status === 'enqueued' ||
+                      (status === 'running' && envStatus !== 'Running')),
+                  'bg-primary-200': !isRunButtonDisabled && status === 'idle',
                 },
-                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group disabled:cursor-not-allowed'
               )}
             >
               {status !== 'idle' ? (

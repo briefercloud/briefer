@@ -304,6 +304,8 @@ function SQLBlock(props: Props) {
   const onRunAbort = useCallback(() => {
     switch (status._tag) {
       case 'enqueued':
+        execution?.batch.removeItem(blockId)
+        break
       case 'running':
         execution?.item.setAborting()
         break
@@ -317,7 +319,7 @@ function SQLBlock(props: Props) {
       default:
         exhaustiveCheck(status)
     }
-  }, [status, execution, onRun])
+  }, [status, execution, onRun, blockId])
 
   const { source, configuration } = getSQLAttributes(props.block, props.blocks)
   const lastQuery = props.block.getAttribute('lastQuery')
@@ -564,6 +566,10 @@ function SQLBlock(props: Props) {
   const headerSelectValue = isFileDataSource ? 'duckdb' : dataSourceId
 
   const isEditorFocused = editorState.cursorBlockId === blockId
+  const isRunButtonDisabled =
+    status._tag === 'aborting' ||
+    execution?.batch.isRunAll() ||
+    headerSelectValue === null
 
   const runTooltipContent = useMemo(() => {
     if (status._tag !== 'idle') {
@@ -571,7 +577,9 @@ function SQLBlock(props: Props) {
         case 'enqueued':
           return {
             title: 'This block is enqueud',
-            message: 'It will run once the previous blocks finish executing.',
+            message: isRunButtonDisabled
+              ? 'When running entire documents, you cannot remove individual blocks from the queue.'
+              : 'It will run once the previous blocks finish executing. Click to remove it from the queue.',
           }
         case 'running': {
           if (envStatus !== 'Running' && !envLoading) {
@@ -624,6 +632,7 @@ function SQLBlock(props: Props) {
     execution,
     props.dataSources.size,
     headerSelectValue,
+    isRunButtonDisabled,
   ])
 
   const codeEditor = useRef<CodeEditorRef>(null)
@@ -1022,20 +1031,20 @@ function SQLBlock(props: Props) {
             <button
               ref={ref}
               onClick={onRunAbort}
-              disabled={status._tag !== 'idle' && status._tag !== 'running'}
+              disabled={isRunButtonDisabled}
               className={clsx(
                 {
-                  'bg-gray-200 cursor-not-allowed':
-                    (status._tag !== 'idle' && status._tag !== 'running') ||
-                    headerSelectValue === null,
+                  'bg-gray-200': isRunButtonDisabled,
                   'bg-red-200':
                     status._tag === 'running' && envStatus === 'Running',
                   'bg-yellow-300':
-                    status._tag === 'running' && envStatus !== 'Running',
+                    !isRunButtonDisabled &&
+                    (status._tag === 'enqueued' ||
+                      (status._tag === 'running' && envStatus !== 'Running')),
                   'bg-primary-200':
-                    status._tag === 'idle' && headerSelectValue !== null,
+                    !isRunButtonDisabled && status._tag === 'idle',
                 },
-                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group'
+                'rounded-sm h-6 min-w-6 flex items-center justify-center relative group disabled:cursor-not-allowed'
               )}
             >
               {status._tag !== 'idle' ? (
