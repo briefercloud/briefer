@@ -245,7 +245,7 @@ function SQLSuccess(props: SQLSuccessProps) {
       (props.dashboardMode._tag === 'editing' &&
         props.dashboardMode.position === 'dashboard')
     ) {
-      tableTopBorder = props.hasTitle ? 'square' : 'rounded'
+      tableTopBorder = props.hasTitle ? 'square' : null
     } else if (props.dashboardMode.position === 'sidebar') {
       tableTopBorder = 'rounded'
     }
