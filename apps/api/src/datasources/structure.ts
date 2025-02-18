@@ -431,6 +431,7 @@ export async function fetchDataSourceStructureFromCache(
         previousSuccessAt: schema.finishedAt?.getTime() ?? null,
         error,
         version: 3,
+        defaultSchema: schema.defaultSchema,
       }
     }
     case 'success': {
@@ -750,6 +751,10 @@ async function _refreshDataSourceStructure(
           : null,
       error,
       version: 3,
+      defaultSchema:
+        'defaultSchema' in dataSource.structure
+          ? dataSource.structure.defaultSchema
+          : null,
     })
     broadcastDataSource(socketServer, dataSource)
   }

@@ -57,7 +57,7 @@ async function computeCompletion(
     schema,
     defaultSchema:
       'defaultSchema' in dataSource.structure
-        ? dataSource.structure.defaultSchema
+        ? dataSource.structure.defaultSchema ?? ''
         : '',
   })
 }

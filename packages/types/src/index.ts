@@ -974,6 +974,7 @@ const FailedDataSourceStructureStateV3 = z.object({
   previousSuccessAt: z.number().nullable(),
   error: DataSourceStructureError,
   version: z.literal(3),
+  defaultSchema: z.string().nullable(),
 })
 
 const LoadingDataSourceStructureStateV3 = z.object({
@@ -1052,6 +1053,7 @@ export function dataSourceStructureStateToV3(
         previousSuccessAt: v2.previousSuccess?.updatedAt ?? null,
         error: v2.error,
         version: 3,
+        defaultSchema: v2.previousSuccess?.structure.defaultSchema ?? null,
       }
     case 'loading':
       return {
