@@ -488,7 +488,12 @@ def schema_from_tables(engine, inspector, tables, default_schema):
     made_progress = False
     exceptions = []
     for table in tables:
-        schema_name, table_name = table.split(".")
+        parts = table.split(".")
+        if len(parts) < 2:
+            print(json.dumps({"log": f"Table {table} does not have a schema"}))
+            continue
+        schema_name = parts[0]
+        table_name = ".".join(parts[1:])
         print(json.dumps({"log": f"Getting schema for table {table}"}))
         columns = []
         try:
