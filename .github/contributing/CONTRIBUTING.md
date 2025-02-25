@@ -6,7 +6,7 @@ In this document, you'll learn how to run Briefer in development mode and how to
 
 ### Contents
 
-- [Running Briefer in dev mode](#computer-running-briefer-in-dev-mode)
+- [Running Briefer in dev mode](#computer-running-briefer-in-development-mode)
 - [Questions, bugs, and feature requests](#bulb-questions-bugs-and-feature-requests)
 - [Submitting pull requests](#repeat-submitting-pull-requests)
 - [Troubleshooting](#wrench-troubleshooting)
@@ -19,13 +19,13 @@ In this document, you'll learn how to run Briefer in development mode and how to
 
 You need to be able to run Briefer in development mode to contribute to the project and test changes.
 
-<p>
-<picture align="center">
-  <source  align="center" media="(prefers-color-scheme: dark)" srcset="../assets/img/briefer-dev-mode-dark.png">
-  <source align="center" media="(prefers-color-scheme: light)" srcset="../assets/img/briefer-dev-mode.png">
-  <img align="center" alt="Briefer architecture diagram for dev mode" src="../assets/img/briefer-dev-mode.png">
-</picture>
-</p>
+<div align="center">
+  <picture>
+    <source  align="center" media="(prefers-color-scheme: dark)" srcset="../../assets/img/briefer-dev-mode-dark.png">
+    <source align="center" media="(prefers-color-scheme: light)" srcset="../../assets/img/briefer-dev-mode.png">
+    <img align="center" alt="Briefer architecture diagram for dev mode" src="../../assets/img/briefer-dev-mode.png">
+  </picture>
+</div>
 
 > [!NOTE]
 > If you're looking to deploy Briefer, you can check our [deployment guide here](./DEPLOYMENT.md). This guide is focused on running Briefer in _development_ mode.
