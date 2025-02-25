@@ -454,7 +454,7 @@ function DashboardContent(
     }
   }, [expanded])
 
-  const [isControlsOpen, setIsControlsOpen] = useState(false)
+  const [isControlsOpen, setIsControlsOpen] = useState(true)
   const onOpenControls = useCallback(() => {
     setIsControlsOpen(true)
   }, [])
