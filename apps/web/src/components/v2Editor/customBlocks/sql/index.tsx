@@ -1084,6 +1084,7 @@ function SQLBlock(props: Props) {
             onToggleIsOutputHidden={toggleResultHidden}
           />
         )}
+
         {((result && !isResultHidden) || !isCodeHidden) &&
           !props.dashboardMode && (
             <SaveReusableComponentButton
@@ -1094,7 +1095,13 @@ function SQLBlock(props: Props) {
             />
           )}
 
-        <FormatSQLButton onClick={onToggleFormatSQLCode} />
+        {((result && !isResultHidden) || !isCodeHidden) &&
+          !props.dashboardMode && (
+            <FormatSQLButton
+              onFormat={onToggleFormatSQLCode}
+              disabled={!props.isEditable}
+            />
+          )}
 
         {((result && !isResultHidden) || !isCodeHidden) &&
           dataSource?.config.type === 'athena' && (
