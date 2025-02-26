@@ -1,0 +1,47 @@
+---
+title: Private AI setup
+description: Configure your self-hosted Briefer deployment to use AI services in your own AWS account.
+icon: hat-wizard
+---
+
+Briefer's enterprise plan allows you to configure your self-hosted deployment to use AI models in your own AWS account. This way, you can keep your data private while still benefiting from Briefer's AI capabilities.
+
+Briefer's private AI setup uses [Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html), a service that allows you to run AI models in your own AWS account.
+
+<Note>
+Briefer's private AI setup is only available on the enterprise plan.
+</Note>
+
+## Setting up private AI
+
+To set up private AI in your self-hosted Briefer deployment, follow these steps:
+
+<Steps>
+  <Step title="Ensure AI is enabled for your deployment">
+    Ensure that your Briefer deployment has AI enabled. You can do this by toggling the `ai.enabled` setting in your Briefer configuration file.
+  </Step>
+  <Step title="Enable the desired models on AWS">
+    Enable the AI models you want to use in your AWS account. You can do this by following [the instructions in the Amazon Bedrock documentation](https://docs.aws.amazon.com/bedrock/latest/userguide/getting-started.html#getting-started-model-access).
+
+    We recommend using Anthropic's models, preferably Claude v3.7 Sonnet or later.
+
+  </Step>
+  <Step title="Configure your service account's IAM role">
+    Update the IAM role used by the Briefer API's service account to allow it to access the AI models you enabled in the previous step.
+
+    Briefer needs the following permissions to use Bedrock models:
+
+    ```
+    "bedrock:InvokeModel"
+    "bedrock:InvokeModelWithResponseStream"
+    "bedrock:ListFoundationModels"
+    ```
+
+  </Step>
+  <Step title="Select the desired model (optional)">
+    In Briefer, go to the "Settings" page and select the desired AI models in the "AI models" section.
+
+    By default, Briefer will use the latest version of Anthropic's Claude model.
+
+  </Step>
+</Steps>

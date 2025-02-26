@@ -94,7 +94,11 @@
     },
     {
       "group": "Enterprise",
-      "pages": ["enterprise/sso-self-hosted", "enterprise/granular-permissions"]
+      "pages": [
+        "enterprise/sso-self-hosted",
+        "enterprise/granular-permissions",
+        "enterprise/private-ai"
+      ]
     }
   ],
   "footerSocials": {
