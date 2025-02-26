@@ -15,6 +15,7 @@ import {
 } from './index.js'
 import { ResultStatus, updateYText } from '../index.js'
 import { clone } from 'ramda'
+import { format as formatSQL } from 'sql-formatter'
 
 export type DataframeName = {
   value: string
@@ -283,7 +284,7 @@ export function closeSQLEditWithAIPrompt(
   block: Y.XmlElement<SQLBlock>,
   cleanPrompt: boolean
 ) {
-  const opeartion = () => {
+  const operation = () => {
     const prompt = getSQLBlockEditWithAIPrompt(block)
     if (cleanPrompt) {
       prompt.delete(0, prompt.length)
@@ -293,9 +294,9 @@ export function closeSQLEditWithAIPrompt(
   }
 
   if (block.doc) {
-    block.doc.transact(opeartion)
+    block.doc.transact(operation)
   } else {
-    opeartion()
+    operation()
   }
 }
 
@@ -351,4 +352,17 @@ export function getSQLBlockErrorMessage(
     case 'success':
       return null
   }
+}
+
+export function getSQLCodeFormatted(source: Y.Text) {
+  if (!source.length) {
+    return null
+  }
+
+  const formatted = formatSQL(source.toString(), {
+    language: 'sql',
+    tabWidth: 4,
+  })
+
+  return formatted;
 }
