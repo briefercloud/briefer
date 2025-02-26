@@ -149,8 +149,8 @@ export function duplicateSQLBlock(
     source: duplicateYText(prevAttributes.source),
     dataframeName: clone(prevAttributes.dataframeName),
     dataSourceId: prevAttributes.dataSourceId
-      ? options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
-        prevAttributes.dataSourceId
+      ? (options?.datasourceMap?.get(prevAttributes.dataSourceId) ??
+        prevAttributes.dataSourceId)
       : null,
     isFileDataSource: prevAttributes.isFileDataSource,
     result: options?.noState ? null : clone(prevAttributes.result),
@@ -364,5 +364,5 @@ export function getSQLCodeFormatted(source: Y.Text) {
     tabWidth: 4,
   })
 
-  return formatted;
+  return new Y.Text(formatted)
 }

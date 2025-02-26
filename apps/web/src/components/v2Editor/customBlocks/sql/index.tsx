@@ -403,14 +403,15 @@ function SQLBlock(props: Props) {
   }, [router, props.document.workspaceId])
 
   const onToggleFormatSQLCode = useCallback(() => {
-    const formattedCode = getSQLCodeFormatted(source)
+    const sqlCodeFormatted = getSQLCodeFormatted(source)
 
-    if (!formattedCode) {
+    if (!sqlCodeFormatted) {
       return
     }
 
-    updateYText(source, formattedCode)
-  }, [source])
+    // Reuse the `EditWithAIForm` component to show the formatted SQL code
+    props.block.setAttribute('aiSuggestions', sqlCodeFormatted)
+  }, [source, props.block])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(blockId)
