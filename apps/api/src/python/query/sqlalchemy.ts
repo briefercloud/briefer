@@ -296,7 +296,17 @@ def briefer_make_sqlalchemy_query():
     datasource_type = ${JSON.stringify(dataSourceType)}
     flag_file_path = ${JSON.stringify(flagFilePath)}
     print(json.dumps({"type": "log", "message": "Connecting to database"}))
-    engine = create_engine(${JSON.stringify(databaseUrl)})
+
+    if datasource_type == "psql":
+        try:
+            # set timeout of queries to 10 minutes
+            engine = create_engine(${JSON.stringify(
+              databaseUrl
+            )}, connect_args={"options": "-c statement_timeout=600000"})
+        except:
+            engine = create_engine(${JSON.stringify(databaseUrl)})
+    else:
+        engine = create_engine(${JSON.stringify(databaseUrl)})
 
     process = None
     def abort():
