@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: postgres:latest
+        image: pgvector/pgvector:pg16
         livenessProbe:
           exec:
             command: ["bash", "-ec", 'PGPASSWORD=$POSTGRES_PASSWORD psql -w -U $POSTGRES_USER -d postgres -c "SELECT 1"']
