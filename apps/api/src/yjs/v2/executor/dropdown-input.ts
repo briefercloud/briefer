@@ -127,6 +127,7 @@ export class DropdownInputExecutor implements IDropdownInputExecutor {
           'Saved dropdown input variable'
         )
       }
+      block.setAttribute('executedAt', new Date().toISOString())
       executionItem.setCompleted(aborted ? 'aborted' : 'success')
     } catch (err) {
       logger().error(

@@ -83,6 +83,7 @@ export class DateInputExecutor implements IDateInputExecutor {
         },
         'Saved date input variable'
       )
+      block.setAttribute('executedAt', new Date().toISOString())
       executionItem.setCompleted('success')
     } catch (err) {
       logger().error(

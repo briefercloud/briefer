@@ -346,12 +346,12 @@ function mustExecute(
   // even if skipDependencyCheck is true
   if (skipDependencyCheck) {
     const lastExecutedAt = getExecutedAt(block, blocks)
-    const lastExecutedAtIsAfterEnvironmentStartedAt =
+    const environmentStartedAtIsAfterLastExecutedAt =
       lastExecutedAt === null ||
       environmentStartedAt === null ||
       dfns.isAfter(environmentStartedAt, lastExecutedAt)
 
-    return isInputBlock(block) && lastExecutedAtIsAfterEnvironmentStartedAt
+    return isInputBlock(block) && environmentStartedAtIsAfterLastExecutedAt
   }
 
   if (environmentStartedAt === null) {
