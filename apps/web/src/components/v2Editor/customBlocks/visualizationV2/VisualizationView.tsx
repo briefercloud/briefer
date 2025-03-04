@@ -272,7 +272,7 @@ function BrieferResult(props: {
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
         axisLabel: {
-          hideOverlap: axis.type !== 'category',
+          hideOverlap: true,
           interval: axis.type === 'category' ? 0 : 'auto',
         },
         splitLine: {
@@ -342,6 +342,18 @@ function Echarts(props: EchartsProps) {
       // set animation to be as fast as possible, since finished event does not get fired when no animation
       animationDelay: 0,
       animationDuration: 1,
+      xAxis: (props.option.xAxis
+        ? Array.isArray(props.option.xAxis)
+          ? props.option.xAxis
+          : [props.option.xAxis]
+        : []
+      ).map((axis) => ({
+        ...axis,
+        axisLabel: {
+          ...axis.axisLabel,
+          hideOverlap: false,
+        },
+      })),
     })
 
     const handleFinished = () => {
