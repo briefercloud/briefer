@@ -45,7 +45,6 @@ interface Props {
   onNewSQL: () => void
   controlsHidden: boolean
   isFullScreen: boolean
-  renderer?: 'canvas' | 'svg'
   isHidden: boolean
   onToggleHidden: () => void
   onExportToPNG?: () => void
@@ -70,7 +69,6 @@ function VisualizationViewV2(props: Props) {
           <BrieferResult
             title={props.title}
             result={props.result}
-            renderer={props.renderer}
             input={props.input}
             hasControls={props.hasControls}
           />
@@ -182,11 +180,10 @@ function BrieferResult(props: {
   input: VisualizationV2BlockInput
   hasControls: boolean
   result: VisualizationV2BlockOutputResult
-  renderer?: 'canvas' | 'svg'
 }) {
   const [size, setSize] = useResettableState(
     () => null as { width: number; height: number } | null,
-    [props.result, props.renderer]
+    [props.result]
   )
 
   const measureDiv = useRef<HTMLDivElement>(null)
@@ -256,6 +253,7 @@ function BrieferResult(props: {
 
     return {
       ...props.result,
+      backgroundColor: '#fff',
       legend: {
         ...props.result.legend,
         padding: props.hasControls
@@ -274,7 +272,8 @@ function BrieferResult(props: {
       xAxis: props.result.xAxis.map((axis) => ({
         ...axis,
         axisLabel: {
-          hideOverlap: true,
+          hideOverlap: axis.type !== 'category',
+          interval: axis.type === 'category' ? 0 : 'auto',
         },
         splitLine: {
           show: false,
@@ -315,12 +314,7 @@ function BrieferResult(props: {
 
   return (
     <div ref={container} className="ph-no-capture h-full">
-      <Echarts
-        width={size.width}
-        height={size.height}
-        option={option}
-        renderer={props.renderer}
-      />
+      <Echarts width={size.width} height={size.height} option={option} />
     </div>
   )
 }
@@ -329,32 +323,128 @@ interface EchartsProps {
   width: number
   height: number
   option: echarts.EChartsOption
-  renderer?: 'canvas' | 'svg'
 }
 function Echarts(props: EchartsProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const [chart, setChart] = useState<echarts.ECharts | null>(null)
+  const hiddenRef = useRef<HTMLDivElement>(null)
+  const [finalOption, setFinalOption] = useState(props.option)
+  const [isReady, setIsReady] = useState(false)
 
+  // First render in hidden div to calculate layout
   useEffect(() => {
-    if (!ref.current) {
+    if (!hiddenRef.current) return
+
+    const hiddenChart = echarts.init(hiddenRef.current, null, {
+      renderer: 'svg',
+    })
+    hiddenChart.setOption({
+      ...props.option,
+      // set animation to be as fast as possible, since finished event does not get fired when no animation
+      animationDelay: 0,
+      animationDuration: 1,
+    })
+
+    const handleFinished = () => {
+      const xAxes = Array.isArray(props.option.xAxis)
+        ? props.option.xAxis
+        : props.option.xAxis
+        ? [props.option.xAxis]
+        : []
+      let isRotated = false
+      const nextXAxes = xAxes.map((xAxis) => {
+        if (!xAxis || xAxis.type !== 'category') {
+          return xAxis
+        }
+
+        const labels = hiddenChart.getZr().dom?.querySelectorAll('text') ?? []
+        let hasOverlap = false
+
+        for (let i = 0; i < labels.length - 1; i++) {
+          const rect1 = labels[i].getBoundingClientRect()
+          const rect2 = labels[i + 1].getBoundingClientRect()
+          if (
+            rect1.right > rect2.left &&
+            rect1.left < rect2.right &&
+            rect1.bottom > rect2.top &&
+            rect1.top < rect2.bottom
+          ) {
+            hasOverlap = true
+            break
+          }
+        }
+
+        if (hasOverlap) {
+          isRotated = true
+          return {
+            ...xAxis,
+            axisLabel: {
+              ...xAxis.axisLabel,
+              rotate: 45,
+            },
+          }
+        }
+        return xAxis
+      })
+
+      setFinalOption({
+        ...props.option,
+        xAxis: nextXAxes,
+        // if isRotated we need additional padding left
+        grid: props.option.grid
+          ? Array.isArray(props.option.grid)
+            ? props.option.grid.map((grid) => ({
+                ...grid,
+                left: isRotated ? '60' : grid.left,
+              }))
+            : {
+                ...props.option.grid,
+                left: isRotated ? '60' : props.option.grid.left,
+              }
+          : isRotated
+          ? {
+              left: '60',
+            }
+          : undefined,
+      })
+      setIsReady(true)
+      hiddenChart.dispose()
+    }
+
+    hiddenChart.on('finished', handleFinished)
+
+    return () => {
+      hiddenChart.dispose()
+    }
+  }, [props.option])
+
+  // Only render the visible chart once we have the final layout
+  useEffect(() => {
+    if (!ref.current || !isReady) {
       return
     }
 
-    const chart = echarts.init(ref.current, { renderer: props.renderer })
-    setChart(chart)
+    const chart = echarts.init(ref.current, null, { renderer: 'canvas' })
+    chart.setOption(finalOption)
 
     return () => {
       chart.dispose()
     }
-  }, [ref.current, props.renderer])
+  }, [ref.current, isReady, finalOption])
 
-  useEffect(() => {
-    if (chart) {
-      chart.setOption(props.option)
-    }
-  }, [props.option, chart])
-
-  return <div ref={ref} className="w-full h-full" />
+  return (
+    <>
+      <div
+        ref={hiddenRef}
+        className="w-full h-full"
+        style={{
+          position: 'absolute',
+          visibility: 'hidden',
+          pointerEvents: 'none',
+        }}
+      />
+      {isReady && <div ref={ref} className="w-full h-full" />}
+    </>
+  )
 }
 
 function BigNumberVisualization(props: {

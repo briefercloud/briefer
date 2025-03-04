@@ -108,7 +108,6 @@ interface Props {
     position: 'before' | 'after'
   ) => void
   dashboardMode: DashboardMode | null
-  renderer?: 'canvas' | 'svg'
   hasMultipleTabs: boolean
   isBlockHiddenInPublished: boolean
   onToggleIsBlockHiddenInPublished: (blockId: string) => void
@@ -334,11 +333,7 @@ function VisualizationBlockV2(props: Props) {
 
   const onExportToPNG = async () => {
     // we don't need to check if props.renderer is undefined because the application sets as 'canvas' in this case
-    if (
-      props.renderer === 'svg' ||
-      attrs.input.chartType === 'number' ||
-      attrs.input.chartType === 'trend'
-    )
+    if (attrs.input.chartType === 'number' || attrs.input.chartType === 'trend')
       return
 
     // if the controls are visible the canvas shrinks, making the export smaller
@@ -685,7 +680,6 @@ function VisualizationBlockV2(props: Props) {
         result={attrs.output?.result ?? null}
         controlsHidden={attrs.controlsHidden}
         isFullScreen={isFullScreen}
-        renderer={props.renderer}
         isHidden={attrs.controlsHidden}
         onToggleHidden={onToggleHidden}
         onExportToPNG={onExportToPNG}
@@ -829,7 +823,6 @@ function VisualizationBlockV2(props: Props) {
             result={attrs.output?.result ?? null}
             controlsHidden={attrs.controlsHidden}
             isFullScreen={isFullScreen}
-            renderer={props.renderer}
             isHidden={attrs.controlsHidden}
             onToggleHidden={onToggleHidden}
             onExportToPNG={onExportToPNG}
