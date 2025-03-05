@@ -170,6 +170,7 @@ const XAxis = CartesianAxisOption.and(
     }),
   })
 )
+export type XAxis = z.infer<typeof XAxis>
 
 const YAxis = CartesianAxisOption.and(
   z.object({

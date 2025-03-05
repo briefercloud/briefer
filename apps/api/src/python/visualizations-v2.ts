@@ -35,6 +35,19 @@ import numpy as np
 import math
 from jinja2 import Template
 
+class _BrieferNpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if pd.api.types.is_integer_dtype(obj):
+            return int(obj)
+        if pd.api.types.is_float_dtype(obj):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        try:
+            return super(_BrieferNpEncoder, self).default(obj)
+        except:
+            return str(obj)
+
 def _briefer_render_filter_value(filter):
     try:
         if isinstance(filter["value"], list):
@@ -520,7 +533,7 @@ def _briefer_create_visualization(df, options):
             "tooManyDataPoints": too_many_data_points,
             "filters": options["filters"]
         }
-    }, default=str)
+    }, cls=_BrieferNpEncoder)
 
     print(output)
 

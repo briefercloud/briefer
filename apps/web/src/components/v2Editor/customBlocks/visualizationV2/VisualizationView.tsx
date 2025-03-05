@@ -1,3 +1,4 @@
+import * as dfns from 'date-fns'
 import * as echarts from 'echarts-unofficial-v6'
 import { fontFamily as twFontFamiliy } from 'tailwindcss/defaultTheme'
 import { format as d3Format } from 'd3-format'
@@ -12,7 +13,7 @@ import {
 } from '@heroicons/react/20/solid'
 import { CubeTransparentIcon } from '@heroicons/react/24/solid'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
-import { DataFrame } from '@briefer/types'
+import { DataFrame, TimeUnit } from '@briefer/types'
 import LargeSpinner from '@/components/LargeSpinner'
 import clsx from 'clsx'
 import useSideBar from '@/hooks/useSideBar'
@@ -23,6 +24,7 @@ import { findMaxFontSize, measureText } from '@/measureText'
 import {
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
+  XAxis,
 } from '@briefer/editor'
 import { head } from 'ramda'
 
@@ -269,16 +271,16 @@ function BrieferResult(props: {
         left: !props.hasControls ? 18 : 'center',
       },
       grid,
-      xAxis: props.result.xAxis.map((axis) => ({
-        ...axis,
-        axisLabel: {
-          hideOverlap: true,
-          interval: axis.type === 'category' ? 0 : 'auto',
-        },
-        splitLine: {
-          show: false,
-        },
-      })),
+      xAxis: props.result.xAxis.map((axis) => {
+        switch (axis.type) {
+          case 'value':
+            return getValueAxis(axis, props.result)
+          case 'time':
+            return getTimeAxis(axis, props.result)
+          case 'category':
+            return getCategoryAxis(axis)
+        }
+      }),
       yAxis: props.result.yAxis.map((axis) => ({
         ...axis,
       })),
@@ -337,7 +339,7 @@ function Echarts(props: EchartsProps) {
     const hiddenChart = echarts.init(hiddenRef.current, null, {
       renderer: 'svg',
     })
-    hiddenChart.setOption({
+    const hiddenChartOption = {
       ...props.option,
       // set animation to be as fast as possible, since finished event does not get fired when no animation
       animationDelay: 0,
@@ -354,7 +356,9 @@ function Echarts(props: EchartsProps) {
           hideOverlap: false,
         },
       })),
-    })
+    }
+
+    hiddenChart.setOption(hiddenChartOption)
 
     const handleFinished = () => {
       const xAxes = Array.isArray(props.option.xAxis)
@@ -659,6 +663,262 @@ function BigNumberVisualization(props: {
   } catch (err) {
     console.error(err)
     return null
+  }
+}
+
+function getValuesMinInterval(xValues: number[]): number {
+  if (xValues.length === 0) {
+    return 0
+  }
+
+  let minDiff = Infinity
+
+  for (let i = 0; i < xValues.length - 1; i++) {
+    const a = xValues[i]
+    const b = xValues[i + 1]
+    if (a === b) {
+      continue
+    }
+
+    const diff = Math.abs(a - b)
+    if (diff < minDiff) {
+      minDiff = diff
+    }
+  }
+
+  return minDiff
+}
+
+function getValueAxis(axis: XAxis, result: VisualizationV2BlockOutputResult) {
+  let interval: 'auto' | number = 'auto'
+
+  let min = -Infinity
+  let max = Infinity
+  const xFields = result.series
+    .map((s) => s.encode?.x)
+    .filter((x): x is string | number => x !== undefined)
+  const values = result.dataset
+    .flatMap((d) =>
+      xFields.flatMap((f) => d.source.flatMap((r) => r[f.toString()]))
+    )
+    .filter((v) => typeof v === 'number')
+
+  if (values.length > 0) {
+    interval = getValuesMinInterval(values)
+    min = Math.min(...values)
+    max = Math.max(...values)
+  }
+
+  return {
+    ...axis,
+    axisLabel: {
+      margin: 5,
+      hideOverlap: true,
+      ...(typeof interval === 'number'
+        ? {
+            formatter: (value: string | number): string => {
+              if (typeof value === 'number' && (value < min || value > max)) {
+                return ''
+              }
+
+              return value.toString()
+            },
+          }
+        : {}),
+    },
+    min: interval !== 'auto' ? min - interval / 2 : 'dataMin',
+    max: interval !== 'auto' ? max + interval / 2 : 'dataMax',
+    ...(interval !== 'auto'
+      ? {
+          minInterval: interval,
+        }
+      : {}),
+    splitLine: {
+      show: false,
+    },
+  }
+}
+
+function getTimeAxis(axis: XAxis, result: VisualizationV2BlockOutputResult) {
+  const intervalOrder: {
+    [T in TimeUnit]: number
+  } = {
+    seconds: 0,
+    minutes: 1,
+    hours: 2,
+    date: 3,
+    week: 4,
+    month: 5,
+    quarter: 6,
+    year: 7,
+  }
+
+  const xFields = result.series
+    .map((s) => s.encode?.x)
+    .filter((x): x is string | number => x !== undefined)
+  const values = result.dataset
+    .flatMap((d) =>
+      xFields.flatMap((f) => d.source.flatMap((r) => new Date(r[f.toString()])))
+    )
+    .filter((date) => dfns.isValid(date))
+
+  let min = values[0]
+  let max = values[0]
+  let minIntervalUnit: TimeUnit = 'year'
+  for (let i = 0; i < values.length - 1; i++) {
+    const a = values[i]
+    const b = values[i + 1]
+    if (!a || !b || !dfns.isValid(a) || !dfns.isValid(b)) {
+      continue
+    }
+
+    const intervalUnit = getIntervalUnit(a, b)
+
+    if (intervalOrder[intervalUnit] < intervalOrder[minIntervalUnit]) {
+      minIntervalUnit = intervalUnit
+    }
+
+    min =
+      a.getTime() < min.getTime() ? a : b.getTime() < min.getTime() ? b : min
+    max =
+      a.getTime() > max.getTime() ? a : b.getTime() > max.getTime() ? b : max
+  }
+
+  const hideDay = values.every((v) => {
+    switch (minIntervalUnit) {
+      case 'year':
+        return dfns.getDate(v) === 1 && dfns.getMonth(v) === 0
+      case 'quarter':
+        return dfns.getDate(v) === 1 && dfns.getMonth(v) % 3 === 0
+      case 'month':
+        return dfns.isFirstDayOfMonth(v)
+      case 'week':
+      case 'date':
+      case 'hours':
+      case 'minutes':
+      case 'seconds':
+        return false
+    }
+  })
+
+  const minInterval: number = (() => {
+    switch (minIntervalUnit) {
+      case 'year':
+        return 365 * 24 * 60 * 60 * 1000
+      case 'quarter':
+        return 91 * 24 * 60 * 60 * 1000
+      case 'month':
+        return 30 * 24 * 60 * 60 * 1000
+      case 'week':
+        return 7 * 24 * 60 * 60 * 1000
+      case 'date':
+        return 24 * 60 * 60 * 1000
+      case 'hours':
+        return 60 * 60 * 1000
+      case 'minutes':
+        return 60 * 1000
+      case 'seconds':
+        return 1000
+    }
+  })()
+
+  return {
+    ...axis,
+    axisLabel: {
+      margin: 5,
+      hideOverlap: true,
+      formatter: (value: string | number): string => {
+        const asDate = new Date(value)
+        if (asDate < min || asDate > max) {
+          return ''
+        }
+
+        switch (minIntervalUnit) {
+          case 'year':
+            if (hideDay) {
+              return dfns.format(value, 'yyyy')
+            } else {
+              return dfns.format(value, 'MMMM d, yyyy')
+            }
+          case 'quarter':
+          case 'month':
+          case 'week':
+          case 'date':
+            if (hideDay) {
+              return dfns.format(value, 'MMMM yyyy')
+            } else {
+              return dfns.format(value, 'MMMM d, yyyy')
+            }
+          case 'hours':
+          case 'minutes':
+            return dfns.format(value, 'MMMM d, yyyy, h:mm a')
+          case 'seconds':
+            return dfns.format(value, 'MMMM d, yyyy, h:mm:ss a')
+        }
+      },
+      showMaxLabel: true,
+      showMinLabel: true,
+    },
+    axisTick: {
+      show: false,
+    },
+    min: min.getTime() - minInterval / 2,
+    max: max.getTime() + minInterval / 2,
+    minInterval,
+    splitLine: {
+      show: false,
+    },
+  }
+}
+
+function getIntervalUnit(a: Date, b: Date): TimeUnit {
+  const years = Math.abs(dfns.differenceInYears(b, a))
+  if (years >= 1) {
+    return 'year'
+  }
+
+  const months = Math.abs(dfns.differenceInMonths(b, a))
+  if (months >= 3) {
+    return 'quarter'
+  }
+
+  if (months >= 1) {
+    return 'month'
+  }
+
+  const weeks = Math.abs(dfns.differenceInWeeks(b, a))
+  if (weeks >= 1) {
+    return 'week'
+  }
+
+  const days = Math.abs(dfns.differenceInDays(b, a))
+  if (days >= 1) {
+    return 'date'
+  }
+
+  const hours = Math.abs(dfns.differenceInHours(b, a))
+  if (hours >= 1) {
+    return 'hours'
+  }
+
+  const minutes = Math.abs(dfns.differenceInMinutes(b, a))
+  if (minutes >= 1) {
+    return 'minutes'
+  }
+
+  return 'seconds'
+}
+
+function getCategoryAxis(axis: XAxis) {
+  return {
+    ...axis,
+    axisLabel: {
+      hideOverlap: true,
+      interval: 0,
+    },
+    splitLine: {
+      show: false,
+    },
   }
 }
 
