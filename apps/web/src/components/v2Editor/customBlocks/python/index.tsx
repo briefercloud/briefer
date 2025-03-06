@@ -316,7 +316,8 @@ function PythonBlock(props: Props) {
           title,
           type: 'python',
         },
-        props.document.title
+        props.document.title,
+        props.document.icon
       )
     } else if (!isComponentInstance) {
       // can only update component if it is not an instance

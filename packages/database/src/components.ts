@@ -71,6 +71,7 @@ export async function createReusableComponent(
         select: {
           id: true,
           title: true,
+          icon: true,
         },
       },
     },
@@ -105,6 +106,7 @@ export async function updateReusableComponent(
         select: {
           id: true,
           title: true,
+          icon: true,
         },
       },
     },

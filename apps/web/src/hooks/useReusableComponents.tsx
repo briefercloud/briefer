@@ -21,7 +21,8 @@ type API = {
   create: (
     workspaceId: string,
     data: Omit<NewReusableComponent, 'id'> & { id: string },
-    documenTitle: string
+    documenTitle: string,
+    documentIcon: string
   ) => void
   update: (
     workspaceId: string,
@@ -161,7 +162,8 @@ export function ReusableComponentsProvider(props: Props) {
     async (
       workspaceId: string,
       data: Omit<NewReusableComponent, 'id'> & { id: string },
-      documentTitle: string
+      documentTitle: string,
+      documentIcon: string
     ) => {
       // optimistic update
       setState((state) => {
@@ -176,6 +178,7 @@ export function ReusableComponentsProvider(props: Props) {
             document: {
               id: data.documentId,
               title: documentTitle,
+              icon: documentIcon,
             },
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

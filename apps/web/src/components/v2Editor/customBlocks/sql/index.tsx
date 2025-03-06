@@ -445,7 +445,8 @@ function SQLBlock(props: Props) {
           title,
           type: 'sql',
         },
-        props.document.title
+        props.document.title,
+        props.document.icon
       )
     } else if (!isComponentInstance) {
       // can only update component if it is not an instance
