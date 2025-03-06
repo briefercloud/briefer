@@ -465,7 +465,7 @@ def _briefer_create_visualization(df, options):
                       }
                     }
                     if chart_type == "line":
-                        serie["symbolSize"] = 1
+                        serie["symbolSize"] = 6
 
                     if group is None:
                         color = series.get("color") or colors[color_index % len(colors)]
@@ -490,7 +490,7 @@ def _briefer_create_visualization(df, options):
                     if chart_type == "bar":
                         serie["color"] = color
                     elif chart_type == "line":
-                        serie["lineStyle"] = {"color": color}
+                        serie["lineStyle"] = {"color": color, "width": 2}
                         serie["itemStyle"] = {"color": color}
                     elif chart_type == "scatter":
                         serie["itemStyle"] = {"color": color}
