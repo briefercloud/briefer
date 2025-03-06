@@ -15,6 +15,7 @@ export type APIReusableComponent = Omit<
   document: {
     id: string
     title: string
+    icon: string
   }
 }
 
@@ -28,6 +29,7 @@ export async function listReusableComponents(
         select: {
           id: true,
           title: true,
+          icon: true,
         },
       },
     },

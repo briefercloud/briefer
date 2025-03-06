@@ -16,6 +16,14 @@ import type {
 } from '@briefer/database'
 import { addComponentToDocument, decodeComponentState } from '@briefer/editor'
 import ScrollBar from './ScrollBar'
+import Link from 'next/link'
+import allLucideIcons from '@/utils/lucideIcons'
+import * as allOutlineIcons from '@heroicons/react/24/outline'
+
+const icons: Record<string, React.ComponentType<React.ComponentProps<any>>> = {
+  ...allOutlineIcons,
+  ...allLucideIcons,
+}
 
 interface Props {
   workspaceId: string
@@ -24,7 +32,6 @@ interface Props {
   onHide: () => void
   yDoc?: Y.Doc
 }
-
 export default function ReusableComponents(props: Props) {
   const [{ data, isLoading }, api] = useReusableComponents(props.workspaceId)
 
@@ -152,6 +159,9 @@ function ReusableComponentItem(props: ReusableComponentItemProps) {
     props.onRemove(props.component)
   }, [props.onRemove, props.component])
 
+  const Icon =
+    icons[props.component.document.icon ?? 'DocumentIcon'] || (() => null)
+
   return (
     <div className="px-4 py-3 font-sans block w-full">
       <div className="flex flex-col">
@@ -178,7 +188,13 @@ function ReusableComponentItem(props: ReusableComponentItemProps) {
             <svg viewBox="0 0 2 2" className="h-0.5 w-0.5 fill-current">
               <circle cx={1} cy={1} r={1} />
             </svg>
-            {props.component.document.title || 'Untitled'}
+            <Link
+              href={`/workspaces/${props.workspaceId}/documents/${props.component.document.id}`}
+              className="flex items-center gap-x-1 text-gray-400 hover:text-gray-500"
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {props.component.document.title || 'Untitled'}
+            </Link>
           </div>
           <div className="flex items-center gap-x-2 font-medium text-gray-400 text-xs">
             Saved at{' '}
