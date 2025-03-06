@@ -47,7 +47,11 @@ import { exhaustiveCheck } from '@briefer/types'
 import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
-import { CommandLineIcon } from '@heroicons/react/24/solid'
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CommandLineIcon,
+} from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
 import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
@@ -188,12 +192,25 @@ function PythonBlock(props: Props) {
   const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
 
+  const isCodeHidden =
+    props.block.getAttribute('isCodeHidden') &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+  const isResultHidden =
+    props.block.getAttribute('isResultHidden') &&
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+
   const queryStatusText: JSX.Element | null = useMemo(() => {
     switch (status) {
       case 'idle':
       case 'completed':
         if (source?.toJSON() === lastQuery && lastQueryTime) {
-          return <PythonSucceededText lastExecutionTime={lastQueryTime} />
+          return (
+            <PythonSucceededText
+              lastExecutionTime={lastQueryTime}
+              isResultHidden={isResultHidden ?? false}
+              onToggleResultHidden={toggleResultHidden}
+            />
+          )
         }
         return null
       case 'running':
@@ -216,14 +233,9 @@ function PythonBlock(props: Props) {
     lastQueryTime,
     source.toJSON(),
     envStatus,
+    isResultHidden,
+    toggleResultHidden,
   ])
-
-  const isCodeHidden =
-    props.block.getAttribute('isCodeHidden') &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
-  const isResultHidden =
-    props.block.getAttribute('isResultHidden') &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
 
   const { title } = getBaseAttributes(props.block)
   const onChangeTitle = useCallback(
@@ -454,7 +466,14 @@ function PythonBlock(props: Props) {
           >
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12">
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                <CommandLineIcon className="h-4 w-4 text-gray-400" />
+                <button className="group" onClick={toggleCodeHidden}>
+                  <CommandLineIcon className="h-4 w-4 text-gray-400 group-hover:hidden" />
+                  {isCodeHidden ? (
+                    <ChevronRightIcon className="h-4 w-4 text-gray-400 hidden group-hover:block" />
+                  ) : (
+                    <ChevronDownIcon className="h-4 w-4 text-gray-400 hidden group-hover:block" />
+                  )}
+                </button>
                 <input
                   type="text"
                   className={clsx(

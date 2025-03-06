@@ -72,9 +72,10 @@ import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import useFeatureFlags from '@/hooks/useFeatureFlags'
-import { CircleStackIcon } from '@heroicons/react/24/solid'
+import { ChevronDownIcon, CircleStackIcon } from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
 import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
+import { ChevronRightIcon } from '@heroicons/react/24/outline'
 
 interface Props {
   block: Y.XmlElement<SQLBlock>
@@ -330,7 +331,13 @@ function SQLBlock(props: Props) {
       case 'idle':
       case 'completed': {
         if (source?.toJSON() === lastQuery && lastQueryTime) {
-          return <QuerySucceededText lastExecutionTime={lastQueryTime} />
+          return (
+            <QuerySucceededText
+              lastExecutionTime={lastQueryTime}
+              isResultHidden={isResultHidden}
+              onToggleResultHidden={toggleResultHidden}
+            />
+          )
         }
 
         return null
@@ -352,6 +359,8 @@ function SQLBlock(props: Props) {
     lastQueryTime,
     source.toJSON(),
     envStatus,
+    isResultHidden,
+    toggleResultHidden,
   ])
 
   const onSubmitEditWithAI = useCallback(() => {
@@ -764,7 +773,14 @@ function SQLBlock(props: Props) {
               )}
             >
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                <CircleStackIcon className="h-4 w-4 text-gray-400" />
+                <button className="group" onClick={toggleCodeHidden}>
+                  <CircleStackIcon className="h-4 w-4 text-gray-400 group-hover:hidden" />
+                  {isCodeHiddenProp ? (
+                    <ChevronRightIcon className="h-4 w-4 text-gray-400 hidden group-hover:block" />
+                  ) : (
+                    <ChevronDownIcon className="h-4 w-4 text-gray-400 hidden group-hover:block" />
+                  )}
+                </button>
                 <input
                   type="text"
                   className={clsx(
