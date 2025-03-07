@@ -11,12 +11,15 @@ import {
   VisualizationDateFilterOperator,
   VisualizationNumberFilterOperator,
   VisualizationStringFilterOperator,
+  VisualizationBooleanFilterOperator,
   numberFilterOperators,
   stringFilterOperators,
   dateFilterOperators,
+  booleanFilterOperators,
   VisualizationNumberFilter,
   VisualizationStringFilter,
   VisualizationDateFilter,
+  VisualizationBooleanFilter,
   toDate,
   DataFrame,
   VisualizationFilter,
@@ -49,6 +52,7 @@ function isNumberOperator(
     | VisualizationNumberFilterOperator
     | VisualizationStringFilterOperator
     | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
 ): operator is VisualizationNumberFilterOperator {
   return VisualizationNumberFilterOperator.safeParse(operator).success
 }
@@ -58,8 +62,19 @@ function isStringOperator(
     | VisualizationNumberFilterOperator
     | VisualizationStringFilterOperator
     | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
 ): operator is VisualizationStringFilterOperator {
   return VisualizationStringFilterOperator.safeParse(operator).success
+}
+
+function isBooleanOperator(
+  operator:
+    | VisualizationNumberFilterOperator
+    | VisualizationStringFilterOperator
+    | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
+): operator is VisualizationBooleanFilterOperator {
+  return VisualizationBooleanFilterOperator.safeParse(operator).success
 }
 
 function isDateOperator(
@@ -67,6 +82,7 @@ function isDateOperator(
     | VisualizationNumberFilterOperator
     | VisualizationStringFilterOperator
     | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
 ): operator is VisualizationDateFilterOperator {
   return VisualizationDateFilterOperator.safeParse(operator).success
 }
@@ -169,6 +185,27 @@ function stringOperatorLabel(
   }
 }
 
+function booleanOperatorSymbol(
+  operator: VisualizationBooleanFilterOperator
+): string {
+  switch (operator) {
+    case 'isTrue':
+      return 'is true'
+    case 'isFalse':
+      return 'is false'
+  }
+}
+function booleanOperatorLabel(
+  operator: VisualizationBooleanFilterOperator
+): string {
+  switch (operator) {
+    case 'isTrue':
+      return 'Is True'
+    case 'isFalse':
+      return 'Is False'
+  }
+}
+
 function dateOperatorSymbol(operator: VisualizationDateFilterOperator): string {
   switch (operator) {
     case 'eq':
@@ -215,6 +252,7 @@ function getOperatorLabel(
     | VisualizationStringFilterOperator
     | VisualizationNumberFilterOperator
     | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
 ): string {
   if (isNumberOperator(operator)) {
     return numberOperatorLabel(operator)
@@ -222,6 +260,10 @@ function getOperatorLabel(
 
   if (isStringOperator(operator)) {
     return stringOperatorLabel(operator)
+  }
+
+  if (isBooleanOperator(operator)) {
+    return booleanOperatorLabel(operator)
   }
 
   return dateOperatorLabel(operator)
@@ -232,6 +274,7 @@ function searchOperator<
     | VisualizationNumberFilterOperator
     | VisualizationStringFilterOperator
     | VisualizationDateFilterOperator
+    | VisualizationBooleanFilterOperator
 >(options: T[], query: string): T[] {
   return options.filter((c) => {
     if (isNumberOperator(c)) {
@@ -245,6 +288,13 @@ function searchOperator<
       return (
         stringOperatorLabel(c).toLowerCase().includes(query.toLowerCase()) ||
         stringOperatorSymbol(c).toLowerCase().includes(query.toLowerCase())
+      )
+    }
+
+    if (isBooleanOperator(c)) {
+      return (
+        booleanOperatorLabel(c).toLowerCase().includes(query.toLowerCase()) ||
+        booleanOperatorSymbol(c).toLowerCase().includes(query.toLowerCase())
       )
     }
 
@@ -268,9 +318,8 @@ function getOperatorOptions(columnType: DataFrameColumn['type']) {
     return dateFilterOperators
   }
 
-  // TODO: add filtering capabilities for boolean types
   if (NumpyBoolTypes.safeParse(columnType).success) {
-    return []
+    return booleanFilterOperators
   }
 
   // TODO: this should never happen, we should be alerted
@@ -281,6 +330,7 @@ type Operator =
   | VisualizationStringFilterOperator
   | VisualizationNumberFilterOperator
   | VisualizationDateFilterOperator
+  | VisualizationBooleanFilterOperator
 
 interface Props {
   dataframe: Pick<DataFrame, 'name' | 'columns'>
@@ -364,6 +414,13 @@ function FilterSelector(props: Props) {
       return
     }
 
+    if (NumpyBoolTypes.safeParse(column.type).success) {
+      if (!isBooleanOperator(operator)) {
+        setOperator('isTrue')
+      }
+      return
+    }
+
     if (NumpyDateTypes.safeParse(column.type).success) {
       if (!isDateOperator(operator)) {
         setOperator('eq')
@@ -406,6 +463,23 @@ function FilterSelector(props: Props) {
       if (NumpyStringTypes.or(NumpyJsonTypes).safeParse(column.type).success) {
         if (isStringOperator(operator)) {
           const filter = VisualizationStringFilter.safeParse({
+            id: props.filter.id,
+            column,
+            operator,
+            value,
+          })
+          if (filter.success) {
+            props.onChange(filter.data)
+            return
+          }
+        }
+      }
+
+      if (
+        NumpyBoolTypes.safeParse(column.type).success
+      ) {
+        if (isBooleanOperator(operator)) {
+          const filter = VisualizationBooleanFilter.safeParse({
             id: props.filter.id,
             column,
             operator,
@@ -514,7 +588,7 @@ function FilterSelector(props: Props) {
         }
       }
 
-      if (column && (newOp === 'isNull' || newOp === 'isNotNull')) {
+      if (column && (newOp === 'isNull' || newOp === 'isNotNull' || newOp === 'isTrue' || newOp === 'isFalse')) {
         if (
           NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(column.type)
             .success
@@ -526,6 +600,12 @@ function FilterSelector(props: Props) {
           NumpyStringTypes.or(NumpyJsonTypes).safeParse(column.type).success
         ) {
           setValue('filter')
+        }
+
+        if (
+          NumpyBoolTypes.safeParse(column.type).success
+        ) {
+          setValue('filter') // FIXME: Improve value handling for boolean filtering
         }
 
         if (NumpyDateTypes.safeParse(column.type).success) {
@@ -636,7 +716,7 @@ function FilterSelector(props: Props) {
           <span>{column?.name ?? 'New filter'}</span>
           <span
             className={clsx(
-              operator === 'isNull' || operator === 'isNotNull'
+              operator === 'isNull' || operator === 'isNotNull' || operator === 'isTrue' || operator === 'isFalse'
                 ? 'pl-0.5'
                 : 'px-0.5',
               props.isInvalid ? 'text-red-400' : 'text-gray-400'
@@ -647,10 +727,12 @@ function FilterSelector(props: Props) {
                 ? numberOperatorSymbol(operator)
                 : isStringOperator(operator)
                 ? stringOperatorSymbol(operator)
+                : isBooleanOperator(operator)
+                ? booleanOperatorSymbol(operator)
                 : dateOperatorSymbol(operator)
               : ''}
           </span>
-          {operator !== 'isNull' && operator !== 'isNotNull' ? (
+          {operator !== 'isNull' && operator !== 'isNotNull' && operator !== 'isTrue' && operator !== 'isFalse' ? (
             <>
               {renderedValue ? (
                 <span className="px-1.5 py-0.5 bg-ceramic-100 text-ceramic-500 rounded-md">
@@ -719,6 +801,7 @@ function FilterSelector(props: Props) {
                     | VisualizationNumberFilterOperator
                     | VisualizationDateFilterOperator
                     | VisualizationStringFilterOperator
+                    | VisualizationBooleanFilterOperator
                   >
                     icon={() => null}
                     label="Operator"
@@ -730,7 +813,7 @@ function FilterSelector(props: Props) {
                     placeholder="Operator"
                     disabled={props.disabled}
                   />
-                  {operator !== 'isNull' && operator !== 'isNotNull' && (
+                  {operator !== 'isNull' && operator !== 'isNotNull' && operator !== 'isTrue' && operator !== 'isFalse' && (
                     <div className="relative">
                       {VisualizationStringFilterMultiValuesOperator.safeParse(
                         operator
