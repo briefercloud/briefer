@@ -352,6 +352,7 @@ function PrivateDocumentPageInner(
     >
       <div className="w-full relative flex">
         <V2Editor
+          key={selectedSidebar?._tag}
           document={props.document}
           dataSources={dataSources}
           isPublicViewer={false}
@@ -372,17 +373,7 @@ function PrivateDocumentPageInner(
           isSyncing={syncing}
           onOpenFiles={onToggleFiles}
           onSchemaExplorer={onToggleSchemaExplorerSQLBlock}
-        >
-          {!isViewer && (
-            <RunAllV2
-              disabled={false}
-              yDoc={yDoc}
-              primary={props.isApp}
-              userId={props.user.id}
-              executionQueue={executionQueue}
-            />
-          )}
-        </V2Editor>
+        />
 
         <Comments
           workspaceId={props.workspaceId}

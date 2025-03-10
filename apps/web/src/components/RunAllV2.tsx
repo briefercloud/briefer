@@ -60,7 +60,7 @@ export default function RunAllV2(props: Props) {
           'bg-red-200 hover:bg-red-300':
             !props.disabled && loading && status !== 'aborting',
         },
-        'flex items-center rounded-sm px-3 py-1 text-sm gap-x-1.5 fixed mt-3 right-8 z-10'
+        'flex items-center rounded-sm px-3 py-1 text-sm gap-x-1.5 absolute top-3 right-8 z-10'
       )}
       onClick={onClick}
       disabled={props.disabled}

@@ -112,6 +112,7 @@ import {
   PlayIcon,
 } from '@heroicons/react/24/outline'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
+import RunAllV2 from '../RunAllV2'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -1667,7 +1668,7 @@ const Editor = (props: Props) => {
   const lastUpdatedAt = useLastUpdatedAt(props.yDoc)
 
   return (
-    <div className="editor-v2 flex flex-col flex-grow justify-center font-primary subpixel-antialiased h-full w-full">
+    <div className="editor-v2 flex flex-col flex-grow justify-center font-primary subpixel-antialiased h-full w-full relative">
       {props.isDeleted && (
         <div className="bg-yellow-50 py-6 border-b border-yellow-200">
           <div className="flex justify-center">
@@ -1687,6 +1688,16 @@ const Editor = (props: Props) => {
             </div>
           </div>
         </div>
+      )}
+
+      {props.role !== 'viewer' && props.userId && (
+        <RunAllV2
+          disabled={false}
+          yDoc={props.yDoc}
+          primary={props.isApp}
+          userId={props.userId}
+          executionQueue={props.executionQueue}
+        />
       )}
 
       <div
