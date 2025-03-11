@@ -72,7 +72,11 @@ import { useBlockExecutions } from '@/hooks/useBlockExecution'
 import { head } from 'ramda'
 import { useAITasks } from '@/hooks/useAITasks'
 import useFeatureFlags from '@/hooks/useFeatureFlags'
-import { CircleStackIcon } from '@heroicons/react/24/solid'
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CircleStackIcon,
+} from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
 import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
 
@@ -765,7 +769,27 @@ function SQLBlock(props: Props) {
               )}
             >
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                <CircleStackIcon className="h-4 w-4 text-gray-400" />
+                <div className="relative group w-4 h-4">
+                  <CircleStackIcon
+                    className={clsx(
+                      'absolute inset-0 h-4 w-4 text-gray-400',
+                      props.isEditable &&
+                        'group-hover:opacity-0 transition-opacity'
+                    )}
+                  />
+                  {props.isEditable && (
+                    <button
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={toggleCodeHidden}
+                    >
+                      {isCodeHidden ? (
+                        <ChevronRightIcon className="h-4 w-4" />
+                      ) : (
+                        <ChevronDownIcon className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   className={clsx(

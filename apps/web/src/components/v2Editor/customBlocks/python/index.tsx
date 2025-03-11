@@ -50,6 +50,7 @@ import { useAITasks } from '@/hooks/useAITasks'
 import { CommandLineIcon } from '@heroicons/react/24/solid'
 import { TooltipV2 } from '@/components/Tooltips'
 import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
+import { ChevronDownIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
 interface Props {
   document: ApiDocument
@@ -455,7 +456,27 @@ function PythonBlock(props: Props) {
           >
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12">
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
-                <CommandLineIcon className="h-4 w-4 text-gray-400" />
+                <div className="relative group w-4 h-4">
+                  <CommandLineIcon
+                    className={clsx(
+                      'absolute inset-0 h-4 w-4 text-gray-400',
+                      props.isEditable &&
+                        'group-hover:opacity-0 transition-opacity'
+                    )}
+                  />
+                  {props.isEditable && (
+                    <button
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={toggleCodeHidden}
+                    >
+                      {isCodeHidden ? (
+                        <ChevronRightIcon className="h-4 w-4" />
+                      ) : (
+                        <ChevronDownIcon className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
+                </div>
                 <input
                   type="text"
                   className={clsx(

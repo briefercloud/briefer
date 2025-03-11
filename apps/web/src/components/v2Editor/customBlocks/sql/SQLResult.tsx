@@ -98,8 +98,8 @@ function SQLResult(props: Props) {
           onFixWithAI={props.onFixWithAI}
           canFixWithAI={props.canFixWithAI}
           dashboardMode={props.dashboardMode}
-          toggleResultHidden={props.toggleResultHidden}
           isResultHidden={props.isResultHidden}
+          toggleResultHidden={props.toggleResultHidden}
         />
       )
     case 'python-error':
@@ -107,8 +107,8 @@ function SQLResult(props: Props) {
         <SQLPythonError
           result={props.result}
           dashboardMode={props.dashboardMode}
-          toggleResultHidden={props.toggleResultHidden}
           isResultHidden={props.isResultHidden}
+          toggleResultHidden={props.toggleResultHidden}
         />
       )
   }
@@ -413,27 +413,13 @@ function SQLSyntaxError(props: {
   return (
     <div className="text-xs">
       {!props.dashboardMode && (
-        <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
-          <div className="flex gap-x-1.5 items-center">
-            <button
-              className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm"
-              onClick={props.toggleResultHidden}
-            >
-              {props.isResultHidden ? (
-                <ChevronRightIcon />
-              ) : (
-                <ChevronDownIcon />
-              )}
-            </button>
-
-            <span className="font-sans">
-              {props.isResultHidden ? 'Output collapsed' : 'Output'}
-            </span>
-          </div>
-
-          <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10">
+        <div className="p-3 text-xs text-gray-300 flex items-center justify-end">
+          <button
+            className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-100"
+            onClick={props.toggleResultHidden}
+          >
             contains errors
-          </span>
+          </button>
         </div>
       )}
 
@@ -499,27 +485,13 @@ function SQLPythonError(props: {
   return (
     <div className="text-xs">
       {!props.dashboardMode && (
-        <div className="p-3 text-xs text-gray-300 flex items-center justify-between">
-          <div className="flex gap-x-1.5 items-center">
-            <button
-              className="print:hidden h-4 w-4 hover:text-gray-400 rounded-sm"
-              onClick={props.toggleResultHidden}
-            >
-              {props.isResultHidden ? (
-                <ChevronRightIcon />
-              ) : (
-                <ChevronDownIcon />
-              )}
-            </button>
-
-            <span className="font-sans">
-              {props.isResultHidden ? 'Output collapsed' : 'Output'}
-            </span>
-          </div>
-
-          <span className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10">
+        <div className="p-3 text-xs text-gray-300 flex items-center justify-end">
+          <button
+            className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10"
+            onClick={props.toggleResultHidden}
+          >
             contains errors
-          </span>
+          </button>
         </div>
       )}
 
