@@ -458,7 +458,7 @@ function Echarts(props: EchartsProps) {
           pointerEvents: 'none',
         }}
       />
-      {isReady && <div ref={ref} className="w-full h-full" />}
+      {isReady && <div ref={ref} className="w-full h-full rounded-md overflow-hidden" />}
     </>
   )
 }
