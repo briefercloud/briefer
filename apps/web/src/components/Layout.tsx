@@ -38,7 +38,10 @@ import type { UserWorkspaceRole } from '@briefer/database'
 import ReactDOM from 'react-dom'
 import useDropdownPosition from '@/hooks/dropdownPosition'
 import DocumentTree from './DocumentsTree'
-import useSideBar from '@/hooks/useSideBar'
+import useSideBar, {
+  MIN_SIDEBAR_WIDTH,
+  MAX_SIDEBAR_WIDTH,
+} from '@/hooks/useSideBar'
 import MobileWarning from './MobileWarning'
 import CommandPalette from './commandPalette'
 import { useHotkeys } from 'react-hotkeys-hook'
@@ -146,12 +149,16 @@ export default function Layout({
     setSearchOpen((prev) => !prev)
   })
 
-  const [isSideBarOpen, setSideBarOpen] = useSideBar()
+  const {
+    state: { isOpen: isSideBarOpen, width: sideBarWidth },
+    api: sideBarApi,
+  } = useSideBar()
+
   const toggleSideBar = useCallback(
     (state: boolean) => {
-      return () => setSideBarOpen(state)
+      return () => sideBarApi.toggle(state)
     },
-    [setSideBarOpen]
+    [sideBarApi.toggle]
   )
 
   const router = useRouter()
@@ -320,8 +327,47 @@ export default function Layout({
 
   const [isUpgradeDialogOpen, setUpgradeDialogOpen] = useState(false)
 
+  // For sidebar resizing
+  const isResizingRef = useRef(false)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  const startResizing = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      isResizingRef.current = true
+
+      function handleMouseMove(e: MouseEvent) {
+        if (!isResizingRef.current) return
+
+        const newWidth = Math.max(
+          MIN_SIDEBAR_WIDTH,
+          Math.min(MAX_SIDEBAR_WIDTH, e.clientX)
+        )
+
+        sideBarApi.resize(newWidth)
+      }
+
+      function handleMouseUp() {
+        isResizingRef.current = false
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+
+      // Clean up any existing listeners first to prevent duplicates
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+
+      // Add the event listeners
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+    },
+    [sideBarApi.resize]
+  )
+
   return (
-    <div className={`flex w-full h-full ${syne.className}`}>
+    <div
+      className={`flex w-full h-full overflow-hidden ${syne.className} relative`}
+    >
       <MobileWarning />
 
       <DragLayer />
@@ -338,168 +384,205 @@ export default function Layout({
         currentPlan="open-source"
       />
 
+      {/* Overlay for the collapse button only (always on top) */}
       {isSideBarOpen && (
-        <div className="flex flex-col h-full bg-ceramic-50/60 min-w-[320px] max-w-[320px] 3xl:min-w-[400px] 3xl:max-w-[400px] overflow-auto border-r border-gray-200">
-          <div className="flex items-center justify-between pt-0.5 pl-4 pr-5">
-            <div className="font-trap tracking-tight text-2xl antialiased text-gray-800 flex items-center gap-x-1 scale-90">
-              <SparklesIcon className="h-4 w-4" />
-              <span className="leading-4 mt-1">briefer</span>
-            </div>
-
-            <div className="mt-2.5 scale-90 flex items-center">
-              <GitHubButton
-                href="https://github.com/briefercloud/briefer"
-                data-color-scheme="no-preference: light; light: light; dark: dark;"
-                data-size="large"
-                data-show-count="true"
-                aria-label="Star briefercloud/briefer on GitHub"
-              >
-                Star
-              </GitHubButton>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto" ref={scrollRef}>
-            {/* Favorites */}
-            <div
-              className={clsx(
-                favoriteDocuments.size === 0 ? 'hidden' : 'block',
-                'pt-8 overflow-x-hidden'
-              )}
-            >
-              <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1">
-                <span>Favorites</span>
-              </div>
-              <DocumentTree
-                workspaceId={workspaceId}
-                current={documentId}
-                documents={favoriteDocuments}
-                onDuplicate={onDuplicateDocument}
-                onDelete={onDeleteDocument}
-                onFavorite={onFavoriteDocument}
-                onUnfavorite={onUnfavoriteDocument}
-                onSetIcon={onSetIcon}
-                role={user.roles[workspaceId] ?? 'viewer'}
-                flat={true}
-                onCreate={onCreateDocument}
-                onUpdateParent={onUpdateDocumentParent}
-              />
-            </div>
-
-            {/* Pages */}
-            <div
-              className={clsx(
-                'overflow-hidden',
-                favoriteDocuments.size === 0 ? 'pt-8' : ''
-              )}
-            >
-              <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1 justify-between">
-                <span>Pages</span>
-
-                <div className="flex items-center">
-                  <button
-                    onClick={() => setSearchOpen(true)}
-                    className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
-                  >
-                    <MagnifyingGlassIcon
-                      className="h-4 w-4 "
-                      aria-hidden="true"
-                    />
-                  </button>
-
-                  {user.roles[workspaceId] !== 'viewer' && (
-                    <button
-                      id="create-workspace-doc"
-                      onClick={onCreateDocumentHandler}
-                      className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
-                    >
-                      <PlusSmallIcon className="h-4 w-4 " aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <DocumentTree
-                workspaceId={workspaceId}
-                current={documentId}
-                documents={documents}
-                onDuplicate={onDuplicateDocument}
-                onDelete={onDeleteDocument}
-                onFavorite={onFavoriteDocument}
-                onUnfavorite={onUnfavoriteDocument}
-                onSetIcon={onSetIcon}
-                role={user.roles[workspaceId] ?? 'viewer'}
-                onCreate={onCreateDocument}
-                onUpdateParent={onUpdateDocumentParent}
-              />
-            </div>
-          </div>
-
-          {/* Configurations */}
-          <div className="pt-8 pb-4">
-            <div className="text-xs font-semibold leading-6 text-gray-400 px-4">
-              Configurations
-            </div>
-            <ul role="list">
-              <li>
-                <ConfigurationsMenuButton
-                  text="Upgrade Briefer"
-                  icon={RocketLaunchIcon}
-                  onClick={() => setUpgradeDialogOpen(true)}
-                />
-              </li>
-              {configs(workspaceId)
-                .filter(showConfigItem)
-                .map((item) => (
-                  <li id={item.id} key={item.name}>
-                    <ConfigurationsMenuLink
-                      href={item.href}
-                      text={item.name}
-                      icon={item.icon}
-                      openInNewTab={item.openInNewTab}
-                      blink={
-                        item.id === 'data-sources-sidebar-item' &&
-                        !hasUserDataSource
-                      }
-                    />
-                  </li>
-                ))}
-
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-500 hover:bg-ceramic-100/80 group text-sm font-medium leading-6 w-full flex py-1 rounded-sm hover:text-ceramic-600"
-                >
-                  <div className="w-full flex items-center gap-x-2 px-4">
-                    {user.picture ? (
-                      <img
-                        className="h-4 w-4 rounded-full"
-                        src={user.picture}
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <UserIcon className="h-4 w-4 rounded-full" />
-                    )}
-                    <span className="sr-only">Your profile</span>
-                    <span aria-hidden="true" className="mt-0.5">
-                      {user.name}
-                    </span>
-                  </div>
-                  <UserDropdown workspaceId={workspaceId} />
-                </a>
-              </li>
-            </ul>
-          </div>
+        <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-[1000]">
+          <button
+            className="absolute top-3 bg-ceramic-50 rounded-full h-6 w-6 flex items-center justify-center text-gray-400 hover:text-gray-600 cursor-pointer border border-gray-200 hover:bg-ceramic-100 shadow-sm pointer-events-auto"
+            onClick={toggleSideBar(false)}
+            style={{
+              left: `calc(${sideBarWidth}px - 12px)`,
+            }}
+          >
+            <ChevronDoubleLeftIcon className="w-3 h-3" />
+          </button>
         </div>
       )}
 
+      {isSideBarOpen && (
+        <>
+          <div
+            ref={sidebarRef}
+            className="flex flex-col h-full bg-ceramic-50/60 overflow-auto border-r border-gray-200 flex-shrink-0 relative"
+            style={{
+              width: `${sideBarWidth}px`,
+              minWidth: `${Math.max(MIN_SIDEBAR_WIDTH, sideBarWidth)}px`,
+              maxWidth: `${Math.min(MAX_SIDEBAR_WIDTH, sideBarWidth)}px`,
+              transition: 'width 0.2s ease-in-out',
+            }}
+          >
+            <div className="flex items-center justify-between pt-0.5 pl-4 pr-5">
+              <div className="font-trap tracking-tight text-2xl antialiased text-gray-800 flex items-center gap-x-1 scale-90">
+                <SparklesIcon className="h-4 w-4" />
+                <span className="leading-4 mt-1">briefer</span>
+              </div>
+
+              <div className="mt-2.5 scale-90 flex items-center">
+                <GitHubButton
+                  href="https://github.com/briefercloud/briefer"
+                  data-color-scheme="no-preference: light; light: light; dark: dark;"
+                  data-size="large"
+                  data-show-count="true"
+                  aria-label="Star briefercloud/briefer on GitHub"
+                >
+                  Star
+                </GitHubButton>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+              {/* Favorites */}
+              <div
+                className={clsx(
+                  favoriteDocuments.size === 0 ? 'hidden' : 'block',
+                  'pt-8 overflow-x-hidden'
+                )}
+              >
+                <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1">
+                  <span>Favorites</span>
+                </div>
+                <DocumentTree
+                  workspaceId={workspaceId}
+                  current={documentId}
+                  documents={favoriteDocuments}
+                  onDuplicate={onDuplicateDocument}
+                  onDelete={onDeleteDocument}
+                  onFavorite={onFavoriteDocument}
+                  onUnfavorite={onUnfavoriteDocument}
+                  onSetIcon={onSetIcon}
+                  role={user.roles[workspaceId] ?? 'viewer'}
+                  flat={true}
+                  onCreate={onCreateDocument}
+                  onUpdateParent={onUpdateDocumentParent}
+                />
+              </div>
+
+              {/* Pages */}
+              <div
+                className={clsx(
+                  'overflow-hidden',
+                  favoriteDocuments.size === 0 ? 'pt-8' : ''
+                )}
+              >
+                <div className="flex items-center text-xs font-semibold leading-6 text-gray-400 pl-6 pr-1.5 pb-1 justify-between">
+                  <span>Pages</span>
+
+                  <div className="flex items-center">
+                    <button
+                      onClick={() => setSearchOpen(true)}
+                      className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
+                    >
+                      <MagnifyingGlassIcon
+                        className="h-4 w-4 "
+                        aria-hidden="true"
+                      />
+                    </button>
+
+                    {user.roles[workspaceId] !== 'viewer' && (
+                      <button
+                        id="create-workspace-doc"
+                        onClick={onCreateDocumentHandler}
+                        className="p-1 hover:text-ceramic-500 hover:bg-ceramic-100/70 rounded-md hover:cursor-pointer"
+                      >
+                        <PlusSmallIcon
+                          className="h-4 w-4 "
+                          aria-hidden="true"
+                        />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <DocumentTree
+                  workspaceId={workspaceId}
+                  current={documentId}
+                  documents={documents}
+                  onDuplicate={onDuplicateDocument}
+                  onDelete={onDeleteDocument}
+                  onFavorite={onFavoriteDocument}
+                  onUnfavorite={onUnfavoriteDocument}
+                  onSetIcon={onSetIcon}
+                  role={user.roles[workspaceId] ?? 'viewer'}
+                  onCreate={onCreateDocument}
+                  onUpdateParent={onUpdateDocumentParent}
+                />
+              </div>
+            </div>
+
+            {/* Configurations */}
+            <div className="pt-8 pb-4">
+              <div className="text-xs font-semibold leading-6 text-gray-400 px-4">
+                Configurations
+              </div>
+              <ul role="list">
+                <li>
+                  <ConfigurationsMenuButton
+                    text="Upgrade Briefer"
+                    icon={RocketLaunchIcon}
+                    onClick={() => setUpgradeDialogOpen(true)}
+                  />
+                </li>
+                {configs(workspaceId)
+                  .filter(showConfigItem)
+                  .map((item) => (
+                    <li id={item.id} key={item.name}>
+                      <ConfigurationsMenuLink
+                        href={item.href}
+                        text={item.name}
+                        icon={item.icon}
+                        openInNewTab={item.openInNewTab}
+                        blink={
+                          item.id === 'data-sources-sidebar-item' &&
+                          !hasUserDataSource
+                        }
+                      />
+                    </li>
+                  ))}
+
+                <li>
+                  <a
+                    href="#"
+                    className="text-gray-500 hover:bg-ceramic-100/80 group text-sm font-medium leading-6 w-full flex py-1 rounded-sm hover:text-ceramic-600"
+                  >
+                    <div className="w-full flex items-center gap-x-2 px-4">
+                      {user.picture ? (
+                        <img
+                          className="h-4 w-4 rounded-full"
+                          src={user.picture}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <UserIcon className="h-4 w-4 rounded-full" />
+                      )}
+                      <span className="sr-only">Your profile</span>
+                      <span aria-hidden="true" className="mt-0.5">
+                        {user.name}
+                      </span>
+                    </div>
+                    <UserDropdown workspaceId={workspaceId} />
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Resize handle with invisible padding for easier grabbing */}
+          <div
+            className="flex items-center h-full relative flex-shrink-0 group"
+            onMouseDown={startResizing}
+          >
+            <div className="w-[2px] h-full cursor-col-resize hover:bg-ceramic-200 group-hover:bg-ceramic-200 active:bg-ceramic-300 group-active:bg-ceramic-300 transition-colors duration-150 z-10" />
+            {/* Invisible wider click area */}
+            <div className="absolute w-[8px] h-full cursor-col-resize bg-transparent left-1/2 -translate-x-1/2" />
+          </div>
+        </>
+      )}
+
       <main
-        className={clsx(
-          `flex flex-col h-screen w-full ${syne.className} relative`,
-          isSideBarOpen
-            ? `max-w-[calc(100%-320px)] 3xl:max-w-[calc(100%-400px)]`
-            : `md:max-w-[100%] lg:max-w-[100%]`
-        )}
+        className="flex flex-col h-screen flex-1 overflow-hidden relative"
+        style={{
+          transition: 'flex 0.2s ease-in-out',
+        }}
       >
         <div
           className={clsx(
@@ -508,21 +591,12 @@ export default function Layout({
             topBarClassname
           )}
         >
-          <span
-            className={clsx(
-              !isSideBarOpen && 'hidden',
-              'absolute translate-y-1/2 -translate-x-1/2 left-0 rounded-full bg-ceramic-50 px-0 border-gray-200 h-6 w-6 flex items-center text-gray-400 hover:text-gray-600 hover:cursor-pointer justify-center border hover:bg-ceramic-100 z-20'
-            )}
-            onClick={toggleSideBar(false)}
-          >
-            <ChevronDoubleLeftIcon className="w-3 h-3" />
-          </span>
-
           <div className="flex w-full">
+            {/* Original expand sidebar button (visible when sidebar is closed) */}
             <div
               className={clsx(
                 isSideBarOpen ? 'hidden' : 'mr-8',
-                'relative h-12 w-12  border-b border-gray-200 bg-ceramic-50 text-gray-500 cursor-pointer hover:bg-ceramic-100 flex-shrink'
+                'relative h-12 w-12 border-b border-gray-200 bg-ceramic-50 text-gray-500 cursor-pointer hover:bg-ceramic-100 flex-shrink-0'
               )}
               onClick={toggleSideBar(true)}
             >

@@ -44,7 +44,9 @@ interface Props {
   isEditable: boolean
 }
 function VisualizationView(props: Props) {
-  const [isSideBarOpen] = useSideBar()
+  const {
+    state: { isOpen: isSideBarOpen },
+  } = useSideBar()
   const key = `${isSideBarOpen}${props.controlsHidden.toString()}${props.isFullScreen.toString()}`
 
   return (

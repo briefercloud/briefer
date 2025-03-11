@@ -12,15 +12,18 @@ const Dashboard = dynamic(() => import('@/components/Dashboard'), {
 })
 
 export default function EditDashboardPage() {
-  const [isSideBarOpen, setSidebarOpen] = useSideBar()
+  const {
+    state: { isOpen: isSideBarOpen },
+    api: sideBarApi,
+  } = useSideBar()
   const [initialSidebarOpen] = useState(isSideBarOpen)
   useEffect(() => {
-    setSidebarOpen(false)
+    sideBarApi.close()
 
     return () => {
-      setSidebarOpen(initialSidebarOpen)
+      sideBarApi.open(initialSidebarOpen)
     }
-  }, [initialSidebarOpen])
+  }, [initialSidebarOpen, sideBarApi])
 
   const session = useSession({ redirectToLogin: true })
   const workspaceId = useStringQuery('workspaceId')

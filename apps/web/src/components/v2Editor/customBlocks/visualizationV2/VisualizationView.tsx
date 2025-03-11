@@ -54,7 +54,9 @@ interface Props {
   isEditable: boolean
 }
 function VisualizationViewV2(props: Props) {
-  const [isSideBarOpen] = useSideBar()
+  const {
+    state: { isOpen: isSideBarOpen },
+  } = useSideBar()
   const key = `${isSideBarOpen}${props.controlsHidden.toString()}${props.isFullScreen.toString()}`
 
   return (
@@ -458,7 +460,9 @@ function Echarts(props: EchartsProps) {
           pointerEvents: 'none',
         }}
       />
-      {isReady && <div ref={ref} className="w-full h-full rounded-md overflow-hidden" />}
+      {isReady && (
+        <div ref={ref} className="w-full h-full rounded-md overflow-hidden" />
+      )}
     </>
   )
 }

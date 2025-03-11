@@ -984,7 +984,9 @@ file`
     })
   }, [tabRefs, blocks])
 
-  const [isSideBarOpen] = useSideBar()
+  const {
+    state: { isOpen: isSideBarOpen },
+  } = useSideBar()
 
   return (
     <div className="flex group/wrapper gap-x-1 relative">
