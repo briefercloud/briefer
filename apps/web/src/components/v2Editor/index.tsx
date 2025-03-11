@@ -113,6 +113,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useOnClickOutside } from '@/hooks/useOnClickOutside'
 import RunAllV2 from '../RunAllV2'
+import SimpleBar from 'simplebar-react'
 
 // The react-dnd package does not export this...
 type Identifier = string | symbol
@@ -1700,62 +1701,65 @@ const Editor = (props: Props) => {
         />
       )}
 
-      <div
+      <SimpleBar
         id="editor-scrollview"
-        ref={props.scrollViewRef}
-        className={clsx(
-          'flex h-full justify-center',
-          props.isFullScreen ? 'px-20' : 'sm:px-0 px-4',
-          {
-            'overflow-y-auto overflow-x-hidden': !props.isPDF,
-          }
-        )}
+        scrollableNodeProps={{ ref: props.scrollViewRef }}
+        className={clsx('h-full w-full', {
+          'overflow-y-auto overflow-x-hidden': !props.isPDF,
+        })}
       >
         <div
-          id="editor-wrapper"
-          ref={editorWrapperRef}
           className={clsx(
-            'flex-grow h-full py-2',
-            props.isFullScreen ? 'w-full' : widthClasses
+            'flex justify-center w-full',
+            props.isFullScreen ? 'px-20' : 'sm:px-0 px-4'
           )}
         >
-          <div className={!props.isPDF ? 'pt-12' : ''}>
-            <Title
-              content={props.yDoc.getXmlFragment('title')}
-              isLoading={props.isSyncing}
-              isEditable={
-                props.isEditable && !props.isApp && props.role !== 'viewer'
-              }
-              isPDF={props.isPDF}
-            />
-          </div>
-
-          <ContentSkeleton visible={props.isSyncing} />
-
-          <HotkeysProvider initiallyActiveScopes={['editor']}>
-            {!props.isSyncing && (
-              <>
-                {domBlocks}
-
-                {domBlocks.length === 0 && (
-                  <div className="w-full">
-                    <PlusButton
-                      workspaceId={props.document.workspaceId}
-                      isLast
-                      alwaysOpen
-                      onAddBlock={addBlockToBottom}
-                      isEditable={props.isEditable}
-                      writebackEnabled={hasWriteback}
-                    />
-                  </div>
-                )}
-              </>
+          <div
+            id="editor-wrapper"
+            ref={editorWrapperRef}
+            className={clsx(
+              'flex-grow h-full py-2',
+              props.isFullScreen ? 'w-full' : widthClasses
             )}
-          </HotkeysProvider>
+          >
+            <div className={!props.isPDF ? 'pt-12' : ''}>
+              <Title
+                content={props.yDoc.getXmlFragment('title')}
+                isLoading={props.isSyncing}
+                isEditable={
+                  props.isEditable && !props.isApp && props.role !== 'viewer'
+                }
+                isPDF={props.isPDF}
+              />
+            </div>
 
-          {!props.isPDF && <div className="pb-72" />}
+            <ContentSkeleton visible={props.isSyncing} />
+
+            <HotkeysProvider initiallyActiveScopes={['editor']}>
+              {!props.isSyncing && (
+                <>
+                  {domBlocks}
+
+                  {domBlocks.length === 0 && (
+                    <div className="w-full">
+                      <PlusButton
+                        workspaceId={props.document.workspaceId}
+                        isLast
+                        alwaysOpen
+                        onAddBlock={addBlockToBottom}
+                        isEditable={props.isEditable}
+                        writebackEnabled={hasWriteback}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </HotkeysProvider>
+
+            {!props.isPDF && <div className="pb-72" />}
+          </div>
         </div>
-      </div>
+      </SimpleBar>
       {!props.isPublicViewer && !props.isPDF && (
         <EnvBar
           onOpenFiles={props.onOpenFiles}
