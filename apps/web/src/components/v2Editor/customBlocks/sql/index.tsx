@@ -115,19 +115,39 @@ function SQLBlock(props: Props) {
     )
   }, [currentWorkspace, properties.data])
 
+  const [localResultHidden, setLocalResultHidden] = useState<boolean | null>(
+    null
+  )
+
   const toggleResultHidden = useCallback(() => {
-    props.block.doc?.transact(() => {
-      const currentIsResultHidden = props.block.getAttribute('isResultHidden')
-      props.block.setAttribute('isResultHidden', !currentIsResultHidden)
-    })
-  }, [props.block])
+    if (props.isEditable) {
+      props.block.doc?.transact(() => {
+        const currentIsResultHidden = props.block.getAttribute('isResultHidden')
+        props.block.setAttribute('isResultHidden', !currentIsResultHidden)
+      })
+    } else {
+      setLocalResultHidden((prev) => {
+        const blockResultHidden = props.block.getAttribute('isResultHidden')
+        return prev === null ? !blockResultHidden : !prev
+      })
+    }
+  }, [props.block, props.isEditable])
+
+  const [localCodeHidden, setLocalCodeHidden] = useState<boolean | null>(null)
 
   const toggleCodeHidden = useCallback(() => {
-    props.block.doc?.transact(() => {
-      const currentIsCodeHidden = props.block.getAttribute('isCodeHidden')
-      props.block.setAttribute('isCodeHidden', !currentIsCodeHidden)
-    })
-  }, [props.block])
+    if (props.isEditable) {
+      props.block.doc?.transact(() => {
+        const currentIsCodeHidden = props.block.getAttribute('isCodeHidden')
+        props.block.setAttribute('isCodeHidden', !currentIsCodeHidden)
+      })
+    } else {
+      setLocalCodeHidden((prev) => {
+        const blockCodeHidden = props.block.getAttribute('isCodeHidden')
+        return prev === null ? !blockCodeHidden : !prev
+      })
+    }
+  }, [props.block, props.isEditable])
 
   const [selectedCode, setSelectedCode] = useState<string | null>(null)
   const onSQLSelectionChanged = useCallback((selectedCode: string | null) => {
@@ -153,11 +173,20 @@ function SQLBlock(props: Props) {
   } = getSQLAttributes(props.block, props.blocks)
 
   const isCodeHidden =
-    isCodeHiddenProp &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode)) &&
+    (props.isEditable
+      ? props.block.getAttribute('isCodeHidden') ?? false
+      : localCodeHidden === null
+      ? props.block.getAttribute('isCodeHidden') ?? false
+      : localCodeHidden)
+
   const isResultHidden =
-    isResultHiddenProp &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode)) &&
+    (props.isEditable
+      ? props.block.getAttribute('isResultHidden') ?? false
+      : localResultHidden === null
+      ? props.block.getAttribute('isResultHidden') ?? false
+      : localResultHidden)
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
     props.document.workspaceId
@@ -334,7 +363,13 @@ function SQLBlock(props: Props) {
       case 'idle':
       case 'completed': {
         if (source?.toJSON() === lastQuery && lastQueryTime) {
-          return <QuerySucceededText lastExecutionTime={lastQueryTime} />
+          return (
+            <QuerySucceededText
+              lastExecutionTime={lastQueryTime}
+              isResultHidden={isResultHidden}
+              onToggleResultHidden={toggleResultHidden}
+            />
+          )
         }
 
         return null
@@ -770,25 +805,17 @@ function SQLBlock(props: Props) {
             >
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
                 <div className="relative group w-4 h-4">
-                  <CircleStackIcon
-                    className={clsx(
-                      'absolute inset-0 h-4 w-4 text-gray-400',
-                      props.isEditable &&
-                        'group-hover:opacity-0 transition-opacity'
+                  <CircleStackIcon className="absolute inset-0 h-4 w-4 text-gray-400 group-hover:opacity-0 transition-opacity" />
+                  <button
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={toggleCodeHidden}
+                  >
+                    {isCodeHidden ? (
+                      <ChevronRightIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronDownIcon className="h-4 w-4" />
                     )}
-                  />
-                  {props.isEditable && (
-                    <button
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={toggleCodeHidden}
-                    >
-                      {isCodeHidden ? (
-                        <ChevronRightIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                  )}
+                  </button>
                 </div>
                 <input
                   type="text"

@@ -25,7 +25,7 @@ import {
 import clsx from 'clsx'
 import type { ApiDocument, ApiWorkspace } from '@briefer/database'
 import { useEnvironmentStatus } from '@/hooks/useEnvironmentStatus'
-import { RefObject, useCallback, useMemo } from 'react'
+import { RefObject, useCallback, useMemo, useState } from 'react'
 import {
   ExecutingPythonText,
   LoadingEnvText,
@@ -91,19 +91,39 @@ function PythonBlock(props: Props) {
     startedAt: environmentStartedAt,
   } = useEnvironmentStatus(props.document.workspaceId)
 
+  const [localResultHidden, setLocalResultHidden] = useState<boolean | null>(
+    null
+  )
+
   const toggleResultHidden = useCallback(() => {
-    props.block.doc?.transact(() => {
-      const currentIsResultHidden = props.block.getAttribute('isResultHidden')
-      props.block.setAttribute('isResultHidden', !currentIsResultHidden)
-    })
-  }, [props.block])
+    if (props.isEditable) {
+      props.block.doc?.transact(() => {
+        const currentIsResultHidden = props.block.getAttribute('isResultHidden')
+        props.block.setAttribute('isResultHidden', !currentIsResultHidden)
+      })
+    } else {
+      setLocalResultHidden((prev) => {
+        const blockResultHidden = props.block.getAttribute('isResultHidden')
+        return prev === null ? !blockResultHidden : !prev
+      })
+    }
+  }, [props.block, props.isEditable])
+
+  const [localCodeHidden, setLocalCodeHidden] = useState<boolean | null>(null)
 
   const toggleCodeHidden = useCallback(() => {
-    props.block.doc?.transact(() => {
-      const currentIsCodeHidden = props.block.getAttribute('isCodeHidden')
-      props.block.setAttribute('isCodeHidden', !currentIsCodeHidden)
-    })
-  }, [props.block])
+    if (props.isEditable) {
+      props.block.doc?.transact(() => {
+        const currentIsCodeHidden = props.block.getAttribute('isCodeHidden')
+        props.block.setAttribute('isCodeHidden', !currentIsCodeHidden)
+      })
+    } else {
+      setLocalCodeHidden((prev) => {
+        const blockCodeHidden = props.block.getAttribute('isCodeHidden')
+        return prev === null ? !blockCodeHidden : !prev
+      })
+    }
+  }, [props.block, props.isEditable])
 
   const executions = useBlockExecutions(
     props.executionQueue,
@@ -189,12 +209,34 @@ function PythonBlock(props: Props) {
   const startQueryTime = props.block.getAttribute('startQueryTime')
   const lastQueryTime = props.block.getAttribute('lastQueryTime')
 
+  const isCodeHidden =
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode)) &&
+    (props.isEditable
+      ? props.block.getAttribute('isCodeHidden') ?? false
+      : localCodeHidden === null
+      ? props.block.getAttribute('isCodeHidden') ?? false
+      : localCodeHidden)
+
+  const isResultHidden =
+    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode)) &&
+    (props.isEditable
+      ? props.block.getAttribute('isResultHidden') ?? false
+      : localResultHidden === null
+      ? props.block.getAttribute('isResultHidden') ?? false
+      : localResultHidden)
+
   const queryStatusText: JSX.Element | null = useMemo(() => {
     switch (status) {
       case 'idle':
       case 'completed':
         if (source?.toJSON() === lastQuery && lastQueryTime) {
-          return <PythonSucceededText lastExecutionTime={lastQueryTime} />
+          return (
+            <PythonSucceededText
+              lastExecutionTime={lastQueryTime}
+              isResultHidden={isResultHidden ?? false}
+              onToggleResultHidden={toggleResultHidden}
+            />
+          )
         }
         return null
       case 'running':
@@ -217,14 +259,9 @@ function PythonBlock(props: Props) {
     lastQueryTime,
     source.toJSON(),
     envStatus,
+    isResultHidden,
+    toggleResultHidden,
   ])
-
-  const isCodeHidden =
-    props.block.getAttribute('isCodeHidden') &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
-  const isResultHidden =
-    props.block.getAttribute('isResultHidden') &&
-    (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode))
 
   const { title } = getBaseAttributes(props.block)
   const onChangeTitle = useCallback(
@@ -457,25 +494,17 @@ function PythonBlock(props: Props) {
             <div className="flex items-center justify-between px-3 pr-4 gap-x-4 font-sans h-12">
               <div className="select-none text-gray-300 text-xs flex items-center w-full h-full gap-x-1.5">
                 <div className="relative group w-4 h-4">
-                  <CommandLineIcon
-                    className={clsx(
-                      'absolute inset-0 h-4 w-4 text-gray-400',
-                      props.isEditable &&
-                        'group-hover:opacity-0 transition-opacity'
+                  <CommandLineIcon className="absolute inset-0 h-4 w-4 text-gray-400 group-hover:opacity-0 transition-opacity" />
+                  <button
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={toggleCodeHidden}
+                  >
+                    {isCodeHidden ? (
+                      <ChevronRightIcon className="h-4 w-4" />
+                    ) : (
+                      <ChevronDownIcon className="h-4 w-4" />
                     )}
-                  />
-                  {props.isEditable && (
-                    <button
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={toggleCodeHidden}
-                    >
-                      {isCodeHidden ? (
-                        <ChevronRightIcon className="h-4 w-4" />
-                      ) : (
-                        <ChevronDownIcon className="h-4 w-4" />
-                      )}
-                    </button>
-                  )}
+                  </button>
                 </div>
                 <input
                   type="text"

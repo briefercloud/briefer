@@ -3,28 +3,54 @@ import {
   CheckCircleIcon,
   CloudArrowDownIcon,
   Cog8ToothIcon,
+  CheckIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/20/solid'
 import { useEffect, useState } from 'react'
+import clsx from 'clsx'
+
+function formatExecutionTime(time: string): string {
+  return format(new Date(time), 'h:mm a - do MMM, yyyy')
+}
 
 type StartExecutionStatusTextProps = {
   startExecutionTime: string | null
 }
 
-type LastExecutedStatusTextProps = {
+interface LastExecutedStatusTextProps {
   lastExecutionTime: string
+  isResultHidden: boolean
+  onToggleResultHidden: () => void
 }
 
-export const QuerySucceededText = ({
+export function QuerySucceededText({
   lastExecutionTime,
-}: LastExecutedStatusTextProps) => {
+  isResultHidden,
+  onToggleResultHidden,
+}: LastExecutedStatusTextProps) {
   return (
-    <span className="font-syne text-gray-300 text-xs flex items-center select-none">
-      <CheckCircleIcon className="w-4 h-4 mr-1" />
-      <span className="pt-0.5">
-        This query was last executed at{' '}
-        {format(new Date(lastExecutionTime), "h:mm a '-' do MMM, yyyy")}
-      </span>
-    </span>
+    <div className="flex items-center gap-x-1 text-gray-400">
+      <div className="relative group w-4 h-4">
+        <CheckCircleIcon
+          className={clsx(
+            'absolute inset-0 h-4 w-4',
+            'group-hover:opacity-0 transition-opacity'
+          )}
+        />
+        <button
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={onToggleResultHidden}
+        >
+          {isResultHidden ? (
+            <ChevronRightIcon className="h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+      <span>Succeeded in {formatExecutionTime(lastExecutionTime)}</span>
+    </div>
   )
 }
 
@@ -95,16 +121,32 @@ export const ExecutingPythonText = ({
   )
 }
 
-export const PythonSucceededText = ({
+export function PythonSucceededText({
   lastExecutionTime,
-}: LastExecutedStatusTextProps) => {
+  isResultHidden,
+  onToggleResultHidden,
+}: LastExecutedStatusTextProps) {
   return (
-    <span className="font-syne text-gray-300 text-xs flex items-center select-none">
-      <CheckCircleIcon className="w-4 h-4 mr-1" />
-      <span className="pt-0.5">
-        This code was last executed at{' '}
-        {format(new Date(lastExecutionTime), "h:mm a '-' do MMM, yyyy")}
-      </span>
-    </span>
+    <div className="flex items-center gap-x-1 text-gray-400">
+      <div className="relative group w-4 h-4">
+        <CheckCircleIcon
+          className={clsx(
+            'absolute inset-0 h-4 w-4',
+            'group-hover:opacity-0 transition-opacity'
+          )}
+        />
+        <button
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={onToggleResultHidden}
+        >
+          {isResultHidden ? (
+            <ChevronRightIcon className="h-4 w-4" />
+          ) : (
+            <ChevronDownIcon className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+      <span>Succeeded in {formatExecutionTime(lastExecutionTime)}</span>
+    </div>
   )
 }
