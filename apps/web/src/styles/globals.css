@@ -6,6 +6,7 @@
 
 html {
   height: 100vh;
+  overflow-y: hidden;
 }
 
 body {
@@ -13,10 +14,12 @@ body {
   height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: hidden;
 }
 
 #__next {
   height: 100vh;
+  overflow-y: hidden;
 }
 
 @media (prefers-color-scheme: dark) {
