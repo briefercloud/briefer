@@ -489,7 +489,7 @@ function PivotTableBlock(props: Props) {
                   className={clsx(
                     'text-sm font-sans font-medium pl-1 ring-gray-200 focus:ring-gray-400 block w-full rounded-md border-0 text-gray-800 hover:ring-1 focus:ring-1 ring-inset focus:ring-inset placeholder:text-gray-400 focus:ring-inset py-0 disabled:ring-0 h-2/3 bg-transparent focus:bg-white'
                   )}
-                  placeholder="Pivot Table (click to add a title)"
+                  placeholder={props.isEditable ? "Pivot Table (click to add a title)" : "Pivot Table"}
                   value={attrs.title}
                   onChange={onChangeTitle}
                   disabled={!props.isEditable}
