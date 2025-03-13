@@ -31,6 +31,10 @@ import ScrollBar from '@/components/ScrollBar'
 import {
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
+  DATE_FORMAT_OPTIONS,
+  TIME_FORMAT_OPTIONS,
+  NUMBER_STYLE_OPTIONS,
+  NUMBER_SEPARATOR_OPTIONS,
 } from '@briefer/editor'
 import DisplayControls from './display/DisplayControls'
 
@@ -47,6 +51,14 @@ interface Props {
   onChangeXAxisSort: (sort: 'ascending' | 'descending') => void
   xAxisGroupFunction: TimeUnit | null
   onChangeXAxisGroupFunction: (groupFunction: TimeUnit | null) => void
+  xAxisDateFormat: VisualizationV2BlockInput['xAxisDateFormat']
+  onChangeXAxisDateFormat: (
+    dateFormat: NonNullable<VisualizationV2BlockInput['xAxisDateFormat']>
+  ) => void
+  xAxisNumberFormat: VisualizationV2BlockInput['xAxisNumberFormat']
+  onChangeXAxisNumberFormat: (
+    format: VisualizationV2BlockInput['xAxisNumberFormat']
+  ) => void
   yAxes: YAxisV2[]
   onChangeYAxes: (yAxes: YAxisV2[]) => void
   histogramFormat: HistogramFormat
@@ -217,6 +229,25 @@ function VisualizationControlsV2(props: Props) {
 
   const [tab, setTab] = useState<Tab>('general')
 
+  // State variables to track raw input strings for number formatting
+  const [decimalPlacesInput, setDecimalPlacesInput] = useState<string>(
+    () => props.xAxisNumberFormat?.decimalPlaces?.toString() || '2'
+  )
+  const [multiplierInput, setMultiplierInput] = useState<string>(
+    () => props.xAxisNumberFormat?.multiplier?.toString() || '1'
+  )
+
+  // Update the input strings when the actual values change (e.g. from outside)
+  useEffect(() => {
+    setDecimalPlacesInput(
+      props.xAxisNumberFormat?.decimalPlaces?.toString() || '2'
+    )
+  }, [props.xAxisNumberFormat?.decimalPlaces])
+
+  useEffect(() => {
+    setMultiplierInput(props.xAxisNumberFormat?.multiplier?.toString() || '1')
+  }, [props.xAxisNumberFormat?.multiplier])
+
   const onChangeYAxis = useCallback(
     (yAxis: YAxisV2, index: number) => {
       props.onChangeYAxes(props.yAxes.map((y, i) => (i === index ? yAxis : y)))
@@ -372,6 +403,234 @@ function VisualizationControlsV2(props: Props) {
       })
     },
     [props.dataLabels, props.onChangeDataLabels]
+  )
+
+  // Handler for date format changes
+  const onChangeDateStyle = useCallback(
+    (dateStyle: string | null) => {
+      if (!dateStyle) return
+
+      if (props.xAxisDateFormat) {
+        props.onChangeXAxisDateFormat({
+          ...props.xAxisDateFormat,
+          dateStyle: dateStyle as any,
+        })
+      } else {
+        props.onChangeXAxisDateFormat({
+          dateStyle: dateStyle as any,
+          showTime: false,
+          timeFormat: 'h:mm a',
+        })
+      }
+    },
+    [props.xAxisDateFormat, props.onChangeXAxisDateFormat]
+  )
+
+  // Handler for toggling time display
+  const onToggleShowTime = useCallback(() => {
+    if (props.xAxisDateFormat) {
+      props.onChangeXAxisDateFormat({
+        ...props.xAxisDateFormat,
+        showTime: !props.xAxisDateFormat.showTime,
+      })
+    } else {
+      props.onChangeXAxisDateFormat({
+        dateStyle: 'MMMM d, yyyy',
+        showTime: true,
+        timeFormat: 'h:mm a',
+      })
+    }
+  }, [props.xAxisDateFormat, props.onChangeXAxisDateFormat])
+
+  // Handler for time format changes
+  const onChangeTimeFormat = useCallback(
+    (timeFormat: string | null) => {
+      if (!timeFormat || !props.xAxisDateFormat) return
+
+      props.onChangeXAxisDateFormat({
+        ...props.xAxisDateFormat,
+        timeFormat: timeFormat as any,
+      })
+    },
+    [props.xAxisDateFormat, props.onChangeXAxisDateFormat]
+  )
+
+  // Handler for number format style changes
+  const onChangeNumberStyle = useCallback(
+    (style: string | null) => {
+      if (!style) return
+
+      if (props.xAxisNumberFormat) {
+        props.onChangeXAxisNumberFormat({
+          ...props.xAxisNumberFormat,
+          style: style as 'normal' | 'percent' | 'scientific',
+        })
+      } else {
+        props.onChangeXAxisNumberFormat({
+          style: style as 'normal' | 'percent' | 'scientific',
+          separatorStyle: '999,999.99',
+          decimalPlaces: 2,
+          multiplier: 1,
+          prefix: null,
+          suffix: null,
+        })
+      }
+    },
+    [props.xAxisNumberFormat, props.onChangeXAxisNumberFormat]
+  )
+
+  // Handler for separator style changes
+  const onChangeSeparatorStyle = useCallback(
+    (separatorStyle: string | null) => {
+      if (!separatorStyle) return
+
+      if (props.xAxisNumberFormat) {
+        props.onChangeXAxisNumberFormat({
+          ...props.xAxisNumberFormat,
+          separatorStyle: separatorStyle as
+            | '999,999.99'
+            | '999.999,99'
+            | '999 999,99'
+            | "999'999.99"
+            | '999999.99',
+        })
+      } else {
+        props.onChangeXAxisNumberFormat({
+          style: 'normal',
+          separatorStyle: separatorStyle as
+            | '999,999.99'
+            | '999.999,99'
+            | '999 999,99'
+            | "999'999.99"
+            | '999999.99',
+          decimalPlaces: 2,
+          multiplier: 1,
+          prefix: null,
+          suffix: null,
+        })
+      }
+    },
+    [props.xAxisNumberFormat, props.onChangeXAxisNumberFormat]
+  )
+
+  // Shared function to update number format settings
+  const updateNumberFormat = useCallback(
+    (
+      updates: Partial<
+        NonNullable<VisualizationV2BlockInput['xAxisNumberFormat']>
+      >
+    ) => {
+      if (props.xAxisNumberFormat) {
+        props.onChangeXAxisNumberFormat({
+          ...props.xAxisNumberFormat,
+          ...updates,
+        })
+      } else {
+        props.onChangeXAxisNumberFormat({
+          style: 'normal',
+          separatorStyle: '999,999.99',
+          decimalPlaces: 2,
+          multiplier: 1,
+          prefix: null,
+          suffix: null,
+          ...updates,
+        })
+      }
+    },
+    [props.xAxisNumberFormat, props.onChangeXAxisNumberFormat]
+  )
+
+  // Parse decimal places input and return validity + value
+  const parseDecimalPlaces = (input: string) => {
+    const cleanedValue = input.replace(/[^\d]/g, '')
+    const isValid = cleanedValue !== '' && !isNaN(parseInt(cleanedValue, 10))
+    const numValue = isValid ? parseInt(cleanedValue, 10) : 0
+    return { isValid, numValue, cleanedValue }
+  }
+
+  // Handler for decimal places changes
+  const onChangeDecimalPlaces = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value
+      setDecimalPlacesInput(inputValue)
+
+      // Only apply valid values in real-time
+      const { isValid, numValue } = parseDecimalPlaces(inputValue)
+      if (isValid) {
+        updateNumberFormat({ decimalPlaces: numValue })
+      }
+    },
+    [updateNumberFormat]
+  )
+
+  // Handler for decimal places blur
+  const onDecimalPlacesBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value
+      const { isValid, numValue } = parseDecimalPlaces(inputValue)
+
+      // Only update if the current value is invalid
+      if (!isValid) {
+        setDecimalPlacesInput(numValue.toString())
+        updateNumberFormat({ decimalPlaces: numValue })
+      }
+    },
+    [updateNumberFormat]
+  )
+
+  // Parse multiplier input and return validity + value
+  const parseMultiplier = (input: string) => {
+    const cleanedValue = input.replace(/[^\d.]/g, '')
+    const isValid = cleanedValue !== '' && !isNaN(parseFloat(cleanedValue))
+    const numValue = isValid ? parseFloat(cleanedValue) : 1
+    return { isValid, numValue, cleanedValue }
+  }
+
+  // Handler for multiplier changes
+  const onChangeMultiplier = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value
+      setMultiplierInput(inputValue)
+
+      // Only apply valid values in real-time
+      const { isValid, numValue } = parseMultiplier(inputValue)
+      if (isValid) {
+        updateNumberFormat({ multiplier: numValue })
+      }
+    },
+    [updateNumberFormat]
+  )
+
+  // Handler for multiplier blur
+  const onMultiplierBlur = useCallback(
+    (e: React.FocusEvent<HTMLInputElement>) => {
+      const inputValue = e.target.value
+      const { isValid, numValue } = parseMultiplier(inputValue)
+
+      // Only update if the current value is invalid
+      if (!isValid) {
+        setMultiplierInput(numValue.toString())
+        updateNumberFormat({ multiplier: numValue })
+      }
+    },
+    [updateNumberFormat]
+  )
+
+  // Update prefix and suffix handlers to use the shared updateNumberFormat function
+  const onChangePrefix = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value === '' ? null : e.target.value
+      updateNumberFormat({ prefix: value })
+    },
+    [updateNumberFormat]
+  )
+
+  const onChangeSuffix = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value === '' ? null : e.target.value
+      updateNumberFormat({ suffix: value })
+    },
+    [updateNumberFormat]
   )
 
   return (
@@ -622,6 +881,161 @@ function VisualizationControlsV2(props: Props) {
                   disabled={!props.dataframe || !props.isEditable}
                 />
               </div>
+
+              {/* Date formatting options - only show for date columns */}
+              {props.xAxis &&
+                NumpyDateTypes.safeParse(props.xAxis.type).success && (
+                  <>
+                    <div className="border-t border-gray-200 pt-5">
+                      {/* Date style dropdown */}
+                      <AxisModifierSelector
+                        label="Date style"
+                        value={props.xAxisDateFormat?.dateStyle || null}
+                        options={DATE_FORMAT_OPTIONS}
+                        onChange={onChangeDateStyle}
+                        disabled={!props.dataframe || !props.isEditable}
+                      />
+
+                      {/* Show time toggle */}
+                      <div className="mt-4">
+                        <VisualizationToggleV2
+                          label="Show time"
+                          enabled={props.xAxisDateFormat?.showTime || false}
+                          onToggle={onToggleShowTime}
+                        />
+                      </div>
+
+                      {/* Time format dropdown - only show when showTime is true */}
+                      {props.xAxisDateFormat?.showTime && (
+                        <div className="mt-4">
+                          <AxisModifierSelector
+                            label="Time format"
+                            value={props.xAxisDateFormat?.timeFormat || null}
+                            options={TIME_FORMAT_OPTIONS}
+                            onChange={onChangeTimeFormat}
+                            disabled={!props.dataframe || !props.isEditable}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+              {/* Number formatting options - only show for number columns */}
+              {props.xAxis &&
+                NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(
+                  props.xAxis.type
+                ).success && (
+                  <>
+                    <div className="border-t border-gray-200 pt-5">
+                      <h3 className="text-xs font-medium pb-4">
+                        Number format
+                      </h3>
+
+                      {/* Style selector */}
+                      <AxisModifierSelector
+                        label="Style"
+                        value={props.xAxisNumberFormat?.style || 'normal'}
+                        options={NUMBER_STYLE_OPTIONS}
+                        onChange={onChangeNumberStyle}
+                        disabled={!props.dataframe || !props.isEditable}
+                      />
+
+                      {/* Separator style selector */}
+                      <div className="mt-4">
+                        <AxisModifierSelector
+                          label="Separator style"
+                          value={
+                            props.xAxisNumberFormat?.separatorStyle ||
+                            '999,999.99'
+                          }
+                          options={NUMBER_SEPARATOR_OPTIONS}
+                          onChange={onChangeSeparatorStyle}
+                          disabled={!props.dataframe || !props.isEditable}
+                        />
+                      </div>
+
+                      {/* Decimal places input */}
+                      <div className="mt-4">
+                        <label
+                          htmlFor="decimalPlaces"
+                          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+                        >
+                          Number of decimal places
+                        </label>
+                        <input
+                          name="decimalPlaces"
+                          type="text"
+                          min="0"
+                          max="10"
+                          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                          value={decimalPlacesInput}
+                          onChange={onChangeDecimalPlaces}
+                          onBlur={onDecimalPlacesBlur}
+                          disabled={!props.dataframe || !props.isEditable}
+                        />
+                      </div>
+
+                      {/* Multiplier input */}
+                      <div className="mt-4">
+                        <label
+                          htmlFor="multiplier"
+                          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+                        >
+                          Multiply by a number
+                        </label>
+                        <input
+                          name="multiplier"
+                          type="text"
+                          step="any"
+                          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                          value={multiplierInput}
+                          onChange={onChangeMultiplier}
+                          onBlur={onMultiplierBlur}
+                          disabled={!props.dataframe || !props.isEditable}
+                        />
+                      </div>
+
+                      {/* Prefix input */}
+                      <div className="mt-4">
+                        <label
+                          htmlFor="prefix"
+                          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+                        >
+                          Add a prefix
+                        </label>
+                        <input
+                          name="prefix"
+                          type="text"
+                          placeholder="$"
+                          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                          value={props.xAxisNumberFormat?.prefix ?? ''}
+                          onChange={onChangePrefix}
+                          disabled={!props.dataframe || !props.isEditable}
+                        />
+                      </div>
+
+                      {/* Suffix input */}
+                      <div className="mt-4">
+                        <label
+                          htmlFor="suffix"
+                          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+                        >
+                          Add a suffix
+                        </label>
+                        <input
+                          name="suffix"
+                          type="text"
+                          placeholder="dollars"
+                          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+                          value={props.xAxisNumberFormat?.suffix ?? ''}
+                          onChange={onChangeSuffix}
+                          disabled={!props.dataframe || !props.isEditable}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
             </div>
           )}
           {tab === 'y-axis' && (

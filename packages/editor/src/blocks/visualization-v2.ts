@@ -29,6 +29,39 @@ export type VisualizationV2BlockInput = {
   xAxisName: string | null
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
+  xAxisDateFormat: {
+    dateStyle:
+      | 'MMMM d, yyyy'
+      | 'd MMMM, yyyy'
+      | 'EEEE, MMMM d, yyyy'
+      | 'M/d/yyyy'
+      | 'd/M/yyyy'
+      | 'yyyy/M/d'
+      | null
+    // "MMMM d, yyyy" -> "January 31, 2018"
+    // "d MMMM, yyyy" -> "31 January, 2018"
+    // "EEEE, MMMM d, yyyy" -> "Wednesday, January 31, 2018"
+    // "M/d/yyyy" -> "1/31/2018"
+    // "d/M/yyyy" -> "31/1/2018"
+    // "yyyy/M/d" -> "2018/1/31"
+    showTime: boolean
+    timeFormat: 'h:mm a' | 'HH:mm' | null
+    // "h:mm a" -> "5:24 PM" (12-hour clock)
+    // "HH:mm" -> "17:24" (24-hour clock)
+  } | null
+  xAxisNumberFormat: {
+    style: 'normal' | 'percent' | 'scientific'
+    separatorStyle:
+      | '999,999.99'
+      | '999.999,99'
+      | '999 999,99'
+      | "999'999.99"
+      | '999999.99'
+    decimalPlaces: number
+    multiplier: number
+    prefix: string | null
+    suffix: string | null
+  } | null
   yAxes: YAxisV2[]
   histogramFormat: HistogramFormat
   histogramBin: HistogramBin
@@ -39,6 +72,86 @@ export type VisualizationV2BlockInput = {
   }
 }
 
+// Predefined date format options for the UI
+export const DATE_FORMAT_OPTIONS = [
+  {
+    name: 'January 31, 2025',
+    value: 'MMMM d, yyyy' as const,
+  },
+  {
+    name: '31 January, 2025',
+    value: 'd MMMM, yyyy' as const,
+  },
+  {
+    name: 'Monday, January 31, 2025',
+    value: 'EEEE, MMMM d, yyyy' as const,
+  },
+  {
+    name: '1/31/2025',
+    value: 'M/d/yyyy' as const,
+  },
+  {
+    name: '31/1/2025',
+    value: 'd/M/yyyy' as const,
+  },
+  {
+    name: '2025/1/31',
+    value: 'yyyy/M/d' as const,
+  },
+]
+
+// Predefined time format options for the UI
+export const TIME_FORMAT_OPTIONS = [
+  {
+    name: '3:45 PM (12-hour)',
+    value: 'h:mm a' as const,
+  },
+  {
+    name: '15:45 (24-hour)',
+    value: 'HH:mm' as const,
+  },
+]
+
+// Predefined number format style options for the UI
+export const NUMBER_STYLE_OPTIONS = [
+  {
+    name: 'Normal',
+    value: 'normal' as const,
+  },
+  {
+    name: 'Percent',
+    value: 'percent' as const,
+  },
+  {
+    name: 'Scientific',
+    value: 'scientific' as const,
+  },
+]
+
+// Predefined separator style options for the UI
+export const NUMBER_SEPARATOR_OPTIONS = [
+  {
+    name: '999,999.99',
+    value: '999,999.99' as const,
+  },
+  {
+    name: '999.999,99',
+    value: '999.999,99' as const,
+  },
+  {
+    name: '999 999,99',
+    value: '999 999,99' as const,
+  },
+  {
+    name: "999'999.99",
+    value: "999'999.99" as const,
+  },
+  {
+    name: '999999.99',
+    value: '999999.99' as const,
+  },
+]
+
 function emptyInput(): VisualizationV2BlockInput {
   return {
     dataframeName: null,
@@ -47,6 +160,19 @@ function emptyInput(): VisualizationV2BlockInput {
     xAxisName: null,
     xAxisSort: 'ascending',
     xAxisGroupFunction: null,
+    xAxisDateFormat: {
+      dateStyle: 'MMMM d, yyyy', // Default to "January 31, 2018" format
+      showTime: false,
+      timeFormat: 'h:mm a', // Default to 12-hour clock format
+    },
+    xAxisNumberFormat: {
+      style: 'normal',
+      separatorStyle: '999,999.99', // Default US format with commas
+      decimalPlaces: 2,
+      multiplier: 1,
+      prefix: null,
+      suffix: null,
+    },
     yAxes: [],
     filters: [],
     histogramFormat: 'count',
@@ -392,3 +518,35 @@ export function setVisualizationV2Input(
     ...next,
   })
 }
+
+// Type representing all possible date formats from our options
+export type DateFormatString = NonNullable<
+  VisualizationV2BlockInput['xAxisDateFormat']
+>['dateStyle']
+
+// Type representing all possible time formats from our options
+export type TimeFormatString = NonNullable<
+  VisualizationV2BlockInput['xAxisDateFormat']
+>['timeFormat']
+
+// Type representing all possible combined date-time formats
+export type DateTimeFormatString =
+  | DateFormatString
+  | TimeFormatString
+  | `${NonNullable<DateFormatString>} ${NonNullable<TimeFormatString>}`
+  | ''
+
+// Type representing all possible number format styles
+export type NumberFormatStyle = NonNullable<
+  VisualizationV2BlockInput['xAxisNumberFormat']
+>['style']
+
+// Type representing all possible number separator styles
+export type NumberSeparatorStyle = NonNullable<
+  VisualizationV2BlockInput['xAxisNumberFormat']
+>['separatorStyle']
+
+// Type representing a complete number format configuration
+export type NumberFormatConfig = NonNullable<
+  VisualizationV2BlockInput['xAxisNumberFormat']
+>
