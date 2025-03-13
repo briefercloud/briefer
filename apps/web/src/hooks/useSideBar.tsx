@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo } from 'react'
 
 type SideBarWidth = number
 const MIN_SIDEBAR_WIDTH = 300
@@ -95,39 +95,47 @@ export function SideBarProvider({ children }: { children: React.ReactNode }) {
   }, [width, setWidth])
 
   // Create the state and API objects
-  const state: SideBarState = {
-    isOpen,
-    width,
-  }
+  const state: SideBarState = useMemo(
+    () => ({
+      isOpen,
+      width,
+    }),
+    [isOpen, width]
+  )
 
-  const api: SideBarAPI = {
-    toggle: (open?: boolean) => {
-      if (open !== undefined) {
-        setIsOpen(open)
-      } else {
-        setIsOpen((prevOpen) => !prevOpen)
-      }
-    },
-    resize: (newWidth: SideBarWidth) => {
-      const clampedWidth = Math.max(
-        MIN_SIDEBAR_WIDTH,
-        Math.min(MAX_SIDEBAR_WIDTH, newWidth)
-      )
-      setWidth(clampedWidth)
-    },
-    open: (state?: boolean) => {
-      if (state !== undefined) {
-        setIsOpen(state)
-      } else {
-        setIsOpen(true)
-      }
-    },
-    close: () => {
-      setIsOpen(false)
-    },
-  }
+  const api: SideBarAPI = useMemo(
+    () => ({
+      toggle: (open?: boolean) => {
+        if (open !== undefined) {
+          setIsOpen(open)
+        } else {
+          setIsOpen((prevOpen) => !prevOpen)
+        }
+      },
+      resize: (newWidth: SideBarWidth) => {
+        const clampedWidth = Math.max(
+          MIN_SIDEBAR_WIDTH,
+          Math.min(MAX_SIDEBAR_WIDTH, newWidth)
+        )
+        setWidth(clampedWidth)
+      },
+      open: (state?: boolean) => {
+        if (state !== undefined) {
+          setIsOpen(state)
+        } else {
+          setIsOpen(true)
+        }
+      },
+      close: () => {
+        setIsOpen(false)
+      },
+    }),
+    []
+  )
 
-  return <Context.Provider value={{ state, api }}>{children}</Context.Provider>
+  const value = useMemo(() => ({ state, api }), [state, api])
+
+  return <Context.Provider value={value}>{children}</Context.Provider>
 }
 
 export {
