@@ -36,19 +36,20 @@ export type BigQueryDataSourceFormValues = Omit<
   'serviceAccountKey'
 > & {
   serviceAccountKey: File
-  additionalInfo: File
 }
 
 type BigQueryFormProps = {
   workspaceId: string
   onSubmit: (values: BigQueryDataSourceInput) => Promise<void>
-  bigQueryDataSource?: BigQueryDataSource
+  bigQueryDataSource?: BigQueryDataSource | null
+  additionalContext?: string | null
 }
 
 export default function BigQueryForm({
   bigQueryDataSource,
   onSubmit,
   workspaceId,
+  additionalContext,
 }: BigQueryFormProps) {
   const isEditing = Boolean(bigQueryDataSource)
 
@@ -60,9 +61,12 @@ export default function BigQueryForm({
 
   useEffect(() => {
     if (bigQueryDataSource) {
-      reset(bigQueryDataSource)
+      reset({
+        ...bigQueryDataSource,
+        additionalInfo: additionalContext ?? undefined,
+      })
     }
-  }, [bigQueryDataSource, reset])
+  }, [bigQueryDataSource, reset, additionalContext])
 
   const onSubmitHandler = handleSubmit(
     useCallback(
@@ -77,19 +81,10 @@ export default function BigQueryForm({
           void err
         }
 
-        const additionalInfoFile = data.additionalInfo
-        let additionalInfoContent = undefined as string | undefined
-        if (additionalInfoFile) {
-          additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
-        }
-
         await onSubmit({
           ...data,
-          name: data.name,
           serviceAccountKey: fileContent,
-          additionalInfo: additionalInfoContent,
           projectId,
-          notes: data.notes,
         })
       },
       [onSubmit]
@@ -173,20 +168,16 @@ export default function BigQueryForm({
                 AI Additional Context{' '}
                 <span className="pl-1 text-gray-500">(optional)</span>
               </label>
-              <FileUploadInput
-                label={
-                  isEditing
-                    ? 'Upload a new file with additional context for the AI assistant'
-                    : 'Upload a file with additional context for the AI assistant'
-                }
-                subLabel={
-                  isEditing
-                    ? 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions - leave empty to keep the current one'
-                    : 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions'
-                }
-                control={control}
-                {...register('additionalInfo')}
-              />
+              <div className="mt-2">
+                <textarea
+                  {...register('additionalInfo')}
+                  id="additionalInfo"
+                  name="additionalInfo"
+                  rows={5}
+                  placeholder="Enter additional context for the AI assistant (examples, descriptions, etc.)"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+              </div>
             </div>
           </div>
         </div>

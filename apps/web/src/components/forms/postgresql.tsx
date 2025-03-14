@@ -17,16 +17,16 @@ export type PostgreSQLDataSourceInput = PostgreSQLDataSource & {
 
 type PostgreSQLDataSourceFormValues = Omit<
   PostgreSQLDataSourceInput,
-  'cert' | 'additionalInfo'
+  'cert'
 > & {
   password: string
   cert: File
-  additionalInfo: File
 }
 
 type PostgreSQLFormProps = {
   onSubmit: (values: PostgreSQLDataSourceInput) => Promise<void>
   postgreSQLDataSource?: PostgreSQLDataSource | null
+  additionalContext?: string | null
   workspaceId: string
 }
 
@@ -34,6 +34,7 @@ export default function PostgreSQLForm({
   postgreSQLDataSource,
   onSubmit,
   workspaceId,
+  additionalContext,
 }: PostgreSQLFormProps) {
   const isEditing = Boolean(postgreSQLDataSource)
 
@@ -45,9 +46,12 @@ export default function PostgreSQLForm({
 
   useEffect(() => {
     if (postgreSQLDataSource) {
-      reset(postgreSQLDataSource)
+      reset({
+        ...postgreSQLDataSource,
+        additionalInfo: additionalContext ?? undefined,
+      })
     }
-  }, [postgreSQLDataSource, reset])
+  }, [postgreSQLDataSource, additionalContext, reset])
 
   const onSubmitHandler = handleSubmit(async (data) => {
     const certFile = data.cert
@@ -56,16 +60,9 @@ export default function PostgreSQLForm({
       certContent = await readFile(certFile, 'hex')
     }
 
-    const additionalInfoFile = data.additionalInfo
-    let additionalInfoContent = undefined as string | undefined
-    if (additionalInfoFile) {
-      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
-    }
-
     await onSubmit({
       ...data,
       cert: certContent,
-      additionalInfo: additionalInfoContent,
     })
   })
 
@@ -267,20 +264,16 @@ export default function PostgreSQLForm({
                 AI Additional Context{' '}
                 <span className="pl-1 text-gray-500">(optional)</span>
               </label>
-              <FileUploadInput
-                label={
-                  isEditing
-                    ? 'Upload a new file with additional context for the AI assistant'
-                    : 'Upload a file with additional context for the AI assistant'
-                }
-                subLabel={
-                  isEditing
-                    ? 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions - leave empty to keep the current one'
-                    : 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions'
-                }
-                control={control}
-                {...register('additionalInfo')}
-              />
+              <div className="mt-2">
+                <textarea
+                  {...register('additionalInfo')}
+                  id="additionalInfo"
+                  name="additionalInfo"
+                  rows={5}
+                  placeholder="Enter additional context for the AI assistant (examples, descriptions, etc.)"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+              </div>
             </div>
           </div>
         </div>

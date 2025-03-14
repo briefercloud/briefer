@@ -390,6 +390,7 @@ const dataSourcesRouter = (socketServer: IOServer) => {
             status: 'loading',
             startedAt: Date.now(),
             loadingPing: 0,
+            additionalContext: data.data.additionalInfo ?? null,
             version: 3,
           },
         })

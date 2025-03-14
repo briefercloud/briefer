@@ -130,29 +130,34 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             postgreSQLDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'redshift' ? (
           <RedshiftForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             redshiftDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'athena' ? (
           <AthenaForm
             workspaceId={workspaceId}
             athenaDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
             onSubmit={onSubmit}
           />
         ) : data && data.config.type === 'oracle' ? (
           <OracleForm
             workspaceId={workspaceId}
             oracleDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
             onSubmit={onSubmit}
           />
         ) : data && data.config.type === 'bigquery' ? (
           <BigQueryForm
             workspaceId={workspaceId}
             bigQueryDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
             onSubmit={onSubmit}
           />
         ) : data && data.config.type === 'mysql' ? (
@@ -160,30 +165,35 @@ export default function EditDataSourcePostgresSQLPage() {
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             mySQLDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'sqlserver' ? (
           <SQLServerForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
-            SQLServerDataSource={data.config.data}
+            sqlServerDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'trino' ? (
           <TrinoForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             trinoDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'snowflake' ? (
           <SnowflakeForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             snowflakeDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : data && data.config.type === 'databrickssql' ? (
           <DatabricksSQLForm
             workspaceId={workspaceId}
             onSubmit={onSubmit}
             databricksSQLDataSource={data.config.data}
+            additionalContext={data.structure.additionalContext}
           />
         ) : null}
       </ScrollBar>

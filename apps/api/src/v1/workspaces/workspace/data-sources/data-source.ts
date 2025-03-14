@@ -34,7 +34,6 @@ import prisma, {
   updateDatabricksSQLDataSource,
   deleteDatabricksSQLDataSource,
   listDataSources,
-  DataSource,
 } from '@briefer/database'
 import { z } from 'zod'
 import { getParam } from '../../../../utils/express.js'
@@ -363,6 +362,8 @@ const dataSourceRouter = (socketServer: IOServer) => {
       config: ds,
       structure,
     })
+
+    broadcastDataSource(socketServer, result)
     res.json(result)
   })
 

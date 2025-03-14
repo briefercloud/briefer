@@ -9,13 +9,8 @@ import { IOServer } from '../websocket/index.js'
 import {
   DataSourceColumn,
   DataSourceStructureError,
-  dataSourceStructureStateToV2,
-  dataSourceStructureStateToV3,
-  DataSourceStructureStateV1,
-  DataSourceStructureStateV2,
   DataSourceStructureStateV3,
   DataSourceTable,
-  jsonString,
   parseOrElse,
 } from '@briefer/types'
 import { config } from '../config/index.js'
@@ -39,199 +34,6 @@ import { getSqlServerSchema } from './sqlserver.js'
 import { z } from 'zod'
 import { splitEvery } from 'ramda'
 import { createEmbedding } from '../embedding.js'
-
-function decryptDBData(
-  dataSourceId: string,
-  type: DataSource['type'],
-  encrypted: string
-) {
-  try {
-    return decrypt(encrypted, config().DATASOURCES_ENCRYPTION_KEY)
-  } catch (err) {
-    logger().error(
-      {
-        err,
-        dataSourceId,
-        dataSourceType: type,
-      },
-      'Failed to decrypt datasource structure'
-    )
-    return null
-  }
-}
-
-async function getV2FromCache(
-  dataSourceId: string,
-  type: DataSource['type']
-): Promise<DataSourceStructureStateV2 | null> {
-  let encrypted: string | null
-  switch (type) {
-    case 'psql':
-      encrypted = (
-        await prisma().postgreSQLDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'mysql':
-      encrypted = (
-        await prisma().mySQLDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'sqlserver':
-      encrypted = (
-        await prisma().sQLServerDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'trino':
-      encrypted = (
-        await prisma().trinoDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'athena':
-      encrypted = (
-        await prisma().athenaDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'oracle':
-      encrypted = (
-        await prisma().oracleDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'redshift':
-      encrypted = (
-        await prisma().redshiftDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'bigquery':
-      encrypted = (
-        await prisma().bigQueryDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'snowflake':
-      encrypted = (
-        await prisma().snowflakeDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-    case 'databrickssql':
-      encrypted = (
-        await prisma().databricksSQLDataSource.findUniqueOrThrow({
-          where: { id: dataSourceId },
-          select: { structure: true },
-        })
-      ).structure
-      break
-  }
-
-  if (encrypted === null) {
-    return null
-  }
-
-  const decrypted = decryptDBData(dataSourceId, type, encrypted)
-  if (decrypted === null) {
-    return null
-  }
-
-  const parsed = jsonString
-    .pipe(z.union([DataSourceStructureStateV1, DataSourceStructureStateV2]))
-    .safeParse(decrypted)
-  if (!parsed.success) {
-    logger().error(
-      {
-        dataSourceId,
-        dataSourceType: type,
-        err: parsed.error,
-      },
-      'Failed to parse datasource structure from database'
-    )
-    return null
-  }
-
-  return dataSourceStructureStateToV2(parsed.data)
-}
-
-async function v2ToV3(
-  dataSourceId: string,
-  type: DataSource['type'],
-  v2: DataSourceStructureStateV2 | null
-): Promise<DataSourceStructureStateV3 | null> {
-  if (!v2) {
-    return null
-  }
-
-  const refreshPing: Date | null = (() => {
-    switch (v2.status) {
-      case 'success': {
-        if (v2.refreshPing) {
-          return new Date(v2.refreshPing)
-        }
-        return null
-      }
-      case 'loading':
-        return new Date(v2.loadingPing)
-      case 'failed':
-        return null
-    }
-  })()
-
-  const dbSchema = await prisma().dataSourceSchema.create({
-    data: {
-      status: v2.status,
-      refreshPing,
-      startedAt: 'startedAt' in v2 ? new Date(v2.startedAt) : null,
-      finishedAt: 'updatedAt' in v2 ? new Date(v2.updatedAt) : null,
-      failedAt: 'failedAt' in v2 ? new Date(v2.failedAt) : null,
-      error: 'error' in v2 ? v2.error : undefined,
-      defaultSchema:
-        'structure' in v2 ? v2.structure?.defaultSchema ?? null : null,
-    },
-  })
-
-  if ('structure' in v2 && v2.structure) {
-    await prisma().dataSourceSchemaTable.createMany({
-      data: Object.entries(v2.structure.schemas).flatMap(([schema, tables]) => {
-        return Object.entries(tables.tables).map(([tableName, table]) => {
-          return {
-            schema,
-            name: tableName,
-            columns: table.columns,
-            dataSourceSchemaId: dbSchema.id,
-            embeddingModel: '',
-          }
-        })
-      }),
-    })
-  }
-
-  await assignDataSourceSchemaId(dataSourceId, type, dbSchema)
-
-  return dataSourceStructureStateToV3(dbSchema.id, v2)
-}
 
 async function assignDataSourceSchemaId(
   dataSourceId: string,
@@ -394,11 +196,7 @@ export async function fetchDataSourceStructureFromCache(
   }
 
   if (schema === null) {
-    return await v2ToV3(
-      dataSourceId,
-      type,
-      await getV2FromCache(dataSourceId, type)
-    )
+    return null
   }
 
   switch (schema.status) {
@@ -412,6 +210,7 @@ export async function fetchDataSourceStructureFromCache(
         status: 'loading',
         startedAt: schema.startedAt.getTime(),
         loadingPing: schema.refreshPing.getTime(),
+        additionalContext: schema.additionalInfo,
         version: 3,
       }
     }
@@ -430,8 +229,9 @@ export async function fetchDataSourceStructureFromCache(
         failedAt: schema.failedAt.getTime(),
         previousSuccessAt: schema.finishedAt?.getTime() ?? null,
         error,
-        version: 3,
         defaultSchema: schema.defaultSchema,
+        additionalContext: schema.additionalInfo,
+        version: 3,
       }
     }
     case 'success': {
@@ -445,6 +245,7 @@ export async function fetchDataSourceStructureFromCache(
         updatedAt: schema.finishedAt.getTime(),
         refreshPing: schema.refreshPing?.getTime() ?? null,
         defaultSchema: schema.defaultSchema,
+        additionalContext: schema.additionalInfo,
         version: 3,
       }
     }
@@ -497,6 +298,7 @@ export async function fetchDataSourceStructure(
       where: { id: structure.id },
       data: { additionalInfo },
     })
+    structure.additionalContext = additionalInfo
   }
 
   return structure
@@ -687,6 +489,7 @@ async function _refreshDataSourceStructure(
       updatedAt: Date.now(),
       refreshPing: null,
       defaultSchema,
+      additionalContext: dataSource.structure.additionalContext,
       version: 3,
     })
 
@@ -750,11 +553,12 @@ async function _refreshDataSourceStructure(
           ? dataSource.structure.updatedAt
           : null,
       error,
-      version: 3,
+      additionalContext: dataSource.structure.additionalContext,
       defaultSchema:
         'defaultSchema' in dataSource.structure
           ? dataSource.structure.defaultSchema
           : null,
+      version: 3,
     })
     broadcastDataSource(socketServer, dataSource)
   }
@@ -781,6 +585,7 @@ async function updateToLoading(
         status: 'loading',
         startedAt: now.getTime(),
         loadingPing: now.getTime(),
+        additionalContext: null,
         version: 3,
       },
     }
@@ -794,6 +599,7 @@ async function updateToLoading(
         status: 'loading',
         startedAt: Date.now(),
         loadingPing: Date.now(),
+        additionalContext: currentStructure.additionalContext,
         version: 3,
       }
       break

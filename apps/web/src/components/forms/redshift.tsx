@@ -15,16 +15,12 @@ export type RedshiftDataSourceInput = RedshiftDataSource & {
   additionalInfo?: string
 }
 
-type RedshiftDataSourceFormValues = Omit<
-  RedshiftDataSourceInput,
-  'additionalInfo'
-> & {
-  additionalInfo: File
-}
+type RedshiftDataSourceFormValues = Omit<RedshiftDataSourceInput, ''> & {}
 
 type RedshiftFormProps = {
   onSubmit: (values: RedshiftDataSourceInput) => Promise<void>
   redshiftDataSource?: RedshiftDataSource | null
+  additionalContext?: string | null
   workspaceId: string
 }
 
@@ -32,6 +28,7 @@ export default function RedshiftForm({
   redshiftDataSource,
   onSubmit,
   workspaceId,
+  additionalContext,
 }: RedshiftFormProps) {
   const isEditing = Boolean(redshiftDataSource)
 
@@ -43,20 +40,16 @@ export default function RedshiftForm({
 
   useEffect(() => {
     if (redshiftDataSource) {
-      reset(redshiftDataSource)
+      reset({
+        ...redshiftDataSource,
+        additionalInfo: additionalContext ?? undefined,
+      })
     }
-  }, [redshiftDataSource, reset])
+  }, [redshiftDataSource, reset, additionalContext])
 
   const onSubmitHandler = handleSubmit(async (data) => {
-    const additionalInfoFile = data.additionalInfo
-    let additionalInfoContent = undefined as string | undefined
-    if (additionalInfoFile) {
-      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
-    }
-
     onSubmit({
       ...data,
-      additionalInfo: additionalInfoContent,
     })
   })
 
@@ -245,20 +238,16 @@ export default function RedshiftForm({
                 AI Additional Context{' '}
                 <span className="pl-1 text-gray-500">(optional)</span>
               </label>
-              <FileUploadInput
-                label={
-                  isEditing
-                    ? 'Upload a new file with additional context for the AI assistant'
-                    : 'Upload a file with additional context for the AI assistant'
-                }
-                subLabel={
-                  isEditing
-                    ? 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions - leave empty to keep the current one'
-                    : 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions'
-                }
-                control={control}
-                {...register('additionalInfo')}
-              />
+              <div className="mt-2">
+                <textarea
+                  {...register('additionalInfo')}
+                  id="additionalInfo"
+                  name="additionalInfo"
+                  rows={5}
+                  placeholder="Enter additional context for the AI assistant (examples, descriptions, etc.)"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+              </div>
             </div>
           </div>
         </div>

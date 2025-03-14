@@ -15,14 +15,12 @@ export type AthenaDataSourceInput = AthenaDataSource & {
   additionalInfo?: string
 }
 
-type AthenaDataSourceFormValues = Omit<
-  AthenaDataSourceInput,
-  'additionalInfo'
-> & { additionalInfo: File }
+type AthenaDataSourceFormValues = Omit<AthenaDataSourceInput, ''> & {}
 
 type AthenaFormProps = {
   onSubmit: (values: AthenaDataSourceInput) => Promise<void>
   athenaDataSource?: AthenaDataSource | null
+  additionalContext?: string | null
   workspaceId: string
 }
 
@@ -30,6 +28,7 @@ export default function AthenaForm({
   athenaDataSource,
   onSubmit,
   workspaceId,
+  additionalContext,
 }: AthenaFormProps) {
   const isEditing = Boolean(athenaDataSource)
 
@@ -41,20 +40,16 @@ export default function AthenaForm({
 
   useEffect(() => {
     if (athenaDataSource) {
-      reset(athenaDataSource)
+      reset({
+        ...athenaDataSource,
+        additionalInfo: additionalContext ?? undefined,
+      })
     }
-  }, [athenaDataSource, reset])
+  }, [athenaDataSource, reset, additionalContext])
 
   const onSubmitHandler = handleSubmit(async (data) => {
-    const additionalInfoFile = data.additionalInfo
-    let additionalInfoContent = undefined as string | undefined
-    if (additionalInfoFile) {
-      additionalInfoContent = await readFile(additionalInfoFile, 'utf-8')
-    }
-
     onSubmit({
       ...data,
-      additionalInfo: additionalInfoContent,
     })
   })
 
@@ -216,20 +211,16 @@ export default function AthenaForm({
                 AI Additional Context{' '}
                 <span className="pl-1 text-gray-500">(optional)</span>
               </label>
-              <FileUploadInput
-                label={
-                  isEditing
-                    ? 'Upload a new file with additional context for the AI assistant'
-                    : 'Upload a file with additional context for the AI assistant'
-                }
-                subLabel={
-                  isEditing
-                    ? 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions - leave empty to keep the current one'
-                    : 'this should be a plain text file (.txt, .json, .yaml, .md, etc.) with examples and descriptions'
-                }
-                control={control}
-                {...register('additionalInfo')}
-              />
+              <div className="mt-2">
+                <textarea
+                  {...register('additionalInfo')}
+                  id="additionalInfo"
+                  name="additionalInfo"
+                  rows={5}
+                  placeholder="Enter additional context for the AI assistant (examples, descriptions, etc.)"
+                  className="block w-full rounded-md border-0 py-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 sm:text-md sm:leading-6"
+                />
+              </div>
             </div>
           </div>
         </div>
