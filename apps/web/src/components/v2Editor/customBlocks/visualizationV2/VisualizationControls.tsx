@@ -102,21 +102,28 @@ function VisualizationControlsV2(props: Props) {
     const decimalPlacesMap = { ...seriesDecimalPlaces }
     const multiplierMap = { ...seriesMultiplier }
 
+    let hasUpdates = false
+
     props.yAxes.forEach((yAxis) => {
       yAxis.series.forEach((series) => {
         if (series.numberFormat && !decimalPlacesMap[series.id]) {
           decimalPlacesMap[series.id] =
             series.numberFormat.decimalPlaces.toString()
+          hasUpdates = true
         }
         if (series.numberFormat && !multiplierMap[series.id]) {
           multiplierMap[series.id] = series.numberFormat.multiplier.toString()
+          hasUpdates = true
         }
       })
     })
 
-    setSeriesDecimalPlaces(decimalPlacesMap)
-    setSeriesMultiplier(multiplierMap)
-  }, [props.yAxes, seriesDecimalPlaces, seriesMultiplier])
+    // Only update state if something actually changed
+    if (hasUpdates) {
+      setSeriesDecimalPlaces(decimalPlacesMap)
+      setSeriesMultiplier(multiplierMap)
+    }
+  }, [props.yAxes]) // Only depend on props.yAxes, not the state variables
 
   // GeneralTab callbacks
   const onChangeYAxis = useCallback(

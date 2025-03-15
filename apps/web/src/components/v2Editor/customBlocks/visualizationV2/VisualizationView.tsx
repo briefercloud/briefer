@@ -277,6 +277,43 @@ function BrieferResult(props: {
 
     return {
       ...props.result,
+      series: props.result.series.map((series) => ({
+        ...series,
+        label: {
+          ...series.label,
+          formatter: (param: { dataIndex: number }) => {
+            const seriesId = series.id.split(':')[0]
+            let seriesInput: SeriesV2 | null = null
+            for (const yAxis of props.input.yAxes) {
+              for (const s of yAxis.series) {
+                if (s.id === seriesId) {
+                  seriesInput = s
+                  break
+                }
+              }
+            }
+
+            const value =
+              props.result.dataset[series.datasetIndex]?.source[
+                param.dataIndex
+              ]?.[series.encode?.y ?? series.id.split(':').pop() ?? '']
+
+            if (seriesInput?.column) {
+              if (NumpyDateTypes.safeParse(seriesInput.column.type).success) {
+                return formatDateTime(value, seriesInput.dateFormat)
+              } else if (
+                NumpyNumberTypes.safeParse(seriesInput.column.type).success &&
+                typeof value === 'number' &&
+                seriesInput.numberFormat
+              ) {
+                return formatNumber(value, seriesInput.numberFormat)
+              }
+            }
+
+            return value
+          },
+        },
+      })),
       backgroundColor: '#fff',
       legend: {
         ...props.result.legend,
