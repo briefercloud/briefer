@@ -18,6 +18,10 @@ import {
   TimeUnit,
   NumpyDateTypes,
   exhaustiveCheck,
+  SeriesV2,
+  NumpyNumberTypes,
+  DateFormat,
+  NumberFormat,
 } from '@briefer/types'
 import LargeSpinner from '@/components/LargeSpinner'
 import clsx from 'clsx'
@@ -314,12 +318,12 @@ function BrieferResult(props: {
 
             switch (axis._tag) {
               case 'value':
-                return formatNumber(xValue, props.input, {
+                return formatNumberAxis(xValue, props.input.xAxisNumberFormat, {
                   min: axis.min,
                   max: axis.max,
                 })
               case 'time':
-                return formatDateTime(xValue, props.input, {
+                return formatDateTimeAxis(xValue, props.input.xAxisDateFormat, {
                   min: axis.min,
                   max: axis.max,
                   hideDay: axis.hideDay,
@@ -345,9 +349,42 @@ function BrieferResult(props: {
                         continue
                       }
 
+                      let seriesInput: SeriesV2 | null = null
+                      for (const yAxis of props.input.yAxes) {
+                        for (const series of yAxis.series) {
+                          if (series.id === key) {
+                            seriesInput = series
+                            break
+                          }
+                        }
+                      }
+
+                      let formattedValue = value
+                      if (seriesInput?.column) {
+                        if (
+                          NumpyDateTypes.safeParse(seriesInput.column.type)
+                            .success
+                        ) {
+                          formattedValue = formatDateTime(
+                            value,
+                            seriesInput.dateFormat
+                          )
+                        } else if (
+                          NumpyNumberTypes.safeParse(seriesInput.column.type)
+                            .success &&
+                          typeof value === 'number' &&
+                          seriesInput.numberFormat
+                        ) {
+                          formattedValue = formatNumber(
+                            value,
+                            seriesInput.numberFormat
+                          )
+                        }
+                      }
+
                       result += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
                       <div>${param.marker ?? ''}${param.seriesName ?? key}</div>
-                      <div>${value}</div>
+                      <div>${formattedValue}</div>
                     </div>`
                     }
 
@@ -560,29 +597,20 @@ function BigNumberVisualization(props: {
     }
 
     let displayY = latest[y].toString()
-    if (typeof latest[y] === 'number') {
-      displayY = (Math.round(latest[y] * 100) / 100).toString()
+    if (
+      typeof latest[y] === 'number' &&
+      props.input.yAxes[0]?.series[0]?.numberFormat
+    ) {
+      displayY = formatNumber(
+        latest[y],
+        props.input.yAxes[0]?.series[0]?.numberFormat
+      )
     }
 
     // Format the X value (date) if needed
     let lastDisplayX = latest[x].toString()
     if (props.input.xAxisDateFormat && isDateColumn) {
-      const date = new Date(latest[x])
-      if (!isNaN(date.getTime())) {
-        const dateFormat = props.input.xAxisDateFormat
-        let formatString = dateFormat.dateStyle || ''
-
-        // Add time format if showTime is true and timeFormat is provided
-        if (dateFormat.showTime && dateFormat.timeFormat) {
-          formatString = formatString
-            ? `${formatString} ${dateFormat.timeFormat}`
-            : dateFormat.timeFormat
-        }
-
-        if (formatString) {
-          lastDisplayX = dfns.format(date, formatString)
-        }
-      }
+      lastDisplayX = formatDateTime(latest[x], props.input.xAxisDateFormat)
     }
 
     const lastValue = {
@@ -595,30 +623,21 @@ function BigNumberVisualization(props: {
     let prevDisplayY = 'N/A'
     if (prev) {
       prevDisplayY = prev[y].toString()
-      if (typeof prev[y] === 'number') {
-        prevDisplayY = (Math.round(prev[y] * 100) / 100).toString()
+      if (
+        typeof prev[y] === 'number' &&
+        props.input.yAxes[0]?.series[0]?.numberFormat
+      ) {
+        prevDisplayY = formatNumber(
+          prev[y],
+          props.input.yAxes[0]?.series[0]?.numberFormat
+        )
       }
     }
 
     // Format the previous X value (date) if needed
     let prevDisplayX = prev?.[x] ? String(prev[x]) : 'N/A'
     if (props.input.xAxisDateFormat && isDateColumn && prev) {
-      const date = new Date(prev[x])
-      if (!isNaN(date.getTime())) {
-        const dateFormat = props.input.xAxisDateFormat
-        let formatString = dateFormat.dateStyle || ''
-
-        // Add time format if showTime is true and timeFormat is provided
-        if (dateFormat.showTime && dateFormat.timeFormat) {
-          formatString = formatString
-            ? `${formatString} ${dateFormat.timeFormat}`
-            : dateFormat.timeFormat
-        }
-
-        if (formatString) {
-          prevDisplayX = dfns.format(date, formatString)
-        }
-      }
+      prevDisplayX = formatDateTime(prev[x], props.input.xAxisDateFormat)
     }
 
     const prevValue = {
@@ -837,7 +856,7 @@ function getValueAxis(
         margin: 5,
         hideOverlap: true,
         formatter: (value: string | number): string =>
-          formatNumber(value, input, { min, max }),
+          formatNumberAxis(value, input.xAxisNumberFormat, { min, max }),
       },
       min: interval !== 'auto' ? min - interval / 2 : 'dataMin',
       max: interval !== 'auto' ? max + interval / 2 : 'dataMax',
@@ -952,7 +971,12 @@ function getTimeAxis(
         margin: 5,
         hideOverlap: true,
         formatter: (value: string | number): string =>
-          formatDateTime(value, input, { min, max, hideDay, minIntervalUnit }),
+          formatDateTimeAxis(value, input.xAxisDateFormat, {
+            min,
+            max,
+            hideDay,
+            minIntervalUnit,
+          }),
         showMaxLabel: true,
         showMinLabel: true,
       },
@@ -1025,7 +1049,30 @@ function getCategoryAxis(axis: XAxis) {
 
 function formatDateTime(
   value: string | number,
-  input: VisualizationV2BlockInput,
+  format: DateFormat | null
+): string {
+  const asDate = new Date(value)
+
+  let formatString = format?.dateStyle || ''
+
+  // Add time format if showTime is true and timeFormat is provided
+  if (format && format.showTime && format.timeFormat) {
+    formatString = formatString
+      ? `${formatString} ${format.timeFormat}`
+      : format.timeFormat
+  }
+
+  // Use the configured format if available, otherwise fall back to default formatting
+  if (formatString) {
+    return dfns.format(asDate, formatString)
+  }
+
+  return dfns.format(value, 'MMMM d, yyyy')
+}
+
+function formatDateTimeAxis(
+  value: string | number,
+  format: DateFormat | null,
   {
     min,
     max,
@@ -1039,21 +1086,8 @@ function formatDateTime(
   }
 
   // Use the custom date format if available
-  if (input.xAxisDateFormat) {
-    const dateFormat = input.xAxisDateFormat
-    let formatString = dateFormat.dateStyle || ''
-
-    // Add time format if showTime is true and timeFormat is provided
-    if (dateFormat.showTime && dateFormat.timeFormat) {
-      formatString = formatString
-        ? `${formatString} ${dateFormat.timeFormat}`
-        : dateFormat.timeFormat
-    }
-
-    // Use the configured format if available, otherwise fall back to default formatting
-    if (formatString) {
-      return dfns.format(asDate, formatString)
-    }
+  if (format) {
+    return formatDateTime(value, format)
   }
 
   // Fall back to default formatting based on interval
@@ -1081,9 +1115,124 @@ function formatDateTime(
   }
 }
 
-function formatNumber(
+function formatNumber(value: number, format: NumberFormat): string {
+  try {
+    let num = value
+
+    // Apply multiplier
+    if (format.multiplier !== 1) {
+      num *= format.multiplier
+    }
+
+    // Create format string for d3-format based on the configuration
+    let formatString = ''
+    let isPercentage = false
+    let isScientific = false
+
+    // Handle style
+    switch (format.style) {
+      case 'percent':
+        isPercentage = true
+        num = num * 100
+        break
+      case 'scientific':
+        isScientific = true
+        break
+      case 'normal':
+        break
+      default:
+        exhaustiveCheck(format.style)
+    }
+
+    // Handle decimals
+    if (Number.isInteger(num)) {
+      formatString += '.0f' // No decimal places for integers
+    } else if (format.decimalPlaces <= 0) {
+      formatString += '.0f' // No decimal places - use .0f instead of ~f
+    } else {
+      formatString += `.${format.decimalPlaces}f` // Fixed decimal places
+    }
+
+    let formatted = (() => {
+      // Handle scientific notation separately
+      if (isScientific) {
+        // Use JavaScript's native toExponential
+        let sciFormatted = num.toExponential(format.decimalPlaces)
+
+        // Apply appropriate decimal separator based on separator style
+        switch (format.separatorStyle) {
+          case '999 999,99':
+          case '999.999,99':
+            return sciFormatted.replace('.', ',')
+          case '999,999.99':
+          case '999999.99':
+            return sciFormatted
+          default:
+            exhaustiveCheck(format.separatorStyle)
+        }
+      }
+
+      switch (format.separatorStyle) {
+        case '999 999,99': {
+          const format = d3Format(`,${formatString}`)(num)
+          const decimalPos = format.lastIndexOf('.')
+          if (decimalPos === -1) {
+            return format.replace(/,/g, ' ')
+          } else {
+            const result = format.replace(/,/g, ' ')
+            return (
+              result.substring(0, decimalPos) +
+              ',' +
+              result.substring(decimalPos + 1)
+            )
+          }
+        }
+        case '999.999,99': {
+          const format = d3Format(`,${formatString}`)(num)
+          const decimalPos = format.lastIndexOf('.')
+          if (decimalPos === -1) {
+            return format.replace(/,/g, '.')
+          } else {
+            const result = format.replace(/,/g, '.')
+            return (
+              result.substring(0, decimalPos) +
+              ',' +
+              result.substring(decimalPos + 1)
+            )
+          }
+        }
+        case '999,999.99':
+          return d3Format(`,${formatString}`)(num)
+        case '999999.99':
+          return d3Format(formatString)(num)
+        default:
+          exhaustiveCheck(format.separatorStyle)
+          return d3Format(formatString)(num)
+      }
+    })()
+
+    if (isPercentage) {
+      formatted += '%'
+    }
+
+    // Add prefix and suffix
+    if (format.prefix) {
+      formatted = format.prefix + formatted
+    }
+    if (format.suffix) {
+      formatted = formatted + format.suffix
+    }
+
+    return formatted
+  } catch (err) {
+    console.error('Error formatting number:', err)
+    return value.toString()
+  }
+}
+
+function formatNumberAxis(
   value: string | number,
-  input: VisualizationV2BlockInput,
+  format: NumberFormat | null,
   { min, max }: { min: number; max: number }
 ): string {
   // Hide values outside the min/max range
@@ -1092,122 +1241,8 @@ function formatNumber(
   }
 
   // If number formatting options are specified, use them
-  if (input?.xAxisNumberFormat && typeof value === 'number') {
-    const numberFormat = input.xAxisNumberFormat
-
-    try {
-      let num = value
-
-      // Apply multiplier
-      if (numberFormat.multiplier !== 1) {
-        num *= numberFormat.multiplier
-      }
-
-      // Create format string for d3-format based on the configuration
-      let formatString = ''
-      let isPercentage = false
-      let isScientific = false
-
-      // Handle style
-      switch (numberFormat.style) {
-        case 'percent':
-          isPercentage = true
-          num = num * 100
-          break
-        case 'scientific':
-          isScientific = true
-          break
-        case 'normal':
-          break
-        default:
-          exhaustiveCheck(numberFormat.style)
-      }
-
-      // Handle decimals
-      if (numberFormat.decimalPlaces <= 0) {
-        formatString += '~f' // No decimal places
-      } else {
-        formatString += `.${numberFormat.decimalPlaces}f` // Fixed decimal places
-      }
-
-      let formatted = (() => {
-        // Handle scientific notation separately
-        if (isScientific) {
-          // Use JavaScript's native toExponential
-          let sciFormatted = num.toExponential(numberFormat.decimalPlaces)
-
-          // Apply appropriate decimal separator based on separator style
-          switch (numberFormat.separatorStyle) {
-            case '999 999,99':
-            case '999.999,99':
-              return sciFormatted.replace('.', ',')
-            case '999,999.99':
-            case '999999.99':
-            case "999'999.99":
-              return sciFormatted
-            default:
-              exhaustiveCheck(numberFormat.separatorStyle)
-          }
-        }
-
-        switch (numberFormat.separatorStyle) {
-          case '999 999,99': {
-            const format = d3Format(`,${formatString}`)(num)
-            const decimalPos = format.lastIndexOf('.')
-            if (decimalPos === -1) {
-              return format.replace(/,/g, ' ')
-            } else {
-              const result = format.replace(/,/g, ' ')
-              return (
-                result.substring(0, decimalPos) +
-                ',' +
-                result.substring(decimalPos + 1)
-              )
-            }
-          }
-          case '999.999,99': {
-            const format = d3Format(`,${formatString}`)(num)
-            const decimalPos = format.lastIndexOf('.')
-            if (decimalPos === -1) {
-              return format.replace(/,/g, '.')
-            } else {
-              const result = format.replace(/,/g, '.')
-              return (
-                result.substring(0, decimalPos) +
-                ',' +
-                result.substring(decimalPos + 1)
-              )
-            }
-          }
-          case '999,999.99':
-            return d3Format(`,${formatString}`)(num)
-          case '999999.99':
-            return d3Format(formatString)(num)
-          case "999'999.99":
-            return d3Format(`,${formatString}`)(num).replace(/,/g, "'")
-          default:
-            exhaustiveCheck(numberFormat.separatorStyle)
-            return d3Format(formatString)(num)
-        }
-      })()
-
-      if (isPercentage) {
-        formatted += '%'
-      }
-
-      // Add prefix and suffix
-      if (numberFormat.prefix) {
-        formatted = numberFormat.prefix + formatted
-      }
-      if (numberFormat.suffix) {
-        formatted = formatted + numberFormat.suffix
-      }
-
-      return formatted
-    } catch (err) {
-      console.error('Error formatting number:', err)
-      return value.toString()
-    }
+  if (format && typeof value === 'number') {
+    return formatNumber(value, format)
   }
 
   // Default formatting

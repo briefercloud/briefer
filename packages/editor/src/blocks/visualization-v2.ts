@@ -19,6 +19,9 @@ import {
   TimeUnit,
   VisualizationFilter,
   YAxisV2,
+  SeriesV2,
+  DateFormat,
+  NumberFormat,
 } from '@briefer/types'
 import { clone } from 'ramda'
 
@@ -29,39 +32,8 @@ export type VisualizationV2BlockInput = {
   xAxisName: string | null
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
-  xAxisDateFormat: {
-    dateStyle:
-      | 'MMMM d, yyyy'
-      | 'd MMMM, yyyy'
-      | 'EEEE, MMMM d, yyyy'
-      | 'M/d/yyyy'
-      | 'd/M/yyyy'
-      | 'yyyy/M/d'
-      | null
-    // "MMMM d, yyyy" -> "January 31, 2018"
-    // "d MMMM, yyyy" -> "31 January, 2018"
-    // "EEEE, MMMM d, yyyy" -> "Wednesday, January 31, 2018"
-    // "M/d/yyyy" -> "1/31/2018"
-    // "d/M/yyyy" -> "31/1/2018"
-    // "yyyy/M/d" -> "2018/1/31"
-    showTime: boolean
-    timeFormat: 'h:mm a' | 'HH:mm' | null
-    // "h:mm a" -> "5:24 PM" (12-hour clock)
-    // "HH:mm" -> "17:24" (24-hour clock)
-  } | null
-  xAxisNumberFormat: {
-    style: 'normal' | 'percent' | 'scientific'
-    separatorStyle:
-      | '999,999.99'
-      | '999.999,99'
-      | '999 999,99'
-      | "999'999.99"
-      | '999999.99'
-    decimalPlaces: number
-    multiplier: number
-    prefix: string | null
-    suffix: string | null
-  } | null
+  xAxisDateFormat: DateFormat | null
+  xAxisNumberFormat: NumberFormat | null
   yAxes: YAxisV2[]
   histogramFormat: HistogramFormat
   histogramBin: HistogramBin
@@ -143,10 +115,6 @@ export const NUMBER_SEPARATOR_OPTIONS = [
     value: '999 999,99' as const,
   },
   {
-    name: "999'999.99",
-    value: "999'999.99" as const,
-  },
-  {
     name: '999999.99',
     value: '999999.99' as const,
   },
@@ -160,19 +128,8 @@ function emptyInput(): VisualizationV2BlockInput {
     xAxisName: null,
     xAxisSort: 'ascending',
     xAxisGroupFunction: null,
-    xAxisDateFormat: {
-      dateStyle: 'MMMM d, yyyy', // Default to "January 31, 2018" format
-      showTime: false,
-      timeFormat: 'h:mm a', // Default to 12-hour clock format
-    },
-    xAxisNumberFormat: {
-      style: 'normal',
-      separatorStyle: '999,999.99', // Default US format with commas
-      decimalPlaces: 2,
-      multiplier: 1,
-      prefix: null,
-      suffix: null,
-    },
+    xAxisDateFormat: getDefaultDateFormat(),
+    xAxisNumberFormat: getDefaultNumberFormat(),
     yAxes: [],
     filters: [],
     histogramFormat: 'count',
@@ -378,18 +335,7 @@ function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
       {
         id: uuidv4(),
         name: null,
-        series: [
-          {
-            id: uuidv4(),
-            column: null,
-            aggregateFunction: 'sum',
-            groupBy: null,
-            chartType: null,
-            name: null,
-            color: null,
-            groups: null,
-          },
-        ],
+        series: [createDefaultSeries()],
       },
     ]
   }
@@ -519,34 +465,41 @@ export function setVisualizationV2Input(
   })
 }
 
-// Type representing all possible date formats from our options
-export type DateFormatString = NonNullable<
-  VisualizationV2BlockInput['xAxisDateFormat']
->['dateStyle']
+// Helper functions for formatting
 
-// Type representing all possible time formats from our options
-export type TimeFormatString = NonNullable<
-  VisualizationV2BlockInput['xAxisDateFormat']
->['timeFormat']
+// Get default date format configuration
+export function getDefaultDateFormat(): DateFormat {
+  return {
+    dateStyle: 'MMMM d, yyyy', // Default to "January 31, 2018" format
+    showTime: false,
+    timeFormat: 'h:mm a', // Default to 12-hour clock format
+  }
+}
 
-// Type representing all possible combined date-time formats
-export type DateTimeFormatString =
-  | DateFormatString
-  | TimeFormatString
-  | `${NonNullable<DateFormatString>} ${NonNullable<TimeFormatString>}`
-  | ''
+// Get default number format configuration
+export function getDefaultNumberFormat(): NumberFormat {
+  return {
+    style: 'normal',
+    separatorStyle: '999,999.99', // Default US format with commas
+    decimalPlaces: 2,
+    multiplier: 1,
+    prefix: null,
+    suffix: null,
+  }
+}
 
-// Type representing all possible number format styles
-export type NumberFormatStyle = NonNullable<
-  VisualizationV2BlockInput['xAxisNumberFormat']
->['style']
-
-// Type representing all possible number separator styles
-export type NumberSeparatorStyle = NonNullable<
-  VisualizationV2BlockInput['xAxisNumberFormat']
->['separatorStyle']
-
-// Type representing a complete number format configuration
-export type NumberFormatConfig = NonNullable<
-  VisualizationV2BlockInput['xAxisNumberFormat']
->
+// Create a new SeriesV2 with default values
+export function createDefaultSeries(): SeriesV2 {
+  return {
+    id: uuidv4(),
+    column: null,
+    aggregateFunction: 'sum',
+    groupBy: null,
+    chartType: null,
+    name: null,
+    color: null,
+    groups: null,
+    dateFormat: getDefaultDateFormat(),
+    numberFormat: getDefaultNumberFormat(),
+  }
+}

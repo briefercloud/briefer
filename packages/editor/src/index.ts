@@ -27,11 +27,15 @@ import { PivotTableBlock } from './blocks/pivotTable.js'
 import {
   getVisualizationV2Attributes,
   VisualizationV2Block,
+  createDefaultSeries,
+  getDefaultDateFormat,
+  getDefaultNumberFormat,
 } from './blocks/visualization-v2.js'
-import { ascend, descend, head, sortBy, sortWith } from 'ramda'
+import { ascend, descend, head, sortWith } from 'ramda'
 
 export * from './operations/index.js'
 export * from './blocks/index.js'
+export * from './blocks/visualization-v2.js'
 export * from './dashboard.js'
 export * from './metadata.js'
 export * from './component.js'

@@ -15,9 +15,12 @@ import {
   DataFrameBooleanColumn,
   YAxisV2,
   SeriesV2,
+  DateFormat,
+  NumberFormat,
 } from '@briefer/types'
 import { sortWith } from 'ramda'
 import { useCallback, useMemo } from 'react'
+import { createDefaultSeries } from '@briefer/editor'
 
 interface Props {
   index: number
@@ -127,16 +130,7 @@ function YAxisPickerV2(props: Props) {
         ...props.yAxis,
         series: [
           ...props.yAxis.series,
-          {
-            id: uuidv4(),
-            column: null,
-            aggregateFunction: 'sum',
-            groupBy: null,
-            chartType: null,
-            name: null,
-            color: null,
-            groups: null,
-          },
+          createDefaultSeries(),
         ],
       },
       props.index
