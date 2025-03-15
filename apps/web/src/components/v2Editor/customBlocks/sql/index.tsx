@@ -33,6 +33,7 @@ import {
   AITasks,
   isExecutionStatusLoading,
   AddBlockGroupBlock,
+  getSQLCodeFormatted,
 } from '@briefer/editor'
 import SQLResult from './SQLResult'
 import type {
@@ -56,6 +57,7 @@ import LargeSpinner from '@/components/LargeSpinner'
 import { APIDataSources } from '@/hooks/useDatasources'
 import { useRouter } from 'next/router'
 import HiddenInPublishedButton from '../../HiddenInPublishedButton'
+import FormatSQLButton from '../../FormatSQLButton'
 import useEditorAwareness from '@/hooks/useEditorAwareness'
 import { useWorkspaces } from '@/hooks/useWorkspaces'
 import useProperties from '@/hooks/useProperties'
@@ -438,6 +440,17 @@ function SQLBlock(props: Props) {
   const onAddDataSource = useCallback(() => {
     router.push(`/workspaces/${props.document.workspaceId}/data-sources`)
   }, [router, props.document.workspaceId])
+
+  const onToggleFormatSQLCode = useCallback(() => {
+    const sqlCodeFormatted = getSQLCodeFormatted(source)
+
+    if (!sqlCodeFormatted) {
+      return
+    }
+
+    // Reuse the `EditWithAIForm` component to show the formatted SQL code
+    props.block.setAttribute('aiSuggestions', sqlCodeFormatted)
+  }, [source, props.block])
 
   const onToggleIsBlockHiddenInPublished = useCallback(() => {
     props.onToggleIsBlockHiddenInPublished(blockId)
@@ -1113,7 +1126,6 @@ function SQLBlock(props: Props) {
             </button>
           )}
         </TooltipV2>
-
         {!props.dashboardMode && (
           <HiddenInPublishedButton
             isBlockHiddenInPublished={props.isBlockHiddenInPublished}
@@ -1133,6 +1145,14 @@ function SQLBlock(props: Props) {
               onSave={onSaveReusableComponent}
               disabled={!props.isEditable || isComponentInstance}
               isComponentInstance={isComponentInstance}
+            />
+          )}
+
+        {((result && !isResultHidden) || !isCodeHidden) &&
+          !props.dashboardMode && (
+            <FormatSQLButton
+              onFormat={onToggleFormatSQLCode}
+              disabled={!props.isEditable}
             />
           )}
 
