@@ -1,11 +1,4 @@
-import {
-  ChangeEvent,
-  useMemo,
-  useState,
-  useCallback,
-  FocusEvent,
-  useEffect,
-} from 'react'
+import { ChangeEvent, useCallback } from 'react'
 import {
   DataFrame,
   YAxisV2,
@@ -13,15 +6,7 @@ import {
   NumpyNumberTypes,
   NumpyTimeDeltaTypes,
 } from '@briefer/types'
-import AxisModifierSelector from '@/components/AxisModifierSelector'
-import VisualizationToggleV2 from '../VisualizationToggle'
-import { parseDecimalPlaces, parseMultiplier } from '../VisualizationControls'
-import {
-  DATE_FORMAT_OPTIONS,
-  TIME_FORMAT_OPTIONS,
-  NUMBER_STYLE_OPTIONS,
-  NUMBER_SEPARATOR_OPTIONS,
-} from '@briefer/editor'
+import { NumberFormatControl, DateFormatControl } from '../FormatControls'
 
 interface YAxisTabProps {
   yAxes: YAxisV2[]
@@ -52,13 +37,24 @@ interface YAxisTabProps {
   onChangeSeriesSuffix: (seriesId: string, value: string) => void
 }
 
-// Component to handle number formatting with local state
-interface SeriesNumberFormatControlProps {
-  series: YAxisV2['series'][number]
-  isEditable: boolean
+// Extract a component for each Y-axis section
+interface YAxisSectionProps {
+  yAxis: YAxisV2
+  axisIndex: number
   dataframe: DataFrame | null
-  initialDecimalPlaces: string
-  initialMultiplier: string
+  isEditable: boolean
+  seriesDecimalPlaces: Record<string, string>
+  seriesMultiplier: Record<string, string>
+  onChangeYAxisName: (
+    e: ChangeEvent<HTMLInputElement>,
+    axisIndex: number
+  ) => void
+  onChangeSeriesDateStyle: (seriesId: string, dateStyle: string | null) => void
+  onToggleSeriesShowTime: (seriesId: string) => void
+  onChangeSeriesTimeFormat: (
+    seriesId: string,
+    timeFormat: string | null
+  ) => void
   onChangeSeriesNumberStyle: (seriesId: string, style: string | null) => void
   onChangeSeriesSeparatorStyle: (
     seriesId: string,
@@ -72,12 +68,17 @@ interface SeriesNumberFormatControlProps {
   onChangeSeriesSuffix: (seriesId: string, value: string) => void
 }
 
-const SeriesNumberFormatControl = ({
-  series,
-  isEditable,
+const YAxisSection = ({
+  yAxis,
+  axisIndex,
   dataframe,
-  initialDecimalPlaces,
-  initialMultiplier,
+  isEditable,
+  seriesDecimalPlaces,
+  seriesMultiplier,
+  onChangeYAxisName,
+  onChangeSeriesDateStyle,
+  onToggleSeriesShowTime,
+  onChangeSeriesTimeFormat,
   onChangeSeriesNumberStyle,
   onChangeSeriesSeparatorStyle,
   onChangeSeriesDecimalPlaces,
@@ -86,196 +87,182 @@ const SeriesNumberFormatControl = ({
   onSeriesMultiplierBlur,
   onChangeSeriesPrefix,
   onChangeSeriesSuffix,
-}: SeriesNumberFormatControlProps) => {
-  // Local state for the input fields
-  const [decimalPlacesInput, setDecimalPlacesInput] = useState(
-    initialDecimalPlaces || '2'
-  )
-  const [multiplierInput, setMultiplierInput] = useState(
-    initialMultiplier || '1'
-  )
+}: YAxisSectionProps) => {
+  const isNumberSeries = (series: YAxisV2['series'][number]) =>
+    series.column &&
+    NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(series.column.type)
+      .success
 
-  // Update local state when props change (from outside this component)
-  useEffect(() => {
-    if (initialDecimalPlaces) {
-      setDecimalPlacesInput(initialDecimalPlaces)
-    }
-  }, [initialDecimalPlaces])
+  const isDateSeries = (series: YAxisV2['series'][number]) =>
+    series.column && NumpyDateTypes.safeParse(series.column.type).success
 
-  useEffect(() => {
-    if (initialMultiplier) {
-      setMultiplierInput(initialMultiplier)
-    }
-  }, [initialMultiplier])
-
-  // Handler for decimal places changes
-  const handleDecimalPlacesChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
-
-      // Always update local state to show what the user is typing
-      setDecimalPlacesInput(inputValue)
-
-      // Always update the parent's record of the input value
-      onChangeSeriesDecimalPlaces(series.id, inputValue)
-
-      const { numValue } = parseDecimalPlaces(inputValue)
-      onSeriesDecimalPlacesBlur(series.id, numValue.toString())
+  // Adapter function for series handlers that need to match the shared component interface
+  const handleDateStyle = useCallback(
+    (seriesId: string | undefined, style: string | null) => {
+      if (seriesId) onChangeSeriesDateStyle(seriesId, style)
     },
-    [series.id, onChangeSeriesDecimalPlaces, onSeriesDecimalPlacesBlur]
+    [onChangeSeriesDateStyle]
   )
 
-  // Handler for decimal places blur
+  const handleToggleShowTime = useCallback(
+    (seriesId: string | undefined) => {
+      if (seriesId) onToggleSeriesShowTime(seriesId)
+    },
+    [onToggleSeriesShowTime]
+  )
+
+  const handleTimeFormat = useCallback(
+    (seriesId: string | undefined, format: string | null) => {
+      if (seriesId) onChangeSeriesTimeFormat(seriesId, format)
+    },
+    [onChangeSeriesTimeFormat]
+  )
+
+  const handleNumberStyle = useCallback(
+    (seriesId: string | undefined, style: string | null) => {
+      if (seriesId) onChangeSeriesNumberStyle(seriesId, style)
+    },
+    [onChangeSeriesNumberStyle]
+  )
+
+  const handleSeparatorStyle = useCallback(
+    (seriesId: string | undefined, style: string | null) => {
+      if (seriesId) onChangeSeriesSeparatorStyle(seriesId, style)
+    },
+    [onChangeSeriesSeparatorStyle]
+  )
+
+  const handleDecimalPlaces = useCallback(
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onChangeSeriesDecimalPlaces(seriesId, value)
+    },
+    [onChangeSeriesDecimalPlaces]
+  )
+
   const handleDecimalPlacesBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
-
-      // Special case for "0" - we want to allow zero decimal places
-      if (inputValue === '0') {
-        setDecimalPlacesInput('0')
-        onChangeSeriesDecimalPlaces(series.id, '0')
-        onSeriesDecimalPlacesBlur(series.id, '0')
-        return
-      }
-
-      const { cleanedValue } = parseDecimalPlaces(inputValue)
-
-      // If the cleaned value is empty, default to "0"
-      const finalValue = cleanedValue || '0'
-
-      setDecimalPlacesInput(finalValue)
-      onChangeSeriesDecimalPlaces(series.id, finalValue)
-      onSeriesDecimalPlacesBlur(series.id, finalValue)
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onSeriesDecimalPlacesBlur(seriesId, value)
     },
-    [series.id, onChangeSeriesDecimalPlaces, onSeriesDecimalPlacesBlur]
+    [onSeriesDecimalPlacesBlur]
   )
 
-  // Handler for multiplier changes
-  const handleMultiplierChange = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
-
-      // Always update local state to show what the user is typing
-      setMultiplierInput(inputValue)
-
-      // Always update the parent's record of the input value
-      onChangeSeriesMultiplier(series.id, inputValue)
-
-      const { numValue } = parseMultiplier(inputValue)
-      onSeriesMultiplierBlur(series.id, numValue.toString())
+  const handleMultiplier = useCallback(
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onChangeSeriesMultiplier(seriesId, value)
     },
-    [series.id, onChangeSeriesMultiplier, onSeriesMultiplierBlur]
+    [onChangeSeriesMultiplier]
   )
 
-  // Handler for multiplier blur
   const handleMultiplierBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
-
-      const { cleanedValue } = parseMultiplier(inputValue)
-
-      setMultiplierInput(cleanedValue)
-      onChangeSeriesMultiplier(series.id, cleanedValue)
-      onSeriesMultiplierBlur(series.id, cleanedValue)
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onSeriesMultiplierBlur(seriesId, value)
     },
-    [series.id, onChangeSeriesMultiplier, onSeriesMultiplierBlur]
+    [onSeriesMultiplierBlur]
+  )
+
+  const handlePrefix = useCallback(
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onChangeSeriesPrefix(seriesId, value)
+    },
+    [onChangeSeriesPrefix]
+  )
+
+  const handleSuffix = useCallback(
+    (seriesId: string | undefined, value: string) => {
+      if (seriesId) onChangeSeriesSuffix(seriesId, value)
+    },
+    [onChangeSeriesSuffix]
   )
 
   return (
-    <>
-      <AxisModifierSelector
-        label="Style"
-        value={series.numberFormat?.style || 'normal'}
-        options={NUMBER_STYLE_OPTIONS}
-        onChange={(style) => onChangeSeriesNumberStyle(series.id, style)}
-        disabled={!dataframe || !isEditable}
-      />
+    <div key={yAxis.id} className="mb-8">
+      <h2 className="text-sm font-semibold text-gray-900 mb-4">
+        {axisIndex === 0 ? 'Left' : 'Right'} Y-Axis
+      </h2>
 
-      <div className="mt-4">
-        <AxisModifierSelector
-          label="Separator style"
-          value={series.numberFormat?.separatorStyle || '999,999.99'}
-          options={NUMBER_SEPARATOR_OPTIONS}
-          onChange={(style) => onChangeSeriesSeparatorStyle(series.id, style)}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
-
-      <div className="mt-4">
+      <div className="mb-6">
         <label
-          htmlFor={`decimalPlaces-${series.id}`}
+          htmlFor={`yAxisName-${axisIndex}`}
           className="block text-xs font-medium leading-6 text-gray-900 pb-1"
         >
-          Number of decimal places
+          Axis name
         </label>
         <input
-          name={`decimalPlaces-${series.id}`}
+          name={`yAxisName-${axisIndex}`}
           type="text"
-          min="0"
-          max="10"
+          placeholder="My Y-Axis"
           className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-          value={decimalPlacesInput}
-          onChange={handleDecimalPlacesChange}
-          onBlur={handleDecimalPlacesBlur}
+          value={yAxis?.name ?? ''}
+          onChange={(e) => onChangeYAxisName(e, axisIndex)}
           disabled={!dataframe || !isEditable}
         />
       </div>
 
-      <div className="mt-4">
-        <label
-          htmlFor={`multiplier-${series.id}`}
-          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-        >
-          Multiply by a number
-        </label>
-        <input
-          name={`multiplier-${series.id}`}
-          type="text"
-          step="any"
-          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-          value={multiplierInput}
-          onChange={handleMultiplierChange}
-          onBlur={handleMultiplierBlur}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
+      {yAxis.series.map((series, seriesIndex) => {
+        if (!series.column) return null
 
-      <div className="mt-4">
-        <label
-          htmlFor={`prefix-${series.id}`}
-          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-        >
-          Add a prefix
-        </label>
-        <input
-          name={`prefix-${series.id}`}
-          type="text"
-          placeholder="$"
-          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-          value={series.numberFormat?.prefix ?? ''}
-          onChange={(e) => onChangeSeriesPrefix(series.id, e.target.value)}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
+        const columnName = series.column?.name || ''
+        const isDateType = isDateSeries(series)
+        const isNumberType = isNumberSeries(series)
 
-      <div className="mt-4">
-        <label
-          htmlFor={`suffix-${series.id}`}
-          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-        >
-          Add a suffix
-        </label>
-        <input
-          name={`suffix-${series.id}`}
-          type="text"
-          placeholder="dollars"
-          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-          value={series.numberFormat?.suffix ?? ''}
-          onChange={(e) => onChangeSeriesSuffix(series.id, e.target.value)}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
-    </>
+        return (
+          <div key={series.id} className="mb-6 p-4 bg-gray-50 rounded-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-medium">Series {seriesIndex + 1}</h3>
+              <span className="text-xs text-gray-500 italic">{columnName}</span>
+            </div>
+
+            {isDateType && (
+              <DateFormatControl
+                currentFormat={series.dateFormat || null}
+                dataframe={dataframe}
+                isEditable={isEditable}
+                seriesId={series.id}
+                onChangeDateStyle={handleDateStyle}
+                onToggleShowTime={handleToggleShowTime}
+                onChangeTimeFormat={handleTimeFormat}
+              />
+            )}
+
+            {isNumberType && (
+              <NumberFormatControl
+                initialDecimalPlaces={
+                  seriesDecimalPlaces[series.id] ||
+                  series.numberFormat?.decimalPlaces?.toString() ||
+                  '2'
+                }
+                initialMultiplier={
+                  seriesMultiplier[series.id] ||
+                  series.numberFormat?.multiplier?.toString() ||
+                  '1'
+                }
+                currentFormat={series.numberFormat || null}
+                dataframe={dataframe}
+                isEditable={isEditable}
+                seriesId={series.id}
+                onChangeNumberStyle={handleNumberStyle}
+                onChangeSeparatorStyle={handleSeparatorStyle}
+                onChangeDecimalPlaces={handleDecimalPlaces}
+                onDecimalPlacesBlur={handleDecimalPlacesBlur}
+                onChangeMultiplier={handleMultiplier}
+                onMultiplierBlur={handleMultiplierBlur}
+                onChangePrefix={handlePrefix}
+                onChangeSuffix={handleSuffix}
+              />
+            )}
+
+            {/* No formatting options - show for columns that are neither date nor number */}
+            {!isDateType && !isNumberType && (
+              <div className="text-center py-4">
+                <p className="text-gray-500">
+                  No formatting options are available for this column type.
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
 
@@ -298,151 +285,31 @@ const YAxisTab = ({
   onChangeSeriesPrefix,
   onChangeSeriesSuffix,
 }: YAxisTabProps) => {
-  // Build the axis name components
-  const axisNameComponents = useMemo(
-    () =>
-      yAxes.map((yAxis, yI) => (
-        <div key={yAxis.id}>
-          <label
-            htmlFor={`rightYAxisName-${yI}`}
-            className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-          >
-            {yI === 0 ? 'Primary' : 'Secondary'} Y-Axis Title
-          </label>
-          <input
-            name={`rightYAxisName-${yI}`}
-            type="text"
-            placeholder="My Y-Axis"
-            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-            value={yAxis?.name ?? ''}
-            onChange={(e) => onChangeYAxisName(e, yI)}
-            disabled={!dataframe || !isEditable}
-          />
-        </div>
-      )),
-    [yAxes, dataframe, isEditable, onChangeYAxisName]
-  )
-
-  // Build the formatting controls for each series
-  const seriesFormatComponents = useMemo(() => {
-    return yAxes.flatMap((yAxis, yAxisIndex) =>
-      yAxis.series
-        .map((series, seriesIndex) => {
-          if (!series.column) return null
-
-          const isDateColumn =
-            series.column &&
-            NumpyDateTypes.safeParse(series.column.type).success
-
-          const isNumberColumn =
-            series.column &&
-            NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(
-              series.column.type
-            ).success
-
-          if (!isDateColumn && !isNumberColumn) return null
-
-          const seriesTitle = `${
-            yAxisIndex === 0 ? 'Primary' : 'Secondary'
-          } Y-Axis, Series ${seriesIndex + 1}${
-            series.name ? `: ${series.name}` : ''
-          }`
-
-          return (
-            <div key={series.id} className="border-t border-gray-200 pt-5">
-              <h3 className="text-xs font-medium pb-4">{seriesTitle}</h3>
-
-              {/* Date formatting options */}
-              {isDateColumn && (
-                <>
-                  <AxisModifierSelector
-                    label="Date style"
-                    value={series.dateFormat?.dateStyle || null}
-                    options={DATE_FORMAT_OPTIONS}
-                    onChange={(style) =>
-                      onChangeSeriesDateStyle(series.id, style)
-                    }
-                    disabled={!dataframe || !isEditable}
-                  />
-
-                  <div className="mt-4">
-                    <VisualizationToggleV2
-                      label="Show time"
-                      enabled={series.dateFormat?.showTime || false}
-                      onToggle={() => onToggleSeriesShowTime(series.id)}
-                    />
-                  </div>
-
-                  {series.dateFormat?.showTime && (
-                    <div className="mt-4">
-                      <AxisModifierSelector
-                        label="Time format"
-                        value={series.dateFormat?.timeFormat || null}
-                        options={TIME_FORMAT_OPTIONS}
-                        onChange={(format) =>
-                          onChangeSeriesTimeFormat(series.id, format)
-                        }
-                        disabled={!dataframe || !isEditable}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Number formatting options */}
-              {isNumberColumn && (
-                <SeriesNumberFormatControl
-                  series={series}
-                  isEditable={isEditable}
-                  dataframe={dataframe}
-                  initialDecimalPlaces={
-                    seriesDecimalPlaces[series.id] ||
-                    series.numberFormat?.decimalPlaces?.toString() ||
-                    '2'
-                  }
-                  initialMultiplier={
-                    seriesMultiplier[series.id] ||
-                    series.numberFormat?.multiplier?.toString() ||
-                    '1'
-                  }
-                  onChangeSeriesNumberStyle={onChangeSeriesNumberStyle}
-                  onChangeSeriesSeparatorStyle={onChangeSeriesSeparatorStyle}
-                  onChangeSeriesDecimalPlaces={onChangeSeriesDecimalPlaces}
-                  onSeriesDecimalPlacesBlur={onSeriesDecimalPlacesBlur}
-                  onChangeSeriesMultiplier={onChangeSeriesMultiplier}
-                  onSeriesMultiplierBlur={onSeriesMultiplierBlur}
-                  onChangeSeriesPrefix={onChangeSeriesPrefix}
-                  onChangeSeriesSuffix={onChangeSeriesSuffix}
-                />
-              )}
-            </div>
-          )
-        })
-        .filter(Boolean)
-    )
-  }, [
-    yAxes,
-    dataframe,
-    isEditable,
-    seriesDecimalPlaces,
-    seriesMultiplier,
-    onChangeSeriesDateStyle,
-    onToggleSeriesShowTime,
-    onChangeSeriesTimeFormat,
-    onChangeSeriesNumberStyle,
-    onChangeSeriesSeparatorStyle,
-    onChangeSeriesDecimalPlaces,
-    onSeriesDecimalPlacesBlur,
-    onChangeSeriesMultiplier,
-    onSeriesMultiplierBlur,
-    onChangeSeriesPrefix,
-    onChangeSeriesSuffix,
-  ])
-
   return (
-    <div className="text-xs text-gray-500 flex flex-col space-y-8">
-      {axisNameComponents}
-      {seriesFormatComponents}
+    <div className="text-xs text-gray-500">
+      {yAxes.map((yAxis, axisIndex) => (
+        <YAxisSection
+          key={yAxis.id}
+          yAxis={yAxis}
+          axisIndex={axisIndex}
+          dataframe={dataframe}
+          isEditable={isEditable}
+          seriesDecimalPlaces={seriesDecimalPlaces}
+          seriesMultiplier={seriesMultiplier}
+          onChangeYAxisName={onChangeYAxisName}
+          onChangeSeriesDateStyle={onChangeSeriesDateStyle}
+          onToggleSeriesShowTime={onToggleSeriesShowTime}
+          onChangeSeriesTimeFormat={onChangeSeriesTimeFormat}
+          onChangeSeriesNumberStyle={onChangeSeriesNumberStyle}
+          onChangeSeriesSeparatorStyle={onChangeSeriesSeparatorStyle}
+          onChangeSeriesDecimalPlaces={onChangeSeriesDecimalPlaces}
+          onSeriesDecimalPlacesBlur={onSeriesDecimalPlacesBlur}
+          onChangeSeriesMultiplier={onChangeSeriesMultiplier}
+          onSeriesMultiplierBlur={onSeriesMultiplierBlur}
+          onChangeSeriesPrefix={onChangeSeriesPrefix}
+          onChangeSeriesSuffix={onChangeSeriesSuffix}
+        />
+      ))}
     </div>
   )
 }

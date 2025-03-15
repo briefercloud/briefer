@@ -11,17 +11,11 @@ import {
   NumpyDateTypes,
   NumpyNumberTypes,
   NumpyTimeDeltaTypes,
+  DateFormatStyle,
 } from '@briefer/types'
-import {
-  VisualizationV2BlockInput,
-  DATE_FORMAT_OPTIONS,
-  TIME_FORMAT_OPTIONS,
-  NUMBER_STYLE_OPTIONS,
-  NUMBER_SEPARATOR_OPTIONS,
-} from '@briefer/editor'
+import { VisualizationV2BlockInput } from '@briefer/editor'
 import { parseDecimalPlaces, parseMultiplier } from '../VisualizationControls'
-import AxisModifierSelector from '@/components/AxisModifierSelector'
-import VisualizationToggleV2 from '../VisualizationToggle'
+import { NumberFormatControl, DateFormatControl } from '../FormatControls'
 
 interface XAxisTabProps {
   dataframe: DataFrame | null
@@ -80,17 +74,17 @@ const XAxisTab = ({
 
   // Handler for date format changes
   const onChangeDateStyle = useCallback(
-    (dateStyle: string | null) => {
+    (seriesId: string | undefined, dateStyle: string | null) => {
       if (!dateStyle) return
 
       if (xAxisDateFormat) {
         onChangeXAxisDateFormat({
           ...xAxisDateFormat,
-          dateStyle: dateStyle as any,
+          dateStyle: dateStyle as DateFormatStyle,
         })
       } else {
         onChangeXAxisDateFormat({
-          dateStyle: dateStyle as any,
+          dateStyle: dateStyle as DateFormatStyle,
           showTime: false,
           timeFormat: 'h:mm a',
         })
@@ -100,24 +94,27 @@ const XAxisTab = ({
   )
 
   // Handler for toggling time display
-  const onToggleShowTime = useCallback(() => {
-    if (xAxisDateFormat) {
-      onChangeXAxisDateFormat({
-        ...xAxisDateFormat,
-        showTime: !xAxisDateFormat.showTime,
-      })
-    } else {
-      onChangeXAxisDateFormat({
-        dateStyle: 'MMMM d, yyyy',
-        showTime: true,
-        timeFormat: 'h:mm a',
-      })
-    }
-  }, [xAxisDateFormat, onChangeXAxisDateFormat])
+  const onToggleShowTime = useCallback(
+    (seriesId: string | undefined) => {
+      if (xAxisDateFormat) {
+        onChangeXAxisDateFormat({
+          ...xAxisDateFormat,
+          showTime: !xAxisDateFormat.showTime,
+        })
+      } else {
+        onChangeXAxisDateFormat({
+          dateStyle: 'MMMM d, yyyy',
+          showTime: true,
+          timeFormat: 'h:mm a',
+        })
+      }
+    },
+    [xAxisDateFormat, onChangeXAxisDateFormat]
+  )
 
   // Handler for time format changes
   const onChangeTimeFormat = useCallback(
-    (timeFormat: string | null) => {
+    (seriesId: string | undefined, timeFormat: string | null) => {
       if (!timeFormat || !xAxisDateFormat) return
 
       onChangeXAxisDateFormat({
@@ -126,62 +123,6 @@ const XAxisTab = ({
       })
     },
     [xAxisDateFormat, onChangeXAxisDateFormat]
-  )
-
-  // Handler for number format style changes
-  const onChangeNumberStyle = useCallback(
-    (style: string | null) => {
-      if (!style) return
-
-      if (xAxisNumberFormat) {
-        onChangeXAxisNumberFormat({
-          ...xAxisNumberFormat,
-          style: style as 'normal' | 'percent' | 'scientific',
-        })
-      } else {
-        onChangeXAxisNumberFormat({
-          style: style as 'normal' | 'percent' | 'scientific',
-          separatorStyle: '999,999.99',
-          decimalPlaces: 2,
-          multiplier: 1,
-          prefix: null,
-          suffix: null,
-        })
-      }
-    },
-    [xAxisNumberFormat, onChangeXAxisNumberFormat]
-  )
-
-  // Handler for separator style changes
-  const onChangeSeparatorStyle = useCallback(
-    (separatorStyle: string | null) => {
-      if (!separatorStyle) return
-
-      if (xAxisNumberFormat) {
-        onChangeXAxisNumberFormat({
-          ...xAxisNumberFormat,
-          separatorStyle: separatorStyle as
-            | '999,999.99'
-            | '999.999,99'
-            | '999 999,99'
-            | '999999.99',
-        })
-      } else {
-        onChangeXAxisNumberFormat({
-          style: 'normal',
-          separatorStyle: separatorStyle as
-            | '999,999.99'
-            | '999.999,99'
-            | '999 999,99'
-            | '999999.99',
-          decimalPlaces: 2,
-          multiplier: 1,
-          prefix: null,
-          suffix: null,
-        })
-      }
-    },
-    [xAxisNumberFormat, onChangeXAxisNumberFormat]
   )
 
   // Shared function to update number format settings
@@ -211,12 +152,36 @@ const XAxisTab = ({
     [xAxisNumberFormat, onChangeXAxisNumberFormat]
   )
 
+  // Handler for number format style changes
+  const onChangeNumberStyle = useCallback(
+    (seriesId: string | undefined, style: string | null) => {
+      if (!style) return
+      updateNumberFormat({
+        style: style as 'normal' | 'percent' | 'scientific',
+      })
+    },
+    [updateNumberFormat]
+  )
+
+  // Handler for separator style changes
+  const onChangeSeparatorStyle = useCallback(
+    (seriesId: string | undefined, separatorStyle: string | null) => {
+      if (!separatorStyle) return
+      updateNumberFormat({
+        separatorStyle: separatorStyle as
+          | '999,999.99'
+          | '999.999,99'
+          | '999 999,99'
+          | '999999.99',
+      })
+    },
+    [updateNumberFormat]
+  )
+
   // Handler for decimal places changes
   const onChangeDecimalPlaces = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
+    (seriesId: string | undefined, inputValue: string) => {
       setDecimalPlacesInput(inputValue)
-
       const { numValue } = parseDecimalPlaces(inputValue)
       updateNumberFormat({ decimalPlaces: numValue })
     },
@@ -225,10 +190,8 @@ const XAxisTab = ({
 
   // Handler for decimal places blur
   const onDecimalPlacesBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
+    (seriesId: string | undefined, inputValue: string) => {
       const { numValue } = parseDecimalPlaces(inputValue)
-
       setDecimalPlacesInput(numValue.toString())
       updateNumberFormat({ decimalPlaces: numValue })
     },
@@ -237,10 +200,8 @@ const XAxisTab = ({
 
   // Handler for multiplier changes
   const onChangeMultiplier = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
+    (seriesId: string | undefined, inputValue: string) => {
       setMultiplierInput(inputValue)
-
       const { numValue } = parseMultiplier(inputValue)
       updateNumberFormat({ multiplier: numValue })
     },
@@ -249,10 +210,8 @@ const XAxisTab = ({
 
   // Handler for multiplier blur
   const onMultiplierBlur = useCallback(
-    (e: FocusEvent<HTMLInputElement>) => {
-      const inputValue = e.target.value
+    (seriesId: string | undefined, inputValue: string) => {
       const { numValue } = parseMultiplier(inputValue)
-
       setMultiplierInput(numValue.toString())
       updateNumberFormat({ multiplier: numValue })
     },
@@ -261,188 +220,98 @@ const XAxisTab = ({
 
   // Update prefix and suffix handlers to use the shared updateNumberFormat function
   const onChangePrefix = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value === '' ? null : e.target.value
-      updateNumberFormat({ prefix: value })
+    (seriesId: string | undefined, value: string) => {
+      const formattedValue = value === '' ? null : value
+      updateNumberFormat({ prefix: formattedValue })
     },
     [updateNumberFormat]
   )
 
   const onChangeSuffix = useCallback(
-    (e: ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value === '' ? null : e.target.value
-      updateNumberFormat({ suffix: value })
+    (seriesId: string | undefined, value: string) => {
+      const formattedValue = value === '' ? null : value
+      updateNumberFormat({ suffix: formattedValue })
     },
     [updateNumberFormat]
   )
 
+  // Check if the X-axis is a date or number column
+  const isDateColumn = xAxis && NumpyDateTypes.safeParse(xAxis.type).success
+  const isNumberColumn =
+    xAxis &&
+    NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(xAxis.type).success
+
   return (
-    <div className="text-xs text-gray-500 flex flex-col space-y-8">
-      <div>
-        <label
-          htmlFor="xAxisName"
-          className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-        >
-          X-Axis Name
-        </label>
-        <input
-          name="xAxisName"
-          type="text"
-          placeholder="My X-Axis"
-          className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-          value={xAxisName ?? ''}
-          onChange={handleChangeXAxisName}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
+    <div className="text-xs text-gray-500">
+      <div className="mb-8">
+        <h2 className="text-sm font-semibold text-gray-900 mb-4">X-Axis</h2>
 
-      {/* Date formatting options - only show for date columns */}
-      {xAxis && NumpyDateTypes.safeParse(xAxis.type).success && (
-        <>
-          <div className="border-t border-gray-200 pt-5">
-            {/* Date style dropdown */}
-            <AxisModifierSelector
-              label="Date style"
-              value={xAxisDateFormat?.dateStyle || null}
-              options={DATE_FORMAT_OPTIONS}
-              onChange={onChangeDateStyle}
-              disabled={!dataframe || !isEditable}
+        <div className="mb-6">
+          <label
+            htmlFor="xAxisName"
+            className="block text-xs font-medium leading-6 text-gray-900 pb-1"
+          >
+            Axis name
+          </label>
+          <input
+            name="xAxisName"
+            type="text"
+            placeholder="My X-Axis"
+            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
+            value={xAxisName ?? ''}
+            onChange={handleChangeXAxisName}
+            disabled={!dataframe || !isEditable}
+          />
+        </div>
+
+        {/* Date formatting options - only show for date columns */}
+        {isDateColumn && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+            <h3 className="text-xs font-medium mb-4">Date formatting</h3>
+            <DateFormatControl
+              currentFormat={xAxisDateFormat}
+              dataframe={dataframe}
+              isEditable={isEditable}
+              onChangeDateStyle={onChangeDateStyle}
+              onToggleShowTime={onToggleShowTime}
+              onChangeTimeFormat={onChangeTimeFormat}
             />
-
-            {/* Show time toggle */}
-            <div className="mt-4">
-              <VisualizationToggleV2
-                label="Show time"
-                enabled={xAxisDateFormat?.showTime || false}
-                onToggle={onToggleShowTime}
-              />
-            </div>
-
-            {/* Time format dropdown - only show when showTime is true */}
-            {xAxisDateFormat?.showTime && (
-              <div className="mt-4">
-                <AxisModifierSelector
-                  label="Time format"
-                  value={xAxisDateFormat?.timeFormat || null}
-                  options={TIME_FORMAT_OPTIONS}
-                  onChange={onChangeTimeFormat}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-            )}
           </div>
-        </>
-      )}
-
-      {/* Number formatting options - only show for number columns */}
-      {xAxis &&
-        NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(xAxis.type)
-          .success && (
-          <>
-            <div className="border-t border-gray-200 pt-5">
-              <h3 className="text-xs font-medium pb-4">Number format</h3>
-
-              {/* Style selector */}
-              <AxisModifierSelector
-                label="Style"
-                value={xAxisNumberFormat?.style || 'normal'}
-                options={NUMBER_STYLE_OPTIONS}
-                onChange={onChangeNumberStyle}
-                disabled={!dataframe || !isEditable}
-              />
-
-              {/* Separator style selector */}
-              <div className="mt-4">
-                <AxisModifierSelector
-                  label="Separator style"
-                  value={xAxisNumberFormat?.separatorStyle || '999,999.99'}
-                  options={NUMBER_SEPARATOR_OPTIONS}
-                  onChange={onChangeSeparatorStyle}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-
-              {/* Decimal places input */}
-              <div className="mt-4">
-                <label
-                  htmlFor="decimalPlaces"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  Number of decimal places
-                </label>
-                <input
-                  name="decimalPlaces"
-                  type="text"
-                  min="0"
-                  max="10"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={decimalPlacesInput}
-                  onChange={onChangeDecimalPlaces}
-                  onBlur={onDecimalPlacesBlur}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-
-              {/* Multiplier input */}
-              <div className="mt-4">
-                <label
-                  htmlFor="multiplier"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  Multiply by a number
-                </label>
-                <input
-                  name="multiplier"
-                  type="text"
-                  step="any"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={multiplierInput}
-                  onChange={onChangeMultiplier}
-                  onBlur={onMultiplierBlur}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-
-              {/* Prefix input */}
-              <div className="mt-4">
-                <label
-                  htmlFor="prefix"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  Add a prefix
-                </label>
-                <input
-                  name="prefix"
-                  type="text"
-                  placeholder="$"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={xAxisNumberFormat?.prefix ?? ''}
-                  onChange={onChangePrefix}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-
-              {/* Suffix input */}
-              <div className="mt-4">
-                <label
-                  htmlFor="suffix"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  Add a suffix
-                </label>
-                <input
-                  name="suffix"
-                  type="text"
-                  placeholder="dollars"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={xAxisNumberFormat?.suffix ?? ''}
-                  onChange={onChangeSuffix}
-                  disabled={!dataframe || !isEditable}
-                />
-              </div>
-            </div>
-          </>
         )}
+
+        {/* Number formatting options - only show for number columns */}
+        {isNumberColumn && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+            <h3 className="text-xs font-medium mb-4">Number formatting</h3>
+            <NumberFormatControl
+              initialDecimalPlaces={decimalPlacesInput}
+              initialMultiplier={multiplierInput}
+              currentFormat={xAxisNumberFormat}
+              dataframe={dataframe}
+              isEditable={isEditable}
+              onChangeNumberStyle={onChangeNumberStyle}
+              onChangeSeparatorStyle={onChangeSeparatorStyle}
+              onChangeDecimalPlaces={onChangeDecimalPlaces}
+              onDecimalPlacesBlur={onDecimalPlacesBlur}
+              onChangeMultiplier={onChangeMultiplier}
+              onMultiplierBlur={onMultiplierBlur}
+              onChangePrefix={onChangePrefix}
+              onChangeSuffix={onChangeSuffix}
+            />
+          </div>
+        )}
+
+        {/* No formatting options - show for columns that are neither date nor number */}
+        {xAxis && !isDateColumn && !isNumberColumn && (
+          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+            <div className="text-center py-4">
+              <p className="text-gray-500">
+                No formatting options are available for this column type.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
