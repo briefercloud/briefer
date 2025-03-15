@@ -55,8 +55,6 @@ interface Props {
   onChangeHistogramFormat: (format: HistogramFormat) => void
   histogramBin: HistogramBin
   onChangeHistogramBin: (bin: HistogramBin) => void
-  numberValuesFormat: string | null
-  onChangeNumberValuesFormat: (format: string | null) => void
   dataLabels: VisualizationV2BlockInput['dataLabels']
   onChangeDataLabels: (
     dataLabels: VisualizationV2BlockInput['dataLabels']

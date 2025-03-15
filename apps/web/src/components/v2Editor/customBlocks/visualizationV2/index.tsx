@@ -385,6 +385,8 @@ function VisualizationBlockV2(props: Props) {
                         name: null,
                         color: null,
                         groups: null,
+                        dateFormat: null,
+                        numberFormat: null,
                       },
                     ],
                   },
@@ -452,13 +454,6 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
-  const onChangeNumberValuesFormat = useCallback(
-    (name: string | null) => {
-      // This is used by the old approach, not currently used
-    },
-    [props.block]
-  )
-
   const onChangeXAxisDateFormat = useCallback(
     (dateFormat: NonNullable<VisualizationV2BlockInput['xAxisDateFormat']>) => {
       setVisualizationV2Input(props.block, { xAxisDateFormat: dateFormat })
@@ -520,21 +515,42 @@ function VisualizationBlockV2(props: Props) {
         Array.from(event.changes.keys.entries()).every(([key, val]) => {
           if (key === 'input') {
             // Create a list of formatting-related fields that don't require backend recomputation
-            const formattingFields: (keyof VisualizationV2BlockInput)[] = [
+            const xAxisFormattingFields: (keyof VisualizationV2BlockInput)[] = [
               'xAxisNumberFormat',
               'xAxisDateFormat',
             ]
 
+            const seriesFormattingFields: (keyof SeriesV2)[] = [
+              'dateFormat',
+              'numberFormat',
+            ]
+
             // Check if only formatting fields changed by comparing old and new values
             // excluding both filters and formatting fields
-            const oldValueForComparison = omit(
-              [...formattingFields, 'filters'],
-              val.oldValue
-            )
-            const newValueForComparison = omit(
-              [...formattingFields, 'filters'],
-              input
-            )
+            const oldValueForComparison = {
+              ...omit(
+                [...xAxisFormattingFields, 'filters'],
+                val.oldValue
+              ),
+              yAxes: val.oldValue.yAxes.map((yAxis: YAxisV2) => ({
+                ...yAxis,
+                series: yAxis.series.map((series) => ({
+                  ...omit(seriesFormattingFields, series),
+                })),
+              })),
+            }
+            const newValueForComparison = {
+              ...omit(
+                [...xAxisFormattingFields, 'filters'],
+                input
+              ),
+              yAxes: input.yAxes.map((yAxis: YAxisV2) => ({
+                ...yAxis,
+                series: yAxis.series.map((series: SeriesV2) => ({
+                  ...omit(seriesFormattingFields, series),
+                })),
+              })),
+            }
 
             const isEqual = equals(oldValueForComparison, newValueForComparison)
 
@@ -834,8 +850,6 @@ function VisualizationBlockV2(props: Props) {
             onChangeHistogramFormat={onChangeHistogramFormat}
             histogramBin={attrs.input.histogramBin}
             onChangeHistogramBin={onChangeHistogramBin}
-            numberValuesFormat={null}
-            onChangeNumberValuesFormat={onChangeNumberValuesFormat}
             dataLabels={attrs.input.dataLabels}
             onChangeDataLabels={onChangeDataLabels}
             isEditable={props.isEditable}
