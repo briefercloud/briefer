@@ -680,6 +680,48 @@ export const AggregateFunction = z.union([
 ])
 export type AggregateFunction = z.infer<typeof AggregateFunction>
 
+// Shared formatting types for both xAxis and SeriesV2
+export type DateFormatStyle =
+  | 'MMMM d, yyyy'
+  | 'd MMMM, yyyy'
+  | 'EEEE, MMMM d, yyyy'
+  | 'M/d/yyyy'
+  | 'd/M/yyyy'
+  | 'yyyy/M/d'
+  | null
+
+export type TimeFormatStyle = 'h:mm a' | 'HH:mm' | null
+
+export type DateFormat = {
+  dateStyle: DateFormatStyle
+  showTime: boolean
+  timeFormat: TimeFormatStyle
+}
+
+export type NumberFormatStyle = 'normal' | 'percent' | 'scientific'
+
+export type NumberSeparatorStyle =
+  | '999,999.99'
+  | '999.999,99'
+  | '999 999,99'
+  | '999999.99'
+
+export type NumberFormat = {
+  style: NumberFormatStyle
+  separatorStyle: NumberSeparatorStyle
+  decimalPlaces: number
+  multiplier: number
+  prefix: string | null
+  suffix: string | null
+}
+
+// Combined date-time format type
+export type DateTimeFormatString =
+  | DateFormatStyle
+  | TimeFormatStyle
+  | `${NonNullable<DateFormatStyle>} ${NonNullable<TimeFormatStyle>}`
+  | ''
+
 export type Series = {
   chartType: ChartType | null
   column: DataFrameColumn | null
@@ -703,6 +745,8 @@ export type SeriesV2 = {
         color: string
       }[]
     | null
+  dateFormat: DateFormat | null
+  numberFormat: NumberFormat | null
 }
 
 export type YAxis = {

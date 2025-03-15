@@ -1,37 +1,31 @@
 import { v4 as uuidv4 } from 'uuid'
-import { QuestionMarkCircleIcon } from '@heroicons/react/24/solid'
 import clsx from 'clsx'
 import {
   ChartType,
   DataFrame,
   DataFrameColumn,
-  NumpyDateTypes,
-  NumpyNumberTypes,
   TimeUnit,
   HistogramFormat,
   HistogramBin,
-  NumpyTimeDeltaTypes,
-  DataFrameDateColumn,
-  DataFrameStringColumn,
-  DataFrameNumberColumn,
   YAxisV2,
   SeriesV2,
+  NumberFormat,
 } from '@briefer/types'
-import ChartTypeSelector from '@/components/ChartTypeSelector'
-import AxisSelector from '@/components/AxisSelector'
-import AxisModifierSelector from '@/components/AxisModifierSelector'
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import useResettableState from '@/hooks/useResettableState'
+import { useCallback, useEffect, useState } from 'react'
 import VisualizationSettingsTabsV2, { Tab } from './VisualizationSettingTabs'
-import YAxisPickerV2 from './YAxisPicker'
-import VisualizationToggleV2 from './VisualizationToggle'
-import { PortalTooltip } from '@/components/Tooltips'
-import { sortWith } from 'ramda'
 import ScrollBar from '@/components/ScrollBar'
 import {
   VisualizationV2BlockInput,
   VisualizationV2BlockOutputResult,
+  getDefaultDateFormat,
+  getDefaultNumberFormat,
 } from '@briefer/editor'
+
+// Import the tab components
+import GeneralTab from './tabs/GeneralTab'
+import XAxisTab from './tabs/XAxisTab'
+import YAxisTab from './tabs/YAxisTab'
+import LabelsTab from './tabs/LabelsTab'
 import DisplayControls from './display/DisplayControls'
 
 interface Props {
@@ -47,14 +41,20 @@ interface Props {
   onChangeXAxisSort: (sort: 'ascending' | 'descending') => void
   xAxisGroupFunction: TimeUnit | null
   onChangeXAxisGroupFunction: (groupFunction: TimeUnit | null) => void
+  xAxisDateFormat: VisualizationV2BlockInput['xAxisDateFormat']
+  onChangeXAxisDateFormat: (
+    dateFormat: NonNullable<VisualizationV2BlockInput['xAxisDateFormat']>
+  ) => void
+  xAxisNumberFormat: VisualizationV2BlockInput['xAxisNumberFormat']
+  onChangeXAxisNumberFormat: (
+    format: VisualizationV2BlockInput['xAxisNumberFormat']
+  ) => void
   yAxes: YAxisV2[]
   onChangeYAxes: (yAxes: YAxisV2[]) => void
   histogramFormat: HistogramFormat
   onChangeHistogramFormat: (format: HistogramFormat) => void
   histogramBin: HistogramBin
   onChangeHistogramBin: (bin: HistogramBin) => void
-  numberValuesFormat: string | null
-  onChangeNumberValuesFormat: (format: string | null) => void
   dataLabels: VisualizationV2BlockInput['dataLabels']
   onChangeDataLabels: (
     dataLabels: VisualizationV2BlockInput['dataLabels']
@@ -66,157 +66,64 @@ interface Props {
 }
 
 function VisualizationControlsV2(props: Props) {
-  const onChangeXAxisGroupFunction = useCallback(
-    (groupFunction: string | null) => {
-      if (groupFunction === null) {
-        props.onChangeXAxisGroupFunction(null)
-        return
-      }
-
-      const timeUnit = TimeUnit.safeParse(groupFunction)
-      if (timeUnit.success) {
-        props.onChangeXAxisGroupFunction(timeUnit.data)
-        return
-      }
-    },
-    [props.onChangeXAxisGroupFunction]
-  )
-
-  const onChangeXAxisSort = useCallback(
-    (sort: string | null) => {
-      if (sort === 'ascending' || sort === 'descending') {
-        props.onChangeXAxisSort(sort)
-      } else {
-        props.onChangeXAxisSort('ascending')
-      }
-    },
-    [props.onChangeXAxisSort]
-  )
-
-  const onChangeHistogramFormat = useCallback(
-    (format: string | null) => {
-      const parsed = HistogramFormat.safeParse(format)
-      if (parsed.success) {
-        props.onChangeHistogramFormat(parsed.data)
-      }
-    },
-    [props.onChangeHistogramFormat]
-  )
-
-  const onChangeHistogramBin = useCallback(
-    (bin: string | null) => {
-      if (bin === 'auto') {
-        props.onChangeHistogramBin({ type: 'auto' })
-        return
-      }
-
-      if (bin === 'stepSize') {
-        props.onChangeHistogramBin({ type: 'stepSize', value: 1 })
-        return
-      }
-
-      if (bin === 'maxBins') {
-        props.onChangeHistogramBin({ type: 'maxBins', value: 10 })
-        return
-      }
-    },
-    [props.onChangeHistogramBin]
-  )
-
-  const [binText, setBinText] = useResettableState<string>(
-    () => (props.histogramBin.type === 'maxBins' ? '10' : '1'),
-    [props.histogramBin.type]
-  )
-  const onChangeBinText: React.ChangeEventHandler<HTMLInputElement> =
-    useCallback(
-      (e) => {
-        setBinText(e.target.value)
-      },
-      [setBinText]
-    )
-
-  useEffect(() => {
-    if (props.histogramBin.type === 'auto') {
-      return
-    }
-
-    if (props.histogramBin.type === 'stepSize') {
-      const value = parseFloat(binText)
-      if (Number.isNaN(value) || value <= 0) {
-        return
-      }
-
-      props.onChangeHistogramBin({ type: 'stepSize', value })
-      return
-    }
-
-    if (props.histogramBin.type === 'maxBins') {
-      const value = Number(binText)
-      if (Number.isNaN(value) || !Number.isInteger(value) || value < 2) {
-        return
-      }
-
-      props.onChangeHistogramBin({ type: 'maxBins', value })
-      return
-    }
-  }, [props.histogramBin.type, binText, props.onChangeHistogramBin])
-
-  const binError = useMemo(() => {
-    if (props.histogramBin.type === 'auto') {
-      return null
-    }
-
-    if (props.histogramBin.type === 'stepSize') {
-      const value = parseFloat(binText)
-      if (isNaN(value) || value <= 0) {
-        return 'Must be a positive number.'
-      }
-
-      return null
-    }
-
-    if (props.histogramBin.type === 'maxBins') {
-      const value = Number(binText)
-      if (Number.isNaN(value) || !Number.isInteger(value)) {
-        return 'Must be an integer.'
-      }
-
-      if (value < 2) {
-        return 'Must be at least 2.'
-      }
-
-      return null
-    }
-  }, [props.histogramBin.type, binText])
-
-  const onChangeXAxisName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.value === '') {
-        props.onChangeXAxisName(null)
-        return
-      }
-      props.onChangeXAxisName(e.target.value)
-    },
-    [props.onChangeXAxisName]
-  )
-
-  const onChangeYAxisName = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>, axisIndex: number) => {
-      if (props.yAxes.length === 0) {
-        return
-      }
-
-      const name = e.target.value === '' ? null : e.target.value
-
-      props.onChangeYAxes(
-        props.yAxes.map((y, i) => (i === axisIndex ? { ...y, name } : y))
-      )
-    },
-    [props.yAxes, props.onChangeYAxes]
-  )
-
   const [tab, setTab] = useState<Tab>('general')
 
+  // State variables for series number formatting
+  const [seriesDecimalPlaces, setSeriesDecimalPlaces] = useState<
+    Record<string, string>
+  >({})
+  const [seriesMultiplier, setSeriesMultiplier] = useState<
+    Record<string, string>
+  >({})
+
+  // Initialize state values from props on first render
+  useEffect(() => {
+    const decimalPlacesMap: Record<string, string> = {}
+    const multiplierMap: Record<string, string> = {}
+
+    props.yAxes.forEach((yAxis) => {
+      yAxis.series.forEach((series) => {
+        if (series.numberFormat) {
+          decimalPlacesMap[series.id] =
+            series.numberFormat.decimalPlaces.toString()
+          multiplierMap[series.id] = series.numberFormat.multiplier.toString()
+        }
+      })
+    })
+
+    setSeriesDecimalPlaces(decimalPlacesMap)
+    setSeriesMultiplier(multiplierMap)
+  }, [])
+
+  // Update input states when series change
+  useEffect(() => {
+    const decimalPlacesMap = { ...seriesDecimalPlaces }
+    const multiplierMap = { ...seriesMultiplier }
+
+    let hasUpdates = false
+
+    props.yAxes.forEach((yAxis) => {
+      yAxis.series.forEach((series) => {
+        if (series.numberFormat && !decimalPlacesMap[series.id]) {
+          decimalPlacesMap[series.id] =
+            series.numberFormat.decimalPlaces.toString()
+          hasUpdates = true
+        }
+        if (series.numberFormat && !multiplierMap[series.id]) {
+          multiplierMap[series.id] = series.numberFormat.multiplier.toString()
+          hasUpdates = true
+        }
+      })
+    })
+
+    // Only update state if something actually changed
+    if (hasUpdates) {
+      setSeriesDecimalPlaces(decimalPlacesMap)
+      setSeriesMultiplier(multiplierMap)
+    }
+  }, [props.yAxes]) // Only depend on props.yAxes, not the state variables
+
+  // GeneralTab callbacks
   const onChangeYAxis = useCallback(
     (yAxis: YAxisV2, index: number) => {
       props.onChangeYAxes(props.yAxes.map((y, i) => (i === index ? yAxis : y)))
@@ -249,129 +156,232 @@ function VisualizationControlsV2(props: Props) {
             name: null,
             color: null,
             groups: null,
+            dateFormat: getDefaultDateFormat(),
+            numberFormat: getDefaultNumberFormat(),
           },
         ],
       },
     ])
   }, [props.yAxes, props.onChangeYAxes])
 
-  const onChangeChartType = useCallback(
-    (chartType: ChartType) => {
-      // if only one y-axis is present, reset the chart type of the series
-      if (props.yAxes.length === 1) {
-        props.onChangeYAxes([
-          {
-            ...props.yAxes[0],
-            series: props.yAxes[0].series.map((s) => ({
-              ...s,
-              chartType: null,
-            })),
-          },
-        ])
+  // YAxisTab callbacks
+  const onChangeYAxisName = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>, axisIndex: number) => {
+      if (props.yAxes.length === 0) {
+        return
       }
 
-      props.onChangeChartType(chartType)
+      const name = e.target.value === '' ? null : e.target.value
+
+      props.onChangeYAxes(
+        props.yAxes.map((y, i) => (i === axisIndex ? { ...y, name } : y))
+      )
     },
-    [props.onChangeChartType, props.yAxes]
+    [props.yAxes, props.onChangeYAxes]
   )
 
-  const defaultXAxisColumn: DataFrameColumn | null = useMemo(() => {
-    switch (props.chartType) {
-      case 'trend':
-      case 'number':
-        return null
-      case 'histogram':
-        return (
-          props.dataframe?.columns.filter(
-            (c) =>
-              NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(c.type).success
-          )[0] ?? null
-        )
-      case 'pie':
-      case 'line':
-      case 'area':
-      case 'scatterPlot':
-      case 'groupedColumn':
-      case 'stackedColumn':
-      case 'hundredPercentStackedArea':
-      case 'hundredPercentStackedColumn':
-        return (
-          sortWith(
-            [
-              (a, b) =>
-                DataFrameDateColumn.safeParse(a).success ===
-                DataFrameDateColumn.safeParse(b).success
-                  ? 0
-                  : DataFrameDateColumn.safeParse(a).success
-                  ? -1
-                  : 1,
-              (a, b) =>
-                DataFrameStringColumn.safeParse(a).success ===
-                DataFrameStringColumn.safeParse(b).success
-                  ? 0
-                  : DataFrameStringColumn.safeParse(a).success
-                  ? -1
-                  : 1,
-              (a, b) =>
-                DataFrameNumberColumn.safeParse(a).success ===
-                DataFrameNumberColumn.safeParse(b).success
-                  ? 0
-                  : DataFrameNumberColumn.safeParse(a).success
-                  ? -1
-                  : 1,
-              // Put columns with 'id' in the name at the end to avoid them being selected by default
-              (a, b) =>
-                a.name.toString().toLowerCase().includes('id')
-                  ? 1
-                  : b.name.toString().toLowerCase().includes('id')
-                  ? -1
-                  : 0,
-            ],
-            props.dataframe?.columns ?? []
-          )[0] ?? null
-        )
-    }
-  }, [props.chartType, props.dataframe?.columns])
+  // Series formatting helper function
+  const updateSeriesNumberFormat = useCallback(
+    (seriesId: string, updates: Partial<NumberFormat>) => {
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
 
-  const axisNameComponents = useMemo(
-    () =>
-      props.yAxes.map((yAxis, yI) => (
-        <div>
-          <label
-            htmlFor={`rightYAxisName-${yI}`}
-            className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-          >
-            {yI === 0 ? 'Primary' : 'Secondary'} Y-Axis Title
-          </label>
-          <input
-            name={`rightYAxisName-${yI}`}
-            type="text"
-            placeholder="My Y-Axis"
-            className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-            value={yAxis?.name ?? ''}
-            onChange={(e) => onChangeYAxisName(e, yI)}
-            disabled={!props.dataframe || !props.isEditable}
-          />
-        </div>
-      )),
-    [props.yAxes, props.dataframe, props.isEditable, onChangeYAxisName]
+      if (!series) return
+
+      const updatedSeries = {
+        ...series,
+        numberFormat: series.numberFormat
+          ? { ...series.numberFormat, ...updates }
+          : { ...getDefaultNumberFormat(), ...updates },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
   )
 
-  const onToggleShowDataLabels = useCallback(() => {
-    props.onChangeDataLabels({
-      ...props.dataLabels,
-      show: !props.dataLabels.show,
-    })
-  }, [props.dataLabels, props.onChangeDataLabels])
+  // Series date formatting callbacks
+  const onChangeSeriesDateStyle = useCallback(
+    (seriesId: string, dateStyle: string | null) => {
+      if (!dateStyle) return
 
-  const onChangeDataLabelsFrequency = useCallback(
-    (frequency: string | null) => {
-      props.onChangeDataLabels({
-        ...props.dataLabels,
-        frequency: frequency === 'some' ? 'some' : 'all',
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
+
+      if (!series) return
+
+      const updatedSeries = {
+        ...series,
+        dateFormat: series.dateFormat
+          ? { ...series.dateFormat, dateStyle: dateStyle as any }
+          : { ...getDefaultDateFormat(), dateStyle: dateStyle as any },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
+  )
+
+  const onToggleSeriesShowTime = useCallback(
+    (seriesId: string) => {
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
+
+      if (!series) return
+
+      const updatedSeries = {
+        ...series,
+        dateFormat: series.dateFormat
+          ? { ...series.dateFormat, showTime: !series.dateFormat.showTime }
+          : { ...getDefaultDateFormat(), showTime: true },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
+  )
+
+  const onChangeSeriesTimeFormat = useCallback(
+    (seriesId: string, timeFormat: string | null) => {
+      if (!timeFormat) return
+
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
+
+      if (!series || !series.dateFormat) return
+
+      const updatedSeries = {
+        ...series,
+        dateFormat: {
+          ...series.dateFormat,
+          timeFormat: timeFormat as any,
+        },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
+  )
+
+  // Series number formatting callbacks
+  const onChangeSeriesNumberStyle = useCallback(
+    (seriesId: string, style: string | null) => {
+      if (!style) return
+
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
+
+      if (!series) return
+
+      const updatedSeries = {
+        ...series,
+        numberFormat: series.numberFormat
+          ? { ...series.numberFormat, style: style as any }
+          : { ...getDefaultNumberFormat(), style: style as any },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
+  )
+
+  const onChangeSeriesSeparatorStyle = useCallback(
+    (seriesId: string, separatorStyle: string | null) => {
+      if (!separatorStyle) return
+
+      const series = props.yAxes
+        .flatMap((axis) => axis.series)
+        .find((s) => s.id === seriesId)
+
+      if (!series) return
+
+      const updatedSeries = {
+        ...series,
+        numberFormat: series.numberFormat
+          ? { ...series.numberFormat, separatorStyle: separatorStyle as any }
+          : {
+              ...getDefaultNumberFormat(),
+              separatorStyle: separatorStyle as any,
+            },
+      }
+
+      props.onChangeSeries(seriesId, updatedSeries)
+    },
+    [props.yAxes, props.onChangeSeries]
+  )
+
+  const onChangeSeriesDecimalPlaces = useCallback(
+    (seriesId: string, inputValue: string) => {
+      setSeriesDecimalPlaces((prev) => ({ ...prev, [seriesId]: inputValue }))
+
+      const cleanedValue = inputValue.replace(/[^\d]/g, '')
+      const isValid = cleanedValue !== '' && !isNaN(parseInt(cleanedValue, 10))
+
+      if (isValid) {
+        const numValue = parseInt(cleanedValue, 10)
+        updateSeriesNumberFormat(seriesId, { decimalPlaces: numValue })
+      }
+    },
+    [updateSeriesNumberFormat]
+  )
+
+  const onSeriesDecimalPlacesBlur = useCallback(
+    (seriesId: string, inputValue: string) => {
+      const { numValue } = parseDecimalPlaces(inputValue)
+
+      setSeriesDecimalPlaces((prev) => ({
+        ...prev,
+        [seriesId]: numValue.toString(),
+      }))
+      updateSeriesNumberFormat(seriesId, { decimalPlaces: numValue })
+    },
+    [updateSeriesNumberFormat]
+  )
+
+  const onChangeSeriesMultiplier = useCallback(
+    (seriesId: string, inputValue: string) => {
+      setSeriesMultiplier((prev) => ({ ...prev, [seriesId]: inputValue }))
+
+      const { numValue } = parseMultiplier(inputValue)
+      updateSeriesNumberFormat(seriesId, { multiplier: numValue })
+    },
+    [updateSeriesNumberFormat]
+  )
+
+  const onSeriesMultiplierBlur = useCallback(
+    (seriesId: string, inputValue: string) => {
+      const { numValue } = parseMultiplier(inputValue)
+
+      setSeriesMultiplier((prev) => ({
+        ...prev,
+        [seriesId]: numValue.toString(),
+      }))
+      updateSeriesNumberFormat(seriesId, { multiplier: numValue })
+    },
+    [updateSeriesNumberFormat]
+  )
+
+  const onChangeSeriesPrefix = useCallback(
+    (seriesId: string, value: string) => {
+      updateSeriesNumberFormat(seriesId, {
+        prefix: value === '' ? null : value,
       })
     },
-    [props.dataLabels, props.onChangeDataLabels]
+    [updateSeriesNumberFormat]
+  )
+
+  const onChangeSeriesSuffix = useCallback(
+    (seriesId: string, value: string) => {
+      updateSeriesNumberFormat(seriesId, {
+        suffix: value === '' ? null : value,
+      })
+    },
+    [updateSeriesNumberFormat]
   )
 
   return (
@@ -390,208 +400,27 @@ function VisualizationControlsV2(props: Props) {
       >
         <div className="w-full h-full px-4 py-5">
           {tab === 'general' && (
-            <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              {props.yAxes.length > 1 ||
-              props.yAxes.some((y) => y.series.length > 1) ? null : (
-                <div>
-                  <ChartTypeSelector
-                    label="Chart Type"
-                    value={props.chartType}
-                    onChange={onChangeChartType}
-                    isEditable={props.isEditable}
-                  />
-                </div>
-              )}
-
-              <div>
-                <AxisSelector
-                  label={
-                    props.chartType === 'trend' ||
-                    props.chartType === 'number' ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium leading-6 text-gray-900">
-                          Period{' '}
-                          <span className="text-[10px] font-normal text-gray-400">
-                            (optional)
-                          </span>
-                        </span>
-
-                        <PortalTooltip
-                          content={
-                            <div className="font-sans bg-hunter-950 text-gray-400 text-center text-xs p-2 rounded-md w-64 -translate-x-1/2">
-                              If provided, this column will be used to sort the
-                              data before picking the number.
-                            </div>
-                          }
-                        >
-                          <QuestionMarkCircleIcon
-                            className="h-4 w-4 text-gray-300"
-                            aria-hidden="true"
-                          />
-                        </PortalTooltip>
-                      </div>
-                    ) : (
-                      'X-Axis'
-                    )
-                  }
-                  value={props.xAxis}
-                  columns={[
-                    ...(props.chartType === 'number' ||
-                    props.chartType === 'trend'
-                      ? [null]
-                      : []),
-                    ...(props.dataframe?.columns ?? []).filter((c) =>
-                      props.chartType === 'histogram'
-                        ? NumpyNumberTypes.or(NumpyTimeDeltaTypes).safeParse(
-                            c.type
-                          ).success
-                        : props.chartType === 'number' ||
-                          props.chartType === 'trend'
-                        ? NumpyDateTypes.safeParse(c.type).success
-                        : true
-                    ),
-                  ]}
-                  onChange={props.onChangeXAxis}
-                  disabled={!props.dataframe || !props.isEditable}
-                  defaultValue={defaultXAxisColumn}
-                />
-                <div className="flex flex-col gap-y-1 pt-1 px-0.5">
-                  {props.xAxis &&
-                    props.chartType !== 'histogram' &&
-                    NumpyDateTypes.safeParse(props.xAxis.type).success && (
-                      <AxisModifierSelector
-                        label={
-                          props.chartType === 'trend'
-                            ? 'Compare by'
-                            : 'Group by'
-                        }
-                        value={props.xAxisGroupFunction}
-                        options={[
-                          { name: 'None', value: null },
-                          { name: 'Year', value: 'year' },
-                          { name: 'Quarter', value: 'quarter' },
-                          { name: 'Month', value: 'month' },
-                          { name: 'Week', value: 'week' },
-                          { name: 'Date', value: 'date' },
-                          { name: 'Hours', value: 'hours' },
-                          { name: 'Minutes', value: 'minutes' },
-                          { name: 'Seconds', value: 'seconds' },
-                        ]}
-                        onChange={onChangeXAxisGroupFunction}
-                        disabled={!props.dataframe || !props.isEditable}
-                      />
-                    )}
-                  {props.chartType === 'histogram' ? (
-                    <>
-                      <AxisModifierSelector
-                        label="Format"
-                        value={props.histogramFormat}
-                        options={[
-                          { name: 'Count', value: 'count' },
-                          { name: 'Percentage', value: 'percentage' },
-                        ]}
-                        onChange={onChangeHistogramFormat}
-                        disabled={!props.dataframe || !props.isEditable}
-                      />
-                      <AxisModifierSelector
-                        label="Bin by"
-                        value={props.histogramBin.type}
-                        options={[
-                          { name: 'Auto', value: 'auto' },
-                          { name: 'Step size', value: 'stepSize' },
-                          { name: 'Max bins', value: 'maxBins' },
-                        ]}
-                        onChange={onChangeHistogramBin}
-                        disabled={!props.dataframe || !props.isEditable}
-                      />
-                      {props.histogramBin.type !== 'auto' && (
-                        <div>
-                          <div className="flex items-center gap-x-1">
-                            <label
-                              htmlFor="histogramBin"
-                              className="text-xs text-gray-500 flex-1"
-                            >
-                              {props.histogramBin.type === 'stepSize'
-                                ? 'Step size'
-                                : 'Max bins'}
-                            </label>
-                            <input
-                              type="number"
-                              name="histogramBin"
-                              value={binText}
-                              onChange={onChangeBinText}
-                              className={clsx(
-                                'truncate border-0 text-xs px-2 bg-transparent font-mono placeholder:text-gray-400 text-right hover:ring-1 hover:ring-inset hover:ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 rounded-md h-6 w-20',
-                                binError && 'ring-red-500 focus:ring-red-500'
-                              )}
-                              disabled={!props.dataframe || !props.isEditable}
-                            />
-                          </div>
-                          <div className="flex justify-end text-red-600 text-xs pt-1">
-                            <span>{binError}</span>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <AxisModifierSelector
-                      label={
-                        props.chartType === 'number' ? 'Choosen value' : 'Sort'
-                      }
-                      value={props.xAxisSort}
-                      options={[
-                        {
-                          name:
-                            props.chartType === 'number' ? 'Last' : 'Ascending',
-                          value: 'ascending',
-                        },
-                        {
-                          name:
-                            props.chartType === 'number'
-                              ? 'First'
-                              : 'Descending',
-                          value: 'descending',
-                        },
-                      ]}
-                      onChange={onChangeXAxisSort}
-                      disabled={!props.dataframe || !props.isEditable}
-                    />
-                  )}
-                </div>
-              </div>
-              {props.chartType !== 'histogram' && (
-                <div className="flex flex-col space-y-6">
-                  {props.yAxes
-                    .slice(
-                      0,
-                      props.chartType === 'trend' ||
-                        props.chartType === 'number'
-                        ? 1
-                        : undefined
-                    )
-                    .map((yAxis, i) => (
-                      <YAxisPickerV2
-                        yAxis={yAxis}
-                        index={i}
-                        key={i}
-                        onChange={onChangeYAxis}
-                        isEditable={props.isEditable}
-                        dataframe={props.dataframe}
-                        onRemove={i === 1 ? onRemoveYAxis : undefined}
-                        onAddYAxis={
-                          i === 0 &&
-                          props.yAxes.length === 1 &&
-                          props.chartType !== 'trend' &&
-                          props.chartType !== 'number'
-                            ? onAddYAxis
-                            : undefined
-                        }
-                        defaultChartType={props.chartType}
-                      />
-                    ))}
-                </div>
-              )}
-            </div>
+            <GeneralTab
+              dataframe={props.dataframe}
+              chartType={props.chartType}
+              onChangeChartType={props.onChangeChartType}
+              xAxis={props.xAxis}
+              onChangeXAxis={props.onChangeXAxis}
+              xAxisSort={props.xAxisSort}
+              onChangeXAxisSort={props.onChangeXAxisSort}
+              xAxisGroupFunction={props.xAxisGroupFunction}
+              onChangeXAxisGroupFunction={props.onChangeXAxisGroupFunction}
+              histogramFormat={props.histogramFormat}
+              onChangeHistogramFormat={props.onChangeHistogramFormat}
+              histogramBin={props.histogramBin}
+              onChangeHistogramBin={props.onChangeHistogramBin}
+              yAxes={props.yAxes}
+              onChangeYAxes={props.onChangeYAxes}
+              onChangeYAxis={onChangeYAxis}
+              onRemoveYAxis={onRemoveYAxis}
+              onAddYAxis={onAddYAxis}
+              isEditable={props.isEditable}
+            />
           )}
           {tab === 'display' && (
             <DisplayControls
@@ -604,58 +433,79 @@ function VisualizationControlsV2(props: Props) {
             />
           )}
           {tab === 'x-axis' && (
-            <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              <div>
-                <label
-                  htmlFor="xAxisName"
-                  className="block text-xs font-medium leading-6 text-gray-900 pb-1"
-                >
-                  X-Axis Name
-                </label>
-                <input
-                  name="xAxisName"
-                  type="text"
-                  placeholder="My X-Axis"
-                  className="w-full border-0 rounded-md ring-1 ring-inset ring-gray-200 focus:ring-1 focus:ring-inset focus:ring-gray-300 bg-white group px-2.5 text-gray-800 text-xs placeholder:text-gray-400"
-                  value={props.xAxisName ?? ''}
-                  onChange={onChangeXAxisName}
-                  disabled={!props.dataframe || !props.isEditable}
-                />
-              </div>
-            </div>
+            <XAxisTab
+              dataframe={props.dataframe}
+              xAxis={props.xAxis}
+              xAxisName={props.xAxisName}
+              onChangeXAxisName={props.onChangeXAxisName}
+              xAxisDateFormat={props.xAxisDateFormat}
+              onChangeXAxisDateFormat={props.onChangeXAxisDateFormat}
+              xAxisNumberFormat={props.xAxisNumberFormat}
+              onChangeXAxisNumberFormat={props.onChangeXAxisNumberFormat}
+              isEditable={props.isEditable}
+            />
           )}
           {tab === 'y-axis' && (
-            <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              {axisNameComponents}
-            </div>
+            <YAxisTab
+              yAxes={props.yAxes}
+              dataframe={props.dataframe}
+              isEditable={props.isEditable}
+              seriesDecimalPlaces={seriesDecimalPlaces}
+              seriesMultiplier={seriesMultiplier}
+              onChangeYAxisName={onChangeYAxisName}
+              onChangeSeriesDateStyle={onChangeSeriesDateStyle}
+              onToggleSeriesShowTime={onToggleSeriesShowTime}
+              onChangeSeriesTimeFormat={onChangeSeriesTimeFormat}
+              onChangeSeriesNumberStyle={onChangeSeriesNumberStyle}
+              onChangeSeriesSeparatorStyle={onChangeSeriesSeparatorStyle}
+              onChangeSeriesDecimalPlaces={onChangeSeriesDecimalPlaces}
+              onSeriesDecimalPlacesBlur={onSeriesDecimalPlacesBlur}
+              onChangeSeriesMultiplier={onChangeSeriesMultiplier}
+              onSeriesMultiplierBlur={onSeriesMultiplierBlur}
+              onChangeSeriesPrefix={onChangeSeriesPrefix}
+              onChangeSeriesSuffix={onChangeSeriesSuffix}
+            />
           )}
           {tab === 'labels' && (
-            <div className="text-xs text-gray-500 flex flex-col space-y-8">
-              <div className="flex flex-col gap-y-3">
-                <VisualizationToggleV2
-                  label="Show labels"
-                  enabled={props.dataLabels.show}
-                  onToggle={onToggleShowDataLabels}
-                />
-                {props.dataLabels.show && (
-                  <AxisModifierSelector
-                    label="Labels to show"
-                    value={props.dataLabels.frequency}
-                    options={[
-                      { name: 'All', value: 'all' },
-                      { name: 'Some', value: 'some' },
-                    ]}
-                    onChange={onChangeDataLabelsFrequency}
-                    disabled={!props.dataframe || !props.isEditable}
-                  />
-                )}
-              </div>
-            </div>
+            <LabelsTab
+              dataframe={props.dataframe}
+              isEditable={props.isEditable}
+              dataLabels={props.dataLabels}
+              onChangeDataLabels={props.onChangeDataLabels}
+            />
           )}
         </div>
       </div>
     </ScrollBar>
   )
+}
+
+/**
+ * Parse decimal places input and return validity + value
+ * @param input The string input to parse
+ * @returns Object containing validation results and parsed value
+ */
+export const parseDecimalPlaces = (input: string) => {
+  const cleanedValue = input.replace(/[^\d]/g, '')
+  let numValue = parseInt(cleanedValue, 10)
+  if (Number.isNaN(numValue)) {
+    numValue = 2
+  }
+  return { numValue, cleanedValue }
+}
+
+/**
+ * Parse multiplier input and return validity + value
+ * @param input The string input to parse
+ * @returns Object containing validation results and parsed value
+ */
+export const parseMultiplier = (input: string) => {
+  const cleanedValue = input.replace(/[^\d.]/g, '')
+  let numValue = parseFloat(cleanedValue)
+  if (Number.isNaN(numValue)) {
+    numValue = 1
+  }
+  return { numValue, cleanedValue }
 }
 
 export default VisualizationControlsV2

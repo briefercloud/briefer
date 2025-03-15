@@ -19,6 +19,9 @@ import {
   TimeUnit,
   VisualizationFilter,
   YAxisV2,
+  SeriesV2,
+  DateFormat,
+  NumberFormat,
 } from '@briefer/types'
 import { clone } from 'ramda'
 
@@ -29,6 +32,8 @@ export type VisualizationV2BlockInput = {
   xAxisName: string | null
   xAxisSort: 'ascending' | 'descending'
   xAxisGroupFunction: TimeUnit | null
+  xAxisDateFormat: DateFormat | null
+  xAxisNumberFormat: NumberFormat | null
   yAxes: YAxisV2[]
   histogramFormat: HistogramFormat
   histogramBin: HistogramBin
@@ -39,6 +44,82 @@ export type VisualizationV2BlockInput = {
   }
 }
 
+// Predefined date format options for the UI
+export const DATE_FORMAT_OPTIONS = [
+  {
+    name: 'January 31, 2025',
+    value: 'MMMM d, yyyy' as const,
+  },
+  {
+    name: '31 January, 2025',
+    value: 'd MMMM, yyyy' as const,
+  },
+  {
+    name: 'Monday, January 31, 2025',
+    value: 'EEEE, MMMM d, yyyy' as const,
+  },
+  {
+    name: '1/31/2025',
+    value: 'M/d/yyyy' as const,
+  },
+  {
+    name: '31/1/2025',
+    value: 'd/M/yyyy' as const,
+  },
+  {
+    name: '2025/1/31',
+    value: 'yyyy/M/d' as const,
+  },
+]
+
+// Predefined time format options for the UI
+export const TIME_FORMAT_OPTIONS = [
+  {
+    name: '3:45 PM (12-hour)',
+    value: 'h:mm a' as const,
+  },
+  {
+    name: '15:45 (24-hour)',
+    value: 'HH:mm' as const,
+  },
+]
+
+// Predefined number format style options for the UI
+export const NUMBER_STYLE_OPTIONS = [
+  {
+    name: 'Normal',
+    value: 'normal' as const,
+  },
+  {
+    name: 'Percent',
+    value: 'percent' as const,
+  },
+  {
+    name: 'Scientific',
+    value: 'scientific' as const,
+  },
+]
+
+// Predefined separator style options for the UI
+export const NUMBER_SEPARATOR_OPTIONS = [
+  {
+    name: '999,999.99',
+    value: '999,999.99' as const,
+  },
+  {
+    name: '999.999,99',
+    value: '999.999,99' as const,
+  },
+  {
+    name: '999 999,99',
+    value: '999 999,99' as const,
+  },
+  {
+    name: '999999.99',
+    value: '999999.99' as const,
+  },
+]
+
 function emptyInput(): VisualizationV2BlockInput {
   return {
     dataframeName: null,
@@ -47,6 +128,8 @@ function emptyInput(): VisualizationV2BlockInput {
     xAxisName: null,
     xAxisSort: 'ascending',
     xAxisGroupFunction: null,
+    xAxisDateFormat: getDefaultDateFormat(),
+    xAxisNumberFormat: getDefaultNumberFormat(),
     yAxes: [],
     filters: [],
     histogramFormat: 'count',
@@ -252,18 +335,7 @@ function getYAxes(input: VisualizationV2BlockInput): YAxisV2[] {
       {
         id: uuidv4(),
         name: null,
-        series: [
-          {
-            id: uuidv4(),
-            column: null,
-            aggregateFunction: 'sum',
-            groupBy: null,
-            chartType: null,
-            name: null,
-            color: null,
-            groups: null,
-          },
-        ],
+        series: [createDefaultSeries()],
       },
     ]
   }
@@ -391,4 +463,43 @@ export function setVisualizationV2Input(
     ...current,
     ...next,
   })
+}
+
+// Helper functions for formatting
+
+// Get default date format configuration
+export function getDefaultDateFormat(): DateFormat {
+  return {
+    dateStyle: 'MMMM d, yyyy', // Default to "January 31, 2018" format
+    showTime: false,
+    timeFormat: 'h:mm a', // Default to 12-hour clock format
+  }
+}
+
+// Get default number format configuration
+export function getDefaultNumberFormat(): NumberFormat {
+  return {
+    style: 'normal',
+    separatorStyle: '999,999.99', // Default US format with commas
+    decimalPlaces: 2,
+    multiplier: 1,
+    prefix: null,
+    suffix: null,
+  }
+}
+
+// Create a new SeriesV2 with default values
+export function createDefaultSeries(): SeriesV2 {
+  return {
+    id: uuidv4(),
+    column: null,
+    aggregateFunction: 'sum',
+    groupBy: null,
+    chartType: null,
+    name: null,
+    color: null,
+    groups: null,
+    dateFormat: getDefaultDateFormat(),
+    numberFormat: getDefaultNumberFormat(),
+  }
 }
