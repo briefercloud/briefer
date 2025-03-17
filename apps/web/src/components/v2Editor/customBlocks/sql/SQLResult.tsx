@@ -19,6 +19,7 @@ import { ArrowDownTrayIcon, ChartPieIcon } from '@heroicons/react/24/solid'
 import { Tooltip, TooltipV2 } from '@/components/Tooltips'
 import debounce from 'lodash.debounce'
 import { DashboardMode, dashboardModeHasControls } from '@/components/Dashboard'
+import { Transition } from '@headlessui/react'
 
 function formatMs(ms: number) {
   if (ms < 1000) {
@@ -85,7 +86,13 @@ function SQLResult(props: Props) {
         />
       )
     case 'abort-error':
-      return <SQLAborted />
+      return (
+        <SQLAborted
+          dashboardMode={props.dashboardMode}
+          toggleResultHidden={props.toggleResultHidden}
+          isResultHidden={props.isResultHidden}
+        />
+      )
     case 'syntax-error':
       return (
         <SQLSyntaxError
@@ -264,7 +271,16 @@ function SQLSuccess(props: SQLSuccessProps) {
           <LargeSpinner color="#deff80" />
         </div>
       )}
-      {(!props.isResultHidden || props.dashboardMode) && (
+
+      <Transition
+        show={!props.isResultHidden || props.dashboardMode !== null}
+        enter="transition-all ease-in duration-300"
+        enterFrom="max-h-0 overflow-hidden"
+        enterTo="max-h-[300px] overflow-hidden"
+        leave="transition-all ease-out duration-300"
+        leaveFrom="max-h-[300px] overflow-hidden"
+        leaveTo="max-h-0 overflow-hidden"
+      >
         <div
           className={clsx(
             'max-w-full ph-no-capture bg-white font-sans',
@@ -291,7 +307,7 @@ function SQLSuccess(props: SQLSuccessProps) {
             topBorder={tableTopBorder}
           />
         </div>
-      )}
+      </Transition>
 
       <div
         className={clsx(
@@ -393,15 +409,41 @@ function SQLSuccess(props: SQLSuccessProps) {
   )
 }
 
-function SQLAborted() {
+function SQLAborted(props: {
+  dashboardMode: DashboardMode | null
+  toggleResultHidden: () => void
+  isResultHidden: boolean
+}) {
   return (
-    <div className="text-xs p-4">
-      <div className="flex border border-red-300 p-2 gap-x-3 items-center">
-        <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
-        <div>
-          <h4 className="font-semibold">Query aborted.</h4>
+    <div className="text-xs">
+      {!props.dashboardMode && (
+        <div className="p-3 text-xs text-gray-300 flex items-center justify-end">
+          <button
+            className="inline-flex items-center rounded-md bg-red-50 px-1.5 py-0.5 text-[12px] text-red-700 ring-1 ring-inset ring-red-600/10 hover:bg-red-100"
+            onClick={props.toggleResultHidden}
+          >
+            contains errors
+          </button>
         </div>
-      </div>
+      )}
+      <Transition
+        show={!props.isResultHidden || props.dashboardMode !== null}
+        enter="transition-all ease-in duration-300"
+        enterFrom="max-h-0 overflow-hidden"
+        enterTo="max-h-[70px] overflow-hidden"
+        leave="transition-all ease-out duration-300"
+        leaveFrom="max-h-[70px] overflow-hidden"
+        leaveTo="max-h-0 overflow-hidden"
+      >
+        <div className="px-3.5 pb-4 pt-0.5">
+          <div className="flex border border-red-300 p-2 gap-x-3 items-center">
+            <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
+            <div>
+              <h4 className="font-semibold">Query aborted.</h4>
+            </div>
+          </div>
+        </div>
+      </Transition>
     </div>
   )
 }
@@ -428,55 +470,60 @@ function SQLSyntaxError(props: {
         </div>
       )}
 
-      <div
-        className={clsx(
-          'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
-        )}
+      <Transition
+        show={!props.isResultHidden || props.dashboardMode !== null}
+        enter="transition-all ease-in duration-300"
+        enterFrom="max-h-0 overflow-hidden"
+        enterTo="max-h-[300px] overflow-hidden"
+        leave="transition-all ease-out duration-300"
+        leaveFrom="max-h-[300px] overflow-hidden"
+        leaveTo="max-h-0 overflow-hidden"
       >
-        <div className="flex border border-red-300 p-4 gap-x-3 word-wrap">
-          <div className="w-full">
-            <span className="flex items-center gap-x-2 pb-2">
-              <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
-              <h4 className="font-semibold mb-2">
-                Your query could not be executed
-              </h4>
-            </span>
-            <p>We received the following error:</p>
-            <pre className="whitespace-pre-wrap ph-no-capture overflow-hidden">
-              {props.result.message}
-            </pre>
-            {props.onFixWithAI && (
-              <Tooltip
-                title="Missing OpenAI API key"
-                message="Admins can add an OpenAI key in settings."
-                className="inline-block"
-                tooltipClassname="w-40 text-center"
-                position="top"
-                active={!props.canFixWithAI}
-              >
-                <button
-                  disabled={!props.canFixWithAI}
-                  onClick={props.onFixWithAI}
-                  className="mt-4 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne border-gray-200 hover:bg-gray-50 hover:text-gray-700 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed"
+        <div className="px-3.5 pb-4 pt-0.5">
+          <div className="flex border border-red-300 p-4 gap-x-3 word-wrap">
+            <div className="w-full">
+              <span className="flex items-center gap-x-2 pb-2">
+                <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
+                <h4 className="font-semibold mb-2">
+                  Your query could not be executed
+                </h4>
+              </span>
+              <p>We received the following error:</p>
+              <pre className="whitespace-pre-wrap ph-no-capture overflow-hidden">
+                {props.result.message}
+              </pre>
+              {props.onFixWithAI && (
+                <Tooltip
+                  title="Missing OpenAI API key"
+                  message="Admins can add an OpenAI key in settings."
+                  className="inline-block"
+                  tooltipClassname="w-40 text-center"
+                  position="top"
+                  active={!props.canFixWithAI}
                 >
-                  {props.isFixingWithAI ? (
-                    <>
-                      <Spin />
-                      Fixing - click to cancel
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon className="w-3 h-3" />
-                      Fix with AI
-                    </>
-                  )}
-                </button>
-              </Tooltip>
-            )}
+                  <button
+                    disabled={!props.canFixWithAI}
+                    onClick={props.onFixWithAI}
+                    className="mt-4 flex items-center border rounded-sm px-2 py-1 gap-x-2 font-syne border-gray-200 hover:bg-gray-50 hover:text-gray-700 disabled:bg-gray-200 disabled:border-0 disabled:cursor-not-allowed"
+                  >
+                    {props.isFixingWithAI ? (
+                      <>
+                        <Spin />
+                        Fixing - click to cancel
+                      </>
+                    ) : (
+                      <>
+                        <SparklesIcon className="w-3 h-3" />
+                        Fix with AI
+                      </>
+                    )}
+                  </button>
+                </Tooltip>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </div>
   )
 }
@@ -500,25 +547,32 @@ function SQLPythonError(props: {
         </div>
       )}
 
-      <div
-        className={clsx(
-          'px-3.5 pb-4 pt-0.5',
-          props.isResultHidden && !props.dashboardMode ? 'hidden' : 'block'
-        )}
+      <Transition
+        show={!props.isResultHidden || props.dashboardMode !== null}
+        enter="transition-all ease-in duration-300"
+        enterFrom="max-h-0 overflow-hidden"
+        enterTo="max-h-[100px] overflow-hidden"
+        leave="transition-all ease-out duration-300"
+        leaveFrom="max-h-[100px] overflow-hidden"
+        leaveTo="max-h-0 overflow-hidden"
       >
-        <div className="flex border border-red-300 p-4 gap-x-3 text-xs overflow-hidden word-wrap">
-          <div className="w-full">
-            <span className="flex items-center gap-x-2 pb-2">
-              <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
-              <h4 className="font-semibold">Your code could not be executed</h4>
-            </span>
-            <p>We received the following error:</p>
-            <pre className="whitespace-pre-wrap ph-no-capture">
-              {props.result.ename} - {props.result.evalue}
-            </pre>
+        <div className="px-3.5 pb-4 pt-0.5">
+          <div className="flex border border-red-300 p-4 gap-x-3 text-xs overflow-hidden word-wrap">
+            <div className="w-full">
+              <span className="flex items-center gap-x-2 pb-2">
+                <ExclamationTriangleIcon className="text-red-500 h-6 w-6" />
+                <h4 className="font-semibold">
+                  Your code could not be executed
+                </h4>
+              </span>
+              <p>We received the following error:</p>
+              <pre className="whitespace-pre-wrap ph-no-capture">
+                {props.result.ename} - {props.result.evalue}
+              </pre>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </div>
   )
 }
