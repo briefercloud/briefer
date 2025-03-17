@@ -137,15 +137,13 @@ export const NumberFormatControl = ({
         disabled={!dataframe || !isEditable}
       />
 
-      <div className="mt-4">
-        <AxisModifierSelector
-          label="Separator"
-          value={currentFormat?.separatorStyle || '999,999.99'}
-          options={NUMBER_SEPARATOR_OPTIONS}
-          onChange={(style) => onChangeSeparatorStyle(seriesId, style)}
-          disabled={!dataframe || !isEditable}
-        />
-      </div>
+      <AxisModifierSelector
+        label="Separator"
+        value={currentFormat?.separatorStyle || '999,999.99'}
+        options={NUMBER_SEPARATOR_OPTIONS}
+        onChange={(style) => onChangeSeparatorStyle(seriesId, style)}
+        disabled={!dataframe || !isEditable}
+      />
 
       <div className="mt-4">
         <label

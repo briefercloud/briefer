@@ -266,7 +266,7 @@ const XAxisTab = ({
 
         {/* Date formatting options - only show for date columns */}
         {isDateColumn && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+          <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm">
             <h3 className="text-xs font-medium mb-4">Date formatting</h3>
             <DateFormatControl
               currentFormat={xAxisDateFormat}
@@ -281,8 +281,10 @@ const XAxisTab = ({
 
         {/* Number formatting options - only show for number columns */}
         {isNumberColumn && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-md">
-            <h3 className="text-xs font-medium mb-4">Number formatting</h3>
+          <div className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm">
+            <h3 className="text-xs font-medium mb-1 text-gray-900">
+              Label formatting
+            </h3>
             <NumberFormatControl
               initialDecimalPlaces={decimalPlacesInput}
               initialMultiplier={multiplierInput}

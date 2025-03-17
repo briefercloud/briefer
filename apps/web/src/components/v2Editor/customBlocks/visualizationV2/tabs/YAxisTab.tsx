@@ -206,11 +206,20 @@ const YAxisSection = ({
         const isNumberType = isNumberSeries(series)
 
         return (
-          <div key={series.id} className="mb-6 p-4 bg-gray-50 rounded-md">
+          <div
+            key={series.id}
+            className="mb-6 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm"
+          >
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-medium">Series {seriesIndex + 1}</h3>
+              <h2 className="text-sm font-semibold text-gray-900">
+                {axisIndex === 0 ? 'Left' : 'Right'} series {seriesIndex + 1}
+              </h2>
               <span className="text-xs text-gray-500 italic">{columnName}</span>
             </div>
+
+            <h3 className="text-xs font-medium text-gray-900 mb-1">
+              Label formatting
+            </h3>
 
             {isDateType && (
               <DateFormatControl
