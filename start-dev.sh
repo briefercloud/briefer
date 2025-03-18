@@ -1,6 +1,17 @@
 #!/bin/bash
 set -e
 
+AI_API_USERNAME=$(openssl rand -hex 12)
+AI_API_PASSWORD=$(openssl rand -hex 12)
+
+# if there is no .env file in AI API, create one
+if [ ! -f ./ai/.env ]; then
+  echo "OPENAI_DEFAULT_MODEL_NAME=gpt-3.5-turbo" >> ./ai/.env
+  echo "OPENAI_API_KEY=" >> ./ai/.env
+  echo "BASIC_AUTH_USERNAME=$AI_API_USERNAME" >> ./ai/.env
+  echo "BASIC_AUTH_PASSWORD=$AI_API_PASSWORD" >> ./ai/.env
+fi
+
 # if there is no .env file in API, create one
 if [ ! -f ./apps/api/.env ]; then
   echo "NODE_ENV=development" > ./apps/api/.env
@@ -11,8 +22,8 @@ if [ ! -f ./apps/api/.env ]; then
   echo "LOGIN_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "AUTH_JWT_SECRET=$(openssl rand -hex 24)" >> ./apps/api/.env
   echo "AI_API_URL='http://localhost:8000'" >> ./apps/api/.env
-  echo "AI_API_USERNAME=$(openssl rand -hex 12)" >> ./apps/api/.env
-  echo "AI_API_PASSWORD=$(openssl rand -hex 12)" >> ./apps/api/.env
+  echo "AI_API_USERNAME=$AI_API_USERNAME" >> ./apps/api/.env
+  echo "AI_API_PASSWORD=$AI_API_PASSWORD" >> ./apps/api/.env
   echo "PYTHON_ALLOWED_LIBRARIES='plotly,matplotlib,numpy,pandas'" >> ./apps/api/.env
   echo "POSTGRES_USERNAME=postgres" >> ./apps/api/.env
   echo "POSTGRES_PASSWORD=password" >> ./apps/api/.env
