@@ -130,6 +130,8 @@ def _briefer_create_visualization(df, options):
 
     def group_dataframe(df, options, y_axis, series):
         if not options["xAxis"]:
+            # When no x-axis is specified, we still need to ensure the series ID column exists
+            df[series["id"]] = df[series["column"]["name"]]
             return df
 
         freqs = {
@@ -459,11 +461,20 @@ def _briefer_create_visualization(df, options):
                       "datasetIndex": dataset_index,
                       "yAxisIndex": y_index,
                       "z": i,
-                      "encode": {
-                        "x": options["xAxis"]["name"],
-                        "y": y_name,
-                      }
                     }
+
+                    # Only add encode property with x axis if xAxis is defined
+                    if options["xAxis"]:
+                        serie["encode"] = {
+                          "x": options["xAxis"]["name"],
+                          "y": y_name,
+                        }
+                    else:
+                        serie["encode"] = {
+                          "x": "__default_x",
+                          "y": y_name,
+                        }
+
                     if chart_type == "line":
                         serie["symbolSize"] = 6
 
