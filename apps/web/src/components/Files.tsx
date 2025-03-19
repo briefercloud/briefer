@@ -249,35 +249,24 @@ file`
           className="w-[324px] flex flex-col border-l border-gray-200 h-full bg-white"
           {...getRootProps()}
         >
-          <div className="flex flex-col p-6 border-b space-y-6">
-            <div className="flex justify-between space-x-3">
-              <div>
-                <h3 className="text-lg font-medium leading-6 text-gray-900 pr-1.5">
-                  Files
-                </h3>
-                <p className="text-gray-500 text-sm pt-1">
-                  {'Click "add" or drop files into this tab to upload them.'}
-                </p>
-              </div>
-              <div>
-                <button
-                  className="flex items-center gap-x-2 rounded-sm bg-primary-200 px-3 py-1 text-sm hover:bg-primary-300 disabled:cursor-not-allowed disabled:bg-gray-200"
-                  onClick={openUpload}
-                >
-                  <CloudArrowUpIcon className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
+          <div className="flex justify-between border-b p-6 space-x-3">
+            <div>
+              <h3 className="text-lg font-medium leading-6 text-gray-900 pr-1.5">
+                Files
+              </h3>
+              <p className="text-gray-500 text-sm pt-1">
+                {'Click "add" or drop files into this tab to upload them.'}
+              </p>
             </div>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Find file by name"
-                className="block w-full rounded-md border-0 pl-7 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 text-xs h-[38px]"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <MagnifyingGlassIcon className="absolute top-1 left-2 w-4 h-4 text-gray-400 translate-y-1/2" />
+
+            <div>
+              <button
+                className="flex items-center gap-x-2 rounded-sm bg-primary-200 px-3 py-1 text-sm hover:bg-primary-300 disabled:cursor-not-allowed disabled:bg-gray-200"
+                onClick={openUpload}
+              >
+                <CloudArrowUpIcon className="w-4 h-4" />
+                Add
+              </button>
             </div>
           </div>
           {(upload._tag === 'uploading' || results.length > 0) && (
@@ -331,6 +320,16 @@ file`
                 >
                   <InformationCircleIcon className="w-4 h-4 text-gray-300" />
                 </Tooltip>
+              </div>
+              <div className="px-4 py-0 flex items-center border-b border-gray-200 group focus-within:border-blue-300">
+                <MagnifyingGlassIcon className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-blue-500" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full h-8 border-0 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0 pl-2"
+                  onChange={(e) => setSearch(e.target.value)}
+                  value={search}
+                />
               </div>
               {actualFiles.length > 0 ? (
                 <ul
