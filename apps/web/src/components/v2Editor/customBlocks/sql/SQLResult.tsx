@@ -294,8 +294,11 @@ function SQLSuccess(props: SQLSuccessProps) {
             rows={
               (props.dashboardMode &&
               !dashboardModeHasControls(props.dashboardMode)
-                ? result.dashboardRows
-                : result.rows) ?? []
+                ? result.dashboardRows.slice(
+                    0,
+                    Math.max(props.dashboardPageSize, 1)
+                  )
+                : result.rows.slice(0, 50)) ?? []
             }
             columns={props.result.columns}
             isDashboard={
