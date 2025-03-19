@@ -7,7 +7,7 @@ import {
   CloudArrowUpIcon,
   DocumentPlusIcon,
   TrashIcon,
-  XMarkIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { Dialog, Transition } from '@headlessui/react'
 import { UploadResult, UploadFile, useFiles } from '@/hooks/useFiles'
@@ -45,6 +45,8 @@ export default function Files(props: Props) {
     props.workspaceId
   )
 
+  const [search, setSearch] = useState('')
+
   const onUseInPython = useCallback(
     (file: BrieferFile) => {
       if (!props.yDoc || !props.executionQueue) {
@@ -55,13 +57,13 @@ export default function Files(props: Props) {
         file.mimeType === 'application/json'
           ? 'json'
           : file.mimeType === 'text/csv'
-          ? 'csv'
-          : file.mimeType === 'application/vnd.ms-excel'
-          ? 'xls'
-          : file.mimeType ===
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-          ? 'xlsx'
-          : ''
+            ? 'csv'
+            : file.mimeType === 'application/vnd.ms-excel'
+              ? 'xls'
+              : file.mimeType ===
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ? 'xlsx'
+                : ''
 
       const source =
         fileExtension !== ''
@@ -98,7 +100,7 @@ file`
         }
       )
     },
-    [props.yDoc, props.executionQueue, environmentStartedAt]
+    [props.yDoc, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onUseInSQL = useCallback(
@@ -152,7 +154,7 @@ file`
         }
       )
     },
-    [props.yDoc, props.executionQueue, environmentStartedAt]
+    [props.yDoc, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const [
@@ -190,13 +192,19 @@ file`
 
   const actualFiles = useMemo(
     () =>
-      files.filter((f) => {
+      files.filter((file) => {
+        const s = search.trim()
+        if (s !== '') {
+          const name = file.name.trim()
+          return name.toLowerCase().includes(s.toLowerCase())
+        }
+
         if (upload._tag === 'idle') {
           return true
         }
 
         if (
-          upload.current.file.name === f.relCwdPath &&
+          upload.current.file.name === file.relCwdPath &&
           upload.current.status === 'uploading'
         ) {
           return false
@@ -204,7 +212,7 @@ file`
 
         return true
       }),
-    [files, upload]
+    [files, upload, search]
   )
 
   const results = useMemo(
@@ -241,24 +249,35 @@ file`
           className="w-[324px] flex flex-col border-l border-gray-200 h-full bg-white"
           {...getRootProps()}
         >
-          <div className="flex justify-between border-b p-6 space-x-3">
-            <div>
-              <h3 className="text-lg font-medium leading-6 text-gray-900 pr-1.5">
-                Files
-              </h3>
-              <p className="text-gray-500 text-sm pt-1">
-                {'Click "add" or drop files into this tab to upload them.'}
-              </p>
+          <div className="flex flex-col p-6 border-b space-y-6">
+            <div className="flex justify-between space-x-3">
+              <div>
+                <h3 className="text-lg font-medium leading-6 text-gray-900 pr-1.5">
+                  Files
+                </h3>
+                <p className="text-gray-500 text-sm pt-1">
+                  {'Click "add" or drop files into this tab to upload them.'}
+                </p>
+              </div>
+              <div>
+                <button
+                  className="flex items-center gap-x-2 rounded-sm bg-primary-200 px-3 py-1 text-sm hover:bg-primary-300 disabled:cursor-not-allowed disabled:bg-gray-200"
+                  onClick={openUpload}
+                >
+                  <CloudArrowUpIcon className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
             </div>
-
-            <div>
-              <button
-                className="flex items-center gap-x-2 rounded-sm bg-primary-200 px-3 py-1 text-sm hover:bg-primary-300 disabled:cursor-not-allowed disabled:bg-gray-200"
-                onClick={openUpload}
-              >
-                <CloudArrowUpIcon className="w-4 h-4" />
-                Add
-              </button>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Find file by name"
+                className="block w-full rounded-md border-0 pl-7 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-ceramic-200/70 text-xs h-[38px]"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <MagnifyingGlassIcon className="absolute top-1 left-2 w-4 h-4 text-gray-400 translate-y-1/2" />
             </div>
           </div>
           {(upload._tag === 'uploading' || results.length > 0) && (
@@ -621,7 +640,8 @@ function ReplaceDialog(props: ReplaceDialogProps) {
     if (props.fileName !== '' && props.fileName !== fileName) {
       setFileName(props.fileName)
     }
-  }, [props.fileName])
+  }, [props.fileName, fileName])
+
   return (
     <Transition show={props.open}>
       <Dialog onClose={props.onReplaceNo} className="relative z-[100]">
