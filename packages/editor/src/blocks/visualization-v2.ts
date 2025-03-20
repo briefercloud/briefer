@@ -190,7 +190,7 @@ const SerieCommon = z.object({
   id: z.string(),
   datasetIndex: z.number(),
   yAxisIndex: z.number(),
-  name: z.string().optional(),
+  name: z.string().or(z.number()).optional(),
   z: z.number(),
   label: z
     .object({

@@ -146,7 +146,7 @@ const DisplayYAxisSeries = forwardRef<HTMLDivElement, DisplayYAxisSeriesProps>(
                 const group = s.id.split(':').slice(1).join(':')
                 return {
                   group,
-                  name: s.name ?? group,
+                  name: s.name?.toString() ?? group,
                   color: getColorFromSerie(s) ?? presetColors[0],
                 }
               }) ?? []
