@@ -1,6 +1,6 @@
 {
   "name": "briefer",
-  "version": "0.0.111",
+  "version": "0.0.112",
   "main": "index.js",
   "repository": "git@github.com:briefercloud/briefer.git",
   "private": true,
