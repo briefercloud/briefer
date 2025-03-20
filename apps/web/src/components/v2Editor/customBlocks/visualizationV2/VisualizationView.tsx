@@ -1063,8 +1063,8 @@ function getTimeAxis(
       axisTick: {
         show: false,
       },
-      min: min.getTime() - minInterval / 2,
-      max: max.getTime() + minInterval / 2,
+      min: (min?.getTime() ?? 0) - minInterval / 2,
+      max: (max?.getTime() ?? 0) + minInterval / 2,
       minInterval,
       splitLine: {
         show: false,
