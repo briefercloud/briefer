@@ -1119,6 +1119,13 @@ function getCategoryAxis(axis: XAxis) {
       axisLabel: {
         hideOverlap: true,
         interval: 0,
+        formatter: (value: string | number): string => {
+          if (typeof value === 'number') {
+            return value.toString()
+          }
+
+          return value.length > 20 ? value.slice(0, 20) + '...' : value
+        },
       },
       splitLine: {
         show: false,
