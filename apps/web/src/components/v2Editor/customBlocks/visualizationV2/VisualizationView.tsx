@@ -331,8 +331,51 @@ function BrieferResult(props: {
       },
       grid,
       xAxis: xAxes.map((axis) => axis.option),
-      yAxis: props.result.yAxis.map((axis) => ({
+      yAxis: props.result.yAxis.map((axis, i) => ({
         ...axis,
+        axisLabel: {
+          formatter: (value: string | number): string => {
+            const format:
+              | null
+              | { _tag: 'date'; format: DateFormat }
+              | { _tag: 'number'; format: NumberFormat } =
+              props.input.yAxes[i]?.series
+                .map((s) => {
+                  if (!s.column) {
+                    return null
+                  }
+
+                  if (NumpyDateTypes.safeParse(s.column.type).success) {
+                    if (s.dateFormat) {
+                      return { _tag: 'date' as const, format: s.dateFormat }
+                    }
+                  }
+
+                  if (NumpyNumberTypes.safeParse(s.column.type).success) {
+                    if (s.numberFormat) {
+                      return { _tag: 'number' as const, format: s.numberFormat }
+                    }
+                  }
+
+                  return null
+                })
+                .find((f) => f !== null) ?? null
+
+            if (!format) {
+              return value.toString()
+            }
+
+            if (typeof value === 'number' && format._tag === 'number') {
+              return formatNumber(value, format.format)
+            }
+
+            if (format._tag === 'date') {
+              return formatDateTime(value, format.format)
+            }
+
+            return value.toString()
+          },
+        },
       })),
       tooltip: {
         ...props.result.tooltip,
