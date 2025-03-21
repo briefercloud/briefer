@@ -97,7 +97,8 @@
       "pages": [
         "enterprise/sso-self-hosted",
         "enterprise/granular-permissions",
-        "enterprise/private-ai"
+        "enterprise/private-ai",
+        "enterprise/customize-appearance"
       ]
     }
   ],
