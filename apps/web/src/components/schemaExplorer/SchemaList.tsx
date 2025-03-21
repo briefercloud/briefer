@@ -45,6 +45,7 @@ export default function SchemaList(props: Props) {
       return (
         <div key={key} style={style}>
           <SchemaItem
+            search={search}
             schemaItem={item}
             onToggleSchema={toggleSchema}
             onToggleTable={toggleTable}
@@ -52,7 +53,7 @@ export default function SchemaList(props: Props) {
         </div>
       )
     },
-    [schemaList, toggleSchema, toggleTable]
+    [schemaList, toggleSchema, toggleTable, search]
   )
 
   return (

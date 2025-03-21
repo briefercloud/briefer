@@ -4,6 +4,7 @@ import TableSchemaItem from './TableSchemaItem'
 import ColumnSchemaItem from './ColumnSchemaItem'
 
 interface Props {
+  search: string
   schemaItem: SchemaItem
   onToggleSchema: (schema: string) => void
   onToggleTable: (schema: string, table: string) => void
@@ -14,6 +15,7 @@ function SchemaItem(props: Props) {
     case 'schema':
       return (
         <SchemaSchemaItem
+          search={props.search}
           name={props.schemaItem.name}
           schema={props.schemaItem.schema}
           isOpen={props.schemaItem.isOpen}
@@ -23,6 +25,7 @@ function SchemaItem(props: Props) {
     case 'table':
       return (
         <TableSchemaItem
+          search={props.search}
           schemaName={props.schemaItem.schemaName}
           name={props.schemaItem.name}
           table={props.schemaItem.table}
@@ -33,6 +36,7 @@ function SchemaItem(props: Props) {
     case 'column':
       return (
         <ColumnSchemaItem
+          search={props.search}
           schemaName={props.schemaItem.schemaName}
           tableName={props.schemaItem.tableName}
           column={props.schemaItem.column}

@@ -4,7 +4,6 @@ import {
   DataSourceTable,
 } from '@briefer/types'
 import { Map, Set, List } from 'immutable'
-import { distance as levenshtein } from 'fastest-levenshtein'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export type SchemaItem =
@@ -172,19 +171,57 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
       tableName: string
       column: DataSourceColumn
     }[] = []
-    schemas.forEach((schema, schemaName) => {
-      Object.entries(schema.tables).forEach(([tableName, table]) => {
-        table.columns.forEach((column) => {
-          workQueue.push({
-            schema,
-            schemaName,
-            table,
-            tableName,
-            column,
-          })
-        })
+    Array.from(schemas.entries())
+      .sort(([a], [b]) => {
+        const schemaTerm = searchTerm.split('.')[0]
+
+        // compute how many characters are left after removing the search term
+        // the one that has less characters left should be prioritized
+        const aDiff = a.replace(schemaTerm, '').length
+        const bDiff = b.replace(schemaTerm, '').length
+
+        const diff = aDiff - bDiff
+        if (diff === 0) {
+          return a.localeCompare(b)
+        } else if (diff < 0) {
+          return -1
+        } else {
+          return 1
+        }
       })
-    })
+      .forEach(([schemaName, schema]) => {
+        Object.entries(schema.tables)
+          .sort(([a], [b]) => {
+            const searchTerms = searchTerm.split('.')
+            let tableTerm = searchTerms[0]
+            if (searchTerms.length > 1 && schemaName.includes(searchTerms[0])) {
+              tableTerm = searchTerms[1]
+            }
+
+            const aDiff = a.replace(tableTerm, '').length
+            const bDiff = b.replace(tableTerm, '').length
+
+            const diff = aDiff - bDiff
+            if (diff === 0) {
+              return a.localeCompare(b)
+            } else if (diff < 0) {
+              return -1
+            } else {
+              return 1
+            }
+          })
+          .forEach(([tableName, table]) => {
+            table.columns.forEach((column) => {
+              workQueue.push({
+                schema,
+                schemaName,
+                table,
+                tableName,
+                column,
+              })
+            })
+          })
+      })
 
     Promise.resolve().then(async () => {
       if (!active) {
@@ -213,12 +250,7 @@ function useSchemaList(schemas: Map<string, DataSourceSchema>): UseSchemaList {
           fullColumnName
             .trim()
             .toLowerCase()
-            .includes(search.trim().toLowerCase()) ||
-          levenshtein(
-            search.trim().toLowerCase(),
-            fullColumnName.trim().toLowerCase()
-          ) <=
-            fullColumnName.length / 2
+            .includes(search.trim().toLowerCase())
         ) {
           if (!addedSchemas.has(work.schemaName)) {
             result.push({
