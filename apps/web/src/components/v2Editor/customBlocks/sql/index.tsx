@@ -180,16 +180,16 @@ function SQLBlock(props: Props) {
     (props.isEditable
       ? isCodeHiddenProp
       : localCodeHidden === null
-      ? isCodeHiddenProp
-      : localCodeHidden)
+        ? isCodeHiddenProp
+        : localCodeHidden)
 
   const isResultHidden =
     (!props.dashboardMode || !dashboardModeHasControls(props.dashboardMode)) &&
     (props.isEditable
       ? isResultHiddenProp
       : localResultHidden === null
-      ? isResultHiddenProp
-      : localResultHidden)
+        ? isResultHiddenProp
+        : localResultHidden)
 
   const { startedAt: environmentStartedAt } = useEnvironmentStatus(
     props.document.workspaceId
@@ -443,7 +443,10 @@ function SQLBlock(props: Props) {
   }, [router, props.document.workspaceId])
 
   const onToggleFormatSQLCode = useCallback(() => {
-    const sqlCodeFormatted = getSQLCodeFormatted(source)
+    const sqlCodeFormatted = getSQLCodeFormatted(
+      source,
+      dataSource?.config.type ?? null
+    )
 
     if (!sqlCodeFormatted) {
       return

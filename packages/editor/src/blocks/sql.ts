@@ -1,3 +1,4 @@
+import { type DataSourceType } from '@briefer/database'
 import * as Y from 'yjs'
 import {
   RunQueryResult,
@@ -15,7 +16,7 @@ import {
 } from './index.js'
 import { ResultStatus, updateYText } from '../index.js'
 import { clone } from 'ramda'
-import { format as formatSQL } from 'sql-formatter'
+import { format as formatSQL, SqlLanguage } from 'sql-formatter'
 
 export type DataframeName = {
   value: string
@@ -354,13 +355,35 @@ export function getSQLBlockErrorMessage(
   }
 }
 
-export function getSQLCodeFormatted(source: Y.Text) {
+export function getSQLCodeFormatted(
+  source: Y.Text,
+  dialect: DataSourceType | null
+) {
   if (!source.length) {
     return null
   }
 
+  const language: SqlLanguage = (() => {
+    switch (dialect) {
+      case 'psql':
+        return 'postgresql'
+      case 'bigquery':
+      case 'mysql':
+      case 'snowflake':
+      case 'trino':
+      case 'redshift':
+        return dialect
+      case 'athena':
+      case 'oracle':
+      case 'sqlserver':
+      case 'databrickssql':
+      case null:
+        return 'sql'
+    }
+  })()
+
   const formatted = formatSQL(source.toString(), {
-    language: 'sql',
+    language,
     tabWidth: 4,
   })
 
