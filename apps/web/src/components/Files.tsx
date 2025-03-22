@@ -7,7 +7,7 @@ import {
   CloudArrowUpIcon,
   DocumentPlusIcon,
   TrashIcon,
-  XMarkIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { Dialog, Transition } from '@headlessui/react'
 import { UploadResult, UploadFile, useFiles } from '@/hooks/useFiles'
@@ -45,6 +45,8 @@ export default function Files(props: Props) {
     props.workspaceId
   )
 
+  const [search, setSearch] = useState('')
+
   const onUseInPython = useCallback(
     (file: BrieferFile) => {
       if (!props.yDoc || !props.executionQueue) {
@@ -55,13 +57,13 @@ export default function Files(props: Props) {
         file.mimeType === 'application/json'
           ? 'json'
           : file.mimeType === 'text/csv'
-          ? 'csv'
-          : file.mimeType === 'application/vnd.ms-excel'
-          ? 'xls'
-          : file.mimeType ===
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-          ? 'xlsx'
-          : ''
+            ? 'csv'
+            : file.mimeType === 'application/vnd.ms-excel'
+              ? 'xls'
+              : file.mimeType ===
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                ? 'xlsx'
+                : ''
 
       const source =
         fileExtension !== ''
@@ -98,7 +100,7 @@ file`
         }
       )
     },
-    [props.yDoc, props.executionQueue, environmentStartedAt]
+    [props.yDoc, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const onUseInSQL = useCallback(
@@ -152,7 +154,7 @@ file`
         }
       )
     },
-    [props.yDoc, props.executionQueue, environmentStartedAt]
+    [props.yDoc, props.executionQueue, props.userId, environmentStartedAt]
   )
 
   const [
@@ -190,13 +192,19 @@ file`
 
   const actualFiles = useMemo(
     () =>
-      files.filter((f) => {
+      files.filter((file) => {
+        const s = search.trim()
+        if (s !== '') {
+          const name = file.name.trim()
+          return name.toLowerCase().includes(s.toLowerCase())
+        }
+
         if (upload._tag === 'idle') {
           return true
         }
 
         if (
-          upload.current.file.name === f.relCwdPath &&
+          upload.current.file.name === file.relCwdPath &&
           upload.current.status === 'uploading'
         ) {
           return false
@@ -204,7 +212,7 @@ file`
 
         return true
       }),
-    [files, upload]
+    [files, upload, search]
   )
 
   const results = useMemo(
@@ -312,6 +320,16 @@ file`
                 >
                   <InformationCircleIcon className="w-4 h-4 text-gray-300" />
                 </Tooltip>
+              </div>
+              <div className="px-4 py-0 flex items-center border-b border-gray-200 group focus-within:border-blue-300">
+                <MagnifyingGlassIcon className="h-3.5 w-3.5 text-gray-400 group-focus-within:text-blue-500" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full h-8 border-0 placeholder-gray-400 text-xs text-gray-600 focus:outline-none focus:ring-0 pl-2"
+                  onChange={(e) => setSearch(e.target.value)}
+                  value={search}
+                />
               </div>
               {actualFiles.length > 0 ? (
                 <ul
@@ -621,7 +639,8 @@ function ReplaceDialog(props: ReplaceDialogProps) {
     if (props.fileName !== '' && props.fileName !== fileName) {
       setFileName(props.fileName)
     }
-  }, [props.fileName])
+  }, [props.fileName, fileName])
+
   return (
     <Transition show={props.open}>
       <Dialog onClose={props.onReplaceNo} className="relative z-[100]">
