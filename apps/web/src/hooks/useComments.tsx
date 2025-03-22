@@ -79,6 +79,11 @@ export function CommentsProvider(props: Props) {
     const onComment = (data: { documentId: string; comment: Comment }) => {
       setState((state) => {
         const comments = state.get(data.comment.documentId) ?? []
+
+        if (comments.some(({ id }) => id === data.comment.id)) {
+          return state
+        }
+
         return state.set(data.comment.documentId, [...comments, data.comment])
       })
     }
