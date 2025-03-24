@@ -22,6 +22,8 @@ Assuming you already have an IdP set up, you can configure Briefer to use it by 
   <Info>
   This timeout determines the time-to-live of the cookies necessary for the SSO flow.
   </Info>
+- `OIDC_ENCRYPTION_KEY` is a 32-byte key used to encrypt OIDC-related session data, like refresh tokens if your IdP supports them.
+  You can generate a key using `openssl rand -base64 32`.
 
 When using SSO you probably also want to set `DISABLE_EMAIL_LOGIN` to true so that users can _only_ log in using SSO.
 

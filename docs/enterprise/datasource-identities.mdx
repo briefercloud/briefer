@@ -1,0 +1,92 @@
+---
+title: Integrating user identities with your data source
+description: Configure Briefer to forward user identities to your data source providers. That way you can authenticate and authorize users with the data source provider.
+icon: id-card
+---
+
+Some of our users like to configure permissions for each of their employees directly at the data source provider level. For example, if you have a Redshift data source, you might want to use the IAM roles to control who can access what data.
+
+To support this use case, Briefer allows you to forward the user's identity to the data source provider. This way, you can authenticate and authorize users with the data source provider and they will have access to the data based on the permissions you set up there.
+
+In this page, we'll show you how to configure Briefer to forward user identities to your data source provider.
+
+<Note>
+  This feature is available on the Enterprise plan.
+</Note>
+
+## Configuring user identities for Trino
+
+If you're using Trino as your data source on the enterprise version, we will, by default, forward the user's identity to Trino. As a convention, we forward everything that comes before the domain address in the user's email.
+
+## Configuring user identities for Redshift
+
+If you're using Redshift as your data source, you can forward user identities to AWS so that you can control access to your data based on the user's identity.
+
+<Info>
+  You _must_ use SSO to forward user identities to Redshift because you will have to add your SSO provider as an identity provider on AWS. Read this page to learn how to [configure SSO on a self-hosted instance](/enterprise/sso-self-hosted).
+</Info>
+
+<Steps>
+  <Step title='Add your SSO provider as an identity provider on AWS'>
+    For forwarding user identities to Redshift, [your SSO provider must be configured as an identity provider on AWS](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html).
+  </Step>
+
+  <Step title='Create a new IAM role that allows users to `GetClusterCredentials`'>
+    Create a new IAM role that allows users to get credentials to access Redshift.
+
+    Briefer will assume this role on behalf of the user to get the credentials to access Redshift.
+
+    Use a policy similar to the one below to allow users to `GetClusterCredentials`.
+
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "redshift:GetClusterCredentials",
+                "Resource": [
+                    "arn:aws:redshift:us-east-1:999999999999:dbname:your-redshift-name/your-db-name",
+                    "arn:aws:redshift:us-east-1:999999999999:dbuser:your-redshift-name/${redshift:DbUser}"
+                ]
+            }
+        ]
+    }
+    ```
+
+  </Step>
+
+  <Step title='Ensure that the IAM role has a trust relationship with your identity provider'>
+    Your IAM role must have a trust relationship with your identity provider so that users authenticated through your identity provider can assume the role.
+
+    Use a policy similar to the one below to allow your identity provider to assume the role.
+
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Federated": "arn:aws:iam::999999999999:oidc-provider/name-of-the-identity-provider"
+                },
+                "Action": "sts:AssumeRoleWithWebIdentity",
+                "Condition": {
+                    "StringEquals": {
+                        "name-of-the-identity-provider:aud": "your-openid-provider-client-id"
+                    }
+                }
+            }
+        ]
+    }
+    ```
+
+  </Step>
+
+  <Step title='Connect Briefer to Redshift and select the IAM role'>
+    Finally, connect Briefer to Redshift and make sure that you add the ARN of the IAM role you created in the previous step.
+
+    Briefer will assume the role designated by the ARN to get the credentials to access Redshift on behalf of the user.
+
+  </Step>
+</Steps>
