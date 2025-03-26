@@ -35,7 +35,7 @@ import {
   VisualizationV2BlockOutputResult,
   XAxis,
 } from '@briefer/editor'
-import { head } from 'ramda'
+import { head, uniq } from 'ramda'
 
 const FONT_FAMILY = ['Inter', ...twFontFamiliy.sans].join(', ')
 
@@ -90,7 +90,7 @@ function VisualizationViewV2(props: Props) {
               <LargeSpinner color="#b8f229" />
             </div>
           )}
-          {!props.tooManyDataPointsHidden && !props.hasControls && (
+          {!props.tooManyDataPointsHidden && props.hasControls && (
             <div className="absolute top-0 left-0 right-0 bg-yellow-50 p-2">
               <div className="flex items-center justify-center gap-x-2">
                 <ExclamationTriangleIcon className="h-4 w-4 text-yellow-500" />
@@ -415,68 +415,68 @@ function BrieferResult(props: {
             }
           })()
 
-          return `
-            <div>
-              ${xFormatted}
-              <div>
-                ${params
-                  .map((param, i) => {
-                    const dataset = props.result.dataset[i]
-                    const row = dataset.source[param.dataIndex]
-                    let result = ''
-                    for (const [key, value] of Object.entries(row)) {
-                      if (key === props.input.xAxis?.name) {
-                        continue
-                      }
+          let yValues = ''
+          let counter = 0
+          for (const [i, param] of Array.from(params.entries())) {
+            if (counter > 15) {
+              break
+            }
 
-                      let seriesInput: SeriesV2 | null = null
-                      for (const yAxis of props.input.yAxes) {
-                        for (const series of yAxis.series) {
-                          if (series.id === key) {
-                            seriesInput = series
-                            break
-                          }
-                        }
-                      }
+            const dataset = props.result.dataset[i]
+            const row = dataset.source[param.dataIndex] ?? []
+            let result = ''
+            for (const [key, value] of Object.entries(row)) {
+              if (
+                key === props.input.xAxis?.name ||
+                value === 0 ||
+                value === ''
+              ) {
+                continue
+              }
 
-                      let formattedValue = value
-                      if (seriesInput?.column) {
-                        if (
-                          NumpyDateTypes.safeParse(seriesInput.column.type)
-                            .success
-                        ) {
-                          formattedValue = formatDateTime(
-                            value,
-                            seriesInput.dateFormat
-                          )
-                        } else if (
-                          NumpyNumberTypes.safeParse(seriesInput.column.type)
-                            .success &&
-                          typeof value === 'number' &&
-                          seriesInput.numberFormat
-                        ) {
-                          formattedValue = formatNumber(
-                            value,
-                            seriesInput.numberFormat
-                          )
-                        }
-                      }
+              let seriesInput: SeriesV2 | null = null
+              for (const yAxis of props.input.yAxes) {
+                for (const series of yAxis.series) {
+                  if (series.id === key) {
+                    seriesInput = series
+                    break
+                  }
+                }
+              }
 
-                      result += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
+              let formattedValue = value
+              if (seriesInput?.column) {
+                if (NumpyDateTypes.safeParse(seriesInput.column.type).success) {
+                  formattedValue = formatDateTime(value, seriesInput.dateFormat)
+                } else if (
+                  NumpyNumberTypes.safeParse(seriesInput.column.type).success &&
+                  typeof value === 'number' &&
+                  seriesInput.numberFormat
+                ) {
+                  formattedValue = formatNumber(value, seriesInput.numberFormat)
+                }
+              }
+
+              result += `<div style="display: flex; align-items: center; justify-content: space-between; gap: 20px;">
                       <div>${param.marker ?? ''}${param.seriesName ?? key}</div>
                       <div>${formattedValue}</div>
                     </div>`
-                    }
+              counter++
+            }
 
-                    return result
-                  })
-                  .join('')}
+            yValues += result
+          }
+
+          return `
+            <div>
+              ${xFormatted}
+              <div>${yValues}</div>
             </div>
           `
         },
       },
     }
-  }, [props.result, props.input, size])
+  }, [props.result, props.input, props.hasControls, props.title])
 
   if (!size) {
     return <div className="w-full h-full" ref={measureDiv} />
@@ -546,8 +546,8 @@ function Echarts(props: EchartsProps) {
       const xAxes = Array.isArray(props.option.xAxis)
         ? props.option.xAxis
         : props.option.xAxis
-        ? [props.option.xAxis]
-        : []
+          ? [props.option.xAxis]
+          : []
       let isRotated = false
       const nextXAxes = xAxes.map((xAxis) => {
         if (!xAxis || xAxis.type !== 'category') {
@@ -599,10 +599,10 @@ function Echarts(props: EchartsProps) {
                 left: isRotated ? '60' : props.option.grid.left,
               }
           : isRotated
-          ? {
-              left: '60',
-            }
-          : undefined,
+            ? {
+                left: '60',
+              }
+            : undefined,
       })
       setIsReady(true)
       hiddenChart.dispose()
@@ -911,9 +911,11 @@ function getValueAxis(
 
   let min = -Infinity
   let max = Infinity
-  const xFields = result.series
-    .map((s) => s.encode?.x)
-    .filter((x): x is string | number => x !== undefined)
+  const xFields = uniq(
+    result.series
+      .map((s) => s.encode?.x)
+      .filter((x): x is string | number => x !== undefined)
+  )
   const values = result.dataset
     .flatMap((d) =>
       xFields.flatMap((f) => d.source.flatMap((r) => r[f.toString()]))

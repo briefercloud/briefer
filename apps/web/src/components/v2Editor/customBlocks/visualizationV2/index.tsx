@@ -468,7 +468,7 @@ function VisualizationBlockV2(props: Props) {
     [props.block]
   )
 
-  const tooManyDataPointsHidden = !(attrs.output?.tooManyDataPoints ?? false)
+  const tooManyDataPointsHidden = !(attrs.output?.tooManyDataPoints ?? true)
 
   const onHideTooManyDataPointsWarning = useCallback(() => {
     if (!attrs.output) {
@@ -528,10 +528,7 @@ function VisualizationBlockV2(props: Props) {
             // Check if only formatting fields changed by comparing old and new values
             // excluding both filters and formatting fields
             const oldValueForComparison = {
-              ...omit(
-                [...xAxisFormattingFields, 'filters'],
-                val.oldValue
-              ),
+              ...omit([...xAxisFormattingFields, 'filters'], val.oldValue),
               yAxes: val.oldValue.yAxes.map((yAxis: YAxisV2) => ({
                 ...yAxis,
                 series: yAxis.series.map((series) => ({
@@ -540,10 +537,7 @@ function VisualizationBlockV2(props: Props) {
               })),
             }
             const newValueForComparison = {
-              ...omit(
-                [...xAxisFormattingFields, 'filters'],
-                input
-              ),
+              ...omit([...xAxisFormattingFields, 'filters'], input),
               yAxes: input.yAxes.map((yAxis: YAxisV2) => ({
                 ...yAxis,
                 series: yAxis.series.map((series: SeriesV2) => ({

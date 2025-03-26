@@ -205,6 +205,13 @@ def _briefer_create_visualization(df, options):
                 capped = True
                 result = result.head(50000)
 
+        if series["groupBy"]:
+            groups = result[series["groupBy"]["name"]].unique()
+            if len(groups) > 100:
+                capped = True
+                groups = groups[:100]
+                result = result[result[series["groupBy"]["name"]].isin(groups)]
+
         return result, capped
 
     def apply_filters(df, filters):
@@ -412,6 +419,18 @@ def _briefer_create_visualization(df, options):
 
                 y_name = series["id"]
 
+                # Group rows by their group value first to avoid iterating through all rows for each group
+                grouped_rows = {}
+                if series["groupBy"]:
+                    for _, row in series_dataframe.iterrows():
+                        group_value = row[series["groupBy"]["name"]]
+                        if group_value not in grouped_rows:
+                            grouped_rows[group_value] = []
+                        grouped_rows[group_value].append(row)
+                else:
+                    # Store just the rows without the index for consistency
+                    grouped_rows[None] = [row for _, row in series_dataframe.iterrows()]
+
                 for group in groups:
                     color_index += 1
                     dataset_index = len(data["dataset"])
@@ -426,10 +445,9 @@ def _briefer_create_visualization(df, options):
                         "source": [],
                     }
 
-                    for _, row in series_dataframe.iterrows():
-                        if group is not None and row[series["groupBy"]["name"]] != group:
-                            continue
-
+                    # Process only rows for this specific group
+                    group_rows = grouped_rows.get(group, [])
+                    for row in group_rows:  # No need to unpack since we're just storing rows
                         y_value = row[y_name]
                         row_data = {}
 
@@ -446,7 +464,6 @@ def _briefer_create_visualization(df, options):
                             y_value = y_value / total if total != 0 else 1
 
                         row_data[y_name] = y_value
-
                         dataset["source"].append(row_data)
 
                     data["dataset"].append(dataset)
