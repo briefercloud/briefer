@@ -555,7 +555,9 @@ def get_data_source_structure(data_source_id, credentials_info=None):
 
         if ${JSON.stringify(ds.type)} == "bigquery":
             tables = inspector.get_table_names()
-            schema_from_tables(engine, inspector, tables, default_schema)
+            views = inspector.get_view_names()
+            print(json.dumps({"log": f"Got {len(tables)} tables and {len(views)} views for BigQuery datasource"}))
+            schema_from_tables(engine, inspector, tables + views, default_schema)
         else:
             tables = []
             exceptions = []
