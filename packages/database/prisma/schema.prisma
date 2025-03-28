@@ -378,8 +378,21 @@ model DataSourceSchemaTable {
   updatedAt DateTime @default(now()) @updatedAt
 
   dataSourceSchema DataSourceSchema @relation(fields: [dataSourceSchemaId], references: [id], onDelete: Cascade)
+  embeddings       DataSourceSchemaTableEmbeddings[]
 
   @@unique([dataSourceSchemaId, schema, name], map: "unique_dataSourceSchemaId_name")
+}
+
+model DataSourceSchemaTableEmbeddings {
+  id                      String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  embedding               Unsupported("vector")
+  embeddingModel          String
+  dataSourceSchemaTableId String           @db.Uuid
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  dataSourceSchemaTable DataSourceSchemaTable @relation(fields: [dataSourceSchemaTableId], references: [id], onDelete: Cascade)
 }
 
 model DatabricksSQLDataSource {

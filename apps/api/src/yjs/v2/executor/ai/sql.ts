@@ -143,8 +143,19 @@ async function retrieveTableInfoForQuestion(
   const questionEmbeddingResult = await createEmbedding(question, openAiApiKey)
   let tableInfo: string
   if (questionEmbeddingResult) {
-    const raw = await prisma()
-      .$queryRaw`SELECT t.id, t.embedding <=> ${questionEmbeddingResult.embedding}::vector AS distance FROM "DataSourceSchemaTable" t INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId" WHERE s.id = ${structure.id}::uuid AND t."embeddingModel" = ${questionEmbeddingResult.model} ORDER BY distance LIMIT 30`
+    const raw = await prisma().$queryRaw`WITH ranked_tables AS (
+                   SELECT DISTINCT ON (t.id) t.id, e.embedding <=> ${questionEmbeddingResult.embedding}::vector AS distance
+                   FROM "DataSourceSchemaTable" t
+                   INNER JOIN "DataSourceSchema" s ON s.id = t."dataSourceSchemaId"
+                   INNER JOIN "DataSourceSchemaTableEmbeddings" e ON e."dataSourceSchemaTableId" = t.id
+                   WHERE s.id = ${structure.id}::uuid
+                   AND e."embeddingModel" = ${questionEmbeddingResult.model}
+                   ORDER BY t.id, e.embedding <=> ${questionEmbeddingResult.embedding}::vector
+                 )
+                 SELECT id, distance
+                 FROM ranked_tables
+                 ORDER BY distance
+                 LIMIT 30`
 
     const result = z.array(z.object({ id: uuidSchema })).parse(raw)
 

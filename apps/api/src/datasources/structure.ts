@@ -361,24 +361,69 @@ async function _refreshDataSourceStructure(
     defaultSchema = newDefaultSchema || schema
     tables.push({ schema, table: tableName })
     updateQueue.add(async () => {
-      let embeddingResult: { embedding: number[]; model: string } | null = null
-      let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
-      for (const c of table.columns) {
-        ddl += `  ${c.name} ${c.type}\n`
-      }
-      try {
-        embeddingResult = await createEmbedding(ddl, openAiApiKey)
-      } catch (err) {
-        logger().error(
-          {
-            err,
-            dataSourceId: dataSource.config.data.id,
-            dataSourceType: dataSource.config.type,
-            schemaName: schema,
-            tableName,
-          },
-          'Failed to create embedding'
-        )
+      const embeddingResults: { embedding: number[]; model: string }[] = []
+      let columnsSplits = []
+      let current: typeof table.columns | undefined = table.columns
+      while (current) {
+        try {
+          let ddl = `CREATE TABLE ${schema}.${tableName} (\n`
+          for (const c of current) {
+            ddl += `  ${c.name} ${c.type}\n`
+          }
+
+          logger().trace(
+            {
+              workspaceId: dataSource.config.data.workspaceId,
+              schema,
+              tableName,
+              ddlCount: ddl.length,
+            },
+            'Creating embedding'
+          )
+          const embeddingResult = await createEmbedding(ddl, openAiApiKey)
+          if (embeddingResult) {
+            embeddingResults.push(embeddingResult)
+          }
+        } catch (err) {
+          if (
+            z
+              .object({
+                message: z
+                  .string()
+                  .refine((m) => m.includes('maximum context length')),
+              })
+              .safeParse(err).success
+          ) {
+            logger().trace(
+              {
+                workspaceId: dataSource.config.data.workspaceId,
+                schema,
+                tableName,
+                err,
+              },
+              'Failed to create embedding due to maximum context length. Splitting columns'
+            )
+
+            const first = current.slice(0, current.length / 2)
+            columnsSplits.push(first)
+
+            const second = current.slice(current.length / 2)
+            columnsSplits.push(second)
+          } else {
+            logger().error(
+              {
+                err,
+                dataSourceId: dataSource.config.data.id,
+                dataSourceType: dataSource.config.type,
+                schemaName: schema,
+                tableName,
+              },
+              'Failed to create embedding'
+            )
+          }
+        }
+
+        current = columnsSplits.shift()
       }
 
       await prisma().dataSourceSchema.update({
@@ -406,9 +451,18 @@ async function _refreshDataSourceStructure(
         },
       })
 
-      if (embeddingResult) {
-        await prisma()
-          .$queryRaw`UPDATE "DataSourceSchemaTable" SET embedding = ${embeddingResult.embedding}, "embeddingModel" = ${embeddingResult.model} WHERE id = ${dbSchemaTable.id}::uuid`
+      if (embeddingResults.length > 0) {
+        await prisma().$transaction(async (tr) => {
+          tr.dataSourceSchemaTableEmbeddings.deleteMany({
+            where: {
+              dataSourceSchemaTableId: dbSchemaTable.id,
+            },
+          })
+
+          for (const result of embeddingResults) {
+            await tr.$queryRaw`INSERT INTO "DataSourceSchemaTableEmbeddings" ("dataSourceSchemaTableId", embedding, "embeddingModel") VALUES (${dbSchemaTable.id}::uuid, ${result.embedding}::vector, ${result.model})`
+          }
+        })
       }
 
       broadcastDataSource(socketServer, dataSource)
