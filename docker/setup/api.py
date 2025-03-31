@@ -45,7 +45,7 @@ def run_api(cfg):
       "PYTHON_ALLOWED_LIBRARIES": "plotly,matplotlib,numpy,pandas",
       "POSTGRES_USERNAME": cfg["POSTGRES_USERNAME"],
       "POSTGRES_PASSWORD": cfg["POSTGRES_PASSWORD"],
-      "POSTGRES_HOSTNAME": "localhost",
+      "POSTGRES_HOSTNAME": cfg.get("POSTGRES_HOSTNAME", "localhost"),
       "POSTGRES_PORT": "5432",
       "POSTGRES_DATABASE": "briefer",
       "ENVIRONMENT_VARIABLES_ENCRYPTION_KEY": cfg["ENVIRONMENT_VARIABLES_ENCRYPTION_KEY"],
