@@ -30,10 +30,10 @@ import { getAthenaSchema } from './athena.js'
 import { getMySQLSchema } from './mysql.js'
 import { getDatabricksSQLSchema } from '../python/query/databrickssql.js'
 import { PythonExecutionError } from '../python/index.js'
-import { getSqlServerSchema } from './sqlserver.js'
 import { z } from 'zod'
 import { splitEvery } from 'ramda'
 import { createEmbedding } from '../embedding.js'
+import { getSQLServerSchema } from '../python/query/sqlserver.js'
 
 async function assignDataSourceSchemaId(
   dataSourceId: string,
@@ -500,7 +500,11 @@ async function _refreshDataSourceStructure(
         await getAthenaSchema(dataSource.config.data, onTable)
         break
       case 'sqlserver':
-        await getSqlServerSchema(dataSource.config.data, onTable)
+        await getSQLServerSchema(
+          dataSource.config.data,
+          config().DATASOURCES_ENCRYPTION_KEY,
+          onTable
+        )
         break
       case 'trino':
         await getTrinoSchema(

@@ -1,14 +1,19 @@
 import { v4 as uuidv4 } from 'uuid'
-import { MySQLDataSource, getDatabaseURL } from '@briefer/database'
+import { SQLServerDataSource, getDatabaseURL } from '@briefer/database'
 import { RunQueryResult, SuccessRunQueryResult } from '@briefer/types'
-import { makeSQLAlchemyQuery } from './sqlalchemy.js'
+import {
+  getSQLAlchemySchema,
+  makeSQLAlchemyQuery,
+  pingSQLAlchemy,
+} from './sqlalchemy.js'
+import { OnTable } from '../../datasources/structure.js'
 
 export async function makeSQLServerQuery(
   workspaceId: string,
   sessionId: string,
   queryId: string,
   dataframeName: string,
-  datasource: MySQLDataSource,
+  datasource: SQLServerDataSource,
   encryptionKey: string,
   sql: string,
   resultOptions: { pageSize: number; dashboardPageSize: number },
@@ -33,5 +38,25 @@ export async function makeSQLServerQuery(
     queryId,
     resultOptions,
     onProgress
+  )
+}
+
+export function pingSQLServer(
+  ds: SQLServerDataSource,
+  encryptionKey: string
+): Promise<null | Error> {
+  return pingSQLAlchemy({ type: 'sqlserver', data: ds }, encryptionKey, null)
+}
+
+export function getSQLServerSchema(
+  ds: SQLServerDataSource,
+  encryptionKey: string,
+  onTable: OnTable
+): Promise<void> {
+  return getSQLAlchemySchema(
+    { type: 'sqlserver', data: ds },
+    encryptionKey,
+    null,
+    onTable
   )
 }
