@@ -95,6 +95,7 @@
     {
       "group": "Enterprise",
       "pages": [
+        "enterprise/deployment-permissions",
         "enterprise/sso-self-hosted",
         "enterprise/datasource-identities",
         "enterprise/granular-permissions",

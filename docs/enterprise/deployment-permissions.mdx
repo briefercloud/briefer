@@ -1,0 +1,121 @@
+---
+title: Permissions - Self-hosted
+description: Permissions and setup required for deploying Briefer's enterprise version on Kubernetes.
+icon: passport
+---
+
+Briefer's enterprise version requires specific permissions to function correctly on your Kubernetes cluster.
+
+This page outlines everything you need to set up _before_ deploying the application.
+
+There are four main areas where permissions are required:
+
+1. Kubernetes: to install and run the Briefer application
+2. AWS ECR/IAM (IRSA): to pull enterprise images from Briefer's private ECR
+3. AWS Bedrock: to invoke foundation models for AI features
+4. RDS (optional): to connect to an external database (an RDS instance) for storing Briefer's data
+
+Each of these is described in detail below.
+
+## 1. Permissions for installing the Helm chart
+
+You will need to ensure that you can install Helm charts on your Kubernetes cluster. This is a requirement for installing Briefer.
+
+When installing Briefer's helm chart, you will need to ensure that you can grant the following permissions within the desired namespace:
+
+```yaml
+rules:
+  - apiGroups: ['']
+    resources: ['pods/exec', 'services', 'persistentvolumeclaims']
+    verbs: ['create', 'get']
+  - apiGroups: ['apps']
+    resources: ['statefulsets']
+    verbs: ['create', 'get', 'watch', 'patch', 'list', 'delete']
+  - apiGroups: ['']
+    resources: ['pods']
+    verbs: ['get', 'list']
+  - apiGroups: ['']
+    resources: ['secrets']
+    verbs: ['create', 'patch', 'get', 'delete', 'list']
+```
+
+<Note>
+Briefer uses this permissions to manage Jupyter runtimes and other components of the application, including secrets with environment variables for your Jupyter environments.
+</Note>
+
+## 2. AWS Permissions to Pull Images from Briefer's ECR
+
+Create an IAM role in your AWS account with the policy below. Make sure to replace that placeholder with the actual role name we will provide you.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::999999999999:role/<we-will-provide-this-role>"
+    }
+  ]
+}
+```
+
+<Note>
+This permission allows the CronJob to assume a cross-account role in our AWS account and pull enterprise container images from our private ECR.
+
+Briefer deploys a Kubernetes CronJob that keeps your image pull secret up to date. This CronJob uses IRSA (IAM Roles for Service Accounts) to authenticate with AWS.
+
+Once the role is properly configured, the CronJob will handle authentication and secret updates automatically — no manual image pulls required.
+</Note>
+
+## 3. AWS Permissions to Invoke Bedrock Models
+
+To enable Briefer's AI capabilities, your deployment role must have permission to invoke specific foundation models on AWS Bedrock.
+
+The following policy grants the required access:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "bedrock:ListFoundationModels",
+      "Resource": "*"
+    }
+  ]
+}
+```
+
+<Note>
+Make sure that you enable the Bedrock service in your AWS account and that you have access to the models you want to use.
+</Note>
+
+## 4. (Optional) Using a Managed RDS Database
+
+Briefer supports running its internal database either inside the Kubernetes cluster or via an external RDS instance. We strongly recommend using RDS for production setups due to its improved reliability and performance.
+
+To use RDS:
+
+1. Provision a PostgreSQL instance in your AWS account
+2. Create a database
+3. Create a user with read/write permissions
+4. Save the connection string and credentials
+
+You will later provide these values in Briefer’s Helm chart configuration.
+
+We also recommend configuring periodic backups and snapshots for your RDS instance to ensure data durability.
+
+<Note>
+Briefer does not require permissions to create or manage RDS resources directly - but someone in your organization must provision the database before deployment if you want to use RDS.
+</Note>
