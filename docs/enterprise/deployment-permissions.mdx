@@ -60,6 +60,32 @@ Create an IAM role in your AWS account with the policy below. Make sure to repla
 }
 ```
 
+In addition to these role permissions, make sure this role also has a Trust Relationship policy that allows the Kubernetes service account to assume it.
+
+Below, you can see an example of a Trust Relationship policy using IRSA (IAM Roles for Service Accounts) to allow the `briefer-pull` Kubernetes service account to assume the role. Make sure to replace the placeholders with the actual values for your AWS account and EKS cluster.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::111111111111:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/ABC11111111111111111111111111111"
+      },
+      "Action": ["sts:TagSession", "sts:AssumeRoleWithWebIdentity"],
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/11111111111111111111111111111111:sub": [
+            "system:serviceaccount:<your-briefer-namespace-here>:briefer-pull"
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
 <Note>
 This permission allows the CronJob to assume a cross-account role in our AWS account and pull enterprise container images from our private ECR.
 
@@ -71,6 +97,8 @@ Once the role is properly configured, the CronJob will handle authentication and
 ## 3. AWS Permissions to Invoke Bedrock Models
 
 To enable Briefer's AI capabilities, your deployment role must have permission to invoke specific foundation models on AWS Bedrock.
+
+First, make sure that you enable the desired models (Claude 3.5, Claude 3.7 and Titan) in your AWS account. You can do this by going to the AWS Bedrock console and enabling the models you want to use, [as explained in the AWS docs here](https://docs.aws.amazon.com/bedrock/latest/userguide/model-access-modify.html).
 
 The following policy grants the required access:
 
@@ -85,13 +113,40 @@ The following policy grants the required access:
         "bedrock:InvokeModelWithResponseStream"
       ],
       "Resource": [
-        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0"
+        "arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0",
+        "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
       ]
     },
     {
       "Effect": "Allow",
       "Action": "bedrock:ListFoundationModels",
       "Resource": "*"
+    }
+  ]
+}
+```
+
+Just like the ECR permissions, make sure this role also has a Trust Relationship policy that allows the Kubernetes service account to assume it.
+
+As an example, here is a Trust Relationship policy using IRSA (IAM Roles for Service Accounts) to allow the `briefer-api` service account to assume the role. Make sure to replace the placeholders with the actual values for your AWS account and EKS cluster.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::111111111111:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/ABC11111111111111111111111111111"
+      },
+      "Action": ["sts:TagSession", "sts:AssumeRoleWithWebIdentity"],
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.us-east-1.amazonaws.com/id/11111111111111111111111111111111:sub": [
+            "system:serviceaccount:<your-briefer-namespace-here>:briefer-api"
+          ]
+        }
+      }
     }
   ]
 }
