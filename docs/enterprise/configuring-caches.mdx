@@ -1,0 +1,46 @@
+---
+title: Configuring caches
+description: Configure your query caches to optimize performance and reduce costs.
+icon: hard-drive
+---
+
+If you're hitting cache expiration issues or want to optimize your query performance, you can configure the cache settings for your workspace. This allows you to set how long queries are cached and how many queries are stored in the cache.
+
+<Note>
+This feature is only available on Briefer's enterprise plan.
+</Note>
+
+## Cache Mechanism Configuration Variables
+
+These variables allow you to configure the cache mechanism for your workspace.
+
+### `QUERIES_CACHE_EXPIRATION_TIME`
+
+- **Default Value**: `7d` (7 days)
+- Defines the expiration time for cached files.
+- Accepts human-readable values such as `1d`, `1h`, `1m`, and `1s`.
+- If an integer is provided, it is interpreted as milliseconds.
+
+### `QUERIES_CACHE_MIN_FREE_SPACE_GB`
+
+- **Default Value**: `1` (1 GB)
+- Specifies the minimum free disk space (in GB) required.
+- The cache eviction mechanism is triggered only when free space falls below this threshold.
+
+## Prometheus Metrics
+
+If you have Prometheus monitoring enabled, you can track the cache performance and disk usage metrics for your workspace.
+
+The following metrics are exported to Prometheus:
+
+- `jupyter_disk_usage_percentage`
+- `jupyter_free_space_gib`
+- `jupyter_volume_resize_operations`
+- `jupyter_cleanup_duration_seconds`
+- `jupyter_space_freed_bytes`
+- `jupyter_files_evicted_total`
+
+The `jupyter_files_evicted_total` metric includes a label called `evictionType`, which can have the following values:
+
+- `normal`: files removed due to natural cache expiration
+- `forced`: files removed forcibly due to insufficient disk space

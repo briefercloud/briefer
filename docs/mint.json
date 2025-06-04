@@ -100,7 +100,8 @@
         "enterprise/datasource-identities",
         "enterprise/granular-permissions",
         "enterprise/private-ai",
-        "enterprise/customize-appearance"
+        "enterprise/customize-appearance",
+        "enterprise/configuring-caches"
       ]
     }
   ],
