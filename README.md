@@ -6,6 +6,10 @@
   </p>
 
   <p align="center">
+    ➡️ <a href="https://briefer.cloud/blog/posts/resend-acquires-briefer/"><strong>Briefer has been acquired by Resend.</strong> Read our latest blog post to learn more about what happens next.</a> ⭐
+  </p>
+
+  <p align="center">
     <a href="https://join.slack.com/t/briefercommunity/shared_invite/zt-2geo5vlh2-RxEOwCRrVEz6JDkrPHuf0g" target="_blank">Slack</a>
     |
     <a href="https://briefer.cloud" target="_blank">Website</a>
