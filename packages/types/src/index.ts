@@ -501,6 +501,8 @@ export type VisualizationStringFilterSingleValueOperator = z.infer<
 export const VisualizationOperatorWithoutValue = z.union([
   z.literal('isNull'),
   z.literal('isNotNull'),
+  z.literal('isTrue'),
+  z.literal('isFalse'),
 ])
 export type VisualizationOperatorWithoutValue = z.infer<
   typeof VisualizationOperatorWithoutValue
@@ -627,10 +629,33 @@ export const VisualizationDateFilter = z.object({
 })
 export type VisualizationDateFilter = z.infer<typeof VisualizationDateFilter>
 
+export const VisualizationBooleanFilterOperator = z.union([
+  z.literal('isTrue'),
+  z.literal('isFalse'),
+])
+export type VisualizationBooleanFilterOperator = z.infer<
+  typeof VisualizationBooleanFilterOperator
+>
+export const booleanFilterOperators: VisualizationBooleanFilterOperator[] = [
+  'isTrue',
+  'isFalse',
+]
+
+export const VisualizationBooleanFilter = z.object({
+  id: uuidSchema,
+  column: DataFrameBooleanColumn,
+  operator: VisualizationBooleanFilterOperator,
+  value: z.string().optional(),
+  renderError: PythonErrorOutput.optional(),
+  renderedValue: z.string().optional(),
+})
+export type VisualizationBooleanFilter = z.infer<typeof VisualizationBooleanFilter>
+
 const VisualizationFilterOperator = z.union([
   VisualizationNumberFilterOperator,
   VisualizationStringFilterOperator,
   VisualizationDateFilterOperator,
+  VisualizationBooleanFilterOperator,
 ])
 
 export const UnfinishedVisualizationFilter = z.object({
@@ -648,6 +673,7 @@ export const VisualizationFilter = z.union([
   VisualizationStringFilter,
   VisualizationNumberFilter,
   VisualizationDateFilter,
+  VisualizationBooleanFilter,
   UnfinishedVisualizationFilter,
 ])
 export type VisualizationFilter = z.infer<typeof VisualizationFilter>
