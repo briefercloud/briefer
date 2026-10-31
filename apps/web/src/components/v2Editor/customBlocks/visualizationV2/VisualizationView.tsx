@@ -1140,23 +1140,33 @@ function formatDateTime(
   value: string | number,
   format: DateFormat | null
 ): string {
-  const asDate = new Date(value)
+  try {
+    if (value === null || value === undefined || value === '') {
+      return ''
+    }
+    const asDate = new Date(value)
+    if (isNaN(asDate.getTime())) {
+      return String(value)
+    }
 
-  let formatString = format?.dateStyle || ''
+    let formatString = format?.dateStyle || ''
 
-  // Add time format if showTime is true and timeFormat is provided
-  if (format && format.showTime && format.timeFormat) {
-    formatString = formatString
-      ? `${formatString} ${format.timeFormat}`
-      : format.timeFormat
+    // Add time format if showTime is true and timeFormat is provided
+    if (format && format.showTime && format.timeFormat) {
+      formatString = formatString
+        ? `${formatString} ${format.timeFormat}`
+        : format.timeFormat
+    }
+
+    // Use the configured format if available, otherwise fall back to default formatting
+    if (formatString) {
+      return dfns.format(asDate, formatString)
+    }
+
+    return dfns.format(asDate, 'MMMM d, yyyy')
+  } catch {
+    return String(value ?? '')
   }
-
-  // Use the configured format if available, otherwise fall back to default formatting
-  if (formatString) {
-    return dfns.format(asDate, formatString)
-  }
-
-  return dfns.format(value, 'MMMM d, yyyy')
 }
 
 function formatDateTimeAxis(
@@ -1169,38 +1179,42 @@ function formatDateTimeAxis(
     minIntervalUnit,
   }: { min: Date; max: Date; hideDay: boolean; minIntervalUnit: TimeUnit }
 ): string {
-  const asDate = new Date(value)
-  if (asDate < min || asDate > max) {
+  try {
+    const asDate = new Date(value)
+    if (isNaN(asDate.getTime()) || asDate < min || asDate > max) {
+      return ''
+    }
+
+    // Use the custom date format if available
+    if (format) {
+      return formatDateTime(value, format)
+    }
+
+    // Fall back to default formatting based on interval
+    switch (minIntervalUnit) {
+      case 'year':
+        if (hideDay) {
+          return dfns.format(asDate, 'yyyy')
+        } else {
+          return dfns.format(asDate, 'MMMM d, yyyy')
+        }
+      case 'quarter':
+      case 'month':
+      case 'week':
+      case 'date':
+        if (hideDay) {
+          return dfns.format(asDate, 'MMMM yyyy')
+        } else {
+          return dfns.format(asDate, 'MMMM d, yyyy')
+        }
+      case 'hours':
+      case 'minutes':
+        return dfns.format(asDate, 'MMMM d, yyyy, h:mm a')
+      case 'seconds':
+        return dfns.format(asDate, 'MMMM d, yyyy, h:mm:ss a')
+    }
+  } catch {
     return ''
-  }
-
-  // Use the custom date format if available
-  if (format) {
-    return formatDateTime(value, format)
-  }
-
-  // Fall back to default formatting based on interval
-  switch (minIntervalUnit) {
-    case 'year':
-      if (hideDay) {
-        return dfns.format(value, 'yyyy')
-      } else {
-        return dfns.format(value, 'MMMM d, yyyy')
-      }
-    case 'quarter':
-    case 'month':
-    case 'week':
-    case 'date':
-      if (hideDay) {
-        return dfns.format(value, 'MMMM yyyy')
-      } else {
-        return dfns.format(value, 'MMMM d, yyyy')
-      }
-    case 'hours':
-    case 'minutes':
-      return dfns.format(value, 'MMMM d, yyyy, h:mm a')
-    case 'seconds':
-      return dfns.format(value, 'MMMM d, yyyy, h:mm:ss a')
   }
 }
 
